@@ -31,6 +31,20 @@ export function projectSlug(cwd) {
   return cwd.replace(/[^A-Za-z0-9]/g, '-');
 }
 
+/**
+ * Makes a path usable by Node on the current platform. On Windows, an MSYS/Git Bash path
+ * such as `/c/Users/x` becomes `C:/Users/x` (Node would otherwise read it as `C:\c\Users\x`).
+ * Any other path is returned unchanged.
+ * @param {string} p
+ */
+export function toNativePath(p) {
+  if (process.platform === 'win32') {
+    const m = /^\/([A-Za-z])(\/.*)?$/.exec(p || '');
+    if (m) return `${m[1].toUpperCase()}:${m[2] || '/'}`;
+  }
+  return p;
+}
+
 /** Creates the directory (recursively) if it does not exist and returns it. */
 export function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });

@@ -7,13 +7,14 @@
  */
 import { readFileSync } from 'node:fs';
 import { loadConfig } from '../lib/config.mjs';
+import { toNativePath } from '../lib/paths.mjs';
 import { resolveEngine, writeEngineCache } from '../filter/engine.mjs';
 
 try {
   let cwd = process.cwd();
   try {
     const input = JSON.parse(readFileSync(0, 'utf8'));
-    if (typeof input?.cwd === 'string') cwd = input.cwd;
+    if (typeof input?.cwd === 'string') cwd = toNativePath(input.cwd);
   } catch {
     /* no/invalid stdin: fall back to process.cwd() */
   }

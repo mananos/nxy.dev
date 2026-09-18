@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
+import { toNativePath } from '../lib/paths.mjs';
 import { appendJsonl } from '../lib/jsonl.mjs';
 import { nxyProjectDir } from '../lib/paths.mjs';
 import { decide } from '../filter/decide.mjs';
@@ -31,7 +32,7 @@ try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const command = input?.tool_input?.command;
   if ((input?.tool_name === 'Bash' || input?.tool_name === 'PowerShell') && typeof command === 'string') {
-    const cwd = typeof input.cwd === 'string' ? input.cwd : process.cwd();
+    const cwd = toNativePath(typeof input.cwd === 'string' ? input.cwd : process.cwd());
     const cfg = loadConfig(cwd);
     if (cfg.modules.metrics) {
       const text = responseText(input.tool_response ?? input.tool_result);

@@ -24,6 +24,8 @@ jobs:
       - run: npm test
       - name: hooks smoke test (no rtk installed → must pass commands through untouched)
         shell: bash
+        env:
+          NXY_HOME: ${{ runner.temp }}/nxy-home
         run: |
           echo '{"cwd":"'"$PWD"'","hook_event_name":"SessionStart"}' | node scripts/hooks/sessionstart.mjs
           out=$(echo '{"tool_name":"Bash","cwd":"'"$PWD"'","tool_input":{"command":"git status"}}' | node scripts/hooks/pretooluse-bash.mjs)

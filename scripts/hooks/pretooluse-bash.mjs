@@ -8,6 +8,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { loadConfig } from '../lib/config.mjs';
+import { toNativePath } from '../lib/paths.mjs';
 import { loadPermissionRules, originalVerdict } from '../lib/permissions.mjs';
 import { decide } from '../filter/decide.mjs';
 import { claudeSettingsFiles, engineInfo } from '../filter/engine.mjs';
@@ -17,7 +18,7 @@ try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const command = input?.tool_input?.command;
   if ((input?.tool_name === 'Bash' || input?.tool_name === 'PowerShell') && typeof command === 'string') {
-    const cwd = typeof input.cwd === 'string' ? input.cwd : process.cwd();
+    const cwd = toNativePath(typeof input.cwd === 'string' ? input.cwd : process.cwd());
     const cfg = loadConfig(cwd);
     if (cfg.modules.filter) {
       const info = engineInfo(cfg, cwd);

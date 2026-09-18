@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deepMerge, loadConfig } from '../scripts/lib/config.mjs';
-import { projectSlug } from '../scripts/lib/paths.mjs';
+import { projectSlug, toNativePath } from '../scripts/lib/paths.mjs';
 import { appendJsonl, readJsonl } from '../scripts/lib/jsonl.mjs';
 
 test('deepMerge recurses objects and replaces arrays/scalars', () => {
@@ -32,6 +32,18 @@ test('loadConfig: defaults, project override and env precedence', () => {
 test('projectSlug matches Claude Code folder naming', () => {
   assert.equal(projectSlug('C:\\Users\\dev\\code\\my.app'), 'C--Users-dev-code-my-app');
   assert.equal(projectSlug('/home/dev/code/my.app'), '-home-dev-code-my-app');
+});
+
+test('toNativePath converts MSYS drive paths only on win32', () => {
+  if (process.platform === 'win32') {
+    assert.equal(toNativePath('/c/Users/dev/proj'), 'C:/Users/dev/proj');
+    assert.equal(toNativePath('/d'), 'D:/');
+  } else {
+    assert.equal(toNativePath('/c/Users/dev/proj'), '/c/Users/dev/proj');
+  }
+  assert.equal(toNativePath('C:/Users/dev'), 'C:/Users/dev');
+  assert.equal(toNativePath('/home/dev/proj'), '/home/dev/proj');
+  assert.equal(toNativePath('/tmp/x'), '/tmp/x');
 });
 
 test('jsonl append/read skips malformed lines', () => {
