@@ -1,6 +1,6 @@
 // @ts-check
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { ensureDir, nxyUserDir } from '../lib/paths.mjs';
@@ -26,12 +26,41 @@ function tryVersion(bin, env = process.env) {
   return null;
 }
 
-/** Locates the rtk binary: NXY_RTK_PATH → `rtk` → `rtk.exe` (win32). */
+/**
+ * Well-known install locations, for processes whose PATH predates the install (on Windows a
+ * terminal or IDE opened before `winget install` never sees the new PATH).
+ * @param {NodeJS.ProcessEnv} env
+ */
+export function knownRtkLocations(env = process.env) {
+  const home = env.HOME || env.USERPROFILE || homedir();
+  const out = [];
+  if (process.platform === 'win32') {
+    const local = env.LOCALAPPDATA || join(home, 'AppData', 'Local');
+    out.push(join(local, 'Microsoft', 'WinGet', 'Links', 'rtk.exe'));
+    const pkgs = join(local, 'Microsoft', 'WinGet', 'Packages');
+    try {
+      for (const d of readdirSync(pkgs)) if (d.startsWith('rtk-ai.rtk')) out.push(join(pkgs, d, 'rtk.exe'));
+    } catch {
+      /* no winget packages dir */
+    }
+    out.push(join(home, '.local', 'bin', 'rtk.exe'), join(home, '.cargo', 'bin', 'rtk.exe'));
+  } else {
+    out.push(join(home, '.local', 'bin', 'rtk'), join(home, '.cargo', 'bin', 'rtk'), '/usr/local/bin/rtk', '/opt/homebrew/bin/rtk', '/home/linuxbrew/.linuxbrew/bin/rtk');
+  }
+  return out;
+}
+
+/** Locates the rtk binary: NXY_RTK_PATH → `rtk` on PATH → `rtk.exe` (win32) → known install locations. */
 export function findRtk(env = process.env) {
   const candidates = [env.NXY_RTK_PATH, 'rtk', process.platform === 'win32' ? 'rtk.exe' : null].filter(Boolean);
   for (const bin of /** @type {string[]} */ (candidates)) {
     const v = tryVersion(bin, env);
     if (v !== null) return { path: bin, version: v.replace(/^rtk\s+/i, '') };
+  }
+  for (const bin of knownRtkLocations(env)) {
+    if (!existsSync(bin)) continue;
+    const v = tryVersion(bin, env);
+    if (v !== null) return { path: bin.replace(/\\/g, '/'), version: v.replace(/^rtk\s+/i, '') };
   }
   return null;
 }
@@ -128,7 +157,7 @@ export function engineInfo(cfg, cwd) {
 export function describeEngine(info, cfg) {
   const lines = [
     `engine:        ${info.engine} (${info.reason}; config=${cfg.filter.engine})`,
-    `rtk:           ${info.rtkPath ? `${info.rtkPath} v${info.rtkVersion}` : 'not found on PATH'}`,
+    `rtk:           ${info.rtkPath ? `${info.rtkPath} v${info.rtkVersion}${/[\/]/.test(info.rtkPath) ? '  (not on this process PATH — found in a known install dir; a new terminal will have it on PATH)' : ''}` : 'not found on PATH nor in known install dirs'}`,
     `ripgrep (rg):  ${info.rgAvailable ? 'available' : 'not found (RTK needs it for some filters)'}`,
     `rtk own hook:  ${info.rtkHookDetected ? 'INSTALLED — nxy yields the rewrite to it; run `rtk init --uninstall` (or remove the hook) to let nxy manage it' : 'not installed (good)'}`,
   ];

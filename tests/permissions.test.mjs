@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadPermissionRules, matchesAnyRule, originalVerdict, ruleToRegex } from '../scripts/lib/permissions.mjs';
-import { detectRtkHook, resolveEngine } from '../scripts/filter/engine.mjs';
+import { detectRtkHook, knownRtkLocations, resolveEngine } from '../scripts/filter/engine.mjs';
 
 test('ruleToRegex forms', () => {
   assert.equal(ruleToRegex('Read'), null);
@@ -55,10 +55,16 @@ test('resolveEngine honors config off and reports missing rtk', () => {
   assert.equal(off.engine, 'off');
   assert.equal(off.reason, 'config');
   // Hermetic: an empty PATH must hide a really-installed rtk (spawn receives this env, not process.env).
-  const auto = resolveEngine({ filter: { engine: 'auto' } }, cwd, { PATH: '', Path: '' });
+  const auto = resolveEngine({ filter: { engine: 'auto' } }, cwd, { PATH: '', Path: '', HOME: cwd, USERPROFILE: cwd, LOCALAPPDATA: cwd });
   assert.equal(auto.engine, 'off');
   assert.equal(auto.reason, 'auto-no-rtk');
   assert.equal(auto.rtkPath, null);
+});
+
+test('knownRtkLocations derives from env, never throws', () => {
+  const locs = knownRtkLocations({ HOME: '/home/dev', USERPROFILE: 'C:/Users/dev', LOCALAPPDATA: 'C:/Users/dev/AppData/Local' });
+  assert.ok(locs.length > 0);
+  assert.ok(locs.every((l) => /rtk(.exe)?$/.test(l)));
 });
 
 test('readEngineCache: negative verdicts expire fast, positive ones last', async () => {
