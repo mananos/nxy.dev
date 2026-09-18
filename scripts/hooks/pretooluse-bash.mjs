@@ -18,7 +18,9 @@ try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const command = input?.tool_input?.command;
   if ((input?.tool_name === 'Bash' || input?.tool_name === 'PowerShell') && typeof command === 'string') {
-    const cwd = toNativePath(typeof input.cwd === 'string' ? input.cwd : process.cwd());
+    // The project root, not the shell's current dir: after `cd sub && …` Claude Code reports
+    // `cwd` = sub, and config/metrics must not move around mid-session.
+    const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input.cwd === 'string' ? input.cwd : process.cwd()));
     const cfg = loadConfig(cwd);
     if (cfg.modules.filter) {
       const info = engineInfo(cfg, cwd);

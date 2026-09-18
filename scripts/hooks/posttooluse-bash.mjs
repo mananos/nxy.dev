@@ -2,9 +2,9 @@
 // @ts-check
 /**
  * PostToolUse(Bash) hook: appends one metrics row per Bash call to
- * `<project>/.nxy/metrics/filter.jsonl`. Runs synchronously on purpose: as an async hook
- * Claude Code may end the turn before a backgrounded process has written its row (observed
- * on the last tool call of a turn). Cost: ~100 ms of Node startup per Bash call, no context.
+ * `<project>/.nxy/metrics/filter.jsonl`. Kept synchronous: the row is guaranteed to be on
+ * disk before the next tool call and `/nxy:stats` never races it. Cost: ~100 ms of Node
+ * startup per Bash call, no context. Prints nothing.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -31,7 +31,9 @@ try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const command = input?.tool_input?.command;
   if ((input?.tool_name === 'Bash' || input?.tool_name === 'PowerShell') && typeof command === 'string') {
-    const cwd = toNativePath(typeof input.cwd === 'string' ? input.cwd : process.cwd());
+    // The project root, not the shell's current dir: after `cd sub && …` Claude Code reports
+    // `cwd` = sub, and config/metrics must not move around mid-session.
+    const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input.cwd === 'string' ? input.cwd : process.cwd()));
     const cfg = loadConfig(cwd);
     if (cfg.modules.metrics) {
       const text = responseText(input.tool_response ?? input.tool_result);

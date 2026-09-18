@@ -14,7 +14,7 @@ try {
   let cwd = process.cwd();
   try {
     const input = JSON.parse(readFileSync(0, 'utf8'));
-    if (typeof input?.cwd === 'string') cwd = toNativePath(input.cwd);
+    cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : cwd));
   } catch {
     /* no/invalid stdin: fall back to process.cwd() */
   }
