@@ -2,8 +2,6 @@
   <img src="resources/nxydev.png" alt="nxy.dev" width="320">
 </p>
 
-<h1 align="center">nxy</h1>
-
 <p align="center">Plugin de Claude Code: calidad de código, velocidad, consumo de tokens bajo control y visibilidad de lo que se gasta.</p>
 
 Sirve para cualquier lenguaje o framework, y tanto para un repo existente como para uno que arranca de cero. Funciona en Windows y Linux (macOS también), con Node 22+ y sin dependencias de runtime.
