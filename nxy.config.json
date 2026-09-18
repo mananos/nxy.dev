@@ -1,0 +1,15 @@
+{
+  "modules": { "metrics": true, "filter": true },
+  "filter": {
+    "engine": "auto",
+    "excludeCommands": [],
+    "onlyCommands": [],
+    "autoAllowWhenOriginalAllowed": true
+  },
+  "metrics": {
+    "projectsDir": null,
+    "subscription": true,
+    "statusline": { "cacheTtlMs": 2000 },
+    "cacheBreakThreshold": 100000
+  }
+}
