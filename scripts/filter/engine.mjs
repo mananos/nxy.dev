@@ -12,6 +12,7 @@ import { ensureDir, nxyUserDir } from '../lib/paths.mjs';
  * @property {string|null} rtkVersion
  * @property {boolean} rtkHookDetected  RTK's own PreToolUse hook found in Claude settings
  * @property {boolean} rgAvailable      ripgrep on PATH (RTK needs it for some filters)
+ * @property {string|null} [rgInstalledAt] ripgrep found in a known install dir but not on this process PATH
  * @property {string} reason            why `engine` ended up as it is
  * @property {number} resolvedAt        epoch ms
  */
@@ -46,6 +47,31 @@ export function knownRtkLocations(env = process.env) {
     out.push(join(home, '.local', 'bin', 'rtk.exe'), join(home, '.cargo', 'bin', 'rtk.exe'));
   } else {
     out.push(join(home, '.local', 'bin', 'rtk'), join(home, '.cargo', 'bin', 'rtk'), '/usr/local/bin/rtk', '/opt/homebrew/bin/rtk', '/home/linuxbrew/.linuxbrew/bin/rtk');
+  }
+  return out;
+}
+
+/** Known ripgrep install locations (same rationale as {@link knownRtkLocations}). */
+export function knownRgLocations(env = process.env) {
+  const home = env.HOME || env.USERPROFILE || homedir();
+  const out = [];
+  if (process.platform === 'win32') {
+    const local = env.LOCALAPPDATA || join(home, 'AppData', 'Local');
+    out.push(join(local, 'Microsoft', 'WinGet', 'Links', 'rg.exe'));
+    const pkgs = join(local, 'Microsoft', 'WinGet', 'Packages');
+    try {
+      for (const d of readdirSync(pkgs)) {
+        if (!d.startsWith('BurntSushi.ripgrep')) continue;
+        const pkgDir = join(pkgs, d);
+        out.push(join(pkgDir, 'rg.exe'));
+        for (const sub of readdirSync(pkgDir)) if (sub.startsWith('ripgrep-')) out.push(join(pkgDir, sub, 'rg.exe'));
+      }
+    } catch {
+      /* no winget packages dir */
+    }
+    out.push(join(home, '.cargo', 'bin', 'rg.exe'), join(home, 'scoop', 'shims', 'rg.exe'));
+  } else {
+    out.push('/usr/bin/rg', '/usr/local/bin/rg', '/opt/homebrew/bin/rg', join(home, '.cargo', 'bin', 'rg'), join(home, '.local', 'bin', 'rg'));
   }
   return out;
 }
@@ -106,11 +132,13 @@ export function resolveEngine(cfg, cwd, env = process.env) {
   const rtk = findRtk(env);
   const rtkHookDetected = detectRtkHook(claudeSettingsFiles(cwd).map(readJson));
   const rgAvailable = tryVersion('rg', env) !== null;
+  const rgInstalledAt = rgAvailable ? null : (knownRgLocations(env).find((b) => existsSync(b)) || null);
   const base = {
     rtkPath: rtk?.path ?? null,
     rtkVersion: rtk?.version ?? null,
     rtkHookDetected,
     rgAvailable,
+    rgInstalledAt: rgInstalledAt ? rgInstalledAt.replace(/\\/g, '/') : null,
     resolvedAt: Date.now(),
   };
   const wanted = cfg.filter.engine;
@@ -158,7 +186,7 @@ export function describeEngine(info, cfg) {
   const lines = [
     `engine:        ${info.engine} (${info.reason}; config=${cfg.filter.engine})`,
     `rtk:           ${info.rtkPath ? `${info.rtkPath} v${info.rtkVersion}${/[\/]/.test(info.rtkPath) ? '  (not on this process PATH — found in a known install dir; a new terminal will have it on PATH)' : ''}` : 'not found on PATH nor in known install dirs'}`,
-    `ripgrep (rg):  ${info.rgAvailable ? 'available' : 'not found (RTK needs it for some filters)'}`,
+    `ripgrep (rg):  ${info.rgAvailable ? 'available' : info.rgInstalledAt ? `installed at ${info.rgInstalledAt} but not on this process PATH — open a new terminal (RTK spawns rg itself for some filters)` : 'not found (RTK needs it for some filters)'}`,
     `rtk own hook:  ${info.rtkHookDetected ? 'INSTALLED — nxy yields the rewrite to it; run `rtk init --uninstall` (or remove the hook) to let nxy manage it' : 'not installed (good)'}`,
   ];
   if (!info.rtkPath) {
@@ -167,6 +195,6 @@ export function describeEngine(info, cfg) {
       '               Do NOT run `rtk init -g` — nxy installs its own hook.',
     );
   }
-  if (!info.rgAvailable) lines.push('install rg:    Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep');
+  if (!info.rgAvailable && !info.rgInstalledAt) lines.push('install rg:    Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep');
   return lines.join('\n');
 }
