@@ -1,0 +1,5 @@
+# Claude Code parses command/skill frontmatter byte by byte: a CRLF turns
+# `allowed-tools: Bash(node:*)` into `Bash(node:*)` and the rule never matches.
+# Force LF for every text file regardless of the cloning machine.
+* text=auto eol=lf
+*.png binary
