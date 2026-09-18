@@ -75,7 +75,7 @@ Salida exacta, sin que el modelo la retipee y sin gastar tokens: dentro de Claud
    - Lo que RTK cubre hoy (v0.48): git, gh, ls/cat/grep/find, mvn/mvnw, gradle/gradlew, npm run/pnpm run/bun, jest/vitest/playwright/pytest/cargo/go test, eslint/tsc/prettier/biome, next/vite, docker, kubectl. No: `ng` global, `yarn`, `npm install`.
    - Medido en un proyecto Spring Boot: `./mvnw test` pasó de 84 líneas / 9.197 chars a 8 líneas / 319 chars (−96 %).
 3. Si el comando original ya estaba permitido por tus reglas `permissions.allow` (`Bash(git status:*)`), el reescrito hereda ese permiso: no aparecen prompts nuevos. Si no había regla, Claude Code te pregunta por `rtk git status` como te habría preguntado por `git status` (y podés dejarlo permitido). Si el original está en `permissions.deny`, no se reescribe.
-4. `PostToolUse(Bash|PowerShell)` (async, no agrega latencia) registra una fila en `<proyecto>/.nxy/metrics/filter.jsonl`: motor, tipo de comando, líneas/chars devueltos, hash de `rtk recall`. Los secretos obvios se enmascaran antes de escribir.
+4. `PostToolUse(Bash|PowerShell)` (síncrono, ~100 ms por comando) registra una fila en `<proyecto>/.nxy/metrics/filter.jsonl`: motor, tipo de comando, líneas/chars devueltos, hash de `rtk recall`. Los secretos obvios se enmascaran antes de escribir.
 5. Cuando Claude necesita la salida completa, el skill `nxy-filter` le indica `rtk recall <hash>` o, como último recurso, `NXY_RAW=1 <cmd>`.
 
 ## Configuración

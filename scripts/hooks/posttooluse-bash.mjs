@@ -2,8 +2,9 @@
 // @ts-check
 /**
  * PostToolUse(Bash) hook: appends one metrics row per Bash call to
- * `<project>/.nxy/metrics/filter.jsonl`. Runs async (Claude Code does not wait for it)
- * and prints nothing else, so it costs zero context and ~no latency.
+ * `<project>/.nxy/metrics/filter.jsonl`. Runs synchronously on purpose: as an async hook
+ * Claude Code may end the turn before a backgrounded process has written its row (observed
+ * on the last tool call of a turn). Cost: ~100 ms of Node startup per Bash call, no context.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -25,8 +26,6 @@ function responseText(resp) {
   }
   return '';
 }
-
-process.stdout.write('{"async": true}\n');
 
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
