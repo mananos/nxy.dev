@@ -1,0 +1,15 @@
+nxy — Claude Code plugin
+Copyright 2026 Matias Nicolas
+
+Licensed under the Apache License, Version 2.0.
+
+This product includes work derived from:
+
+- session-report (Anthropic, Apache-2.0)
+  https://github.com/anthropics/claude-plugins-official/tree/main/plugins/session-report
+  scripts/lib/transcripts.mjs is a fork of skills/session-report/analyze-sessions.mjs
+  (transcript parsing, request deduplication, subagent attribution, cache-break detection).
+
+- RTK (rtk-ai, Apache-2.0)
+  https://github.com/rtk-ai/rtk
+  Used as an external binary for command-output filtering. Not bundled.

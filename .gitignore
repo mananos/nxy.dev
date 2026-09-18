@@ -1,0 +1,12 @@
+# Reference repos (cloned for design research, not part of the plugin)
+/OmniRoute/
+/gentle-ai/
+/gentle-shell/
+/engram/
+
+# Runtime data written by the plugin
+.nxy/
+
+# Tooling
+node_modules/
+*.log
