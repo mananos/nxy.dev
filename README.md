@@ -10,7 +10,7 @@ Se construye por fases, midiendo cada una antes de sumar la siguiente:
 
 | Fase | Pilar principal | Estado |
 | ---- | --------------- | ------ |
-| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | esta versión |
+| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | actual · **v0.1.1** |
 | 2 | **Velocidad**: no explorar a ciegas (índice determinístico del repo, scouts baratos, modelo y esfuerzo por fase) | próxima |
 | 3 | **Calidad**: flujo por fases con contexto limpio, review escalado por riesgo, memoria de decisiones | después |
 
