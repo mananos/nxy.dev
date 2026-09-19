@@ -37,15 +37,41 @@ export function loadPricing() {
 }
 
 /**
- * `claude-opus-5-20260401[1m]` → `claude-opus-5`; `claude-3-5-haiku-latest` stays unknown (returns as is).
+ * Reduce un id de modelo a la clave de la tabla de precios. Cubre las tres plataformas:
+ *   - API directa: `claude-opus-5-20260401[1m]` → `claude-opus-5`, `-latest` fuera.
+ *   - Bedrock: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` → `claude-sonnet-4-5`
+ *     (prefijos de región/alcance `us.` `eu.` `apac.` `global.`, luego `anthropic.`, sufijo `-vN:M`).
+ *   - Vertex: `claude-sonnet-4-5@20250929` → `claude-sonnet-4-5`.
+ * Lo que no matchea queda como está (`claude-3-5-haiku-latest` → `claude-3-5-haiku`, desconocido).
  * @param {string} id
  */
 export function normalizeModel(id) {
   return String(id || '')
     .toLowerCase()
+    .replace(/^(?:us|eu|apac|global)\./, '')
+    .replace(/^anthropic\./, '')
+    .replace(/-v\d+:\d+$/, '')
+    .replace(/@\d{8}$/, '')
     .replace(/\[1m\]$/, '')
     .replace(/-\d{8}$/, '')
     .replace(/-latest$/, '');
+}
+
+/**
+ * Claude Code escribe mensajes internos con `model: "<synthetic>"` (y usage en cero): no son
+ * llamadas a la API. Cualquier id envuelto en `<...>` cuenta como sintético.
+ * @param {string} model
+ */
+export function isSyntheticModel(model) {
+  return /^<[^<>]*>$/.test(String(model || '').trim());
+}
+
+/**
+ * true cuando la llamada no consumió ningún token (input, cache, output).
+ * @param {Usage} usage
+ */
+export function isZeroUsage(usage) {
+  return usage.input === 0 && usage.cacheWrite5m === 0 && usage.cacheWrite1h === 0 && usage.cacheRead === 0 && usage.output === 0;
 }
 
 /**
@@ -73,12 +99,14 @@ export function toUsage(u) {
 }
 
 /**
- * Cache-aware cost in USD. Returns `null` when the model is unknown (never a guess).
+ * Cache-aware cost in USD. Una llamada sin tokens cuesta 0 sea cual sea el modelo (no hay nada
+ * que tarifar). Con tokens y modelo desconocido devuelve `null` — nunca un número inventado.
  * @param {string} model
  * @param {Usage} usage
  * @returns {number|null}
  */
 export function costFor(model, usage) {
+  if (isZeroUsage(usage)) return 0;
   const price = loadPricing().models[normalizeModel(model)];
   if (!price) return null;
   const fast = usage.speed === 'fast' && price.fast ? price.fast : null;

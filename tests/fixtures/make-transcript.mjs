@@ -86,8 +86,10 @@ export function writeFixture(root) {
     // second human turn, via a slash command → skill attribution
     user({ uuid: 'u5', ts: 10000, content: '<command-name>/nxy:stats</command-name>\n<command-message>stats</command-message>' }),
     assistant({ uuid: 'a4', requestId: 'req_4', ts: 11000, model: 'claude-sonnet-5', usage: U(2000, 0, 0, 0, 200), content: [{ type: 'text', text: 'stats' }] }),
-    // unknown model → cost must be null overall
+    // unknown model → its cost is unknown; the session total becomes partial ($X+?), never a bare ?
     assistant({ uuid: 'a5', requestId: 'req_5', ts: 12000, model: 'claude-future-9', usage: U(10, 0, 0, 0, 10), content: [{ type: 'text', text: '?' }] }),
+    // Claude Code internal message: `<synthetic>` with zero usage → not an API call, must not poison anything
+    assistant({ uuid: 'a6', requestId: 'req_6', ts: 12000, model: '<synthetic>', usage: U(0, 0, 0, 0, 0), content: [{ type: 'text', text: 'internal' }], effort: null }),
   ];
   const mainPath = join(projDir, `${FIXTURE.sessionId}.jsonl`);
   writeFileSync(mainPath, main.map((l) => JSON.stringify(l)).join('\n') + '\n');

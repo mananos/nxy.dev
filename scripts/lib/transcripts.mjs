@@ -10,7 +10,7 @@
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { claudeProjectsDir, projectSlug } from './paths.mjs';
-import { addUsage, cacheHitPct, costFor, emptyUsage, toUsage, totalInput } from './pricing.mjs';
+import { addUsage, cacheHitPct, costFor, emptyUsage, isSyntheticModel, isZeroUsage, toUsage, totalInput } from './pricing.mjs';
 
 const IDLE_GAP_MS = 5 * 60 * 1000; // gaps longer than this do not count as "active" time
 
@@ -233,9 +233,12 @@ export function parseFile(path, opts = {}) {
     }
     if (typeof e.attributionSkill === 'string' && e.attributionSkill) currentSkill = e.attributionSkill;
     if (!msg.usage) continue;
-    if (msg.model && !meta.model) meta.model = msg.model;
-    const key = e.requestId || (typeof msg.id === 'string' && msg.id.startsWith('msg_') ? msg.id : `${path}:${e.uuid || calls.size}`);
     const usage = toUsage(msg.usage);
+    const synthetic = isSyntheticModel(msg.model);
+    // `<synthetic>` con usage en cero es un mensaje interno de Claude Code, no una llamada a la API.
+    if (synthetic && isZeroUsage(usage)) continue;
+    if (msg.model && !synthetic && !meta.model) meta.model = msg.model;
+    const key = e.requestId || (typeof msg.id === 'string' && msg.id.startsWith('msg_') ? msg.id : `${path}:${e.uuid || calls.size}`);
     const prev = calls.get(key);
     if (!prev || usage.output >= prev.usage.output) {
       calls.set(key, {
@@ -257,9 +260,12 @@ export function parseFile(path, opts = {}) {
 // Session-level aggregation
 // ---------------------------------------------------------------------------
 
-/** Accumulator for a group of calls. */
+/**
+ * Accumulator for a group of calls. `usd` es la suma de lo que sí tiene tarifa; `usdUnknownCalls`
+ * cuenta las llamadas que quedaron fuera (modelo sin precio) y `unknownModels` cuáles fueron.
+ */
 export function newBucket() {
-  return { calls: 0, usage: emptyUsage(), usd: 0, usdKnown: true, contextPeak: 0 };
+  return { calls: 0, usage: emptyUsage(), usd: 0, usdUnknownCalls: 0, unknownModels: /** @type {Set<string>} */ (new Set()), contextPeak: 0 };
 }
 
 /** Adds one call into a bucket (mutates). Cost is recomputed from the pricing table each time. */
@@ -267,14 +273,28 @@ export function addCall(bucket, call) {
   bucket.calls++;
   addUsage(bucket.usage, call.usage);
   const usd = costFor(call.model, call.usage);
-  if (usd === null) bucket.usdKnown = false;
-  else bucket.usd += usd;
+  if (usd === null) {
+    bucket.usdUnknownCalls++;
+    bucket.unknownModels.add(call.model);
+  } else bucket.usd += usd;
   bucket.contextPeak = Math.max(bucket.contextPeak, totalInput(call.usage));
   return bucket;
 }
 
+/**
+ * Cierra un bucket para salida: `usd` queda como la parte conocida (nunca null) y `usdPartial`
+ * avisa que faltan llamadas por tarifar — quien muestre el número decide cómo marcarlo.
+ * @template {ReturnType<typeof newBucket>} B
+ * @param {B} bucket
+ */
 function finish(bucket) {
-  return { ...bucket, usd: bucket.usdKnown ? bucket.usd : null, cacheHitPct: cacheHitPct(bucket.usage), totalInput: totalInput(bucket.usage) };
+  return {
+    ...bucket,
+    usdPartial: bucket.usdUnknownCalls > 0,
+    unknownModels: [...bucket.unknownModels],
+    cacheHitPct: cacheHitPct(bucket.usage),
+    totalInput: totalInput(bucket.usage),
+  };
 }
 
 /**
@@ -297,7 +317,6 @@ export function parseSession(ref, opts = {}) {
   /** @type {Record<string, ReturnType<typeof newBucket>>} */
   const bySkill = {};
   const cacheBreaks = [];
-  const unknownModels = new Set();
   const agents = [];
   const tools = {
     calls: { ...main.tools.calls },
@@ -310,7 +329,6 @@ export function parseSession(ref, opts = {}) {
     addCall(agentType ? subBucket : mainBucket, call);
     addCall((byModel[call.model] ||= newBucket()), call);
     if (call.skill) addCall((bySkill[call.skill] ||= newBucket()), call);
-    if (costFor(call.model, call.usage) === null) unknownModels.add(call.model);
     const uncached = call.usage.input + call.usage.cacheWrite5m + call.usage.cacheWrite1h;
     if (uncached > threshold) cacheBreaks.push({ ts: call.ts, uncached, total: totalInput(call.usage), agentType: agentType || null });
   };
@@ -353,6 +371,7 @@ export function parseSession(ref, opts = {}) {
   }
 
   const mapFinish = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, finish(v)]));
+  const usage = finish(total);
   return {
     sessionId: ref.sessionId,
     project: ref.project,
@@ -365,7 +384,7 @@ export function parseSession(ref, opts = {}) {
     activeMs: main.activeMs,
     turns: main.turns,
     prompts: main.prompts,
-    usage: finish(total),
+    usage,
     main: finish(mainBucket),
     subagents: finish(subBucket),
     byModel: mapFinish(byModel),
@@ -374,7 +393,7 @@ export function parseSession(ref, opts = {}) {
     agents: agents.sort((a, b) => b.totalInput + b.usage.output - (a.totalInput + a.usage.output)),
     tools: { ...tools, filesRead: [...tools.filesRead] },
     cacheBreaks,
-    unknownModels: [...unknownModels],
+    unknownModels: usage.unknownModels,
   };
 }
 
@@ -387,7 +406,8 @@ export function parseSession(ref, opts = {}) {
  * `state.usage`, and keeps a bounded `seen` map so a streamed message that grows is counted
  * once (by output delta), not twice.
  * @param {string} path
- * @param {{offset: number, partial: string, seen: Record<string, number>, usage: ReturnType<typeof emptyUsage>, usd: number, usdKnown: boolean, model: string|null, calls: number}} state
+ * `usd` es la parte con tarifa; `usdUnknown` cuenta las llamadas que no la tienen (→ `$X+?`).
+ * @param {{offset: number, partial: string, seen: Record<string, number>, usage: ReturnType<typeof emptyUsage>, usd: number, usdUnknown: number, model: string|null, calls: number}} state
  */
 export function readIncremental(path, state) {
   let fd;
@@ -423,11 +443,12 @@ export function readIncremental(path, state) {
       const key = e.requestId || e.message.id || e.uuid;
       const usage = toUsage(e.message.usage);
       const model = e.message.model || 'unknown';
+      if (isSyntheticModel(model) && isZeroUsage(usage)) continue; // mensaje interno, no una llamada
       const prevOut = state.seen[key];
       if (prevOut === undefined) {
         addUsage(state.usage, usage);
         const usd = costFor(model, usage);
-        if (usd === null) state.usdKnown = false;
+        if (usd === null) state.usdUnknown = (state.usdUnknown || 0) + 1; // `|| 0`: caches previos a este campo
         else state.usd += usd;
         state.calls++;
       } else if (usage.output > prevOut) {
@@ -437,7 +458,7 @@ export function readIncremental(path, state) {
         if (usd !== null) state.usd += usd;
       }
       state.seen[key] = Math.max(prevOut ?? 0, usage.output);
-      state.model = model;
+      if (!isSyntheticModel(model)) state.model = model;
     }
     const keys = Object.keys(state.seen);
     if (keys.length > 256) for (const k of keys.slice(0, keys.length - 256)) delete state.seen[k];
@@ -449,5 +470,5 @@ export function readIncremental(path, state) {
 
 /** Fresh state for {@link readIncremental}. */
 export function newIncrementalState() {
-  return { offset: 0, partial: '', seen: {}, usage: emptyUsage(), usd: 0, usdKnown: true, model: null, calls: 0 };
+  return { offset: 0, partial: '', seen: {}, usage: emptyUsage(), usd: 0, usdUnknown: 0, model: null, calls: 0 };
 }

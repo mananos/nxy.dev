@@ -6,13 +6,50 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
 import { listSessions, newIncrementalState, parseSession, readIncremental, resolveSession } from '../scripts/lib/transcripts.mjs';
-import { costFor, normalizeModel, toUsage } from '../scripts/lib/pricing.mjs';
+import { costFor, isSyntheticModel, isZeroUsage, normalizeModel, toUsage } from '../scripts/lib/pricing.mjs';
 
 const close = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 
-test('pricing: normalizeModel and cache-aware costFor', () => {
+test('pricing: normalizeModel covers direct API, Bedrock and Vertex ids', () => {
+  // direct API
   assert.equal(normalizeModel('claude-opus-5-20260401[1m]'), 'claude-opus-5');
   assert.equal(normalizeModel('claude-sonnet-5'), 'claude-sonnet-5');
+  assert.equal(normalizeModel('claude-sonnet-4-5-20250929'), 'claude-sonnet-4-5');
+  assert.equal(normalizeModel('claude-opus-4-1-latest'), 'claude-opus-4-1');
+  assert.equal(normalizeModel('Claude-Opus-5'), 'claude-opus-5', 'case-insensitive');
+  // Bedrock: region/scope prefix + anthropic. + -vN:M suffix
+  assert.equal(normalizeModel('us.anthropic.claude-sonnet-4-5-20250929-v1:0'), 'claude-sonnet-4-5');
+  assert.equal(normalizeModel('eu.anthropic.claude-haiku-4-5-20251001-v1:0'), 'claude-haiku-4-5');
+  assert.equal(normalizeModel('apac.anthropic.claude-sonnet-4-20250514-v1:0'), 'claude-sonnet-4');
+  assert.equal(normalizeModel('global.anthropic.claude-opus-4-6-v1:0'), 'claude-opus-4-6');
+  assert.equal(normalizeModel('anthropic.claude-opus-4-1-20250805-v2:0'), 'claude-opus-4-1');
+  assert.equal(normalizeModel('anthropic.claude-3-5-haiku-20241022-v1:0'), 'claude-3-5-haiku', 'unknown key stays unknown, no guess');
+  // Vertex: model@date
+  assert.equal(normalizeModel('claude-sonnet-4-5@20250929'), 'claude-sonnet-4-5');
+  assert.equal(normalizeModel('claude-opus-4-1@20250805'), 'claude-opus-4-1');
+  // synthetic: untouched, still not a pricing key
+  assert.equal(normalizeModel('<synthetic>'), '<synthetic>');
+  assert.equal(normalizeModel(''), '');
+  assert.equal(isSyntheticModel('<synthetic>'), true);
+  assert.equal(isSyntheticModel('<anything-else>'), true);
+  assert.equal(isSyntheticModel('claude-opus-5'), false);
+  assert.equal(isSyntheticModel(''), false);
+});
+
+test('pricing: zero usage costs $0 for any model; unknown model with tokens is null', () => {
+  const zero = toUsage({ input_tokens: 0, output_tokens: 0 });
+  assert.equal(isZeroUsage(zero), true);
+  assert.equal(isZeroUsage(toUsage({ cache_read_input_tokens: 1 })), false);
+  assert.equal(costFor('<synthetic>', zero), 0, 'synthetic + zero usage → $0');
+  assert.equal(costFor('claude-future-9', zero), 0, 'unknown model + zero usage → $0');
+  assert.equal(costFor('claude-opus-5', zero), 0);
+  assert.equal(costFor('<synthetic>', toUsage({ output_tokens: 5 })), null, 'synthetic with tokens: never priced');
+  assert.equal(costFor('claude-future-9', toUsage({ input_tokens: 10 })), null, 'unknown model with tokens: never priced');
+  close(costFor('us.anthropic.claude-sonnet-4-5-20250929-v1:0', toUsage({ input_tokens: 1000, output_tokens: 100 })) ?? -1, (1000 * 3 + 100 * 15) / 1e6, 'Bedrock id priced as claude-sonnet-4-5');
+  close(costFor('claude-haiku-4-5@20251001', toUsage({ input_tokens: 1000 })) ?? -1, 0.001, 'Vertex id priced as claude-haiku-4-5');
+});
+
+test('pricing: cache-aware costFor', () => {
   const u = toUsage({ input_tokens: 1000, cache_creation_input_tokens: 20000, cache_read_input_tokens: 0, output_tokens: 40, cache_creation: { ephemeral_5m_input_tokens: 20000, ephemeral_1h_input_tokens: 0 } });
   close(costFor('claude-opus-5', u) ?? -1, 0.131, 'opus 5 with 5m writes');
   const u1h = toUsage({ input_tokens: 0, cache_creation_input_tokens: 1000, cache_read_input_tokens: 0, output_tokens: 0, cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 1000 } });
@@ -44,18 +81,29 @@ test('parseSession: dedupe, subagents, skills, tools, cost', () => {
   assert.ok(ref);
   const s = parseSession(ref, { cacheBreakThreshold: 15000 });
 
-  assert.equal(s.usage.calls, 7, 'streamed duplicate collapsed');
+  assert.equal(s.usage.calls, 7, 'streamed duplicate collapsed, <synthetic> zero-usage line not counted');
   assert.equal(s.usage.usage.input, 6010);
   assert.equal(s.usage.usage.cacheWrite5m, 20500);
   assert.equal(s.usage.usage.cacheRead, 45100);
   assert.equal(s.usage.usage.output, 760);
   assert.equal(s.usage.usage.thinking, 15);
-  assert.equal(s.usage.usd, null, 'unknown model poisons the total');
-  assert.deepEqual(s.unknownModels, ['claude-future-9']);
+  // one unknown-priced call → the total is the known sum, flagged partial (never a bare ?)
+  close(s.usage.usd, 0.159125 + 0.006 + 0.00506, 'known part of the total');
+  assert.equal(s.usage.usdPartial, true);
+  assert.deepEqual(s.usage.unknownModels, ['claude-future-9']);
+  assert.deepEqual(s.unknownModels, ['claude-future-9'], '<synthetic> never listed as unknown');
+  assert.equal(s.main.usdPartial, true, 'the unknown call is in the main transcript');
+  assert.equal(s.subagents.usdPartial, false);
+  assert.deepEqual(s.subagents.unknownModels, []);
 
-  close(s.byModel['claude-opus-5'].usd ?? -1, 0.159125, 'opus usd');
-  close(s.byModel['claude-sonnet-5'].usd ?? -1, 0.006, 'sonnet usd');
-  close(s.byModel['claude-haiku-4-5'].usd ?? -1, 0.00506, 'haiku usd');
+  assert.ok(!('<synthetic>' in s.byModel), '<synthetic> with zero usage is not a model row');
+  close(s.byModel['claude-opus-5'].usd, 0.159125, 'opus usd');
+  assert.equal(s.byModel['claude-opus-5'].usdPartial, false);
+  close(s.byModel['claude-sonnet-5'].usd, 0.006, 'sonnet usd');
+  close(s.byModel['claude-haiku-4-5'].usd, 0.00506, 'haiku usd');
+  assert.equal(s.byModel['claude-future-9'].usd, 0, 'nothing known for the unknown model');
+  assert.equal(s.byModel['claude-future-9'].usdPartial, true);
+  assert.equal(s.agents[0].usdPartial, false);
 
   assert.equal(s.main.calls, 5);
   assert.equal(s.subagents.calls, 2);
@@ -94,11 +142,12 @@ test('readIncremental folds streamed growth by delta and resumes from offset', (
   const { mainPath } = writeFixture(root);
   const st = newIncrementalState();
   readIncremental(mainPath, st);
-  assert.equal(st.calls, 5);
+  assert.equal(st.calls, 5, '<synthetic> zero-usage line is not a call');
   assert.equal(st.usage.output, 410);
   assert.equal(st.usage.input, 3010);
-  assert.equal(st.usdKnown, false);
-  assert.equal(st.model, 'claude-future-9');
+  assert.equal(st.usdUnknown, 1, 'only claude-future-9 stays unpriced');
+  close(st.usd, 0.159125 + 0.006, 'known part keeps accumulating');
+  assert.equal(st.model, 'claude-future-9', '<synthetic> never becomes the displayed model');
   const offset = st.offset;
   readIncremental(mainPath, st);
   assert.equal(st.offset, offset, 'nothing new → no change');
