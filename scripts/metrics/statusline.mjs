@@ -11,7 +11,7 @@
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
-import { fmtPct, fmtTokens, fmtUsd, gauge } from '../lib/format.mjs';
+import { fmtPct, fmtTokens, fmtUsdPartial, gauge } from '../lib/format.mjs';
 import { ensureDir, nxyUserDir } from '../lib/paths.mjs';
 import { totalInput } from '../lib/pricing.mjs';
 import { newIncrementalState, readIncremental } from '../lib/transcripts.mjs';
@@ -61,9 +61,9 @@ function main() {
   const states = [cache.main, ...Object.values(cache.agents)];
   const tokensIn = states.reduce((n, s) => n + totalInput(s.usage), 0);
   const tokensOut = states.reduce((n, s) => n + s.usage.output, 0);
-  const usdKnown = states.every((s) => s.usdKnown);
+  const usdPartial = states.some((s) => s.usdUnknown > 0);
   const haveData = states.some((s) => s.calls > 0);
-  const usd = haveData && usdKnown ? states.reduce((n, s) => n + s.usd, 0) : null;
+  const usd = haveData ? states.reduce((n, s) => n + s.usd, 0) : null;
 
   // --- segments ---------------------------------------------------------------------------
   const model = input.model?.display_name || input.model?.id || cache.main.model || '?';
@@ -71,7 +71,7 @@ function main() {
   const ctxPct = input.context_window?.used_percentage;
   const ctx = typeof ctxPct === 'number' ? `ctx ${gauge(ctxPct)} ${Math.round(ctxPct)}%` : 'ctx ?%';
   const tokens = haveData ? `${fmtTokens(tokensIn)}→${fmtTokens(tokensOut)}${agentCount ? ` (+${agentCount} agent${agentCount > 1 ? 's' : ''})` : ''}` : 'no calls yet';
-  const cost = fmtUsd(usd) + (cfg.metrics.subscription && usd !== null ? '~' : ''); // "~" = USD-equivalent under a subscription
+  const cost = fmtUsdPartial(usd, usdPartial) + (cfg.metrics.subscription && usd !== null ? '~' : ''); // "~" = USD-equivalent under a subscription
   const hitRatio = input.prompt_cache?.hit_ratio;
   const cacheSeg = typeof hitRatio === 'number' ? `cache ${fmtPct(hitRatio * 100)}` : null;
   const rl = input.rate_limits || {};

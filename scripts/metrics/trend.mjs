@@ -11,7 +11,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsd, parseArgs, parseSince, table } from '../lib/format.mjs';
+import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsdPartial, parseArgs, parseSince, table } from '../lib/format.mjs';
 import { readJsonl } from '../lib/jsonl.mjs';
 import { nxyProjectDir } from '../lib/paths.mjs';
 import { listSessions, parseSession } from '../lib/transcripts.mjs';
@@ -62,7 +62,8 @@ for (const ref of refs) {
     output: s.usage.usage.output,
     totalTokens: s.usage.totalInput + s.usage.usage.output,
     usd: s.usage.usd,
-    usdKnown: s.usage.usd !== null,
+    usdPartial: s.usage.usdPartial,
+    unknownModels: s.usage.unknownModels,
     agentTokens: s.subagents.totalInput + s.subagents.usage.output,
     agents: s.agents.length,
     bashLines: s.tools.bash.resultLines,
@@ -76,11 +77,20 @@ for (const ref of refs) {
 }
 sessions.sort((a, b) => a.ts - b.ts);
 
+/** Suma USD de varias filas: la parte conocida más el aviso de que algo quedó sin tarifa. */
+function sumUsd(rows) {
+  const unknown = new Set();
+  for (const r of rows) for (const m of r.unknownModels || []) unknown.add(m);
+  return { usd: rows.reduce((n, r) => n + (r.usd || 0), 0), usdPartial: rows.some((r) => r.usdPartial), unknownModels: [...unknown] };
+}
+const usdCol = (label) => ({ key: 'usd', label, align: /** @type {const} */ ('right'), fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) });
+const unknownNote = (t) => (t.usdPartial ? `\n(no pricing for: ${t.unknownModels.join(', ')} — USD shown as $…+? where affected)` : '');
+
 if (by === 'model') {
   const m = new Map();
   for (const sess of sessions) {
     for (const [model, b] of Object.entries(sess.byModel)) {
-      const g = m.get(model) || { model, sessions: new Set(), calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, thinking: 0, usd: 0, usdKnown: true };
+      const g = m.get(model) || { model, sessions: new Set(), calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, thinking: 0, usd: 0, usdPartial: false, unknownModels: new Set() };
       g.sessions.add(sess.sessionId);
       g.calls += b.calls;
       g.input += b.usage.input;
@@ -88,18 +98,20 @@ if (by === 'model') {
       g.cacheR += b.usage.cacheRead;
       g.output += b.usage.output;
       g.thinking += b.usage.thinking;
-      if (b.usd === null) g.usdKnown = false;
-      else g.usd += b.usd;
+      g.usd += b.usd;
+      if (b.usdPartial) g.usdPartial = true;
+      for (const u of b.unknownModels) g.unknownModels.add(u);
       m.set(model, g);
     }
   }
   const rows = [...m.values()].map((g) => ({
-    ...g, sessions: g.sessions.size, total: g.input + g.cacheW + g.cacheR + g.output,
-    hit: g.input + g.cacheW + g.cacheR ? (g.cacheR / (g.input + g.cacheW + g.cacheR)) * 100 : null, usd: g.usdKnown ? g.usd : null,
-  })).sort((a, b) => (b.usd ?? 0) - (a.usd ?? 0));
+    ...g, sessions: g.sessions.size, unknownModels: [...g.unknownModels], total: g.input + g.cacheW + g.cacheR + g.output,
+    hit: g.input + g.cacheW + g.cacheR ? (g.cacheR / (g.input + g.cacheW + g.cacheR)) * 100 : null,
+  })).sort((a, b) => b.usd - a.usd || b.total - a.total);
   const all = rows.reduce((n, r) => n + r.total, 0);
+  const total = sumUsd(rows);
   if (opts.json) {
-    console.log(JSON.stringify({ since, by, models: rows }, null, 2));
+    console.log(JSON.stringify({ since, by, models: rows, total }, null, 2));
     process.exit(0);
   }
   const usdLabelM = cfg.metrics.subscription ? 'USD~' : 'USD';
@@ -116,10 +128,11 @@ if (by === 'model') {
     { key: 'output', label: 'output', align: 'right', fmt: fmtTokens },
     { key: 'thinking', label: 'thinking', align: 'right', fmt: fmtTokens },
     { key: 'hit', label: 'hit', align: 'right', fmt: (v) => fmtPct(v) },
-    { key: 'usd', label: usdLabelM, align: 'right', fmt: fmtUsd },
+    usdCol(usdLabelM),
   ])));
   console.log('');
-  console.log('legend: share = share of all tokens in the range · thinking is a subset of output');
+  console.log(`legend: share = share of all tokens in the range · thinking is a subset of output${unknownNote(total)}`);
+  console.log(`total: ${fmtTokens(all)} tokens · ${fmtUsdPartial(total.usd, total.usdPartial)}`);
   process.exit(0);
 }
 
@@ -137,26 +150,28 @@ for (const s of sessions) {
   const key = by === 'session' ? s.sessionId : periodKey(s.ts);
   const g = groups.get(key) || {
     period: key, ts: s.ts, sessions: 0, turns: 0, calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, totalTokens: 0,
-    usd: 0, usdKnown: true, agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
+    usd: 0, usdPartial: false, unknownModels: new Set(), agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
   };
   g.sessions++;
   for (const k of ['turns', 'calls', 'input', 'cacheW', 'cacheR', 'output', 'totalTokens', 'agentTokens', 'agents', 'bashLines', 'bashCalls', 'rtkCalls', 'wallMs']) g[k] += s[k];
-  if (s.usdKnown) g.usd += s.usd;
-  else g.usdKnown = false;
+  g.usd += s.usd;
+  if (s.usdPartial) g.usdPartial = true;
+  for (const u of s.unknownModels) g.unknownModels.add(u);
   if (s.nxy) g.nxy++;
   groups.set(key, g);
 }
 const rows = [...groups.values()].map((g) => ({
   ...g,
-  usd: g.usdKnown ? g.usd : null,
+  unknownModels: [...g.unknownModels],
   hit: g.input + g.cacheW + g.cacheR ? (g.cacheR / (g.input + g.cacheW + g.cacheR)) * 100 : null,
   agentPct: g.totalTokens ? (g.agentTokens / g.totalTokens) * 100 : null,
   perTurn: g.turns ? g.totalTokens / g.turns : null,
   nxyLabel: by === 'session' ? (g.nxy ? 'yes' : 'no') : `${g.nxy}/${g.sessions}`,
 }));
 
+const total = sumUsd(rows);
 if (opts.json) {
-  console.log(JSON.stringify({ since, by, sessions, periods: rows }, null, 2));
+  console.log(JSON.stringify({ since, by, sessions, periods: rows, total }, null, 2));
   process.exit(0);
 }
 
@@ -176,11 +191,10 @@ const cols = [
   { key: 'perTurn', label: 'tok/turn', align: 'right', fmt: fmtTokens },
   { key: 'bashLines', label: 'bash lines', align: 'right', fmt: fmtTokens },
   { key: 'rtkCalls', label: 'rtk', align: 'right' },
-  { key: 'usd', label: usdLabel, align: 'right', fmt: fmtUsd },
+  usdCol(usdLabel),
   { key: 'nxyLabel', label: 'nxy', align: 'right' },
 ];
 console.log(table(rows, /** @type {any} */ (cols)));
 console.log('');
-console.log(`legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · rtk = Bash calls filtered by nxy · nxy = sessions that ran with the plugin${cfg.metrics.subscription ? ' · USD~ = equivalent at API prices (subscription)' : ''}`);
-const totalUsd = rows.every((r) => r.usd !== null) ? rows.reduce((n, r) => n + (r.usd || 0), 0) : null;
-console.log(`total: ${fmtTokens(rows.reduce((n, r) => n + r.totalTokens, 0))} tokens · ${fmtUsd(totalUsd)} · ${fmtDuration(rows.reduce((n, r) => n + r.wallMs, 0))} wall`);
+console.log(`legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · rtk = Bash calls filtered by nxy · nxy = sessions that ran with the plugin${cfg.metrics.subscription ? ' · USD~ = equivalent at API prices (subscription)' : ''}${unknownNote(total)}`);
+console.log(`total: ${fmtTokens(rows.reduce((n, r) => n + r.totalTokens, 0))} tokens · ${fmtUsdPartial(total.usd, total.usdPartial)} · ${fmtDuration(rows.reduce((n, r) => n + r.wallMs, 0))} wall`);

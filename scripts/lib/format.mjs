@@ -17,6 +17,18 @@ export function fmtUsd(v) {
   return '$' + (v >= 1 ? v.toFixed(2) : v.toFixed(3));
 }
 
+/**
+ * Suma de USD que puede estar incompleta: `$164.20+?` cuando alguna llamada no tiene tarifa;
+ * `?` cuando no se conoce nada; igual que {@link fmtUsd} cuando la suma es completa.
+ * @param {number|null|undefined} v   parte conocida de la suma
+ * @param {boolean} [partial]         true si quedaron llamadas sin tarifar
+ */
+export function fmtUsdPartial(v, partial = false) {
+  if (!partial) return fmtUsd(v);
+  if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return '?';
+  return fmtUsd(v) + '+?';
+}
+
 export function fmtPct(v, digits = 0) {
   if (v === null || v === undefined || !Number.isFinite(v)) return '?';
   return v.toFixed(digits) + '%';

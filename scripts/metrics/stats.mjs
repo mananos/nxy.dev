@@ -10,7 +10,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsd, parseArgs, table } from '../lib/format.mjs';
+import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsdPartial, parseArgs, table } from '../lib/format.mjs';
 import { readJsonl } from '../lib/jsonl.mjs';
 import { nxyProjectDir } from '../lib/paths.mjs';
 import { parseSession, resolveSession } from '../lib/transcripts.mjs';
@@ -52,6 +52,8 @@ if (opts.json) {
 }
 
 const usdLabel = cfg.metrics.subscription ? 'USD-equiv' : 'USD';
+/** USD de un bucket ya cerrado: `$X`, `$X+?` si quedaron llamadas sin tarifa, `?` si ninguna la tiene. */
+const bucketUsd = (b) => fmtUsdPartial(b.usd, b.usdPartial);
 const out = [];
 out.push(`nxy stats — session ${s.sessionId.slice(0, 8)} · ${s.project}${s.gitBranch ? ` · ${s.gitBranch}` : ''}${s.version ? ` · Claude Code ${s.version}` : ''}`);
 out.push(`started ${fmtDate(s.firstTs)} · wall ${fmtDuration(s.wallMs)} · active ${fmtDuration(s.activeMs)} · turns ${s.turns} · API calls ${s.usage.calls} (main ${s.main.calls}, subagents ${s.subagents.calls} in ${s.agents.length} agents)`);
@@ -69,7 +71,7 @@ out.push(
       { k: '  of which thinking', t: u.thinking, m: s.main.usage.thinking, a: s.subagents.usage.thinking },
       { k: 'cache hit', t: fmtPct(s.usage.cacheHitPct), m: fmtPct(s.main.cacheHitPct), a: fmtPct(s.subagents.cacheHitPct), raw: true },
       { k: 'context peak', t: s.usage.contextPeak, m: s.main.contextPeak, a: s.subagents.contextPeak },
-      { k: usdLabel, t: fmtUsd(s.usage.usd), m: fmtUsd(s.main.usd), a: fmtUsd(s.subagents.usd), raw: true },
+      { k: usdLabel, t: bucketUsd(s.usage), m: bucketUsd(s.main), a: bucketUsd(s.subagents), raw: true },
     ],
     [
       { key: 'k', label: 'TOKENS' },
@@ -79,7 +81,7 @@ out.push(
     ],
   ),
 );
-if (s.unknownModels.length) out.push(`(no pricing for: ${s.unknownModels.join(', ')} — ${usdLabel} shown as ? where affected)`);
+if (s.unknownModels.length) out.push(`(no pricing for: ${s.unknownModels.join(', ')} — ${usdLabel} shown as $…+? where affected)`);
 out.push('');
 
 const bucketCols = (first) => [
@@ -90,12 +92,12 @@ const bucketCols = (first) => [
   { key: 'cacheR', label: 'cache-r', align: 'right', fmt: fmtTokens },
   { key: 'output', label: 'output', align: 'right', fmt: fmtTokens },
   { key: 'hit', label: 'hit', align: 'right', fmt: (v) => fmtPct(v) },
-  { key: 'usd', label: usdLabel, align: 'right', fmt: fmtUsd },
+  { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) },
 ];
 const bucketRow = (name, b, extra = {}) => ({
-  name, calls: b.calls, input: b.usage.input, cacheW: b.usage.cacheWrite5m + b.usage.cacheWrite1h, cacheR: b.usage.cacheRead, output: b.usage.output, hit: b.cacheHitPct, usd: b.usd, ...extra,
+  name, calls: b.calls, input: b.usage.input, cacheW: b.usage.cacheWrite5m + b.usage.cacheWrite1h, cacheR: b.usage.cacheRead, output: b.usage.output, hit: b.cacheHitPct, usd: b.usd, usdPartial: b.usdPartial, ...extra,
 });
-const byUsd = (a, b) => (b.usd ?? 0) - (a.usd ?? 0) || b.calls - a.calls;
+const byUsd = (a, b) => b.usd - a.usd || b.calls - a.calls;
 
 out.push('BY MODEL');
 out.push(table(Object.entries(s.byModel).map(([m, b]) => bucketRow(m, b)).sort(byUsd), bucketCols({ key: 'name', label: 'model' })));
@@ -109,10 +111,10 @@ if (Object.keys(s.byAgentType).length) {
   out.push('');
   out.push('AGENTS');
   out.push(table(s.agents.slice(0, 20).map((a) => ({
-    type: a.agentType, desc: clip(a.description, 40), model: a.model || '?', tokens: a.totalInput + a.usage.output, usd: a.usd, dur: a.durationMs,
+    type: a.agentType, desc: clip(a.description, 40), model: a.model || '?', tokens: a.totalInput + a.usage.output, usd: a.usd, usdPartial: a.usdPartial, dur: a.durationMs,
   })), [
     { key: 'type', label: 'type' }, { key: 'desc', label: 'description' }, { key: 'model', label: 'model' },
-    { key: 'tokens', label: 'tokens', align: 'right', fmt: fmtTokens }, { key: 'usd', label: usdLabel, align: 'right', fmt: fmtUsd }, { key: 'dur', label: 'time', align: 'right', fmt: fmtDuration },
+    { key: 'tokens', label: 'tokens', align: 'right', fmt: fmtTokens }, { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) }, { key: 'dur', label: 'time', align: 'right', fmt: fmtDuration },
   ]));
   out.push('');
 }
