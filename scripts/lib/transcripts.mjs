@@ -121,6 +121,9 @@ function humanText(e) {
   return text;
 }
 
+/** Tools that write a file the model names in the call (Bash edits via sed/heredoc are invisible here). */
+const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+
 function slashCommand(text) {
   const m = /<command-(?:name|message)>\/?([^<]+)<\/command-/.exec(text);
   return m ? m[1].trim() : null;
@@ -141,7 +144,7 @@ export function parseFile(path, opts = {}) {
   const toolUseToAgent = new Map();
   /** @type {Map<string, {agentType: string, description: string, model: string|null, toolUseId: string}>} */
   const agentLinks = new Map();
-  const tools = { calls: /** @type {Record<string, number>} */ ({}), filesRead: new Set(), bash: { calls: 0, resultLines: 0, resultChars: 0, interrupted: 0 } };
+  const tools = { calls: /** @type {Record<string, number>} */ ({}), filesRead: new Set(), filesEdited: new Set(), bash: { calls: 0, resultLines: 0, resultChars: 0, interrupted: 0 } };
   const prompts = [];
   let firstTs = null;
   let lastTs = null;
@@ -225,6 +228,10 @@ export function parseFile(path, opts = {}) {
       for (const b of msg.content) {
         if (b?.type !== 'tool_use') continue;
         tools.calls[b.name] = (tools.calls[b.name] || 0) + 1;
+        if (EDIT_TOOLS.has(b.name)) {
+          const p = b.input?.file_path || b.input?.notebook_path;
+          if (typeof p === 'string' && p) tools.filesEdited.add(p);
+        }
         if (b.name === 'Skill' && b.input?.skill) currentSkill = String(b.input.skill);
         if ((b.name === 'Agent' || b.name === 'Task') && b.input) {
           toolUseToAgent.set(b.id, { subagentType: String(b.input.subagent_type || 'general-purpose'), description: String(b.input.description || '') });
@@ -321,6 +328,9 @@ export function parseSession(ref, opts = {}) {
   const tools = {
     calls: { ...main.tools.calls },
     filesRead: new Set(main.tools.filesRead),
+    filesEdited: new Set(main.tools.filesEdited),
+    // What the main agent wrote itself — the number 0.2.x wants to push down (orchestrate, don't edit).
+    filesEditedMain: [...main.tools.filesEdited],
     bash: { ...main.tools.bash },
   };
 
@@ -361,6 +371,7 @@ export function parseSession(ref, opts = {}) {
       });
       for (const [k, v] of Object.entries(parsed.tools.calls)) tools.calls[k] = (tools.calls[k] || 0) + v;
       for (const p of parsed.tools.filesRead) tools.filesRead.add(p);
+      for (const p of parsed.tools.filesEdited) tools.filesEdited.add(p);
       tools.bash.calls += parsed.tools.bash.calls;
       tools.bash.resultLines += parsed.tools.bash.resultLines;
       tools.bash.resultChars += parsed.tools.bash.resultChars;
@@ -391,7 +402,7 @@ export function parseSession(ref, opts = {}) {
     byAgentType: mapFinish(byAgentType),
     bySkill: mapFinish(bySkill),
     agents: agents.sort((a, b) => b.totalInput + b.usage.output - (a.totalInput + a.usage.output)),
-    tools: { ...tools, filesRead: [...tools.filesRead] },
+    tools: { ...tools, filesRead: [...tools.filesRead], filesEdited: [...tools.filesEdited] },
     cacheBreaks,
     unknownModels: usage.unknownModels,
   };

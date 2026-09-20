@@ -11,10 +11,13 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsdPartial, parseArgs, parseSince, table } from '../lib/format.mjs';
+import { clip, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, parseSince, table } from '../lib/format.mjs';
 import { readJsonl } from '../lib/jsonl.mjs';
 import { nxyProjectDir } from '../lib/paths.mjs';
 import { listSessions, parseSession } from '../lib/transcripts.mjs';
+import { dailyFromGain, readLedgerRows, sessionSavings } from '../filter/ledger.mjs';
+import { engineInfo } from '../filter/engine.mjs';
+import { rtkGain } from '../filter/rtk.mjs';
 
 const { opts } = parseArgs(process.argv.slice(2));
 const cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
@@ -44,18 +47,36 @@ function filterRowsFor(sessionCwd, sessionId) {
   return filterCache.get(dir).filter((r) => r.session_id === sessionId);
 }
 
+// rtk's ledger for the whole range, attributed to sessions by time window + cwd. Without
+// node:sqlite only `rtk gain` daily totals exist; they fit the by-day view and nothing else.
+const ledgerRows = readLedgerRows({ sinceMs: since });
+/** @type {Map<string, {commands: number, input: number, output: number, saved: number}>|null} */
+let gainDaily = null;
+if (!ledgerRows && by === 'day') {
+  const info = engineInfo(cfg, cwd);
+  const gain = info.rtkPath ? rtkGain(info.rtkPath, here ? ['--all', '--project'] : ['--all'], cwd) : null;
+  gainDaily = gain ? dailyFromGain(gain) : null; // a failed `rtk gain` must show `?`, not zeros
+}
+/** rtk books its daily totals by UTC date; our periods are local dates. Best available join. */
+const utcDay = (ts) => new Date(ts).toISOString().slice(0, 10);
+
 const sessions = [];
 for (const ref of refs) {
   const s = parseSession(ref, { cacheBreakThreshold: cfg.metrics.cacheBreakThreshold });
   if (!s.usage.calls) continue;
   const rows = filterRowsFor(s.cwd, s.sessionId);
   const nxy = rows.length > 0 || Object.keys(s.bySkill).some((k) => k.startsWith('nxy:'));
+  const rtkCalls = rows.filter((r) => r.engine === 'rtk').length;
   sessions.push({
     sessionId: s.sessionId,
     project: s.project,
     ts: s.firstTs ?? ref.mtimeMs,
     turns: s.turns,
     calls: s.usage.calls,
+    mainCalls: s.main.calls,
+    mainInput: s.main.totalInput,
+    mainEdits: s.tools.filesEditedMain.length,
+    rtkSaved: ledgerRows && rtkCalls ? sessionSavings(ledgerRows, s).saved : ledgerRows ? 0 : null,
     input: s.usage.usage.input,
     cacheW: s.usage.usage.cacheWrite5m + s.usage.usage.cacheWrite1h,
     cacheR: s.usage.usage.cacheRead,
@@ -68,7 +89,7 @@ for (const ref of refs) {
     agents: s.agents.length,
     bashLines: s.tools.bash.resultLines,
     bashCalls: s.tools.bash.calls,
-    rtkCalls: rows.filter((r) => r.engine === 'rtk').length,
+    rtkCalls,
     wallMs: s.wallMs,
     nxy,
     firstPrompt: s.prompts[0]?.text || '',
@@ -149,11 +170,12 @@ const groups = new Map();
 for (const s of sessions) {
   const key = by === 'session' ? s.sessionId : periodKey(s.ts);
   const g = groups.get(key) || {
-    period: key, ts: s.ts, sessions: 0, turns: 0, calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, totalTokens: 0,
-    usd: 0, usdPartial: false, unknownModels: new Set(), agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
+    period: key, ts: s.ts, sessions: 0, turns: 0, calls: 0, mainCalls: 0, mainInput: 0, mainEdits: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, totalTokens: 0,
+    usd: 0, usdPartial: false, unknownModels: new Set(), agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, rtkSaved: /** @type {number|null} */ (ledgerRows ? 0 : null), wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
   };
   g.sessions++;
-  for (const k of ['turns', 'calls', 'input', 'cacheW', 'cacheR', 'output', 'totalTokens', 'agentTokens', 'agents', 'bashLines', 'bashCalls', 'rtkCalls', 'wallMs']) g[k] += s[k];
+  for (const k of ['turns', 'calls', 'mainCalls', 'mainInput', 'mainEdits', 'input', 'cacheW', 'cacheR', 'output', 'totalTokens', 'agentTokens', 'agents', 'bashLines', 'bashCalls', 'rtkCalls', 'wallMs']) g[k] += s[k];
+  if (g.rtkSaved !== null && s.rtkSaved !== null) g.rtkSaved += s.rtkSaved;
   g.usd += s.usd;
   if (s.usdPartial) g.usdPartial = true;
   for (const u of s.unknownModels) g.unknownModels.add(u);
@@ -166,6 +188,10 @@ const rows = [...groups.values()].map((g) => ({
   hit: g.input + g.cacheW + g.cacheR ? (g.cacheR / (g.input + g.cacheW + g.cacheR)) * 100 : null,
   agentPct: g.totalTokens ? (g.agentTokens / g.totalTokens) * 100 : null,
   perTurn: g.turns ? g.totalTokens / g.turns : null,
+  callsPerTurn: g.turns ? g.calls / g.turns : null,
+  ctxPerCall: g.mainCalls ? g.mainInput / g.mainCalls : null,
+  // by day without node:sqlite: rtk's own daily total (global or `-p`), not per session; keyed by UTC day
+  rtkSaved: g.rtkSaved !== null ? g.rtkSaved : gainDaily ? (gainDaily.get(utcDay(g.ts))?.saved ?? 0) : null,
   nxyLabel: by === 'session' ? (g.nxy ? 'yes' : 'no') : `${g.nxy}/${g.sessions}`,
 }));
 
@@ -189,12 +215,17 @@ const cols = [
   { key: 'hit', label: 'hit', align: 'right', fmt: (v) => fmtPct(v) },
   { key: 'agentPct', label: 'agents', align: 'right', fmt: (v) => fmtPct(v) },
   { key: 'perTurn', label: 'tok/turn', align: 'right', fmt: fmtTokens },
+  { key: 'callsPerTurn', label: 'calls/turn', align: 'right', fmt: fmtRatio },
+  { key: 'ctxPerCall', label: 'ctx/call', align: 'right', fmt: fmtTokens },
+  { key: 'mainEdits', label: 'main edits', align: 'right' },
   { key: 'bashLines', label: 'bash lines', align: 'right', fmt: fmtTokens },
   { key: 'rtkCalls', label: 'rtk', align: 'right' },
+  { key: 'rtkSaved', label: 'rtk saved', align: 'right', fmt: fmtTokens },
   usdCol(usdLabel),
   { key: 'nxyLabel', label: 'nxy', align: 'right' },
 ];
 console.log(table(rows, /** @type {any} */ (cols)));
 console.log('');
-console.log(`legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · rtk = Bash calls filtered by nxy · nxy = sessions that ran with the plugin${cfg.metrics.subscription ? ' · USD~ = equivalent at API prices (subscription)' : ''}${unknownNote(total)}`);
+const rtkSavedNote = ledgerRows ? 'rtk saved = tokens rtk cut from Bash output, from its own ledger' : gainDaily ? `rtk saved = rtk's daily total (${here ? 'this project' : 'all projects'}, from rtk gain, booked by UTC day; install Node ≥ 22.13 for per-session figures)` : 'rtk saved = ? (rtk ledger not readable)';
+console.log(`legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · calls/turn = API calls per prompt · ctx/call = average context carried by each main-agent call · main edits = files the main agent edited itself (Edit/Write) · rtk = Bash calls filtered by nxy · ${rtkSavedNote} · nxy = sessions that ran with the plugin${cfg.metrics.subscription ? ' · USD~ = equivalent at API prices (subscription)' : ''}${unknownNote(total)}`);
 console.log(`total: ${fmtTokens(rows.reduce((n, r) => n + r.totalTokens, 0))} tokens · ${fmtUsdPartial(total.usd, total.usdPartial)} · ${fmtDuration(rows.reduce((n, r) => n + r.wallMs, 0))} wall`);

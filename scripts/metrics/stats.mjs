@@ -10,10 +10,11 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtTokens, fmtUsdPartial, parseArgs, table } from '../lib/format.mjs';
+import { clip, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, table } from '../lib/format.mjs';
 import { readJsonl } from '../lib/jsonl.mjs';
 import { nxyProjectDir } from '../lib/paths.mjs';
 import { parseSession, resolveSession } from '../lib/transcripts.mjs';
+import { ledgerUnavailableReason, readLedgerRows, rtkHistoryDbPath, savedPct, sessionSavings } from '../filter/ledger.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
 const cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
@@ -45,9 +46,20 @@ if (!s.usage.calls && !opts.json) {
 const filterPath = join(nxyProjectDir(s.cwd || cwd), 'metrics', 'filter.jsonl');
 const filterRows = existsSync(filterPath) ? readJsonl(filterPath, (r) => r.session_id === s.sessionId) : [];
 const filter = summarizeFilter(filterRows);
+// rtk's ledger: what the raw commands printed vs what the model read. Only rtk knows the raw side.
+const ledgerRows = filter.byEngine.rtk ? readLedgerRows({ sinceMs: s.firstTs, untilMs: s.lastTs === null ? null : s.lastTs + 60_000 }) : null;
+const rtkSavings = ledgerRows ? sessionSavings(ledgerRows, s) : null;
+
+// The two numbers that drive cost: how much context each call carries and how many calls a turn takes.
+const shape = {
+  callsPerTurn: s.turns ? s.usage.calls / s.turns : null,
+  mainCallsPerTurn: s.turns ? s.main.calls / s.turns : null,
+  mainCtxAvg: s.main.calls ? s.main.totalInput / s.main.calls : null,
+  subagentSharePct: s.usage.totalInput + s.usage.usage.output ? ((s.subagents.totalInput + s.subagents.usage.output) / (s.usage.totalInput + s.usage.usage.output)) * 100 : null,
+};
 
 if (opts.json) {
-  console.log(JSON.stringify({ ...s, filter }, null, 2));
+  console.log(JSON.stringify({ ...s, shape, filter, rtkSavings }, null, 2));
   process.exit(0);
 }
 
@@ -57,6 +69,7 @@ const bucketUsd = (b) => fmtUsdPartial(b.usd, b.usdPartial);
 const out = [];
 out.push(`nxy stats — session ${s.sessionId.slice(0, 8)} · ${s.project}${s.gitBranch ? ` · ${s.gitBranch}` : ''}${s.version ? ` · Claude Code ${s.version}` : ''}`);
 out.push(`started ${fmtDate(s.firstTs)} · wall ${fmtDuration(s.wallMs)} · active ${fmtDuration(s.activeMs)} · turns ${s.turns} · API calls ${s.usage.calls} (main ${s.main.calls}, subagents ${s.subagents.calls} in ${s.agents.length} agents)`);
+out.push(`shape: ${fmtRatio(shape.callsPerTurn)} calls/turn (main ${fmtRatio(shape.mainCallsPerTurn)}) · main context avg ${fmtTokens(shape.mainCtxAvg)}/call · peak ${fmtTokens(s.main.contextPeak)} · subagents ${fmtPct(shape.subagentSharePct)} of tokens`);
 out.push('');
 
 const u = s.usage.usage;
@@ -127,13 +140,25 @@ if (Object.keys(s.bySkill).length) {
 
 const toolList = Object.entries(s.tools.calls).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ');
 out.push(`TOOLS: ${toolList || 'none'}`);
-out.push(`  files read (distinct): ${s.tools.filesRead.length} · Bash calls ${s.tools.bash.calls} → ${fmtTokens(s.tools.bash.resultLines)} lines / ${fmtTokens(s.tools.bash.resultChars)} chars back${s.tools.bash.interrupted ? ` · ${s.tools.bash.interrupted} interrupted` : ''}`);
+out.push(`  files read (distinct): ${s.tools.filesRead.length} · files edited: ${s.tools.filesEdited.length} (by main ${s.tools.filesEditedMain.length}) · Bash calls ${s.tools.bash.calls} → ${fmtTokens(s.tools.bash.resultLines)} lines / ${fmtTokens(s.tools.bash.resultChars)} chars back${s.tools.bash.interrupted ? ` · ${s.tools.bash.interrupted} interrupted` : ''}`);
 out.push('');
 
 out.push(`FILTER (nxy hook rows for this session): ${filter.rows}`);
 if (filter.rows) {
   out.push(`  engine: ${Object.entries(filter.byEngine).map(([k, v]) => `${k} ${v}`).join(' · ')} · Bash output seen by the model: ${fmtTokens(filter.filteredChars)} chars (~${fmtTokens(filter.estTokens)} tokens)`);
   if (filter.skipReasons.length) out.push(`  skip reasons: ${filter.skipReasons.map(([k, v]) => `${k} ${v}`).join(' · ')}`);
+  if (filter.byEngine.rtk) {
+    if (rtkSavings && rtkSavings.commands) {
+      out.push(`  rtk saved: ${fmtTokens(rtkSavings.saved)} tokens (${fmtPct(savedPct(rtkSavings))}) — ${rtkSavings.commands} filtered commands printed ${fmtTokens(rtkSavings.input)}, the model read ${fmtTokens(rtkSavings.output)} (rtk's own ledger)`);
+    } else if (rtkSavings) {
+      out.push('  rtk saved: no ledger rows for this session window (rtk tracking off, or another cwd)');
+    } else {
+      const why = ledgerUnavailableReason();
+      const cause = why === 'no-db' ? `no rtk ledger at ${rtkHistoryDbPath()} (rtk tracking off, RTK_DB_PATH wrong, or rtk installed on another OS)`
+        : why === 'no-sqlite' ? 'this Node has no node:sqlite (needs Node ≥ 22.13)' : 'rtk ledger not readable (locked?)';
+      out.push(`  rtk saved: n/a — ${cause}; rtk gain still has the global totals`);
+    }
+  }
   out.push(table(filter.byKind.slice(0, 12), [
     { key: 'kind', label: 'command kind' }, { key: 'rows', label: 'calls', align: 'right' }, { key: 'rtk', label: 'via rtk', align: 'right' },
     { key: 'chars', label: 'chars', align: 'right', fmt: fmtTokens }, { key: 'tokens', label: '~tokens', align: 'right', fmt: fmtTokens },

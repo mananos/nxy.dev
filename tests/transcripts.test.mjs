@@ -123,6 +123,10 @@ test('parseSession: dedupe, subagents, skills, tools, cost', () => {
   assert.equal(s.tools.calls.Agent, 1);
   assert.equal(s.tools.calls.Bash, 2);
   assert.deepEqual(s.tools.filesRead, ['/home/dev/code/my.app/src/app.js']);
+  assert.deepEqual(s.tools.filesEdited.sort(), ['/home/dev/code/my.app/src/app.js', '/home/dev/code/my.app/src/health.js', '/home/dev/code/my.app/tests/health.test.js'], 'distinct files, main + subagent');
+  assert.deepEqual(s.tools.filesEditedMain.sort(), ['/home/dev/code/my.app/src/app.js', '/home/dev/code/my.app/src/health.js'], 'two Edits on app.js count once');
+  assert.equal(s.tools.calls.Edit, 2);
+  assert.equal(s.tools.calls.Write, 2);
   assert.equal(s.tools.bash.calls, 2);
   assert.equal(s.tools.bash.resultLines, 5);
 

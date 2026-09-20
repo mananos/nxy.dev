@@ -29,7 +29,11 @@ test('hasSubstitution', () => {
 
 test('hasRedirect', () => {
   assert.equal(hasRedirect('ls > out.txt'), true);
-  assert.equal(hasRedirect('ls 2>/dev/null'), true);
+  assert.equal(hasRedirect('ls 2>/dev/null'), false, 'discarding stderr writes no file');
+  assert.equal(hasRedirect('ls 2> /dev/null; ls b &>/dev/null'), false);
+  assert.equal(hasRedirect('ls >/dev/null && echo done'), false);
+  assert.equal(hasRedirect('ls 2>/dev/null > out.txt'), true, 'a real target after the discard still counts');
+  assert.equal(hasRedirect('ls > /dev/nullx'), true);
   assert.equal(hasRedirect('mvn test 2>&1'), false, '2>&1 keeps everything in the tool output');
   assert.equal(hasRedirect('mvn test 2>&1 | tail -n 150'), false);
   assert.equal(hasRedirect('ls >> log'), true);
