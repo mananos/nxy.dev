@@ -84,7 +84,8 @@ for (const by of ['day', 'week', 'session']) {
     const text = run('trend.mjs', ['--by', by, '--since', '30d', '--cwd', cwd]);
     assert.match(text, /\$0\.170\+\?/, 'row shows partial sum');
     assert.match(text, /^total: .* \$0\.170\+\? · /m, 'footer shows partial sum');
-    assert.doesNotMatch(text, / \? /, 'no bare ? for USD');
+    // the USD cell sits right before the `nxy` cell; `rtk saved` may legitimately be `?` without rtk's ledger
+    assert.doesNotMatch(text, /\s\?\s+(yes|no|\d+\/\d+)\s*$/m, 'no bare ? for USD');
   });
 }
 
