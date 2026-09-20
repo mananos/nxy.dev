@@ -62,6 +62,57 @@ export function gauge(pct, cells = 8) {
 }
 
 /**
+ * ANSI styles for the statusline (Claude Code renders them). A style is a space-separated list
+ * of tokens: named colours (`red`, `cyan`, `muted`…), `bold`/`dim`, `#rrggbb` (truecolor) or a
+ * bare 0–255 palette index. Unknown tokens are ignored; `text`/empty → unchanged.
+ */
+const NAMED = {
+  bold: '1', dim: '2',
+  black: '30', red: '31', green: '32', yellow: '33', blue: '34', magenta: '35', cyan: '36', white: '37',
+  muted: '38;5;245', gray: '38;5;245', grey: '38;5;245',
+};
+function ansiCodes(style) {
+  const codes = [];
+  for (let tok of String(style || '').trim().split(/\s+/)) {
+    if (!tok || tok === 'text') continue;
+    // `bg:<colour>` paints the background instead (`bg:80`, `bg:#1e1e2e`, `bg:red`)
+    const bg = tok.startsWith('bg:');
+    if (bg) tok = tok.slice(3);
+    if (Object.hasOwn(NAMED, tok) && typeof NAMED[tok] === 'string') {
+      const code = NAMED[tok];
+      if (bg && /^3\d$/.test(code)) codes.push(`4${code[1]}`);
+      else if (bg && code.startsWith('38;')) codes.push(`48;${code.slice(3)}`);
+      else if (!bg) codes.push(code);
+    } else if (/^#[0-9a-f]{6}$/i.test(tok)) codes.push(`${bg ? 48 : 38};2;${parseInt(tok.slice(1, 3), 16)};${parseInt(tok.slice(3, 5), 16)};${parseInt(tok.slice(5, 7), 16)}`);
+    else if (/^\d{1,3}$/.test(tok) && Number(tok) <= 255) codes.push(`${bg ? 48 : 38};5;${Number(tok)}`);
+  }
+  return [...new Set(codes)];
+}
+/**
+ * @param {string} text
+ * @param {string|null|undefined} style   see above
+ * @param {boolean} [enabled]             false → plain text (config `color: false`)
+ */
+export function colorize(text, style, enabled = true) {
+  if (!enabled || !style) return text;
+  const codes = ansiCodes(style);
+  return codes.length ? `\x1b[${codes.join(';')}m${text}\x1b[0m` : text;
+}
+
+/**
+ * Severity of a value against two thresholds: `null` below warn, `'warn'` from warn, `'crit'`
+ * from crit. Unknown values never get a severity.
+ * @param {number|null|undefined} v
+ * @returns {'warn'|'crit'|null}
+ */
+export function severity(v, warn, crit) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return null;
+  if (v >= crit) return 'crit';
+  if (v >= warn) return 'warn';
+  return null;
+}
+
+/**
  * Plain-text table. `columns`: [{key, label, align?: 'left'|'right', fmt?}]
  * @param {Array<Record<string, any>>} rows
  * @param {Array<{key: string, label: string, align?: 'left'|'right', fmt?: (v: any, row: any) => string}>} columns

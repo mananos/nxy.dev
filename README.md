@@ -10,7 +10,7 @@ Se construye por fases, midiendo cada una antes de sumar la siguiente:
 
 | Fase | Pilar principal | Estado |
 | ---- | --------------- | ------ |
-| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | actual · **v0.1.1** |
+| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | actual · **v0.1.2** |
 | 2 | **Velocidad**: no explorar a ciegas (índice determinístico del repo, scouts baratos, modelo y esfuerzo por fase) | próxima |
 | 3 | **Calidad**: flujo por fases con contexto limpio, review escalado por riesgo, memoria de decisiones | después |
 
@@ -52,7 +52,7 @@ Queda instalado para tu usuario en todos los proyectos; `/plugin` lo lista y per
 
 Ver qué agrega al contexto antes de instalar: `claude plugin details nxy@nxy-dev` (hoy: ~180 tokens always-on según la estimación de Claude Code).
 
-Statusline (opcional; Claude Code sólo lo lee desde `~/.claude/settings.json`, por eso es un paso manual): `/nxy:statusline` imprime el snippet; `/nxy:statusline --apply` lo mergea con backup.
+Statusline (opcional, recomendado): `/nxy:statusline --apply` la instala (hace backup de `~/.claude/settings.json`; Claude Code sólo la lee de ahí, por eso es un paso aparte). Reiniciá Claude Code y listo: se actualiza sola con cada versión nueva del plugin. Qué muestra y para qué sirve: [La statusline](#la-statusline).
 
 ## Comandos
 
@@ -61,9 +61,38 @@ Statusline (opcional; Claude Code sólo lo lee desde `~/.claude/settings.json`, 
 | `/nxy:stats`      | La sesión actual (`last` para la anterior, o un id): tokens (uncached / cache write / cache read / output / thinking), cache hit, pico de contexto, USD; por modelo, por tipo de subagente, agente por agente, por skill; herramientas usadas, archivos leídos, líneas devueltas por Bash; filas del filtro; cache breaks. `--session <id>`, `--all`, `--json`. |
 | `/nxy:trend`      | Evolución por día / semana / sesión, **de todos tus proyectos**: tokens, uncached, cache-r, output, hit %, % en subagentes, tokens por turno, líneas de Bash, comandos filtrados, USD, y si la sesión corrió con nxy. `--since 30d`, `--by week`, `--by model` (una fila por modelo: cuánto va a Opus/Sonnet/Haiku), `--here` (sólo este proyecto). |
 | `/nxy:filter`     | `status` (motor, versión de rtk, rg, conflicto de hook, comandos de instalación), `on`, `off` (por proyecto).          |
-| `/nxy:statusline` | Snippet para el statusline: `Opus 5 · high ⟡ ctx ▰▰▰▱▱▱▱▱ 41% ⟡ 44M→241k (+4 agents) ⟡ $34.74~ ⟡ cache 98% ⟡ 5h 62% · 7d 31%`. |
+| `/nxy:statusline` | Instala la [statusline](#la-statusline) (`--apply`) o imprime el snippet para pegarlo a mano. |
 
 Salida exacta, sin que el modelo la retipee y sin gastar tokens: dentro de Claude Code escribí `! node "<ruta-al-plugin>/scripts/metrics/stats.mjs"` (el prefijo `!` ejecuta el comando y muestra su salida tal cual). Los scripts también corren fuera de Claude: `node scripts/metrics/stats.mjs --all`, `node scripts/metrics/trend.mjs --by week --since 90d --json`.
+
+## La statusline
+
+Una línea, siempre visible, que responde tres preguntas: **¿cuánto me está costando lo que Claude hace ahora?**, **¿cuándo conviene cortar y empezar de nuevo?** y **¿qué pasa si dejo la sesión un rato?**
+
+```
+◆ nxy ⟡ my.app main ⟡ Opus 5 · high ⟡ ctx ▰▰▰▱▱▱▱▱ 41% · 82k ⟡ turno $0.42~ ⟡ sesión $34.74~ · 44M→241k · +4 agents ⟡ cache 98% · 52m ⟡ 5h 62% · 7d 31%
+```
+
+| Segmento | Qué es | Qué hacer con eso |
+| --- | --- | --- |
+| `my.app main` | Carpeta y branch en la que Claude está trabajando. | Confirmar que estás donde creés, sobre todo con varias sesiones abiertas. |
+| `Opus 5 · high` | Modelo y nivel de esfuerzo de la sesión. | Si estás en una tarea chica con Opus/high, cambiarlo antes de seguir. |
+| `ctx ▰▰▰▱▱▱▱▱ 41% · 82k` | Cuánto contexto lleva la conversación: barra, porcentaje y **tokens reales**. Cada llamada a la API reenvía todo eso, así que a más tokens, más caro cada paso. Se pone **naranja a partir de 100k** y **rojo a partir de 200k** (ahí los modelos de 1M duplican el precio). | En naranja: terminar lo que estás haciendo y no arrancar nada grande. En rojo: guardar un resumen y `/clear`. El porcentaje engaña (41 % de 200k es poco; 41 % de 1M son 410k): mirá los tokens. |
+| `turno $0.42~` | Lo que va gastando **el turno actual**: desde tu último mensaje, incluyendo los subagentes que Claude lanzó. Naranja desde $1, rojo desde $3. | Es la señal más importante. Un turno de $3 no es "Claude trabajó mucho": es que cada llamada arrastra demasiado contexto. Cortar y seguir en una sesión nueva sale más barato que insistir. |
+| `sesión $34.74~ · 44M→241k · +4 agents` | El odómetro: costo total de la sesión, tokens de entrada → salida, y cuántos subagentes corrieron. | Comparar con lo que hiciste. Sin umbral: una sesión larga y sana puede valer $30. El detalle está en `/nxy:stats`. |
+| `cache 98% · 52m` | Qué tan bien está funcionando la prompt cache (98 % de lo que se envía ya estaba cacheado, y se paga a un décimo) y **cuánto le queda de vida** si no hacés nada. | Si el porcentaje baja mucho de golpe, algo cambió en el contexto (un archivo enorme, un `/compact`). Los minutos te dicen cuánto podés ausentarte sin costo. |
+| `❄386k $3.86~` | La cache **se enfrió**: dejaste pasar el tiempo de vida (5 min o 1 h según tu cuenta). El próximo mensaje vuelve a cachear 386k tokens y eso cuesta $3.86 antes de que Claude haga nada. | Si volvés después de una pausa larga y ves esto, es el momento de preguntarte si seguís en esta sesión o arrancás una nueva con un resumen: cuesta lo mismo y arranca liviana. |
+| `5h 62% · 7d 31%` | Cuánto llevás consumido de las ventanas de tu suscripción. | Planificar: si vas al 90 % de la ventana de 5 h, lo pesado puede esperar. |
+
+**Cortar y seguir (handoff).** Cuando `turno` o `ctx` están en rojo, la sesión ya no se arregla: cada mensaje reenvía todo el contexto acumulado y el precio por paso sólo sube. Lo barato es cortar bien: (1) pedile a Claude un resumen de ~20 líneas — qué se hizo, qué falta, archivos clave, decisiones tomadas; (2) `/clear`; (3) pegá el resumen como primer mensaje. La sesión nueva arranca con unos miles de tokens en vez de cientos de miles y cada turno vuelve a costar centavos. Hoy es manual; nxy 0.3.x lo automatiza (memoria + handoff vivo). Turno = velocidad a la que gastás; sesión = odómetro. El que te dice "cortá" es el primero.
+
+El `~` después de un monto significa *equivalente en USD*: pagás por suscripción, no por API, pero es lo que ese uso costaría a precio de API (y lo que efectivamente pagás si usás API key).
+
+**Por qué los umbrales son en tokens y no en porcentaje.** Lo que encarece cada paso es la cantidad de tokens que se reenvían, no la fracción de la ventana. Con un modelo de 1M de contexto, 20 % son 200k tokens y ya estás pagando doble; con una ventana de 200k, 20 % son 40k y está todo bien. Por eso `ctx` muestra el número y colorea por número.
+
+**Apariencia.** Tres presets (`vivid` por defecto: cada dato con su color; `classic`: sobrio, etiquetas apagadas; `powerline`: bloques con fondo) y dos layouts (`line` o `two-line`, con la barra de contexto al doble de ancho). Se cambian en la [configuración](#configuración) y se ven al instante, sin reiniciar. Cualquier color se puede ajustar por rol.
+
+**Cómo se mantiene actualizada.** `--apply` no apunta a una versión del plugin sino a un pequeño lanzador en `~/.nxy/statusline.mjs` que en cada arranque usa la versión de nxy que Claude Code tiene instalada. Actualizás el plugin y la statusline se actualiza sola. Para desarrollo: `node scripts/metrics/statusline-setup.mjs --apply` desde un clon la apunta a ese clon; `NXY_STATUSLINE=<ruta>` fuerza un script.
 
 ## Cómo funciona el filtro
 
@@ -86,9 +115,11 @@ Defaults en `nxy.config.json`; overrides en `~/.nxy/config.json` y `<proyecto>/.
 {
   "modules": { "metrics": true, "filter": true },
   "filter": { "engine": "auto", "excludeCommands": [], "onlyCommands": [], "autoAllowWhenOriginalAllowed": true },
-  "metrics": { "projectsDir": null, "subscription": true, "statusline": { "cacheTtlMs": 2000 }, "cacheBreakThreshold": 100000 }
+  "metrics": { "projectsDir": null, "subscription": true, "statusline": { "cacheTtlMs": 2000, "color": true, "preset": "vivid", "layout": "line", "brand": "◆ nxy", "ctxWarnTokens": 100000, "ctxCritTokens": 200000, "turnWarnUsd": 1, "turnCritUsd": 3, "promptCacheTtlMin": 5, "theme": {} }, "cacheBreakThreshold": 100000 }
 }
 ```
+
+`statusline`: `preset` (`classic` | `vivid` | `powerline`), `layout` (`line` | `two-line`), `separator` (reemplaza el `⟡`), `color: false` (sin ANSI), `brand` (texto inicial; `""` lo oculta), `ctxWarnTokens`/`ctxCritTokens` (naranja/rojo del contexto, en tokens), `turnWarnUsd`/`turnCritUsd` (naranja/rojo del turno, en USD), `promptCacheTtlMin` (sólo para versiones de Claude Code anteriores a 2.1.251, que no reportan el estado de la cache). `theme` sobreescribe cualquier rol del preset — `brand`, `separator`, `path`, `branch`, `model`, `effort`, `where`, `ctx`, `turn`, `session`, `cache`, `limits`, `label`, `value`, `gauge`, `gaugeEmpty`, `warn`, `crit` — con tokens separados por espacio: nombres (`red`, `cyan`, `muted`, `bold`, `dim`…), índice 0–255 de la paleta, `#rrggbb` o `bg:<color>` para el fondo. Ej.: `"theme": { "brand": "bold magenta", "gauge": "#ff79c6" }`. Los cambios se ven en el próximo refresco, sin reiniciar.
 
 ## Qué NO filtra
 
@@ -110,10 +141,18 @@ Todo es JavaScript ESM con JSDoc; sin build. CI corre tests y typecheck en Ubunt
 
 ## Roadmap
 
-- **Fase 2 — velocidad, no explorar a ciegas**: índice determinístico del repo (símbolos, endpoints, mapa fuente→test), scouts Haiku sólo para lo que el índice no responde, modelo y `effort` por fase.
-- **Fase 3 — calidad, flujo de trabajo**: brief → research → plan → apply → review con archivos en disco y subagente por fase; review escalado por riesgo determinístico; memoria de decisiones y convenciones.
+Una versión por paso: cada una se instala y se prueba en repos reales antes de la siguiente, y cada una deja algo usable.
 
-La medición de fase 1 es lo que permite saber si las fases siguientes aportan o no.
+| Versión | Qué vas a poder hacer |
+| --- | --- |
+| **0.1.2** (actual) | Statusline completa: dónde estás, cuánto cuesta el turno y la sesión, cuándo cortar, qué pasa si la cache se enfría. |
+| 0.1.3 | `stats`/`trend` con llamadas por turno, contexto pico, archivos que editó el principal, % en subagentes, y el ahorro real de RTK (antes/después). Más comandos filtrados (`rtk pipe` para redirecciones, heredocs y comandos desconocidos). |
+| 0.2.x | **Velocidad**: un scout barato localiza (`/nxy:locate`) para que el principal no lea 40 archivos; implementer + freno de escritura para que el principal orqueste en vez de editar. Config compartible por repo (`.nxy/`). |
+| 0.3.x | **Memoria**: sobrevive al `/clear`, handoff vivo para retomar sin reconstruir el plan, contexto obligatorio para cada subagente. |
+| 0.4.x | **Calidad**: planner con checkpoint, tester, reviewer con lentes, tiers por tamaño, protección contra cerrar con estado pendiente. |
+| 0.5.0 | CLI `nxy` (`doctor`, `stats`, `trend`, `config`, `mem`) para operarlo sin abrir Claude Code. |
+
+La medición de fase 1 es lo que permite saber si cada paso aporta o no.
 
 ## Créditos
 

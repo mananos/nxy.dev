@@ -7,7 +7,7 @@ import { PLUGIN_ROOT, nxyProjectDir, nxyUserDir } from './paths.mjs';
  * @typedef {object} NxyConfig
  * @property {{metrics: boolean, filter: boolean}} modules
  * @property {{engine: 'auto'|'rtk'|'off', excludeCommands: string[], onlyCommands: string[], autoAllowWhenOriginalAllowed: boolean}} filter
- * @property {{projectsDir: string|null, subscription: boolean, statusline: {cacheTtlMs: number}, cacheBreakThreshold: number}} metrics
+ * @property {{projectsDir: string|null, subscription: boolean, statusline: {cacheTtlMs: number, color: boolean, preset: string, layout: string, separator?: string, brand: string, ctxWarnTokens: number, ctxCritTokens: number, turnWarnUsd: number, turnCritUsd: number, promptCacheTtlMin: number, theme: Record<string, string>}, cacheBreakThreshold: number}} metrics
  */
 
 function isPlainObject(v) {

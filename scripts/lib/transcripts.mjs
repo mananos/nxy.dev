@@ -402,14 +402,41 @@ export function parseSession(ref, opts = {}) {
 // ---------------------------------------------------------------------------
 
 /**
+ * @typedef {object} IncrementalState
+ * @property {number} offset          bytes already folded
+ * @property {string} partial         trailing incomplete line
+ * @property {Record<string, number>} seen  requestId → largest output seen (bounded)
+ * @property {ReturnType<typeof emptyUsage>} usage
+ * @property {number} usd             parte con tarifa
+ * @property {number} usdUnknown      llamadas sin tarifa (→ `$X+?`)
+ * @property {string|null} model
+ * @property {number} calls
+ * @property {number} turns           prompts humanos vistos (sólo transcript principal)
+ * @property {number} turnUsd         USD del turno actual (desde el último prompt humano)
+ * @property {number} turnUsdUnknown  llamadas sin tarifa en el turno actual
+ * @property {number|null} lastTs     timestamp (ms) de la última llamada API vista
+ * @property {number|null} turnStartTs timestamp (ms) del prompt que abrió el turno actual
+ */
+
+/**
  * Reads only the bytes appended since `state.offset`, folds complete assistant lines into
  * `state.usage`, and keeps a bounded `seen` map so a streamed message that grows is counted
- * once (by output delta), not twice.
+ * once (by output delta), not twice. Human prompts (main transcript only) start a new turn.
+ *
+ * With `opts.turnSinceTs` (subagent transcripts) the turn is the parent's: `turnUsd` restarts
+ * whenever the parent's turn changes and only calls at or after that timestamp count, so a
+ * rebuilt cache never dumps an agent's whole history into the current turn.
  * @param {string} path
- * `usd` es la parte con tarifa; `usdUnknown` cuenta las llamadas que no la tienen (→ `$X+?`).
- * @param {{offset: number, partial: string, seen: Record<string, number>, usage: ReturnType<typeof emptyUsage>, usd: number, usdUnknown: number, model: string|null, calls: number}} state
+ * @param {IncrementalState} state
+ * @param {{turnSinceTs?: number|null}} [opts]
  */
-export function readIncremental(path, state) {
+export function readIncremental(path, state, opts = {}) {
+  const since = opts.turnSinceTs ?? null;
+  if (since !== null && state.turnStartTs !== since) {
+    state.turnStartTs = since;
+    state.turnUsd = 0;
+    state.turnUsdUnknown = 0;
+  }
   let fd;
   try {
     fd = openSync(path, 'r');
@@ -432,11 +459,23 @@ export function readIncremental(path, state) {
     const lines = text.split('\n');
     state.partial = lines.pop() || '';
     for (const line of lines) {
-      if (!line.includes('"usage"')) continue;
+      const isUser = line.includes('"type":"user"');
+      if (!isUser && !line.includes('"usage"')) continue;
       let e;
       try {
         e = JSON.parse(line);
       } catch {
+        continue;
+      }
+      if (e.type === 'user') {
+        // a plain human prompt on the main transcript starts a new turn; tool results and
+        // subagent sidechains never do
+        if (e.isSidechain || e.toolUseResult || humanText(e) === null) continue;
+        state.turns = (state.turns || 0) + 1;
+        state.turnUsd = 0;
+        state.turnUsdUnknown = 0;
+        const pts = typeof e.timestamp === 'string' ? Date.parse(e.timestamp) : NaN;
+        state.turnStartTs = Number.isNaN(pts) ? null : pts;
         continue;
       }
       if (e.type !== 'assistant' || !e.message?.usage) continue;
@@ -444,21 +483,31 @@ export function readIncremental(path, state) {
       const usage = toUsage(e.message.usage);
       const model = e.message.model || 'unknown';
       if (isSyntheticModel(model) && isZeroUsage(usage)) continue; // mensaje interno, no una llamada
+      const ts = typeof e.timestamp === 'string' ? Date.parse(e.timestamp) : NaN;
+      // a call belongs to the current turn unless it predates the parent's prompt
+      const inTurn = since === null || Number.isNaN(ts) || ts >= since;
       const prevOut = state.seen[key];
+      let usd = null;
       if (prevOut === undefined) {
         addUsage(state.usage, usage);
-        const usd = costFor(model, usage);
-        if (usd === null) state.usdUnknown = (state.usdUnknown || 0) + 1; // `|| 0`: caches previos a este campo
-        else state.usd += usd;
+        usd = costFor(model, usage);
+        if (usd === null) {
+          state.usdUnknown = (state.usdUnknown || 0) + 1; // `|| 0`: caches previos a este campo
+          if (inTurn) state.turnUsdUnknown = (state.turnUsdUnknown || 0) + 1;
+        }
         state.calls++;
       } else if (usage.output > prevOut) {
         const delta = { ...emptyUsage(), output: usage.output - prevOut };
         addUsage(state.usage, delta);
-        const usd = costFor(model, { ...delta, thinking: 0 });
-        if (usd !== null) state.usd += usd;
+        usd = costFor(model, { ...delta, thinking: 0 });
+      }
+      if (usd !== null) {
+        state.usd += usd;
+        if (inTurn) state.turnUsd = (state.turnUsd || 0) + usd;
       }
       state.seen[key] = Math.max(prevOut ?? 0, usage.output);
       if (!isSyntheticModel(model)) state.model = model;
+      if (!Number.isNaN(ts) && (state.lastTs === null || state.lastTs === undefined || ts > state.lastTs)) state.lastTs = ts;
     }
     const keys = Object.keys(state.seen);
     if (keys.length > 256) for (const k of keys.slice(0, keys.length - 256)) delete state.seen[k];
@@ -469,6 +518,7 @@ export function readIncremental(path, state) {
 }
 
 /** Fresh state for {@link readIncremental}. */
+/** @returns {IncrementalState} */
 export function newIncrementalState() {
-  return { offset: 0, partial: '', seen: {}, usage: emptyUsage(), usd: 0, usdUnknown: 0, model: null, calls: 0 };
+  return { offset: 0, partial: '', seen: {}, usage: emptyUsage(), usd: 0, usdUnknown: 0, model: null, calls: 0, turns: 0, turnUsd: 0, turnUsdUnknown: 0, lastTs: null, turnStartTs: null };
 }

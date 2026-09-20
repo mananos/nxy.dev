@@ -1,5 +1,8 @@
 {
-  "modules": { "metrics": true, "filter": true },
+  "modules": {
+    "metrics": true,
+    "filter": true
+  },
   "filter": {
     "engine": "auto",
     "excludeCommands": [],
@@ -9,7 +12,19 @@
   "metrics": {
     "projectsDir": null,
     "subscription": true,
-    "statusline": { "cacheTtlMs": 2000 },
+    "statusline": {
+      "cacheTtlMs": 2000,
+      "color": true,
+      "preset": "vivid",
+      "layout": "line",
+      "brand": "◆ nxy",
+      "ctxWarnTokens": 100000,
+      "ctxCritTokens": 200000,
+      "turnWarnUsd": 1,
+      "turnCritUsd": 3,
+      "promptCacheTtlMin": 5,
+      "theme": {}
+    },
     "cacheBreakThreshold": 100000
   }
 }

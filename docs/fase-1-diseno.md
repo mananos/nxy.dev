@@ -186,7 +186,8 @@ env `NXY_FILTER=0|1`, `NXY_ENGINE=rtk|off` ganan):
   "filter": { "engine": "auto", "excludeCommands": [], "onlyCommands": [],
               "autoAllowWhenOriginalAllowed": true },
   "metrics": { "projectsDir": null, "subscription": true,
-               "statusline": { "cacheTtlMs": 2000 }, "cacheBreakThreshold": 100000 } }
+               "statusline": { "cacheTtlMs": 2000, "color": true, "preset": "vivid", "layout": "line", "brand": "◆ nxy", "ctxWarnTokens": 100000,
+                               "ctxCritTokens": 200000, "turnWarnUsd": 1, "turnCritUsd": 3, "promptCacheTtlMin": 5, "theme": {} }, "cacheBreakThreshold": 100000 } }
 ```
 `engine: auto` = `rtk` si está en PATH, si no `off` con aviso único en stderr (nunca degradar en
 silencio). `modules.filter=false` → PreToolUse sale sin output; PostToolUse sigue registrando filas

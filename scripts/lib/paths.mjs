@@ -1,5 +1,5 @@
 // @ts-check
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,4 +49,36 @@ export function toNativePath(p) {
 export function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+/**
+ * Current git branch without spawning git: walks up from `cwd` to the first `.git` (directory
+ * or worktree pointer file), reads HEAD. Detached HEAD → short sha; not a repo → null.
+ * @param {string} cwd
+ * @returns {string|null}
+ */
+export function gitBranch(cwd) {
+  let dir = resolve(cwd);
+  for (let i = 0; i < 64; i++) {
+    const dotGit = join(dir, '.git');
+    if (existsSync(dotGit)) {
+      try {
+        let gitDir = dotGit;
+        if (statSync(dotGit).isFile()) {
+          const m = /^gitdir:\s*(.+?)\s*$/m.exec(readFileSync(dotGit, 'utf8'));
+          if (!m) return null;
+          gitDir = resolve(dir, m[1].trim());
+        }
+        const head = readFileSync(join(gitDir, 'HEAD'), 'utf8').trim();
+        const ref = /^ref:\s*refs\/heads\/(.+)$/.exec(head);
+        return ref ? ref[1] : head.slice(0, 7);
+      } catch {
+        return null;
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+  return null;
 }
