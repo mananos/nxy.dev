@@ -153,3 +153,43 @@ test('readIncremental folds streamed growth by delta and resumes from offset', (
   assert.equal(st.offset, offset, 'nothing new → no change');
   assert.equal(st.calls, 5);
 });
+
+test('readIncremental tracks turns, the current turn cost and the last call timestamp', () => {
+  const root = mkdtempSync(join(tmpdir(), 'nxy-tx-'));
+  const { mainPath } = writeFixture(root);
+  const st = newIncrementalState();
+  readIncremental(mainPath, st);
+  assert.equal(st.turns, 2, 'two human prompts; tool results do not count');
+  // second turn = req_4 (sonnet, priced) + req_5 (unknown) — the first turn's cost is not carried over
+  close(st.turnUsd, 0.006, 'turn cost restarts at each human prompt');
+  assert.equal(st.turnUsdUnknown, 1);
+  assert.equal(st.lastTs, Date.parse('2026-09-01T10:00:12.000Z'), 'last real call, not the <synthetic> line');
+
+  // a subagent transcript has a sidechain prompt: never a turn
+  const sub = newIncrementalState();
+  readIncremental(join(root, FIXTURE.slug, FIXTURE.sessionId, 'subagents', `agent-${FIXTURE.agentId}.jsonl`), sub);
+  assert.equal(sub.turns, 0);
+  assert.equal(sub.calls, 2);
+
+  // subagent attributed to the parent's turn: the fixture agent ran at t=5.1s, during turn 1
+  // (prompt at t=0); turn 2 opened at t=10s → nothing of the agent belongs to turn 2
+  const agentPath = join(root, FIXTURE.slug, FIXTURE.sessionId, 'subagents', `agent-${FIXTURE.agentId}.jsonl`);
+  const ag = newIncrementalState();
+  readIncremental(agentPath, ag, { turnSinceTs: st.turnStartTs });
+  assert.equal(st.turnStartTs, Date.parse('2026-09-01T10:00:10.000Z'), 'turn start = timestamp of the last human prompt');
+  assert.equal(ag.calls, 2, 'the whole agent history is still folded into the session totals');
+  assert.equal(ag.turnUsd, 0, 'but none of it is charged to the current turn (rebuilt cache never over-charges)');
+  const agTurn1 = newIncrementalState();
+  readIncremental(agentPath, agTurn1, { turnSinceTs: Date.parse('2026-09-01T10:00:00.000Z') });
+  assert.ok(agTurn1.turnUsd > 0, 'same agent seen from turn 1 is charged to turn 1');
+  // parent's turn changes → agent's turn spend restarts even with nothing new to read
+  readIncremental(agentPath, agTurn1, { turnSinceTs: st.turnStartTs });
+  assert.equal(agTurn1.turnUsd, 0, 'new parent turn resets the agent turn spend');
+
+  // caches written by 0.1.1 lack the new fields: merging over a fresh state keeps them defined
+  const legacy = { offset: 0, partial: '', seen: {}, usage: st.usage, usd: 0, usdUnknown: 0, model: null, calls: 0 };
+  const merged = { ...newIncrementalState(), ...legacy };
+  assert.equal(merged.turns, 0);
+  assert.equal(merged.lastTs, null);
+  assert.equal(merged.turnStartTs, null);
+});
