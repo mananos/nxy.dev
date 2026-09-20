@@ -34,8 +34,16 @@ import { normalizeForRtk, usesRtk } from './rtk.mjs';
 /** Commands that are interactive, stateful or write-only: nothing to filter, real risk of breaking them. */
 const NEVER_FIRST_TOKENS = new Set([
   'sudo', 'su', 'vim', 'vi', 'nano', 'less', 'more', 'top', 'htop', 'ssh', 'telnet', 'claude',
-  'python', 'python3', 'node', 'irb', 'psql', 'mysql', 'sqlite3', 'watch', 'tmux', 'screen', 'alias',
+  'irb', 'psql', 'mysql', 'sqlite3', 'watch', 'tmux', 'screen', 'alias',
 ]);
+
+/**
+ * Script runners: a REPL when bare (interactive), an opaque one-off when given a script
+ * (`node -e "…"`, `python3 tool.py`). rtk has no filter for them and leaves the segment
+ * verbatim — quoting included — so they must not veto the rest of a chain
+ * (`cd x && node -e "…" && grep -rn foo .` → only grep gets wrapped).
+ */
+const SCRIPT_RUNNERS = new Set(['node', 'python', 'python3']);
 
 /** Shell state setters: harmless as a prefix of a chain (`export JAVA_HOME=… && mvn test`), pointless alone. */
 const STATE_ONLY_TOKENS = new Set(['cd', 'export', 'source', 'unset', 'set']);
@@ -58,9 +66,25 @@ function gitSubcommand(segment) {
 
 const ESCAPE_COMMENT = /(^|\s)#\s*(nxy:)?raw\b/;
 
+/** Up to this many lines, a `| head/tail -N` already bounds the output; filtering only changes its shape. */
+const CAPPED_MAX_LINES = 20;
+
+/** Lines kept by a trailing `| head -N` / `| tail -n N` suffix (as returned by stripTrailingLimit's remainder); 10 is the coreutils default. */
+function trailingLimitLines(suffix) {
+  const m = /(?:head|tail)(?:\s+-n?\s*(\d+)|\s+-(\d+)|\s+--lines[= ](\d+))?\s*$/.exec(suffix);
+  return m ? Number(m[1] ?? m[2] ?? m[3] ?? 10) : Infinity;
+}
+
+/** A script runner given something to run (`node -e …`, `python3 x.py`), as opposed to a bare REPL. */
+function segmentIsOpaque(segment) {
+  const t = firstToken(segment);
+  return SCRIPT_RUNNERS.has(t) && segment.trim().split(/\s+/).filter((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)).length > 1;
+}
+
 function segmentIsInteractive(segment) {
   const t = firstToken(segment);
   if (NEVER_FIRST_TOKENS.has(t)) return true;
+  if (SCRIPT_RUNNERS.has(t) && !segmentIsOpaque(segment)) return true; // bare REPL
   if (t === 'git') {
     const sub = gitSubcommand(segment);
     if (sub && NEVER_GIT_SUBCOMMANDS.has(sub)) return true;
@@ -87,6 +111,8 @@ const PS_SCRIPT = /[|`]|\$\(|@\(|\bforeach\b|\bif\s*\(|\btry\s*\{|\bfunction\b|\
 function decidePowerShell(cmd, ctx) {
   const segments = cmd.split(/\r?\n|;/).map((s) => s.trim()).filter(Boolean);
   if (!segments.length) return { action: 'skip', reason: 'empty' };
+  // `Set-Location x; $env:NXY_RAW = "1"; mvn test`: the escape can sit among the state prefixes.
+  if (segments.some((s) => /^\$env:NXY_RAW\s*=\s*["']?1/i.test(s))) return { action: 'skip', reason: 'escape-env' };
   const last = segments[segments.length - 1];
   const prefixes = segments.slice(0, -1);
   if (!prefixes.every((p) => PS_STATE.test(p))) return { action: 'skip', reason: 'powershell-script' };
@@ -94,9 +120,12 @@ function decidePowerShell(cmd, ctx) {
   if (PS_SCRIPT.test(last) || usesRtk(last)) return { action: 'skip', reason: usesRtk(last) ? 'already-wrapped' : 'powershell-script' };
   if (hasRedirect(last)) return { action: 'skip', reason: 'redirect' };
   if (segmentIsInteractive(last)) return { action: 'skip', reason: 'interactive-or-stateful' };
+  if (segmentIsOpaque(last)) return { action: 'skip', reason: 'opaque' };
   if (ctx.rtkHookDetected) return { action: 'skip', reason: 'rtk-hook-present' };
   if (!ctx.rewrite) return { action: 'skip', reason: 'no-engine' };
-  const asked = normalizeForRtk(stripTrailingLimit(last));
+  const stripped = stripTrailingLimit(last);
+  const limit = last.slice(stripped.length);
+  const asked = normalizeForRtk(stripped);
   let res;
   try {
     res = ctx.rewrite(asked);
@@ -105,7 +134,7 @@ function decidePowerShell(cmd, ctx) {
   }
   const rewritten = (res.stdout || '').trim();
   if ((res.code === 0 || res.code === 3) && rewritten && rewritten !== asked) {
-    return { action: 'rewrite', reason: res.code === 0 ? 'rtk' : 'rtk-ask', command: [...prefixes, rewritten].join('; '), allow: res.code === 0 };
+    return { action: 'rewrite', reason: res.code === 0 ? 'rtk' : 'rtk-ask', command: [...prefixes, rewritten + limit].join('; '), allow: res.code === 0 };
   }
   if (res.code === 2) return { action: 'skip', reason: 'rtk-deny' };
   return { action: 'skip', reason: res.code === 1 ? 'rtk-none' : 'rtk-unchanged' };
@@ -127,9 +156,12 @@ export function decide(command, ctx) {
 
   if (ctx.tool === 'PowerShell') return decidePowerShell(cmd, ctx);
 
-  // 2. Already wrapped
   const segments = splitTopLevel(cmd);
   const tokens = segments.map(firstToken);
+  // `cd x && NXY_RAW=1 grep …`: the escape is on the segment that matters, rtk would still wrap it.
+  if (segments.some((s) => leadingAssignments(s).NXY_RAW === '1')) return { action: 'skip', reason: 'escape-env' };
+
+  // 2. Already wrapped
   if (usesRtk(cmd)) return { action: 'skip', reason: 'already-wrapped' };
 
   // 3. Allow/deny lists on first tokens
@@ -145,6 +177,8 @@ export function decide(command, ctx) {
   if (isBackgrounded(cmd)) return { action: 'skip', reason: 'background' };
   if (tokens.every((t) => STATE_ONLY_TOKENS.has(t))) return { action: 'skip', reason: 'interactive-or-stateful' };
   if (segments.some(segmentIsInteractive)) return { action: 'skip', reason: 'interactive-or-stateful' };
+  // Only state + scripts (`cd x && node -e "…"`): nothing rtk could improve, save the spawn.
+  if (segments.every((s) => STATE_ONLY_TOKENS.has(firstToken(s)) || segmentIsOpaque(s))) return { action: 'skip', reason: 'opaque' };
   if (/(^|[\s'"/])\.nxy[\\/]/.test(cmd)) return { action: 'skip', reason: 'nxy-internal' };
 
   // 5. RTK's own hook is present: it already rewrites; a second updatedInput would be undefined behavior
@@ -154,8 +188,15 @@ export function decide(command, ctx) {
   if (!ctx.rewrite) return { action: 'skip', reason: 'no-engine' };
   // Ask about a spelling rtk understands (./mvnw.cmd → mvnw.cmd, npm test → npm run test); the
   // original string is what runs if rtk declines.
-  // A trailing `| tail -n N` only caps output; rtk's filtered output is already short, so ask without it.
-  const asked = normalizeForRtk(stripTrailingLimit(cmd));
+  // rtk declines anything piped (`grep x f | head -3` → no rewrite), so a trailing `| head/tail N`
+  // is removed to ask and put back on the answer: the model asked for N lines, it gets at most N.
+  // A small N already makes the raw output cheap, and rtk's headers would eat part of it
+  // (`rtk grep … | head -3` = 1 match), so those run untouched; a big one (`mvn test | tail -n 150`)
+  // is where rtk's filter wins.
+  const stripped = stripTrailingLimit(cmd);
+  const limit = cmd.slice(stripped.length);
+  if (limit && trailingLimitLines(limit) <= CAPPED_MAX_LINES) return { action: 'skip', reason: 'capped' };
+  const asked = normalizeForRtk(stripped);
   let res;
   try {
     res = ctx.rewrite(asked);
@@ -163,8 +204,8 @@ export function decide(command, ctx) {
     return { action: 'skip', reason: 'rtk-error' };
   }
   const rewritten = (res.stdout || '').trim();
-  if (res.code === 0 && rewritten && rewritten !== asked) return { action: 'rewrite', reason: 'rtk', command: rewritten, allow: true };
-  if (res.code === 3 && rewritten && rewritten !== asked) return { action: 'rewrite', reason: 'rtk-ask', command: rewritten, allow: false };
+  if (res.code === 0 && rewritten && rewritten !== asked) return { action: 'rewrite', reason: 'rtk', command: rewritten + limit, allow: true };
+  if (res.code === 3 && rewritten && rewritten !== asked) return { action: 'rewrite', reason: 'rtk-ask', command: rewritten + limit, allow: false };
   if (res.code === 1) return { action: 'skip', reason: 'rtk-none' };
   if (res.code === 2) return { action: 'skip', reason: 'rtk-deny' };
   return { action: 'skip', reason: 'rtk-unchanged' };

@@ -79,13 +79,13 @@ export function writeFixture(root) {
     assistant({ uuid: 'a1', requestId: 'req_1', ts: 1000, model: 'claude-opus-5', usage: U(1000, 20000, 0, 0, 10), content: [{ type: 'text', text: 'ok' }] }),
     assistant({ uuid: 'a1b', requestId: 'req_1', ts: 1500, model: 'claude-opus-5', usage: U(1000, 20000, 0, 0, 40, 15), content: [{ type: 'tool_use', id: 'tu_read', name: 'Read', input: { file_path: '/home/dev/code/my.app/src/app.js' } }] }),
     user({ uuid: 'u2', ts: 2000, content: [{ type: 'tool_result', tool_use_id: 'tu_read', content: 'x' }], toolUseResult: { type: 'text', file: { filePath: '/home/dev/code/my.app/src/app.js', content: 'x', numLines: 1 } } }),
-    assistant({ uuid: 'a2', requestId: 'req_2', ts: 3000, model: 'claude-opus-5', usage: U(0, 0, 0, 21000, 100), content: [{ type: 'tool_use', id: 'tu_bash', name: 'Bash', input: { command: 'npm test' } }] }),
+    assistant({ uuid: 'a2', requestId: 'req_2', ts: 3000, model: 'claude-opus-5', usage: U(0, 0, 0, 21000, 100), content: [{ type: 'tool_use', id: 'tu_bash', name: 'Bash', input: { command: 'npm test' } }, { type: 'tool_use', id: 'tu_edit', name: 'Edit', input: { file_path: '/home/dev/code/my.app/src/app.js', old_string: 'a', new_string: 'b' } }] }),
     user({ uuid: 'u3', ts: 4000, content: [{ type: 'tool_result', tool_use_id: 'tu_bash', content: 'x' }], toolUseResult: { stdout: 'line1\nline2\nline3', stderr: '', interrupted: false } }),
     assistant({ uuid: 'a3', requestId: 'req_3', ts: 5000, model: 'claude-opus-5', usage: U(0, 500, 0, 21000, 60), content: [{ type: 'tool_use', id: 'tu_agent', name: 'Agent', input: { subagent_type: 'Explore', description: 'Find tests', prompt: '...' } }] }),
     user({ uuid: 'u4', ts: 6000, content: [{ type: 'tool_result', tool_use_id: 'tu_agent', content: 'done' }], toolUseResult: { agentId: FIXTURE.agentId, description: 'Find tests', resolvedModel: 'claude-haiku-4-5', status: 'completed' } }),
     // second human turn, via a slash command → skill attribution
     user({ uuid: 'u5', ts: 10000, content: '<command-name>/nxy:stats</command-name>\n<command-message>stats</command-message>' }),
-    assistant({ uuid: 'a4', requestId: 'req_4', ts: 11000, model: 'claude-sonnet-5', usage: U(2000, 0, 0, 0, 200), content: [{ type: 'text', text: 'stats' }] }),
+    assistant({ uuid: 'a4', requestId: 'req_4', ts: 11000, model: 'claude-sonnet-5', usage: U(2000, 0, 0, 0, 200), content: [{ type: 'text', text: 'stats' }, { type: 'tool_use', id: 'tu_write', name: 'Write', input: { file_path: '/home/dev/code/my.app/src/health.js', content: 'x' } }, { type: 'tool_use', id: 'tu_edit2', name: 'Edit', input: { file_path: '/home/dev/code/my.app/src/app.js', old_string: 'b', new_string: 'c' } }] }),
     // unknown model → its cost is unknown; the session total becomes partial ($X+?), never a bare ?
     assistant({ uuid: 'a5', requestId: 'req_5', ts: 12000, model: 'claude-future-9', usage: U(10, 0, 0, 0, 10), content: [{ type: 'text', text: '?' }] }),
     // Claude Code internal message: `<synthetic>` with zero usage → not an API call, must not poison anything
@@ -98,7 +98,7 @@ export function writeFixture(root) {
     user({ uuid: 's-u1', ts: 5100, content: 'Find tests', sidechain: true }),
     assistant({ uuid: 's-a1', requestId: 'req_s1', ts: 5200, model: 'claude-haiku-4-5', usage: U(3000, 0, 0, 0, 300), content: [{ type: 'tool_use', id: 's-tu', name: 'Bash', input: { command: 'ls' } }], sidechain: true, agentId: FIXTURE.agentId, effort: null }),
     user({ uuid: 's-u2', ts: 5300, content: [{ type: 'tool_result', tool_use_id: 's-tu', content: 'x' }], toolUseResult: { stdout: 'a\nb', stderr: '', interrupted: false }, sidechain: true }),
-    assistant({ uuid: 's-a2', requestId: 'req_s2', ts: 5400, model: 'claude-haiku-4-5', usage: U(0, 0, 0, 3100, 50), content: [{ type: 'text', text: 'found' }], sidechain: true, agentId: FIXTURE.agentId, effort: null }),
+    assistant({ uuid: 's-a2', requestId: 'req_s2', ts: 5400, model: 'claude-haiku-4-5', usage: U(0, 0, 0, 3100, 50), content: [{ type: 'text', text: 'found' }, { type: 'tool_use', id: 's-tu-w', name: 'Write', input: { file_path: '/home/dev/code/my.app/tests/health.test.js', content: 'x' } }], sidechain: true, agentId: FIXTURE.agentId, effort: null }),
   ];
   writeFileSync(join(agentsDir, `agent-${FIXTURE.agentId}.jsonl`), sub.map((l) => JSON.stringify(l)).join('\n') + '\n');
   writeFileSync(join(agentsDir, `agent-${FIXTURE.agentId}.meta.json`), JSON.stringify({ agentType: 'Explore', description: 'Find tests', toolUseId: 'tu_agent', spawnDepth: 1 }));

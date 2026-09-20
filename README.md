@@ -10,7 +10,7 @@ Se construye por fases, midiendo cada una antes de sumar la siguiente:
 
 | Fase | Pilar principal | Estado |
 | ---- | --------------- | ------ |
-| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | actual · **v0.1.2** |
+| 1 | **Visibilidad** del consumo real + **menos tokens** en salidas de comandos | actual · **v0.1.3** |
 | 2 | **Velocidad**: no explorar a ciegas (índice determinístico del repo, scouts baratos, modelo y esfuerzo por fase) | próxima |
 | 3 | **Calidad**: flujo por fases con contexto limpio, review escalado por riesgo, memoria de decisiones | después |
 
@@ -58,8 +58,8 @@ Statusline (opcional, recomendado): `/nxy:statusline --apply` la instala (hace b
 
 | Comando           | Qué muestra                                                                                                           |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `/nxy:stats`      | La sesión actual (`last` para la anterior, o un id): tokens (uncached / cache write / cache read / output / thinking), cache hit, pico de contexto, USD; por modelo, por tipo de subagente, agente por agente, por skill; herramientas usadas, archivos leídos, líneas devueltas por Bash; filas del filtro; cache breaks. `--session <id>`, `--all`, `--json`. |
-| `/nxy:trend`      | Evolución por día / semana / sesión, **de todos tus proyectos**: tokens, uncached, cache-r, output, hit %, % en subagentes, tokens por turno, líneas de Bash, comandos filtrados, USD, y si la sesión corrió con nxy. `--since 30d`, `--by week`, `--by model` (una fila por modelo: cuánto va a Opus/Sonnet/Haiku), `--here` (sólo este proyecto). |
+| `/nxy:stats`      | La sesión actual (`last` para la anterior, o un id): tokens (uncached / cache write / cache read / output / thinking), cache hit, pico de contexto, USD; la [forma de la sesión](#la-forma-de-una-sesión) (llamadas por turno, contexto medio del principal, % en subagentes); por modelo, por tipo de subagente, agente por agente, por skill; herramientas usadas, archivos leídos y editados (y cuántos editó el principal), líneas devueltas por Bash; filas del filtro y el ahorro real de RTK; cache breaks. `--session <id>`, `--all`, `--json`. |
+| `/nxy:trend`      | Evolución por día / semana / sesión, **de todos tus proyectos**: tokens, uncached, cache-r, output, hit %, % en subagentes, tokens por turno, llamadas por turno, contexto por llamada, archivos editados por el principal, líneas de Bash, comandos filtrados y tokens que ahorró RTK, USD, y si la sesión corrió con nxy. `--since 30d`, `--by week`, `--by model` (una fila por modelo: cuánto va a Opus/Sonnet/Haiku), `--here` (sólo este proyecto). |
 | `/nxy:filter`     | `status` (motor, versión de rtk, rg, conflicto de hook, comandos de instalación), `on`, `off` (por proyecto).          |
 | `/nxy:statusline` | Instala la [statusline](#la-statusline) (`--apply`) o imprime el snippet para pegarlo a mano. |
 
@@ -94,17 +94,35 @@ El `~` después de un monto significa *equivalente en USD*: pagás por suscripci
 
 **Cómo se mantiene actualizada.** `--apply` no apunta a una versión del plugin sino a un pequeño lanzador en `~/.nxy/statusline.mjs` que en cada arranque usa la versión de nxy que Claude Code tiene instalada. Actualizás el plugin y la statusline se actualiza sola. Para desarrollo: `node scripts/metrics/statusline-setup.mjs --apply` desde un clon la apunta a ese clon; `NXY_STATUSLINE=<ruta>` fuerza un script.
 
+## La forma de una sesión
+
+El costo de una sesión se explica con dos números: **cuánto contexto lleva cada llamada** y **cuántas llamadas hace cada turno**. Todo lo demás (modelo, cache, subagentes) modula esos dos. `/nxy:stats` los muestra en la línea `shape`, y `/nxy:trend` como columnas para ver cómo evolucionan:
+
+```
+shape: 21 calls/turn (main 21) · main context avg 111k/call · peak 158k · subagents 0% of tokens
+files read (distinct): 12 · files edited: 14 (by main 14) · Bash calls 52 → 3.7k lines / 177k chars back
+```
+
+| Dato | Qué es | Qué hacer si está alto |
+| --- | --- | --- |
+| `calls/turn` | Llamadas a la API por cada mensaje tuyo (cada herramienta que Claude usa es una llamada más). 2–5 es un turno de pregunta y respuesta; 20–30 es Claude explorando o editando solo. | No es malo en sí — es trabajo hecho — pero cada llamada reenvía todo el contexto: 30 llamadas × 130k de contexto son 4M de tokens en un turno. Si el turno sale caro, pedí tareas más acotadas o que use subagentes para explorar. |
+| `main context avg` | Contexto medio que carga cada llamada del agente principal (lo que se reenvía en cada paso). `peak` es el máximo. | Por encima de ~100k cada paso cuesta el doble que al principio de la sesión: es la señal de [cortar y seguir](#la-statusline). |
+| `subagents %` | Qué parte de los tokens gastaron subagentes. Un subagente arranca con contexto limpio y devuelve un resumen: explorar ahí es mucho más barato que en el principal. | Si es 0 % en sesiones grandes, el principal está haciendo todo el trabajo con el contexto a cuestas. Fase 2 apunta a subir este número con scouts baratos. |
+| `files edited (by main)` | Archivos distintos que Claude escribió con `Edit`/`Write` (ediciones vía Bash no se ven). `by main` cuenta las que hizo el agente principal. | Es el número de partida para 0.2.x (implementer + freno de escritura: que el principal orqueste en vez de editar). Hoy sólo se mide. |
+| `rtk saved` | Tokens que RTK recortó de las salidas de Bash: lo que el comando imprimió menos lo que Claude leyó. Sale del registro propio de RTK (`history.db`), porque nxy sólo ve la salida ya filtrada. | Si es bajo con muchos comandos filtrados, mirá `command kind`: `cat`/`read` de código no se recortan (RTK devuelve el archivo entero, por diseño); el ahorro grande está en tests, builds, `git`, `grep`, `ls`. Necesita Node ≥ 22.13 (`node:sqlite`); si no, `trend --by day` usa los totales diarios de `rtk gain`. |
+
 ## Cómo funciona el filtro
 
 1. `SessionStart` resuelve el motor una vez por sesión (¿está `rtk`? ¿tiene su propio hook instalado?) y lo cachea en `~/.nxy/cache/engine.json`.
-2. `PreToolUse(Bash|PowerShell)` decide si reescribe. **Nunca** toca: comandos con `NXY_RAW=1` o `# raw`, ya envueltos en `rtk`, heredocs, `$(...)`, redirecciones a archivo (`> out.log`; `2>&1` sí se permite), `&` al final, `cd`/`export` solos, interactivos (`vim`, `ssh`, `docker exec -it`…), `sudo`, ni `git commit|push|rebase|merge|checkout|stash|reset|tag` — el plugin no ejecuta nada por su cuenta, sólo deja pasar. Lo demás va a `rtk rewrite "<cmd>"` y, si RTK tiene filtro, se reemplaza por `rtk <cmd>`.
-   - Cadenas: `cd api && export JAVA_HOME=… && ./mvnw test` → `cd api && export JAVA_HOME=… && rtk mvn test` (RTK maneja `&&`, `;` y prefijos `VAR=valor`).
-   - Ortografías que RTK no reconoce se normalizan sólo para preguntarle: `./mvnw.cmd`, `.gradlew.bat` → sin `./`; `npm test` → `npm run test`; `pnpm build` → `pnpm run build`. Un `| tail -n N` final se descarta al preguntar (la salida de RTK ya viene recortada). Si RTK no reescribe, el comando original corre intacto.
+2. `PreToolUse(Bash|PowerShell)` decide si reescribe. **Nunca** toca: comandos con `NXY_RAW=1` (al inicio o en cualquier segmento: `cd api && NXY_RAW=1 grep …`) o `# raw`, ya envueltos en `rtk`, heredocs, `$(...)`, redirecciones a archivo (`> out.log`; `2>&1` y cualquier `>/dev/null` sí se permiten: descartan, no escriben), `&` al final, `cd`/`export` solos, interactivos (`vim`, `ssh`, `docker exec -it`, `node`/`python` sin argumentos…), `sudo`, ni `git commit|push|rebase|merge|checkout|stash|reset|tag` — el plugin no ejecuta nada por su cuenta, sólo deja pasar. Lo demás va a `rtk rewrite "<cmd>"` y, si RTK tiene filtro, se reemplaza por `rtk <cmd>`.
+   - Cadenas: `cd api && export JAVA_HOME=… && ./mvnw test` → `cd api && export JAVA_HOME=… && rtk mvn test` (RTK maneja `&&`, `;` y prefijos `VAR=valor`). Un segmento que RTK no conoce queda intacto, comillas incluidas: `node -e "…" && grep -rn foo .` → `node -e "…" && rtk grep -rn foo .`. Si la cadena es sólo `cd` + scripts (`cd x && node -e "…"`) ni se le pregunta a RTK (`opaque` en las métricas).
+   - Ortografías que RTK no reconoce se normalizan sólo para preguntarle: `./mvnw.cmd`, `.gradlew.bat` → sin `./`; `npm test` → `npm run test`; `pnpm build` → `pnpm run build`. Un `| head -N` / `| tail -n N` final con N ≤ 20 deja el comando sin filtrar (`capped`): la salida ya está acotada y RTK sólo le cambiaría la forma (su encabezado se comería parte de las N líneas). Con N mayor (`mvn test 2>&1 | tail -n 150`) el límite se quita para preguntar (RTK rechaza pipes) y se vuelve a poner: `rtk mvn test 2>&1 | tail -n 150`. Si RTK no reescribe, el comando original corre intacto.
    - PowerShell: `Set-Location …; $env:JAVA_HOME = …; .mvnw.cmd test` → mismos prefijos + `rtk mvn test`. Scripts reales (`foreach`, pipes, variables) no se tocan.
    - Lo que RTK cubre hoy (v0.48): git, gh, ls/cat/grep/find, mvn/mvnw, gradle/gradlew, npm run/pnpm run/bun, jest/vitest/playwright/pytest/cargo/go test, eslint/tsc/prettier/biome, next/vite, docker, kubectl. No: `ng` global, `yarn`, `npm install`.
    - Medido en un proyecto Spring Boot: `./mvnw test` pasó de 84 líneas / 9.197 chars a 8 líneas / 319 chars (−96 %).
 3. Si el comando original ya estaba permitido por tus reglas `permissions.allow` (`Bash(git status:*)`), el reescrito hereda ese permiso: no aparecen prompts nuevos. Si no había regla, Claude Code te pregunta por `rtk git status` como te habría preguntado por `git status` (y podés dejarlo permitido). Si el original está en `permissions.deny`, no se reescribe.
 4. `PostToolUse(Bash|PowerShell)` (síncrono, ~100 ms por comando) registra una fila en `<proyecto>/.nxy/metrics/filter.jsonl`: motor, tipo de comando, líneas/chars devueltos, hash de `rtk recall`. Los secretos obvios se enmascaran antes de escribir.
+   - El aviso `[rtk] /!\ No hook installed — run rtk init -g` que RTK imprime en stderr no aplica a nxy (instala su propio hook) y en Windows aparecía en **cada** comando: RTK limita el aviso a uno por día con la fecha de un archivo vacío, y NTFS no actualiza la fecha al reescribir 0 bytes. nxy toca ese archivo (`.hook_warn_last`, en el directorio de datos de RTK) cuando tiene más de 23 h — un `stat` por comando, una escritura por día — y el aviso deja de ocupar contexto.
 5. Cuando Claude necesita la salida completa, el skill `nxy-filter` le indica `rtk recall <hash>` o, como último recurso, `NXY_RAW=1 <cmd>`.
 
 ## Configuración
@@ -145,8 +163,8 @@ Una versión por paso: cada una se instala y se prueba en repos reales antes de 
 
 | Versión | Qué vas a poder hacer |
 | --- | --- |
-| **0.1.2** (actual) | Statusline completa: dónde estás, cuánto cuesta el turno y la sesión, cuándo cortar, qué pasa si la cache se enfría. |
-| 0.1.3 | `stats`/`trend` con llamadas por turno, contexto pico, archivos que editó el principal, % en subagentes, y el ahorro real de RTK (antes/después). Más comandos filtrados (`rtk pipe` para redirecciones, heredocs y comandos desconocidos). |
+| 0.1.2 | Statusline completa: dónde estás, cuánto cuesta el turno y la sesión, cuándo cortar, qué pasa si la cache se enfría. |
+| **0.1.3** (actual) | Ver la [forma de la sesión](#la-forma-de-una-sesión): llamadas por turno, contexto por llamada, archivos que editó el principal, % en subagentes y el ahorro real de RTK. Más comandos filtrados: `2>/dev/null` y cadenas con `node -e`/`python` ya pasan por RTK; `NXY_RAW=1` escapa en cualquier segmento; los `\| head/tail -N` se respetan; el aviso de RTK ya no ocupa contexto. |
 | 0.2.x | **Velocidad**: un scout barato localiza (`/nxy:locate`) para que el principal no lea 40 archivos; implementer + freno de escritura para que el principal orqueste en vez de editar. Config compartible por repo (`.nxy/`). |
 | 0.3.x | **Memoria**: sobrevive al `/clear`, handoff vivo para retomar sin reconstruir el plan, contexto obligatorio para cada subagente. |
 | 0.4.x | **Calidad**: planner con checkpoint, tester, reviewer con lentes, tiers por tamaño, protección contra cerrar con estado pendiente. |

@@ -84,7 +84,8 @@ for (const by of ['day', 'week', 'session']) {
     const text = run('trend.mjs', ['--by', by, '--since', '30d', '--cwd', cwd]);
     assert.match(text, /\$0\.170\+\?/, 'row shows partial sum');
     assert.match(text, /^total: .* \$0\.170\+\? · /m, 'footer shows partial sum');
-    assert.doesNotMatch(text, / \? /, 'no bare ? for USD');
+    // the USD cell sits right before the `nxy` cell; `rtk saved` may legitimately be `?` without rtk's ledger
+    assert.doesNotMatch(text, /\s\?\s+(yes|no|\d+\/\d+)\s*$/m, 'no bare ? for USD');
   });
 }
 
@@ -106,4 +107,30 @@ test('stats: session totals, by-model and note show partial sums; <synthetic> ab
   assert.match(text, /no pricing for: claude-future-9 — USD\S* shown as \$…\+\? where affected/);
   assert.match(text, /^claude-future-9 .* \?$/m, 'unknown model row: nothing known → ?');
   assert.match(text, /^claude-opus-5 .* \$0\.159$/m);
+});
+
+test('stats: shape line — calls per turn, average main context, subagent share', () => {
+  const cwd = setup();
+  const json = JSON.parse(run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd, '--json']));
+  // fixture: 2 prompts, 7 calls (5 main + 2 subagent), main input 65 510 tokens over 5 calls
+  assert.equal(json.shape.callsPerTurn, 3.5);
+  assert.equal(json.shape.mainCallsPerTurn, 2.5);
+  assert.equal(json.shape.mainCtxAvg, 13102);
+  close(json.shape.subagentSharePct, ((3000 + 3100 + 350) / (json.usage.totalInput + json.usage.usage.output)) * 100, 'subagent share');
+  assert.equal(json.rtkSavings, null, 'no rtk rows for the fixture → ledger not consulted');
+
+  const text = run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd]);
+  assert.match(text, /^shape: 3\.5 calls\/turn \(main 2\.5\) · main context avg 13k\/call · peak 22k · subagents 9% of tokens$/m);
+});
+
+test('trend: calls/turn and ctx/call columns', () => {
+  const cwd = setup();
+  const json = JSON.parse(run('trend.mjs', ['--by', 'session', '--since', '30d', '--cwd', cwd, '--json']));
+  assert.equal(json.periods[0].callsPerTurn, 3.5);
+  assert.equal(json.periods[0].ctxPerCall, 13102);
+  assert.equal(json.sessions[0].mainCalls, 5);
+  const text = run('trend.mjs', ['--by', 'session', '--since', '30d', '--cwd', cwd]);
+  assert.match(text, /calls\/turn\s+ctx\/call\s+main edits\s+bash lines\s+rtk\s+rtk saved/);
+  assert.match(text, /\s3\.5\s+13k\s+2\s/, '3.5 calls/turn · 13k ctx/call · 2 files edited by main');
+  assert.equal(json.periods[0].mainEdits, 2);
 });

@@ -34,6 +34,12 @@ export function fmtPct(v, digits = 0) {
   return v.toFixed(digits) + '%';
 }
 
+/** Small ratio such as calls per turn: 0.8 · 4.2 · 15 · 120. `null` → '?' */
+export function fmtRatio(v) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '?';
+  return v < 10 ? v.toFixed(1) : String(Math.round(v));
+}
+
 /** 45s · 12m · 2h 05m · 3d 4h */
 export function fmtDuration(ms) {
   if (ms === null || ms === undefined || !Number.isFinite(ms) || ms < 0) return '?';

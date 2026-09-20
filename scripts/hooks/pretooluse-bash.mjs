@@ -12,7 +12,7 @@ import { toNativePath } from '../lib/paths.mjs';
 import { loadPermissionRules, originalVerdict } from '../lib/permissions.mjs';
 import { decide } from '../filter/decide.mjs';
 import { claudeSettingsFiles, engineInfo } from '../filter/engine.mjs';
-import { pinRtkPath, rtkRewrite } from '../filter/rtk.mjs';
+import { pinRtkPath, rtkRewrite, silenceRtkHookWarning } from '../filter/rtk.mjs';
 
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
@@ -25,6 +25,8 @@ try {
     if (cfg.modules.filter) {
       const info = engineInfo(cfg, cwd);
       const rtkPath = info.rtkPath;
+      // Keep rtk's "No hook installed" line out of every result (see silenceRtkHookWarning).
+      if (info.engine === 'rtk') silenceRtkHookWarning();
       const decision = decide(command, {
         tool: input.tool_name,
         engine: info.engine,

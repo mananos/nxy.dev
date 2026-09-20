@@ -82,7 +82,9 @@ export function hasSubstitution(cmd) {
 /**
  * True for top-level `>`, `>>`, `2>file`, `&>`, `<` (input from file) outside quotes.
  * `2>&1` (merge stderr into stdout) is NOT a redirect for our purposes: nothing leaves the
- * tool's output, and rtk keeps it as is.
+ * tool's output, and rtk keeps it as is. Neither is any redirect INTO `/dev/null`
+ * (`2>/dev/null`, `&>/dev/null`, `> /dev/null`): it discards, it does not write a file, and
+ * rtk keeps it verbatim on the segment it wraps.
  */
 export function hasRedirect(cmd) {
   let found = false;
@@ -90,6 +92,7 @@ export function hasRedirect(cmd) {
     if (inDouble) return;
     if (ch === '>') {
       if (cmd[i - 1] === '2' && cmd.startsWith('>&1', i)) return; // 2>&1
+      if (/^>?\s*\/dev\/null(?=\s|$|[;&|)])/.test(cmd.slice(i + 1))) return; // >/dev/null, >>/dev/null, 2> /dev/null
       found = true;
       return false;
     }
