@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { commandHead, commandKind } from '../scripts/filter/kind.mjs';
+import { commandHead, commandKind } from '../core/filter/kind.mjs';
 
 test('commandKind normalizes tools and subcommands', () => {
   const cases = [
@@ -38,7 +38,7 @@ test('commandHead masks secrets and truncates', () => {
 });
 
 test('rtk helpers: isRtkInvocation / pinRtkPath / kind with absolute rtk path', async () => {
-  const { isRtkInvocation, pinRtkPath } = await import('../scripts/filter/rtk.mjs');
+  const { isRtkInvocation, pinRtkPath } = await import('../core/filter/rtk.mjs');
   assert.equal(isRtkInvocation('rtk git status'), true);
   assert.equal(isRtkInvocation('rtk.exe git status'), true);
   assert.equal(isRtkInvocation('"C:/tools/rtk.exe" git status'), true);
@@ -46,7 +46,7 @@ test('rtk helpers: isRtkInvocation / pinRtkPath / kind with absolute rtk path', 
   assert.equal(isRtkInvocation('git status'), false);
   assert.equal(isRtkInvocation('rtkx foo'), false);
   assert.equal(isRtkInvocation('JAVA_HOME="/c/j" rtk mvn test'), true);
-  const { usesRtk } = await import('../scripts/filter/rtk.mjs');
+  const { usesRtk } = await import('../core/filter/rtk.mjs');
   assert.equal(usesRtk('cd x && export A=1 && rtk mvn test'), true);
   assert.equal(usesRtk('cd x && mvn test'), false);
   assert.equal(pinRtkPath('rtk git status', 'rtk'), 'rtk git status');

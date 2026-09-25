@@ -27,9 +27,33 @@ jobs:
         env:
           NXY_HOME: ${{ runner.temp }}/nxy-home
         run: |
-          echo '{"cwd":"'"$PWD"'","hook_event_name":"SessionStart"}' | node scripts/hooks/sessionstart.mjs
-          out=$(echo '{"tool_name":"Bash","cwd":"'"$PWD"'","tool_input":{"command":"git status"}}' | node scripts/hooks/pretooluse-bash.mjs)
+          echo '{"cwd":"'"$PWD"'","hook_event_name":"SessionStart"}' | node hosts/claude-code/hooks/sessionstart.mjs
+          out=$(echo '{"tool_name":"Bash","cwd":"'"$PWD"'","tool_input":{"command":"git status"}}' | node hosts/claude-code/hooks/pretooluse-bash.mjs)
           test -z "$out" || { echo "expected no rewrite without rtk, got: $out"; exit 1; }
-          echo '{"tool_name":"Bash","session_id":"ci","cwd":"'"$PWD"'","tool_input":{"command":"git status"},"tool_response":{"stdout":"ok","stderr":""}}' | node scripts/hooks/posttooluse-bash.mjs
-          test -s .nxy/metrics/filter.jsonl
-          echo '{}' | node scripts/metrics/statusline.mjs; echo
+          echo '{"tool_name":"Bash","session_id":"ci","cwd":"'"$PWD"'","tool_input":{"command":"git status"},"tool_response":{"stdout":"ok","stderr":""}}' | node hosts/claude-code/hooks/posttooluse-bash.mjs
+          test -s .nxy/local/metrics/filter.jsonl
+          echo '{}' | node hosts/claude-code/statusline.mjs; echo
+      - name: gate + locate smoke test
+        shell: bash
+        env:
+          NXY_HOME: ${{ runner.temp }}/nxy-home-gate
+        run: |
+          # The gate must be silent below the threshold: no output at all means zero tokens.
+          printf '%s\n' '{"type":"assistant","message":{"usage":{"input_tokens":500,"cache_read_input_tokens":19000}}}' > small.jsonl
+          out=$(echo '{"tool_name":"Edit","cwd":"'"$PWD"'","transcript_path":"'"$PWD"'/small.jsonl","tool_input":{"file_path":"x.mjs"}}' | node hosts/claude-code/hooks/pretooluse-edit.mjs)
+          test -z "$out" || { echo "expected no gate output under the threshold, got: $out"; exit 1; }
+          # Above it, it must deny and name the implementer.
+          printf '%s\n' '{"type":"assistant","message":{"usage":{"input_tokens":1200,"cache_read_input_tokens":151000}}}' > big.jsonl
+          out=$(echo '{"tool_name":"Edit","cwd":"'"$PWD"'","transcript_path":"'"$PWD"'/big.jsonl","tool_input":{"file_path":"x.mjs"}}' | node hosts/claude-code/hooks/pretooluse-edit.mjs)
+          echo "$out" | grep -q '"permissionDecision":"deny"' || { echo "expected deny above the threshold, got: $out"; exit 1; }
+          echo "$out" | grep -q 'implementer' || { echo "deny reason must point at the implementer: $out"; exit 1; }
+          # A subagent carrying the same context must never be blocked.
+          mkdir -p sess/subagents && cp big.jsonl sess/subagents/agent-1.jsonl
+          out=$(echo '{"tool_name":"Edit","cwd":"'"$PWD"'","transcript_path":"'"$PWD"'/sess/subagents/agent-1.jsonl","tool_input":{"file_path":"x.mjs"}}' | node hosts/claude-code/hooks/pretooluse-edit.mjs)
+          test -z "$out" || { echo "the implementer must be able to write, got: $out"; exit 1; }
+          rm -rf small.jsonl big.jsonl sess
+          # The model-free search must work with no codegraph and (possibly) no rg installed.
+          node hosts/claude-code/entries/locate.mjs --status
+          node hosts/claude-code/entries/locate.mjs "where is the filter engine resolved" | head -20
+          test -s .nxy/local/index/repomap.tsv
+          node hosts/claude-code/entries/gate.mjs status

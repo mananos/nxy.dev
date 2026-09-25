@@ -1,11 +1,11 @@
-# Reference repos (cloned for design research, not part of the plugin)
-/OmniRoute/
-/gentle-ai/
-/gentle-shell/
-/engram/
+# Internal working notes (not published)
+docs/roadmap-debate.md
 
-# Runtime data written by the plugin
-.nxy/
+# Runtime data written by the plugin (per checkout, regenerated on its own).
+# `.nxy/config.json` and `.nxy/memory/` are NOT ignored on purpose: they are what the repo shares.
+.nxy/local/
+# Pre-0.2.0 runtime path. An installed 0.1.x keeps writing here until it is upgraded.
+.nxy/metrics/
 
 # Tooling
 node_modules/

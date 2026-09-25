@@ -5,12 +5,12 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { render } from '../scripts/metrics/statusline.mjs';
-import { shimSource, versionsDirFor } from '../scripts/metrics/statusline-setup.mjs';
-import { colorize, severity } from '../scripts/lib/format.mjs';
-import { gitBranch } from '../scripts/lib/paths.mjs';
-import { loadConfig } from '../scripts/lib/config.mjs';
-import { newIncrementalState } from '../scripts/lib/transcripts.mjs';
+import { render } from '../hosts/claude-code/statusline.mjs';
+import { shimSource, versionsDirFor } from '../hosts/claude-code/entries/statusline-setup.mjs';
+import { colorize, severity } from '../core/format.mjs';
+import { gitBranch } from '../core/paths.mjs';
+import { loadConfig } from '../core/config.mjs';
+import { newIncrementalState } from '../hosts/claude-code/transcripts.mjs';
 
 const RED = '\x1b[31m';
 const RESET = '\x1b[0m';
@@ -196,14 +196,18 @@ test('gitBranch: reads HEAD from .git dir, worktree pointer, detached head; null
 test('statusline shim: resolves the newest installed version, honours env, falls back to the checkout', () => {
   const root = mkdtempSync(join(tmpdir(), 'nxy-shim-'));
   const plugin = join(root, 'plugins', 'cache', 'nxy-dev', 'nxy');
-  const fake = (dir, tag) => {
-    mkdirSync(join(dir, 'scripts', 'metrics'), { recursive: true });
-    writeFileSync(join(dir, 'scripts', 'metrics', 'statusline.mjs'), `export function main() { process.stdout.write(${JSON.stringify(tag)}); }\n`);
+  // Two layouts coexist in the wild: 0.1.x shipped `scripts/metrics/`, 0.2.0+ ships
+  // `hosts/claude-code/`. The shim resolves versions it did not generate, so it must find both.
+  const OLD = ['scripts', 'metrics'];
+  const NEW = ['hosts', 'claude-code'];
+  const fake = (dir, tag, layout = OLD) => {
+    mkdirSync(join(dir, ...layout), { recursive: true });
+    writeFileSync(join(dir, ...layout, 'statusline.mjs'), `export function main() { process.stdout.write(${JSON.stringify(tag)}); }\n`);
   };
   for (const v of ['0.1.0', '0.1.2', '0.1.10']) fake(join(plugin, v), `v${v}`);
   mkdirSync(join(plugin, '0.2.0')); // downloaded but empty: must be skipped
   const checkout = join(root, 'checkout');
-  fake(checkout, 'dev');
+  fake(checkout, 'dev', NEW);
 
   assert.equal(versionsDirFor(join(plugin, '0.1.2')), plugin);
   assert.equal(versionsDirFor(checkout), null, 'a git checkout has no versions dir');
@@ -220,9 +224,14 @@ test('statusline shim: resolves the newest installed version, honours env, falls
   writeFileSync(join(root, 'plugins', 'installed_plugins.json'), '{not json');
   assert.equal(runShim(shimSource(join(plugin, '0.1.2'))), 'v0.1.10', 'broken registry → newest');
   // a throwing main never leaves the statusline blank
-  mkdirSync(join(plugin, '0.1.11', 'scripts', 'metrics'), { recursive: true });
-  writeFileSync(join(plugin, '0.1.11', 'scripts', 'metrics', 'statusline.mjs'), "export function main() { throw new Error('boom'); }\n");
+  mkdirSync(join(plugin, '0.1.11', ...OLD), { recursive: true });
+  writeFileSync(join(plugin, '0.1.11', ...OLD, 'statusline.mjs'), "export function main() { throw new Error('boom'); }\n");
   assert.equal(runShim(shimSource(join(plugin, '0.1.2'))), 'nxy ?', 'error inside main → placeholder, exit 0');
   assert.equal(runShim(shimSource(checkout)), 'dev', 'no cache layout → the checkout that ran --apply');
-  assert.equal(runShim(shimSource(join(plugin, '0.1.2')), { NXY_STATUSLINE: join(checkout, 'scripts', 'metrics', 'statusline.mjs') }), 'dev', 'env override wins');
+  assert.equal(runShim(shimSource(join(plugin, '0.1.2')), { NXY_STATUSLINE: join(checkout, ...NEW, 'statusline.mjs') }), 'dev', 'env override wins');
+
+  // A post-reorder version installed in the cache resolves through the same shim.
+  fake(join(plugin, '0.2.1'), 'v0.2.1', NEW);
+  writeFileSync(join(root, 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins: { 'nxy@nxy-dev': [{ scope: 'user', installPath: join(plugin, '0.2.1'), version: '0.2.1' }] } }));
+  assert.equal(runShim(shimSource(join(plugin, '0.2.1'))), 'v0.2.1', 'hosts/claude-code layout resolves too');
 });

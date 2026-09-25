@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
-import { fmtUsdPartial } from '../scripts/lib/format.mjs';
+import { fmtUsdPartial } from '../core/format.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KNOWN = 0.159125 + 0.006 + 0.00506; // opus + sonnet + haiku calls of the fixture
@@ -29,7 +29,7 @@ function setup() {
 }
 
 function run(script, args) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'metrics', script), ...args], { encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: '' } });
+  const r = spawnSync(process.execPath, [join(ROOT, 'hosts', 'claude-code', 'entries', script), ...args], { encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: '' } });
   assert.equal(r.status, 0, `${script} ${args.join(' ')} failed:\n${r.stderr}`);
   return r.stdout;
 }

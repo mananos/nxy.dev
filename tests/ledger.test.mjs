@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   dailyFromGain, ledgerUnavailableReason, normalizeProjectPath, readLedgerRows, rtkHistoryDbPath, savedPct, sessionSavings, sumSavings, underProject,
-} from '../scripts/filter/ledger.mjs';
+} from '../core/filter/ledger.mjs';
 
 test('normalizeProjectPath strips the Windows extended prefix and unifies slashes', () => {
   assert.equal(normalizeProjectPath('\\\\?\\C:\\Users\\u\\proj\\', 'win32'), 'c:/users/u/proj');

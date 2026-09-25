@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { rtkWarnMarkerPath, silenceRtkHookWarning } from '../scripts/filter/rtk.mjs';
+import { rtkWarnMarkerPath, silenceRtkHookWarning } from '../core/filter/rtk.mjs';
 
 test('rtkWarnMarkerPath follows dirs::data_local_dir per platform', () => {
   const home = join('h', 'ome');
