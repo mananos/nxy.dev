@@ -13,7 +13,6 @@
     "projectsDir": null,
     "subscription": true,
     "statusline": {
-      "cacheTtlMs": 2000,
       "color": true,
       "preset": "vivid",
       "layout": "line",
@@ -26,5 +25,49 @@
       "theme": {}
     },
     "cacheBreakThreshold": 100000
+  },
+  "scout": {
+    "codegraph": true
+  },
+  "gate": {
+    "enabled": true,
+    "contextTokens": 100000,
+    "escapeMinutes": 5
+  },
+  "roles": {
+    "scout": {
+      "model": "haiku",
+      "provider": "claude"
+    },
+    "planner": {
+      "model": "sonnet",
+      "provider": "claude"
+    },
+    "implementer": {
+      "model": "sonnet",
+      "provider": "claude"
+    },
+    "tester": {
+      "model": "haiku",
+      "provider": "claude"
+    },
+    "reviewer": {
+      "model": "sonnet",
+      "provider": "claude"
+    },
+    "documenter": {
+      "model": "sonnet",
+      "provider": "claude"
+    },
+    "librarian": {
+      "model": "haiku",
+      "provider": "claude"
+    }
+  },
+  "memory": {
+    "mode": "assisted",
+    "handoff": {
+      "required": true
+    }
   }
 }

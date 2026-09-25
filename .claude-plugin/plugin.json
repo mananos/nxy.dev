@@ -1,6 +1,6 @@
 {
   "name": "nxy",
-  "version": "0.1.3",
+  "version": "1.0.0-rc.1",
   "description": "Calidad de código, velocidad y consumo de tokens bajo control en Claude Code, con métricas reales por sesión, modelo y subagente. Agnóstico de lenguaje.",
   "author": {
     "name": "Matias Nicolas Añaños"
@@ -11,6 +11,10 @@
     "metrics",
     "filter",
     "rtk",
-    "statusline"
+    "statusline",
+    "memory",
+    "plan",
+    "review",
+    "subagents"
   ]
 }

@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decide } from '../scripts/filter/decide.mjs';
+import { decide } from '../core/filter/decide.mjs';
 
 /** Fake engine: prefixes with `rtk ` and returns the exit code chosen per command. */
 function fakeRewrite(codes = {}) {
@@ -10,7 +10,7 @@ function fakeRewrite(codes = {}) {
 
 const base = { engine: /** @type {const} */ ('rtk'), rewrite: fakeRewrite() };
 
-/** @type {Array<[string, string, Partial<import('../scripts/filter/decide.mjs').DecideContext>?]>} */
+/** @type {Array<[string, string, Partial<import('../core/filter/decide.mjs').DecideContext>?]>} */
 const SKIP_CASES = [
   ['', 'empty'],
   ['   ', 'empty'],
@@ -78,7 +78,7 @@ for (const [cmd, reason, over] of SKIP_CASES) {
   });
 }
 
-/** @type {Array<[string, string, boolean, Partial<import('../scripts/filter/decide.mjs').DecideContext>?]>} */
+/** @type {Array<[string, string, boolean, Partial<import('../core/filter/decide.mjs').DecideContext>?]>} */
 const REWRITE_CASES = [
   ['git status', 'rtk git status', true],
   ['mvn test', 'rtk mvn test', true],

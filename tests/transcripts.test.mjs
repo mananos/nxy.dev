@@ -1,18 +1,23 @@
 // @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
-import { listSessions, newIncrementalState, parseSession, readIncremental, resolveSession } from '../scripts/lib/transcripts.mjs';
-import { costFor, isSyntheticModel, isZeroUsage, normalizeModel, toUsage } from '../scripts/lib/pricing.mjs';
+import { breakCause, formatBreaks, listSessions, newIncrementalState, parseSession, readIncremental, resolveSession, summarizeBreaks } from '../hosts/claude-code/transcripts.mjs';
+import { costFor, emptyUsage, isSyntheticModel, isZeroUsage, normalizeModel, toUsage } from '../core/pricing.mjs';
 
 const close = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 
 test('pricing: normalizeModel covers direct API, Bedrock and Vertex ids', () => {
   // direct API
   assert.equal(normalizeModel('claude-opus-5-20260401[1m]'), 'claude-opus-5');
+  // A point release must not collapse into its base model: Opus 5.5 is priced differently from
+  // Opus 5 ($4/$20 vs $5/$25), so truncating it here would silently misprice every call.
+  assert.equal(normalizeModel('claude-opus-5-5'), 'claude-opus-5-5');
+  assert.equal(normalizeModel('claude-opus-5-5-20260922'), 'claude-opus-5-5');
+  assert.equal(normalizeModel('us.anthropic.claude-opus-5-5-v1:0'), 'claude-opus-5-5');
   assert.equal(normalizeModel('claude-sonnet-5'), 'claude-sonnet-5');
   assert.equal(normalizeModel('claude-sonnet-4-5-20250929'), 'claude-sonnet-4-5');
   assert.equal(normalizeModel('claude-opus-4-1-latest'), 'claude-opus-4-1');
@@ -54,6 +59,10 @@ test('pricing: cache-aware costFor', () => {
   close(costFor('claude-opus-5', u) ?? -1, 0.131, 'opus 5 with 5m writes');
   const u1h = toUsage({ input_tokens: 0, cache_creation_input_tokens: 1000, cache_read_input_tokens: 0, output_tokens: 0, cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 1000 } });
   close(costFor('claude-opus-5', u1h) ?? -1, 0.01, '1h writes at 2x');
+  // Opus 5.5 is cheaper than Opus 5 and its cache reads are 5% of input, not 10%.
+  const cached = toUsage({ input_tokens: 1000, cache_read_input_tokens: 100_000, output_tokens: 500 });
+  close(costFor('claude-opus-5-5', cached) ?? -1, (1000 * 4 + 100_000 * 0.2 + 500 * 20) / 1e6, 'opus 5.5 rates');
+  assert.notEqual(costFor('claude-opus-5-5', cached), costFor('claude-opus-5', cached), 'and it is not priced as Opus 5');
   const fast = toUsage({ input_tokens: 1000, output_tokens: 100, speed: 'fast' });
   close(costFor('claude-opus-5', fast) ?? -1, (1000 * 10 + 100 * 50) / 1e6, 'fast mode');
   assert.equal(costFor('claude-future-9', u), null, 'unknown model → null, never a guess');
@@ -196,4 +205,46 @@ test('readIncremental tracks turns, the current turn cost and the last call time
   assert.equal(merged.turns, 0);
   assert.equal(merged.lastTs, null);
   assert.equal(merged.turnStartTs, null);
+});
+
+test('cache breaks: attributed to idle, a slow subagent, a compaction, or other', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-breaks-'));
+  const t0 = Date.parse('2026-09-01T10:00:00Z');
+  const at = (min) => new Date(t0 + min * 60_000).toISOString();
+  const call = (id, min, usage, model = 'claude-sonnet-4-6') => ({
+    type: 'assistant', uuid: `a${id}`, timestamp: at(min), requestId: `r${id}`,
+    message: { id: `msg_${id}`, model, usage: { input_tokens: 0, output_tokens: 10, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, ...usage } },
+  });
+  const write1h = (n) => ({ cache_creation_input_tokens: n, cache_creation: { ephemeral_1h_input_tokens: n, ephemeral_5m_input_tokens: 0 } });
+  const write5m = (n) => ({ cache_creation_input_tokens: n, cache_creation: { ephemeral_1h_input_tokens: 0, ephemeral_5m_input_tokens: n } });
+  const lines = [
+    call(1, 0, write5m(200_000)),                                                    // start
+    { type: 'assistant', uuid: 'a1b', timestamp: at(0), message: { id: 'msg_x', model: 'claude-sonnet-4-6', content: [{ type: 'tool_use', id: 'tu1', name: 'Agent', input: { subagent_type: 'nxy:implementer' } }] } },
+    { type: 'user', uuid: 'u1', timestamp: at(9), message: { content: [{ type: 'tool_result', tool_use_id: 'tu1' }] }, toolUseResult: { agentId: 'ag1' } },
+    call(2, 9, write5m(210_000)),                                                    // waited 9 min on a subagent, 5m TTL
+    call(3, 10, { cache_read_input_tokens: 210_000 }),                               // warm
+    call(4, 190, write1h(220_000)),                                                  // 3h pause, even the 1h TTL died
+    { type: 'system', subtype: 'compact_boundary', uuid: 's1', timestamp: at(191) },
+    call(5, 192, write5m(150_000)),                                                  // compaction: new prefix
+    call(6, 193, write5m(160_000)),                                                  // cache alive, prefix changed
+    call(7, 194, write5m(170_000)),                                                  // same: other
+  ];
+  const path = join(dir, 'sess.jsonl');
+  writeFileSync(path, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  const s = parseSession({ sessionId: 'sess', path, project: 'p', agentsDir: join(dir, 'sess', 'subagents'), mtimeMs: 0, size: 0 }, { cacheBreakThreshold: 100_000 });
+  assert.deepEqual(s.cacheBreaks.map((b) => b.cause), ['start', 'subagent', 'idle', 'compact', 'other', 'other']);
+  assert.deepEqual(s.cacheBreaks.map((b) => b.ttl), ['5m', '5m', '1h', '5m', '5m', '5m']);
+  assert.ok(s.cacheBreaks.every((b) => typeof b.usd === 'number' && b.usd > 0), 'each rebuild is priced');
+
+  const sum = summarizeBreaks(s.cacheBreaks);
+  assert.equal(sum.byCause.subagent.count, 1);
+  assert.equal(sum.byCause.idle.tokens, 220_000);
+  close(sum.avoidableUsd, sum.byCause.idle.usd + sum.byCause.subagent.usd, 'avoidable = idle + subagent');
+  const text = formatBreaks(sum, 100, (n) => String(n)).join('\n');
+  assert.match(text, /idle 1 · 220000/);
+  assert.match(text, /5m ×5 · 1h ×1/);
+  assert.match(text, /% of cost\)/);
+
+  assert.equal(breakCause({ gapMs: 4 * 60_000, after: 'subagent', usage: { ...emptyUsage(), cacheWrite5m: 1 } }), 'other',
+    'a short subagent did not outlive the cache: waiting on it is not why it broke');
 });

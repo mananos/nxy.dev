@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   splitTopLevel, hasHeredoc, hasSubstitution, hasRedirect, isBackgrounded, firstToken, leadingAssignments,
-} from '../scripts/lib/shell.mjs';
+} from '../core/shell.mjs';
 
 test('splitTopLevel splits on && || ; | outside quotes', () => {
   assert.deepEqual(splitTopLevel('echo a && ls -la || true; pwd | wc -l'), ['echo a', 'ls -la', 'true', 'pwd', 'wc -l']);
@@ -60,7 +60,7 @@ test('firstToken skips env prefixes and wrappers', () => {
 });
 
 test('stripTrailingLimit', async () => {
-  const { stripTrailingLimit } = await import('../scripts/lib/shell.mjs');
+  const { stripTrailingLimit } = await import('../core/shell.mjs');
   assert.equal(stripTrailingLimit('mvn test 2>&1 | tail -n 150'), 'mvn test 2>&1');
   assert.equal(stripTrailingLimit('npm test | head -50'), 'npm test');
   assert.equal(stripTrailingLimit('npm test | tail'), 'npm test');

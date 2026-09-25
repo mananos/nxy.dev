@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["scripts/**/*.mjs", "tests/**/*.mjs"]
+  "include": ["core/**/*.mjs", "hosts/**/*.mjs", "tests/**/*.mjs"]
 }

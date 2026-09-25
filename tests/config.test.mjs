@@ -4,9 +4,10 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deepMerge, loadConfig } from '../scripts/lib/config.mjs';
-import { projectSlug, toNativePath } from '../scripts/lib/paths.mjs';
-import { appendJsonl, readJsonl } from '../scripts/lib/jsonl.mjs';
+import { deepMerge, loadConfig } from '../core/config.mjs';
+import { toNativePath } from '../core/paths.mjs';
+import { projectSlug } from '../hosts/claude-code/paths.mjs';
+import { appendJsonl, readJsonl } from '../core/jsonl.mjs';
 
 test('deepMerge recurses objects and replaces arrays/scalars', () => {
   const out = deepMerge({ a: { b: 1, c: [1] }, d: 1 }, { a: { c: [2] }, d: 2 });
