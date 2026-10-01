@@ -39,6 +39,7 @@ import {
 import { writeMarker } from '../plan-approval.mjs';
 import { memCommand } from '../handoff.mjs';
 import { clearBaseline } from '../baseline.mjs';
+import { recordDirtyAtApproval } from '../gitstate.mjs';
 import { markHandoffSaved } from '../stop-state.mjs';
 import { progressFor } from '../verify-state.mjs';
 import { exportProject, importProject, memoryDir } from '../../../core/memory/exchange.mjs';
@@ -47,7 +48,7 @@ import {
 } from '../../../core/memory/handoff.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
-const cwd = toNativePath(typeof opts.cwd === 'string' ? opts.cwd : process.cwd());
+const cwd = toNativePath(typeof opts.cwd === 'string' ? opts.cwd : process.env.CLAUDE_PROJECT_DIR || process.cwd());
 const action = (positional[0] || 'status').toLowerCase();
 const rest = positional.slice(1);
 
@@ -257,6 +258,7 @@ switch (action) {
       markHandoffSaved(cwd, branch);
       const plan = extractPlan(body);
       writeMarker(cwd, branch, plan ? planHash(plan) : null, plan ? parseQuestions(plan).length : 0);
+      if (plan) recordDirtyAtApproval(cwd, branch, planHash(plan));
       console.log(`${res.created ? 'saved' : 'replaced'} handoff for \`${label}\` (${check.lines} lines, route: ${check.route})${plan ? ` · plan ${planHash(plan)} kept` : ''}${opts.share ? ' · shared: `mem export` will write it' : ''}`);
       for (const w of check.warnings) console.log(`warning: ${w}`);
       console.log('Save again after each finished task; `mem handoff done` archives it when the branch is finished.');
@@ -278,6 +280,7 @@ switch (action) {
       markHandoffSaved(cwd, branch);
       const hash = planHash(plan);
       writeMarker(cwd, branch, hash, check.questions);
+      recordDirtyAtApproval(cwd, branch, hash);
       const open = check.questions ? `, ${check.questions} open question${check.questions === 1 ? '' : 's'}` : '';
       console.log(`plan ${hash} saved in the handoff of \`${label}\` (${check.batches} batch${check.batches === 1 ? '' : 'es'}${open})\n`);
       console.log(`Next (main thread): ${nextStep(plan)}`);

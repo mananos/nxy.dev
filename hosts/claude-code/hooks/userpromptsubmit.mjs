@@ -20,6 +20,7 @@ import { loadConfig } from '../../../core/config.mjs';
 import { gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { areaFor, projectKey } from '../../../core/memory/scope.mjs';
 import { memCommand, reviewCommand } from '../handoff.mjs';
+import { takeNotes } from '../agent-notes.mjs';
 import { notePointers, readSession } from '../recall-state.mjs';
 
 /** @type {string[]} */
@@ -32,6 +33,8 @@ try {
   const cfg = loadConfig(cwd);
   const mode = cfg.memory?.mode || 'assisted';
   const session = typeof input.session_id === 'string' ? input.session_id : 'unknown';
+  // Completion notes of background agents go first.
+  context.push(...takeNotes(cwd));
   // On a branch whose plan was already reviewed, a correction now is what the review missed (0.4.3):
   // one line per session so the main thread offers to keep it. Nothing on any other branch.
   if (prompt.trim() && !prompt.trim().startsWith('/')) {

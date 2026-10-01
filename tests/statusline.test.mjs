@@ -133,6 +133,13 @@ test('render: turn cost severity (the hand-off signal) and partial sums', () => 
   assert.ok(!turn(5, 1).includes(BOLD_RED), 'partial turn cost never claims a severity');
 });
 
+test('render: estimated prices (family fallback) carry a star', () => {
+  const line = at({}, state({ calls: 2, usage: usage(10, 1), usd: 0.5, usdEstimated: 1, turns: 1, turnUsd: 0.5, lastTs: NOW }), PLAIN);
+  assert.ok(line.includes('turno $0.500*~ ⟡ sesión $0.500*~'), `starred: ${line}`);
+  const exact = at({}, state({ calls: 2, usage: usage(10, 1), usd: 0.5, turns: 1, turnUsd: 0.5, lastTs: NOW }), PLAIN);
+  assert.ok(!exact.includes('*'), 'exact prices have no star');
+});
+
 test('render: prompt_cache from Claude Code wins over the TTL heuristic; cold shows re-cache tokens and their price', () => {
   const main = state({ calls: 1, usage: usage(10, 1), usd: 0.01, turns: 1, lastTs: NOW - 60 * 60_000 }); // heuristic alone would say cold
   const model = { id: 'claude-opus-5', display_name: 'Opus 5' };

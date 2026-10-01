@@ -171,15 +171,19 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 ## La verificación de cada lote
 
 - Cada `Accept:` es un comando en backticks: el test más chico que prueba el lote (una clase o un archivo, no la suite), o `manual — <qué mirar>`.
-- El implementer lo corre después de su último cambio. Al terminar, el hook `SubagentStop` lee **el transcript del implementer** (no su resumen) y verifica que el comando haya corrido después del último `Edit`, tal como está escrito (sin pipe) y con salida 0.
+- El implementer lo corre después de su último cambio. Al terminar, el hook `SubagentStop` lee **el transcript del implementer** (no su resumen) y verifica que el comando haya corrido después del último `Edit`, tal como está escrito (sin pipe) y con salida 0. Acepta formas equivalentes del comando (barras `/` o `\`, comillas, `./` al principio, `.exe`, `& ` de PowerShell), pero no las que llevan pipe, `;` o `||`. El planner no escribe rutas con barra invertida en `Accept:`, porque corre en Bash.
 - Si no lo corrió o falló, lo manda de vuelta **una vez** (exit 2) con el comando exacto. La segunda vez lo deja terminar y el lote queda en rojo.
 - Los veredictos quedan en `.nxy/local/verify/<plan>/`, un archivo por lote reemplazado de forma atómica, para que dos lotes en paralelo que terminan juntos no se pisen. Una carpeta sin veredictos nuevos en 30 días se borra sola.
 - Mientras un lote esté en rojo no se despachan los que dependen de él, salvo que elijas **Continue anyway**.
 - Con todos en verde, nxy indica despachar el **tester** (Haiku) una vez: corre la suite completa de cada repo tocado (o la línea `Suite:` del plan) y devuelve sólo lo que falló. Es informativo: no frena nada.
+- **Agentes en segundo plano.** Al lanzarlos nxy sólo avisa "lanzado en segundo plano" y no calcula veredicto. El veredicto se calcula en `SubagentStop` y se entrega una sola vez al principal, por el hook `Stop` (exit 2), el próximo prompt o el próximo Bash (una nota por archivo en `.nxy/local/notes/`, que se reclama por rename y se descarta al día). Un lote en curso figura `running` y sus dependientes quedan `pending`; un lote que muere sin `SubagentStop` sigue así hasta que se despacha de nuevo.
+- **Suite en rojo.** Un único implementer con prompt `Suite fix — <qué falló>`, sólo permitido con todos los lotes verificados y la suite terminada. nxy lo verifica corriendo de nuevo las líneas `Suite:` del plan (o, sin ellas, los comandos que fallaron en el tester); se manda de vuelta una vez como un lote. Después viene la review. El reviewer se deniega mientras la suite corre, y si termina sin registrar la review se lo manda de vuelta una vez y luego se informa.
 
 ## La review
 
-- **Qué se revisa.** Sólo lo que cambió el plan. La primera vez que un lote toca un archivo, nxy guarda una copia (`.nxy/local/baseline/<rama>/`); el diff es esa copia contra el archivo actual. No usa git, así que cambios tuyos sin commitear en esos archivos no aparecen como del plan. Las copias se borran con `handoff done`.
+- **Qué se revisa.** Sólo lo que cambió el plan. La primera vez que un lote toca un archivo, nxy guarda una copia (`.nxy/local/baseline/<rama>/`); el diff es esa copia contra el archivo actual. Además, al aprobar el plan nxy anota qué archivos ya tenían cambios sin commitear (con un `git status` de sólo lectura: nunca escribe dentro de `.git`). Un archivo que cambió después sin tener copia aparece marcado `(git)` y se compara contra HEAD; un archivo que ya estaba modificado al aprobar y no tiene copia se nombra como "no revisado", porque no se puede separar lo del plan de lo tuyo. Sin git, o fuera de un repo, la review lo dice y revisa sólo las copias. Las copias y esa lista se borran con `handoff done`.
+- **Escrituras por consola.** Con un plan activo, `sed -i`, las redirecciones (`>`, `>>`), `tee`, `cp`/`mv`, `truncate`, `dd of=` (y `Set-Content`/`Add-Content`/`Out-File` en PowerShell) también se copian antes de correr, igual que una edición. No se reconocen los scripts, `xargs`, `python -c`, rutas con variables ni comodines: esos casos los cubre la lista de git.
+- **El paquete.** `review.mjs packet` guarda el paquete completo en `.nxy/local/baseline/<rama>/review-packet.md` (unos 130 KB para un diff de 2.000 líneas; un solo archivo, reemplazado en cada review, borrado con `handoff done`) y sólo imprime un índice: encabezado, ruta, tamaño, secciones y offsets de cada archivo (código primero, tests al final), lo no revisado y el formato de respuesta. El reviewer lo lee con `Read` por partes de unas 300 líneas. `packet --full` imprime todo.
 - **Cuándo.** Una vez, al final, después del tester. Si sólo cambiaron docs o tests, no hay review.
 - **Lentes**, elegidas por qué archivos cambiaron, nunca por cuántas líneas:
 
@@ -199,7 +203,7 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 
 - **Convenciones al implementer.** Cada implementer recibe los títulos de las convenciones del repo en su `<nxy-context>` (primero las del área de sus archivos). Si hay más de las que entran, recibe el comando para verlas.
 - **Escapes.** `/nxy:review escape "<regla>" --as convention|lens` registra algo que la review no vio y lo guarda como convención (la siguen planner e implementers) o como lente del repo en `.nxy/lenses/repo.md` (la mira toda review futura). En una rama ya revisada, Claude recibe una línea por sesión para ofrecértelo.
-- **Docs.** Si algún `.md` del repo nombra un archivo o una clase que el plan cambió (lo busca nxy con `rg`, sin tokens), el checkpoint 2 suma **Update docs / Leave docs**. El **documenter** (Sonnet, effort low) edita sólo esos `.md` en la misma rama. Si tu CI publica una carpeta a una wiki (Wiki.js, Azure DevOps), nxy la detecta.
+- **Docs.** Sólo se ofrecen documentos para usuarios: `.md` en la raíz, `README*`, y lo que esté bajo `docs/`, `doc/`, `documentation/` o `wiki/` (o `docs.paths` si lo configurás); `agents/`, `skills/`, `commands/`, `lenses/` y carpetas con punto no cuentan. Se muestran los 3 con más menciones y "+N más". Si alguno de esos `.md` nombra un archivo o una clase que el plan cambió (lo busca nxy con `rg`, sin tokens), el checkpoint 2 suma **Update docs / Leave docs**. El **documenter** (Sonnet, effort low) edita sólo esos `.md` en la misma rama. Si tu CI publica una carpeta a una wiki (Wiki.js, Azure DevOps), nxy la detecta.
 - `/nxy:review status` muestra por lente, en 30 días: hallazgos del cambio, elegidos para arreglar, preexistentes y escapes.
 
 ## Los hooks
@@ -208,7 +212,7 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 | --- | --- | --- |
 | `SessionStart` | Resuelve el motor del filtro; una línea si la rama tiene handoff | ~40 si hay handoff |
 | `UserPromptSubmit` | Punteros a memorias; recordatorio de escape en rama revisada | ~30 por puntero |
-| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk | 0 |
+| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk; con un plan activo, copia antes los archivos que el comando va a escribir (`sed -i`, `>`, `tee`, `cp`/`mv`) | 0 |
 | `PreToolUse` Edit/Write | Freno de escritura, handoff obligatorio, checkpoint del plan, copia para la review | 0 salvo que frene |
 | `PreToolUse` Agent | Modelo por rol; handoff + avance + convenciones al implementer; orden de los lotes | El bloque del implementer (~20–60 líneas) |
 | `PostToolUse` Bash/PowerShell | Una fila de métricas | 0 |

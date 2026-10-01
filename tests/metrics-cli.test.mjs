@@ -134,3 +134,43 @@ test('trend: calls/turn and ctx/call columns', () => {
   assert.match(text, /\s3\.5\s+13k\s+2\s/, '3.5 calls/turn · 13k ctx/call · 2 files edited by main');
   assert.equal(json.periods[0].mainEdits, 2);
 });
+
+/** Like setup(), but the only transcript has one call of a model missing from the pricing table. */
+function setupEstimated() {
+  const projectsDir = mkdtempSync(join(tmpdir(), 'nxy-cli-est-'));
+  const dir = join(projectsDir, FIXTURE.slug);
+  mkdirSync(dir, { recursive: true });
+  const ts = new Date().toISOString();
+  const line = (o) => JSON.stringify({ cwd: FIXTURE.cwd, version: '2.1.274', gitBranch: 'main', timestamp: ts, ...o });
+  writeFileSync(join(dir, 'sess-est.jsonl'), [
+    line({ type: 'user', uuid: 'u1', message: { role: 'user', content: 'hi' } }),
+    line({ type: 'assistant', uuid: 'a1', requestId: 'req_e1', message: { id: 'msg_e1', model: 'claude-sonnet-5-6', role: 'assistant', usage: { input_tokens: 1000000, output_tokens: 0 }, content: [{ type: 'text', text: 'ok' }] } }),
+  ].join('\n') + '\n');
+  const cwd = mkdtempSync(join(tmpdir(), 'nxy-cli-cwd-'));
+  mkdirSync(join(cwd, '.nxy'));
+  writeFileSync(join(cwd, '.nxy', 'config.json'), JSON.stringify({ metrics: { projectsDir } }));
+  return cwd;
+}
+
+test('fmtUsdPartial: estimated sums carry a star, never replacing +?', () => {
+  assert.equal(fmtUsdPartial(1.2, false, true), '$1.20*');
+  assert.equal(fmtUsdPartial(1.2, true, true), '$1.20*+?');
+  assert.equal(fmtUsdPartial(1.2, false, false), '$1.20');
+  assert.equal(fmtUsdPartial(null, false, true), '?');
+});
+
+test('stats and trend: a model missing from the table is priced by family, marked * and noted', () => {
+  const cwd = setupEstimated();
+  const note = /\(estimated with claude-sonnet-5-5 rates: claude-sonnet-5-6 — not in core\/pricing\.json\)/;
+  const stats = run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd]);
+  assert.match(stats, /\$2\.00\*/, 'stats shows the starred figure');
+  assert.match(stats, note);
+  const json = JSON.parse(run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd, '--json']));
+  assert.equal(json.usage.usdEstimated, true);
+  assert.deepEqual(json.usage.estimatedModels, { 'claude-sonnet-5-6': 'claude-sonnet-5-5' });
+  for (const by of ['model', 'day']) {
+    const text = run('trend.mjs', ['--by', by, '--since', '30d', '--cwd', cwd]);
+    assert.match(text, /\$2\.00\*/, `trend --by ${by} shows *`);
+    assert.match(text, note, `trend --by ${by} notes the estimate`);
+  }
+});

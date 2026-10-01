@@ -22,6 +22,8 @@ Se combinan en ese orden con deep-merge (los objetos se mezclan; listas y valore
 
 Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
 
+`.nxy/` (la config y el estado local) vive en la raíz del repo git, desde cualquier subcarpeta donde arranques un comando. Un `.nxy/config.json` dentro de una subcarpeta (por paquete) ya no se lee: movelo a la raíz del repo. Fuera de un repo git no cambia nada.
+
 ## Variables de entorno
 
 | Variable | Efecto |

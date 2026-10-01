@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   APPROVE, CHANGE, PLAN_TEMPLATE, approvalQuestion, checkpointDenyMessage, checkpointInstruction, decideCheckpoint, extractPlan,
-  parseDecisions, parseQuestions, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
+  parseDecisions, parseQuestions, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
 } from '../core/plan.mjs';
 import { subagentContextBlock, validateHandoff } from '../core/memory/handoff.mjs';
 import { findApproval } from '../hosts/claude-code/plan-approval.mjs';
@@ -35,6 +35,25 @@ const PLAN = [
   'Accept: `./mvnw -q test -Dtest=ClienteControllerTest#creates201`',
 ].join('\n');
 const HANDOFF = 'route: implementer\n## Done\n- nothing\n## Next\n- run the plan';
+
+test('validatePlan: a backslash path in Accept is an error, a find -exec terminator is not', () => {
+  const withAccept = (a) => PLAN.replace('`./mvnw -q test -Dtest=ClienteControllerTest#creates201`', a);
+  assert.match(validatePlan(withAccept('`' + String.raw`venv\Scripts\python.exe -m pytest tests/x.py` + '`')).errors.join(),
+    /batch 2: "Accept:" runs in the implementer's Bash tool/);
+  assert.equal(validatePlan(withAccept('`venv/Scripts/python.exe -m pytest tests/x.py`')).ok, true);
+  assert.equal(validatePlan(withAccept('`' + String.raw`find . -name "*.tmp" -exec rm {} \;` + '`')).ok, true);
+  assert.equal(validatePlan(withAccept('`' + String.raw`grep -E 'a\.b\s+c' src/x.txt` + '`')).ok, true);
+  assert.equal(validatePlan(withAccept('`' + String.raw`grep -E "a\.b\s+c" src/x.txt` + '`')).ok, true);
+});
+
+test('parseSuites: one repo and backticked command per Suite line', () => {
+  const plan = ['## Plan', '### Batch 1 — x', 'Accept: `npm test`', 'Suite: api — `./mvnw -q test`', 'Suite: web-app — `npx vitest run`', 'Suite: broken — no command'].join('\n');
+  assert.deepEqual(parseSuites(plan), [
+    { repo: 'api', command: './mvnw -q test' },
+    { repo: 'web-app', command: 'npx vitest run' },
+  ]);
+  assert.deepEqual(parseSuites('## Plan\n### Batch 1 — x\nAccept: `a`'), []);
+});
 
 test('plan: extract, hash, validate, merge', () => {
   const body = withPlan(HANDOFF, PLAN);

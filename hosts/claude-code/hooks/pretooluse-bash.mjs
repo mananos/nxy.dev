@@ -4,11 +4,16 @@
  * PreToolUse(Bash) hook: rewrites the command through the filter engine (RTK) so the
  * model receives a compact result instead of the full log. Decision rules live in
  * `filter/decide.mjs`; this file only wires stdin → decision → hook JSON.
+ * While a plan is active it also copies the files the command is about to write (baseline).
  * Fail-open: any error means "run the original command untouched".
  */
 import { readFileSync } from 'node:fs';
+import { isAbsolute, relative } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { toNativePath } from '../../../core/paths.mjs';
+import { gitBranch, gitRoot, toNativePath } from '../../../core/paths.mjs';
+import { readMarker } from '../plan-approval.mjs';
+import { snapshot } from '../baseline.mjs';
+import { writeTargets } from '../../../core/shellwrites.mjs';
 import { commandSegments, loadPermissionRules, originalVerdict } from '../permissions.mjs';
 import { hasSubstitution } from '../../../core/shell.mjs';
 import { decide } from '../../../core/filter/decide.mjs';
@@ -23,6 +28,51 @@ try {
     // The project root, not the shell's current dir: after `cd sub && …` Claude Code reports
     // `cwd` = sub, and config/metrics must not move around mid-session.
     const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input.cwd === 'string' ? input.cwd : process.cwd()));
+    // Subagents edit with Edit/Write: a shell write of content into a project file is denied
+    // (the payload carries `agent_id` only inside a subagent). Its own try: on error, allow.
+    try {
+      if (typeof input.agent_id === 'string' && input.agent_id) {
+        const root = gitRoot(cwd) ?? cwd;
+        const inside = writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name, { content: true }).some((t) => {
+          const rel = relative(root, t);
+          if (!rel || rel.startsWith('..') || isAbsolute(rel)) return false;
+          return !rel.split(/[\\/]/).some((s) => s === '.nxy' || s === '.git');
+        });
+        if (inside) {
+          process.stdout.write(
+            JSON.stringify({
+              hookSpecificOutput: {
+                hookEventName: 'PreToolUse',
+                permissionDecision: 'deny',
+                permissionDecisionReason:
+                  'nxy: subagents edit files with Edit/Write, not through the shell — shell quoting eats backslashes and $. Use Edit (or Write for a whole file). Bash is for running commands.',
+              },
+            }),
+          );
+          process.exit(0);
+        }
+      }
+    } catch {
+      /* best-effort: allow */
+    }
+    // Copy-before-write for console writes (sed -i, `>`, cp...) while a plan is active, so the
+    // review sees them like Edit changes. Its own try: it never blocks or delays the command.
+    try {
+      const branch = gitBranch(cwd);
+      const plan = readMarker(cwd, branch);
+      if (plan && !plan.questions) {
+        // Only files inside the project, never nxy state (.nxy) or git internals (.git).
+        const root = gitRoot(cwd) ?? cwd;
+        for (const t of writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name)) {
+          const rel = relative(root, t);
+          if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue;
+          if (rel.split(/[\\/]/).some((s) => s === '.nxy' || s === '.git')) continue;
+          snapshot(cwd, branch, t);
+        }
+      }
+    } catch {
+      /* best-effort */
+    }
     const cfg = loadConfig(cwd);
     if (cfg.modules.filter) {
       const info = engineInfo(cfg, claudeSettingsFiles(cwd));

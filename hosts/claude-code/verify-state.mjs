@@ -103,6 +103,81 @@ export function claimSendBack(cwd, hash, key) {
   }
 }
 
+/** Atomic JSON write of a file in the plan's folder (write aside, rename), then the usual prune. */
+function writePlanFile(cwd, hash, name, data) {
+  try {
+    const dir = ensureDir(planDir(cwd, hash));
+    const path = join(dir, name);
+    const tmp = `${path}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(data), 'utf8');
+    try {
+      renameSync(tmp, path);
+    } catch {
+      writeFileSync(path, readFileSync(tmp, 'utf8'), 'utf8');
+      unlinkSync(tmp);
+    }
+    pruneOldPlans(cwd, hash);
+  } catch {
+    /* best-effort */
+  }
+}
+
+function readPlanFile(cwd, hash, name) {
+  try {
+    return JSON.parse(readFileSync(join(planDir(cwd, hash), name), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @typedef {{status: 'running' | 'done', ts: number, red?: {command: string, error?: string}[], ran?: string[]}} SuiteRecord
+ */
+
+/** The full suite's state for this plan (`suite.json`). @param {string} cwd @param {string} hash @param {SuiteRecord} rec */
+export function recordSuite(cwd, hash, rec) {
+  writePlanFile(cwd, hash, 'suite.json', rec);
+}
+
+/** @returns {SuiteRecord|null} */
+export function readSuite(cwd, hash) {
+  return readPlanFile(cwd, hash, 'suite.json');
+}
+
+/** The post-suite fix's state (`suitefix.json`). @param {string} cwd @param {string} hash @param {SuiteRecord} rec */
+export function recordSuiteFix(cwd, hash, rec) {
+  writePlanFile(cwd, hash, 'suitefix.json', rec);
+}
+
+/** @returns {SuiteRecord|null} */
+export function readSuiteFix(cwd, hash) {
+  return readPlanFile(cwd, hash, 'suitefix.json');
+}
+
+/** When the reviewer was dispatched (`reviewlaunch.json`). @param {string} cwd @param {string} hash @param {number} [ts] */
+export function recordReviewLaunch(cwd, hash, ts = Date.now()) {
+  writePlanFile(cwd, hash, 'reviewlaunch.json', { ts });
+}
+
+/** When the reviewer was last dispatched for this plan, or 0. @param {string} cwd @param {string} hash */
+export function reviewLaunchTs(cwd, hash) {
+  return readPlanFile(cwd, hash, 'reviewlaunch.json')?.ts ?? 0;
+}
+
+/**
+ * Whether a review of this plan was recorded since `sinceTs` (default: the last reviewer launch).
+ * @param {string} cwd @param {string} hash @param {number} [sinceTs]
+ */
+export function reviewRecorded(cwd, hash, sinceTs) {
+  const since = typeof sinceTs === 'number' ? sinceTs : (readPlanFile(cwd, hash, 'reviewlaunch.json')?.ts ?? 0);
+  try {
+    const r = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
+    return !!r && r.planHash === hash && typeof r.ts === 'number' && r.ts >= since;
+  } catch {
+    return false;
+  }
+}
+
 /** Plans nobody verified anything for in 30 days. @param {string} cwd @param {string} keep */
 function pruneOldPlans(cwd, keep) {
   const now = Date.now();

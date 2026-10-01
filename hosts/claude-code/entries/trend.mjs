@@ -11,7 +11,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, parseSince, table } from '../../../core/format.mjs';
+import { clip, estimatedNote, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, parseSince, table } from '../../../core/format.mjs';
 import { readJsonl } from '../../../core/jsonl.mjs';
 import { nxyRuntimeDir } from '../../../core/paths.mjs';
 import { formatBreaks, formatTtlWhatIf, listSessions, parseSession, summarizeBreaks } from '../transcripts.mjs';
@@ -87,6 +87,8 @@ for (const ref of refs) {
     usd: s.usage.usd,
     usdPartial: s.usage.usdPartial,
     unknownModels: s.usage.unknownModels,
+    usdEstimated: s.usage.usdEstimated,
+    estimatedModels: s.usage.estimatedModels,
     agentTokens: s.subagents.totalInput + s.subagents.usage.output,
     agents: s.agents.length,
     bashLines: s.tools.bash.resultLines,
@@ -106,16 +108,17 @@ sessions.sort((a, b) => a.ts - b.ts);
 function sumUsd(rows) {
   const unknown = new Set();
   for (const r of rows) for (const m of r.unknownModels || []) unknown.add(m);
-  return { usd: rows.reduce((n, r) => n + (r.usd || 0), 0), usdPartial: rows.some((r) => r.usdPartial), unknownModels: [...unknown] };
+  const estimatedModels = Object.assign({}, ...rows.map((r) => r.estimatedModels || {}));
+  return { usd: rows.reduce((n, r) => n + (r.usd || 0), 0), usdPartial: rows.some((r) => r.usdPartial), unknownModels: [...unknown], usdEstimated: rows.some((r) => r.usdEstimated), estimatedModels };
 }
-const usdCol = (label) => ({ key: 'usd', label, align: /** @type {const} */ ('right'), fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) });
-const unknownNote = (t) => (t.usdPartial ? `\n(no pricing for: ${t.unknownModels.join(', ')} — USD shown as $…+? where affected)` : '');
+const usdCol = (label) => ({ key: 'usd', label, align: /** @type {const} */ ('right'), fmt: (v, r) => fmtUsdPartial(v, r.usdPartial, r.usdEstimated) });
+const unknownNote = (t) => (t.usdPartial ? `\n(no pricing for: ${t.unknownModels.join(', ')} — USD shown as $…+? where affected)` : '') + (t.usdEstimated ? `\n${estimatedNote(t.estimatedModels)}` : '');
 
 if (by === 'model') {
   const m = new Map();
   for (const sess of sessions) {
     for (const [model, b] of Object.entries(sess.byModel)) {
-      const g = m.get(model) || { model, sessions: new Set(), calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, thinking: 0, usd: 0, usdPartial: false, unknownModels: new Set() };
+      const g = m.get(model) || { model, sessions: new Set(), calls: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, thinking: 0, usd: 0, usdPartial: false, unknownModels: new Set(), usdEstimated: false, estimatedModels: {} };
       g.sessions.add(sess.sessionId);
       g.calls += b.calls;
       g.input += b.usage.input;
@@ -125,6 +128,10 @@ if (by === 'model') {
       g.thinking += b.usage.thinking;
       g.usd += b.usd;
       if (b.usdPartial) g.usdPartial = true;
+      if (b.usdEstimated) {
+        g.usdEstimated = true;
+        Object.assign(g.estimatedModels, b.estimatedModels);
+      }
       for (const u of b.unknownModels) g.unknownModels.add(u);
       m.set(model, g);
     }
@@ -157,7 +164,7 @@ if (by === 'model') {
   ])));
   console.log('');
   console.log(`legend: share = share of all tokens in the range · thinking is a subset of output${unknownNote(total)}`);
-  console.log(`total: ${fmtTokens(all)} tokens · ${fmtUsdPartial(total.usd, total.usdPartial)}`);
+  console.log(`total: ${fmtTokens(all)} tokens · ${fmtUsdPartial(total.usd, total.usdPartial, total.usdEstimated)}`);
   process.exit(0);
 }
 
@@ -175,13 +182,17 @@ for (const s of sessions) {
   const key = by === 'session' ? s.sessionId : periodKey(s.ts);
   const g = groups.get(key) || {
     period: key, ts: s.ts, sessions: 0, turns: 0, calls: 0, mainCalls: 0, mainInput: 0, mainEdits: 0, input: 0, cacheW: 0, cacheR: 0, output: 0, totalTokens: 0,
-    usd: 0, usdPartial: false, unknownModels: new Set(), agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, rtkSaved: /** @type {number|null} */ (ledgerRows ? 0 : null), wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
+    usd: 0, usdPartial: false, unknownModels: new Set(), usdEstimated: false, estimatedModels: {}, agentTokens: 0, agents: 0, bashLines: 0, bashCalls: 0, rtkCalls: 0, rtkSaved: /** @type {number|null} */ (ledgerRows ? 0 : null), wallMs: 0, nxy: 0, project: s.project, firstPrompt: s.firstPrompt,
   };
   g.sessions++;
   for (const k of ['turns', 'calls', 'mainCalls', 'mainInput', 'mainEdits', 'input', 'cacheW', 'cacheR', 'output', 'totalTokens', 'agentTokens', 'agents', 'bashLines', 'bashCalls', 'rtkCalls', 'wallMs']) g[k] += s[k];
   if (g.rtkSaved !== null && s.rtkSaved !== null) g.rtkSaved += s.rtkSaved;
   g.usd += s.usd;
   if (s.usdPartial) g.usdPartial = true;
+  if (s.usdEstimated) {
+    g.usdEstimated = true;
+    Object.assign(g.estimatedModels, s.estimatedModels);
+  }
   for (const u of s.unknownModels) g.unknownModels.add(u);
   if (s.nxy) g.nxy++;
   groups.set(key, g);
@@ -234,7 +245,7 @@ console.log(table(rows, /** @type {any} */ (cols)));
 console.log('');
 const rtkSavedNote = ledgerRows ? 'rtk saved = tokens rtk cut from Bash output, from its own ledger' : gainDaily ? `rtk saved = rtk's daily total (${here ? 'this project' : 'all projects'}, from rtk gain, booked by UTC day; install Node ≥ 22.13 for per-session figures)` : 'rtk saved = ? (rtk ledger not readable)';
 console.log(`legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · calls/turn = API calls per prompt · ctx/call = average context carried by each main-agent call · main edits = files the main agent edited itself (Edit/Write) · rtk = Bash calls filtered by nxy · ${rtkSavedNote} · nxy = sessions that ran with the plugin${cfg.metrics.subscription ? ' · USD~ = equivalent at API prices (subscription)' : ''}${unknownNote(total)}`);
-console.log(`total: ${fmtTokens(rows.reduce((n, r) => n + r.totalTokens, 0))} tokens · ${fmtUsdPartial(total.usd, total.usdPartial)} · ${fmtDuration(rows.reduce((n, r) => n + r.wallMs, 0))} wall`);
+console.log(`total: ${fmtTokens(rows.reduce((n, r) => n + r.totalTokens, 0))} tokens · ${fmtUsdPartial(total.usd, total.usdPartial, total.usdEstimated)} · ${fmtDuration(rows.reduce((n, r) => n + r.wallMs, 0))} wall`);
 for (const l of formatBreaks(rebuilds, total.usd, fmtTokens)) console.log(l);
 const ttlLine = formatTtlWhatIf(ttlWhatIf);
 if (ttlLine) console.log(ttlLine);

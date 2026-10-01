@@ -26,6 +26,7 @@
 import { readFileSync } from 'node:fs';
 import { loadConfig } from '../../../core/config.mjs';
 import { toNativePath } from '../../../core/paths.mjs';
+import { ASYNC_TTL_MS, clearAsync } from '../agent-notes.mjs';
 import { isSubagentCall, lastContextTokens } from '../context.mjs';
 import { recordGate } from '../gate-ledger.mjs';
 import { handoffCheck, lookupHandoff, memCommand } from '../handoff.mjs';
@@ -33,20 +34,32 @@ import {
   checkpointDenyMessage, decideCheckpoint, extractPlan, parseBatches, parseQuestions, planHash, questionsDenyMessage,
 } from '../../../core/plan.mjs';
 import {
-  CONTINUE, batchOfPrompt, blockedDispatchMessage, blockingBatch, continueQuestion, unnamedBatchMessage,
+  CONTINUE, batchOfPrompt, blockedDispatchMessage, blockingBatch, continueQuestion, suiteFixOfPrompt, unnamedBatchMessage,
 } from '../../../core/verify.mjs';
 import { gitBranch, nxyRuntimeDir } from '../../../core/paths.mjs';
 import { appendJsonl } from '../../../core/jsonl.mjs';
 import { join } from 'node:path';
 import { findAnswer, isApproved } from '../plan-approval.mjs';
-import { progressFor, readVerify } from '../verify-state.mjs';
+import {
+  progressFor, readSuite, readVerify, recordBatch, recordReviewLaunch, recordSuite, recordSuiteFix,
+} from '../verify-state.mjs';
 import { roleModel } from '../roles.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
 const IMPLEMENTER = /(^|:)implementer$/;
+const TESTER = /(^|:)tester$/;
+const REVIEWER = /(^|:)reviewer$/;
 
 /** @param {Record<string, unknown>} out */
 const emit = (out) => process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...out } }));
+
+const RESET_HINT = 'If the tester never reported, dispatching nxy:tester again resets it (a suite marked running for over 6 hours is ignored).';
+
+/** Whether the full suite is in flight: marked running, and not so long ago that the tester surely never ended. */
+function suiteRunning(cwd, hash) {
+  const s = readSuite(cwd, hash);
+  return s?.status === 'running' && Date.now() - (Number(s.ts) || 0) <= ASYNC_TTL_MS;
+}
 
 /**
  * Why this dispatch cannot carry out a batch yet, or null.
@@ -58,8 +71,14 @@ function batchGate(plan, hash, prompt, cwd, transcript) {
   const batches = all.map((b) => b.n);
   const n = batchOfPrompt(prompt);
   const batch = all.find((b) => b.n === n);
-  if (n == null || !batch) return { reason: 'batch-unnamed', message: unnamedBatchMessage(batches) };
   const state = readVerify(cwd, gitBranch(cwd), hash);
+  const allDone = all.length > 0 && all.every((b) => ['pass', 'manual', 'none'].includes(state.batches[String(b.n)]?.status));
+  if (suiteFixOfPrompt(prompt)) {
+    if (!allDone) return { reason: 'suitefix-early', message: `nxy: a "Suite fix" starts after every batch of plan ${hash} is verified; some are not (see the progress line). Carry out and verify the batches first.` };
+    if (suiteRunning(cwd, hash)) return { reason: 'suitefix-running', message: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the "Suite fix" if it failed. ${RESET_HINT}` };
+    return null;
+  }
+  if (n == null || !batch) return { reason: 'batch-unnamed', message: unnamedBatchMessage(batches, allDone) };
   const hit = blockingBatch(state.batches, batch.depends, (red) => findAnswer(transcript, continueQuestion(hash, red)) === CONTINUE);
   return hit == null ? null : { reason: hit.why === 'red' ? 'batch-red' : 'batch-pending', message: blockedDispatchMessage(hash, hit.k, n, hit.why) };
 }
@@ -72,7 +91,28 @@ try {
   const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : process.cwd()));
   // The role table's model (0.4.4), for any nxy agent; the implementer carries it in its own output below.
   const model = isAgentTool && typeof agent === 'string' ? roleModel(agent, loadConfig(cwd), toolInput.model) : null;
-  if (isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && model) {
+  // The tester starts the full suite; the reviewer must not start while it runs (its verdict arrives
+  // when it ends, possibly in the background). Recorded here, from the dispatch itself.
+  let denied = false;
+  if (isAgentTool && typeof agent === 'string' && (TESTER.test(agent) || REVIEWER.test(agent))) {
+    const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
+    if (!isSubagentCall(input, transcript)) {
+      const known = await lookupHandoff(cwd);
+      const plan = known.handoff ? extractPlan(known.handoff.body) : null;
+      const hash = plan ? planHash(plan) : null;
+      if (hash && TESTER.test(agent)) {
+        recordSuite(cwd, hash, { status: 'running', ts: Date.now() });
+        clearAsync(cwd, 'tester');
+      } else if (hash && suiteRunning(cwd, hash)) {
+        denied = true;
+        emit({ permissionDecision: 'deny', permissionDecisionReason: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the reviewer. ${RESET_HINT}` });
+      } else if (hash) {
+        recordReviewLaunch(cwd, hash);
+        clearAsync(cwd, 'reviewer');
+      }
+    }
+  }
+  if (!denied && isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && model) {
     emit({ permissionDecision: 'allow', permissionDecisionReason: `nxy: roles.${agent.replace(/^nxy:/, '')}.model`, updatedInput: { ...toolInput, model } });
   }
   if (isAgentTool && typeof agent === 'string' && IMPLEMENTER.test(agent)) {
@@ -133,6 +173,17 @@ try {
       // A fix dispatched from checkpoint 2 is the user's choice: counted for `review status`.
       const fix = /\bfix (R\d+) of review ([0-9a-f]{6})\b/.exec(prompt);
       if (fix) appendJsonl(join(nxyRuntimeDir(cwd), 'review.jsonl'), { ts: Date.now(), kind: 'chosen', id: fix[2], finding: fix[1] });
+      // An allowed dispatch of a batch (or the suite fix) is in flight from now on: a previous ✔ or ✘ is
+      // never read for it, and its dependents wait.
+      if (plan && hash && !isSubagent) {
+        if (suiteFixOfPrompt(prompt)) {
+          recordSuiteFix(cwd, hash, { status: 'running', ts: Date.now() });
+          clearAsync(cwd, 'implementer:suite-fix');
+        } else if (n != null && parseBatches(plan).some((b) => b.n === n)) {
+          recordBatch(cwd, gitBranch(cwd), hash, n, { status: 'running', ts: Date.now() });
+          clearAsync(cwd, `implementer:batch-${n}`);
+        }
+      }
       recordGate(cwd, { ts: Date.now(), tool: input.tool_name, allow: true, reason: 'handoff-attached', contextTokens, threshold });
       emit({
         permissionDecision: 'allow',

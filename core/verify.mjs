@@ -22,7 +22,7 @@ export const STOP = 'Stop';
 
 /**
  * @typedef {{kind: 'edit'} | {kind: 'run', command: string, ok: boolean, error?: string}} Event
- * @typedef {'pass' | 'fail' | 'not-run' | 'manual' | 'none'} Status
+ * @typedef {'pass' | 'fail' | 'not-run' | 'manual' | 'none' | 'running'} Status
  * @typedef {{status: Status, error?: string}} Verdict
  */
 
@@ -31,11 +31,26 @@ export const isRed = (status) => status === 'fail' || status === 'not-run';
 
 /** The batch a dispatch is for: "Batch 2 — ..." in the prompt, outside nxy's own context block. */
 export function batchOfPrompt(prompt) {
+  if (suiteFixOfPrompt(prompt)) return null;
   const m = /\bBatch\s+(\d+)\b/i.exec(stripContextBlock(prompt));
   return m ? Number(m[1]) : null;
 }
 
 const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+
+/**
+ * Canonical form of a command for comparing equivalent ways of typing it: whitespace squashed,
+ * backslashes as slashes, quotes dropped, no leading `./` on a token, no `.exe`, no PowerShell `& `.
+ * @param {string} s
+ */
+export function canonCommand(s) {
+  return squash(s)
+    .replace(/\\/g, '/')
+    .replace(/["']/g, '')
+    .replace(/(^|\s)\.\//g, '$1')
+    .replace(/\.exe(?=\s|$)/gi, '')
+    .replace(/^&\s+/, '');
+}
 
 /**
  * Whether a shell command ran the acceptance command in a way whose exit status is the command's
@@ -45,8 +60,8 @@ const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
  * @param {string} accept
  */
 export function runMatches(run, accept) {
-  const r = squash(run);
-  const a = squash(accept);
+  const r = canonCommand(run);
+  const a = canonCommand(accept);
   if (!a) return false;
   const i = r.lastIndexOf(a);
   if (i < 0) return false;
@@ -212,6 +227,7 @@ export function progressLine(batches, recorded, review = null) {
   const mark = (n) => {
     const r = recorded?.[String(n)];
     if (!r) return `${n} pending`;
+    if (r.status === 'running') return `${n} running`;
     if (r.status === 'pass') return `${n} ✔`;
     if (r.status === 'manual') return `${n} – manual`;
     if (r.status === 'none') return `${n} – no command`;
@@ -221,7 +237,97 @@ export function progressLine(batches, recorded, review = null) {
   return `Progress (recorded by nxy, not by the model): batch ${batches.map((b) => mark(b.n)).join(', ')}${rv}`;
 }
 
-/** @param {number[]} batches */
-export function unnamedBatchMessage(batches) {
-  return `nxy: this branch has an approved plan; say which batch this dispatch carries out, so it can be verified. Start the prompt with "Batch N — ..." (batches: ${batches.join(', ')}).`;
+/**
+ * @param {number[]} batches
+ * @param {boolean} [allVerified] every batch is done: a post-suite fix has its own slot
+ */
+export function unnamedBatchMessage(batches, allVerified = false) {
+  const suiteFix = allVerified ? ' Every batch is verified, so a fix after the full suite starts with "Suite fix — <what failed>".' : '';
+  return `nxy: this branch has an approved plan; say which batch this dispatch carries out, so it can be verified. Start the prompt with "Batch N — ..." (batches: ${batches.join(', ')}).${suiteFix}`;
+}
+
+/** The suite fix a dispatch is for: the prompt, outside nxy's context block, starts with "Suite fix". */
+export function suiteFixOfPrompt(prompt) {
+  return /^\s*Suite\s+fix\b/i.test(stripContextBlock(prompt));
+}
+
+/**
+ * The verdict of a post-suite fix: every suite command must have run green after the last edit.
+ * @param {Event[]} events
+ * @param {string[]} commands
+ * @returns {Verdict & {failed?: string[]}}
+ */
+export function suiteFixVerdict(events, commands) {
+  if (!commands.length) return { status: 'none' };
+  /** @type {string[]} */
+  const failed = [];
+  /** @type {Verdict} */
+  let first = { status: 'pass' };
+  for (const command of commands) {
+    const v = batchVerdict(events, { kind: 'command', command });
+    if (v.status !== 'pass') {
+      failed.push(command);
+      if (first.status === 'pass') first = v;
+    }
+  }
+  return failed.length ? { ...first, failed } : { status: 'pass' };
+}
+
+/**
+ * What the main thread hears when the full suite ends.
+ * @param {{hash: string, red: {command: string, error?: string}[], reviewNext?: string}} o
+ */
+export function afterTester({ hash, red, reviewNext }) {
+  if (!red.length) return reviewNext || `nxy: full suite done for plan ${hash}.`;
+  const list = red.map((r) => `\`${r.command}\`${r.error ? ` (${r.error})` : ''}`).join(', ');
+  return [
+    `nxy: full suite of plan ${hash} ✘ — failed: ${list}.`,
+    'Dispatch nxy:implementer once with "Suite fix — <what failed>"; nxy verifies it by re-running those commands. Then the review.',
+  ].join('\n');
+}
+
+/**
+ * What the main thread hears when a post-suite fix returns.
+ * @param {{hash: string, verdict: Verdict, commands: string[], reviewNext?: string}} o
+ */
+export function afterSuiteFix({ hash, verdict, commands, reviewNext }) {
+  const list = commands.map((c) => `\`${c}\``).join(', ');
+  if (verdict.status === 'none' || !commands.length) {
+    return `nxy verify: suite fix not verified for plan ${hash}: no suite command to re-run — tell the user.`;
+  }
+  if (verdict.status === 'pass') {
+    return `nxy verify: suite fix ✔ ${list} passed for plan ${hash}.${reviewNext ? `\n${reviewNext}` : ''}`;
+  }
+  return [
+    `nxy verify: suite fix ✘ ${verdict.status === 'fail' ? `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}` : 'did not run the suite commands after the last edit'}: ${list}.`,
+    'Dispatch nxy:implementer again once with the failure ("Suite fix — ..."), or tell the user.',
+  ].join('\n');
+}
+
+/**
+ * Empty when the reviewer recorded its review; otherwise what to do about it.
+ * @param {{hash: string, recorded: boolean}} o
+ */
+export function afterReviewer({ hash, recorded }) {
+  if (recorded) return '';
+  return `nxy: the reviewer returned without recording a review of plan ${hash}: dispatch nxy:reviewer again once, reading the packet in parts and ending with the record command; if it fails again tell the user.`;
+}
+
+/**
+ * A background agent was launched: its verdict comes when it ends.
+ * @param {'batch' | 'suite-fix' | 'tester' | 'reviewer'} kind @param {number} [n]
+ */
+export function launchNote(kind, n) {
+  const what = kind === 'batch' ? `batch ${n}` : kind === 'suite-fix' ? 'the suite fix' : kind === 'tester' ? 'the full suite' : 'the review';
+  return `nxy: ${what} launched in the background; nxy will report its verdict when it ends: do not dispatch its dependents, the tester or the reviewer yet.`;
+}
+
+/**
+ * After the full suite: the instruction to review, or why there is nothing to review.
+ * @param {{hash: string, project: string, needed: boolean, reason?: string}} o
+ */
+export function reviewInstruction({ hash, project, needed, reason }) {
+  return needed
+    ? `nxy: full suite done. Next: dispatch the nxy:reviewer subagent once with "Review nxy plan ${hash} (project: ${project.replace(/\\/g, '/')})" — it reviews the plan's diff and returns the findings for checkpoint 2.`
+    : `nxy: full suite done. No review needed for plan ${hash}: ${reason}.`;
 }

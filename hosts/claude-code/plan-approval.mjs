@@ -32,6 +32,7 @@ export function writeMarker(cwd, branch, hash, questions = 0) {
   try {
     if (!hash) {
       rmSync(markerPath(cwd), { force: true });
+      rmSync(join(nxyRuntimeDir(cwd), 'plan-dirty.json'), { force: true });
       return;
     }
     ensureDir(nxyRuntimeDir(cwd));

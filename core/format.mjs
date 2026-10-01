@@ -22,11 +22,24 @@ export function fmtUsd(v) {
  * `?` cuando no se conoce nada; igual que {@link fmtUsd} cuando la suma es completa.
  * @param {number|null|undefined} v   parte conocida de la suma
  * @param {boolean} [partial]         true si quedaron llamadas sin tarifar
+ * @param {boolean} [estimated]       true si alguna llamada se tarifó por familia (`$1.20*`)
  */
-export function fmtUsdPartial(v, partial = false) {
-  if (!partial) return fmtUsd(v);
+export function fmtUsdPartial(v, partial = false, estimated = false) {
+  const star = estimated ? '*' : '';
+  if (!partial) return fmtUsd(v) + (star && Number.isFinite(v) ? star : '');
   if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return '?';
-  return fmtUsd(v) + '+?';
+  return fmtUsd(v) + star + '+?';
+}
+
+/**
+ * Nota para USD estimado por familia, o '' si no hay: `(estimated with claude-sonnet-5 rates: claude-sonnet-5-5 — not in core/pricing.json)`.
+ * @param {Record<string, string>|null|undefined} models  modelo → clave de precio usada
+ */
+export function estimatedNote(models) {
+  const by = new Map();
+  for (const [m, basis] of Object.entries(models || {})) by.set(basis, [...(by.get(basis) || []), m]);
+  if (!by.size) return '';
+  return `(${[...by].map(([basis, ms]) => `estimated with ${basis} rates: ${ms.join(', ')}`).join('; ')} — not in core/pricing.json)`;
 }
 
 export function fmtPct(v, digits = 0) {

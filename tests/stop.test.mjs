@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { decideStop } from '../core/memory/handoff.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
 import { progressLine } from '../core/verify.mjs';
-import { APPROVE, approvalQuestion, planHash } from '../core/plan.mjs';
+import { pushNote } from '../hosts/claude-code/agent-notes.mjs';
+import { APPROVE,approvalQuestion, planHash } from '../core/plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -86,6 +87,17 @@ test('Stop: a stale handoff stops the turn once; small tasks and saved handoffs 
   s.node([MEM, 'handoff', 'done']);
   s.edit('src/c.ts');
   assert.equal(s.stop().status, 0, 'the task is closed: silent');
+});
+
+test('Bash hook: a subagent call leaves the note for the main thread', () => {
+  const s = sandbox();
+  pushNote(s.repo, 'batch 3 verdict: done');
+  const bash = (o = {}) => s.hook('posttooluse-bash.mjs', { tool_name: 'Bash', tool_input: { command: 'echo hi' }, tool_response: { stdout: 'hi', stderr: '' }, ...o });
+  assert.equal(bash({ agent_id: 'impl-1' }), '', 'a subagent never consumes it');
+  const stopped = s.stop();
+  assert.equal(stopped.status, 2, 'Stop still has it for the main thread');
+  assert.match(stopped.stderr, /batch 3 verdict: done/);
+  assert.equal(s.stop().status, 0, 'delivered once');
 });
 
 test('Stop ignores edits that did not happen and plan batch work; progress is derived', () => {

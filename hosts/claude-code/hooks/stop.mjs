@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { gitBranch, toNativePath } from '../../../core/paths.mjs';
 import { decideStop, staleHandoffMessage } from '../../../core/memory/handoff.mjs';
 import { memCommand } from '../handoff.mjs';
+import { takeNotes } from '../agent-notes.mjs';
 import { handoffSavedTs, readStopState, writeStopState } from '../stop-state.mjs';
 
 let code = 0;
@@ -24,6 +25,12 @@ try {
   const session = typeof input?.session_id === 'string' ? input.session_id : null;
   if (session && !input.agent_id) {
     const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input.cwd === 'string' ? input.cwd : process.cwd()));
+    // A completion note waiting for the main thread: deliver it now (consumed, so never a loop).
+    const notes = takeNotes(cwd);
+    if (notes.length) {
+      process.stderr.write(`${notes.join('\n\n')}\n`);
+      process.exit(2);
+    }
     const branch = gitBranch(cwd);
     const state = readStopState(cwd, session);
     const verdict = decideStop({

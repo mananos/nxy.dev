@@ -19,12 +19,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { ensureDir, gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
-import { extractPlan, parseBatches, planHash } from '../../../core/plan.mjs';
-import { afterBatch, batchOfPrompt, cutSuggestion } from '../../../core/verify.mjs';
+import { ensureDir, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { batchOfPrompt, cutSuggestion, launchNote, suiteFixOfPrompt } from '../../../core/verify.mjs';
+import { completionLines } from '../agent-done.mjs';
+import { isAsyncLaunch, markAsync, takeNotes } from '../agent-notes.mjs';
 import { lastContextTokens } from '../context.mjs';
-import { lookupHandoff, memCommand } from '../handoff.mjs';
-import { readVerify } from '../verify-state.mjs';
+import { memCommand } from '../handoff.mjs';
 
 const IMPLEMENTER = /(^|:)implementer$/;
 const TESTER = /(^|:)tester$/;
@@ -40,46 +40,30 @@ try {
   const mainThread = (input?.tool_name === 'Agent' || input?.tool_name === 'Task') && !input.agent_id && typeof agent === 'string';
   const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : process.cwd()));
   let pause = false;
+  const prompt = typeof toolInput?.prompt === 'string' ? toolInput.prompt : '';
+  const role = !mainThread ? null : IMPLEMENTER.test(agent) ? 'implementer' : TESTER.test(agent) ? 'tester' : REVIEWER.test(agent) ? 'reviewer' : null;
 
-  // After the full suite, the review (0.4.2) — or why there is none. Once per plan.
-  if (mainThread && TESTER.test(agent)) {
-    const known = await lookupHandoff(cwd);
-    const plan = known.handoff ? extractPlan(known.handoff.body) : null;
-    if (plan) {
-      const { changedFiles } = await import('../baseline.mjs');
-      const { reviewNeeded } = await import('../../../core/review.mjs');
-      const need = reviewNeeded(changedFiles(cwd, gitBranch(cwd)).map((f) => f.path));
-      out.push(need.needed
-        ? `nxy: full suite done. Next: dispatch the nxy:reviewer subagent once with "Review nxy plan ${planHash(plan)}" — it reviews the plan's diff and returns the findings for checkpoint 2.`
-        : `nxy: full suite done. No review needed for plan ${planHash(plan)}: ${need.reason}.`);
-      pause = true;
-    }
-  }
-
-  if (mainThread && IMPLEMENTER.test(agent)) {
-    const n = batchOfPrompt(typeof toolInput.prompt === 'string' ? toolInput.prompt : '');
-    const known = n == null ? null : await lookupHandoff(cwd);
-    const plan = known?.handoff ? extractPlan(known.handoff.body) : null;
-    const batches = plan ? parseBatches(plan) : [];
-    const batch = batches.find((b) => b.n === n);
-    if (plan && batch && n != null) {
-      const hash = planHash(plan);
-      const state = readVerify(cwd, gitBranch(cwd), hash);
-      const recorded = state.batches[String(n)];
-      if (recorded) {
-        out.push(afterBatch({
-          hash, n, verdict: recorded, recorded: state.batches,
-          command: batch.accept.kind === 'command' ? batch.accept.command : undefined,
-          batches: batches.map((b) => b.n),
-          dependents: batches.filter((b) => b.depends.includes(n)).map((b) => b.n),
-          fix: /\bfix R\d+ of review\b/.test(toolInput.prompt || ''),
-        }));
-        pause = true;
+  if (role && isAsyncLaunch(input.tool_response)) {
+    // A background launch: the verdict comes when the agent ends (SubagentStop leaves it as a note).
+    const n = batchOfPrompt(prompt);
+    if (role === 'implementer' && suiteFixOfPrompt(prompt)) {
+      markAsync(cwd, 'implementer:suite-fix');
+      out.push(launchNote('suite-fix'));
+    } else if (role === 'implementer') {
+      if (n != null) {
+        markAsync(cwd, `implementer:batch-${n}`);
+        out.push(launchNote('batch', n));
       }
+    } else {
+      markAsync(cwd, role);
+      out.push(launchNote(role));
     }
+  } else if (role) {
+    const done = await completionLines({ cwd, role, prompt });
+    out.push(...done.lines);
+    pause = done.pause;
   }
-
-  if (mainThread && REVIEWER.test(agent)) pause = true;
+  if (mainThread) out.push(...takeNotes(cwd));
 
   // The session cut (0.4.4): at a pause, past the statusline's own warning, once per session.
   if (pause) {

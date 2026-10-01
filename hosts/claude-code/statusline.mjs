@@ -150,6 +150,7 @@ export function render(input, cache, ctx, cfg) {
   const tokensIn = states.reduce((n, s) => n + totalInput(s.usage), 0);
   const tokensOut = states.reduce((n, s) => n + s.usage.output, 0);
   const usdPartial = states.some((s) => s.usdUnknown > 0);
+  const usdEstimated = states.some((s) => (s.usdEstimated || 0) > 0);
   const haveData = states.some((s) => s.calls > 0);
   const usd = haveData ? states.reduce((n, s) => n + s.usd, 0) : null;
   const sub = cfg.metrics.subscription ? '~' : ''; // "~" = USD-equivalent under a subscription
@@ -192,7 +193,7 @@ export function render(input, cache, ctx, cfg) {
     const turnUsd = states.reduce((n, s) => n + (s.turnUsd || 0), 0);
     const turnUnknown = states.reduce((n, s) => n + (s.turnUsdUnknown || 0), 0);
     const sev = turnUnknown > 0 ? null : severity(turnUsd, sl.turnWarnUsd, sl.turnCritUsd);
-    turnSeg = wrap('turn', `${pt.label('turno')}${pt.raw(' ')}${pt.value(fmtUsdPartial(turnUsd, turnUnknown > 0) + sub, sev)}`);
+    turnSeg = wrap('turn', `${pt.label('turno')}${pt.raw(' ')}${pt.value(fmtUsdPartial(turnUsd, turnUnknown > 0, usdEstimated) + sub, sev)}`);
   }
 
   // --- session: cost + tokens + subagents ------------------------------------------------
@@ -201,7 +202,7 @@ export function render(input, cache, ctx, cfg) {
   const sessionSeg = wrap(
     'session',
     haveData
-      ? `${ps.label('sesión')}${ps.raw(' ')}${ps.value(fmtUsdPartial(usd, usdPartial) + sub)}${dotIn(ps)}${ps.value(`${fmtTokens(tokensIn)}→${fmtTokens(tokensOut)}`)}${agents}`
+      ? `${ps.label('sesión')}${ps.raw(' ')}${ps.value(fmtUsdPartial(usd, usdPartial, usdEstimated) + sub)}${dotIn(ps)}${ps.value(`${fmtTokens(tokensIn)}→${fmtTokens(tokensOut)}`)}${agents}`
       : ps.label('no calls yet'),
   );
 

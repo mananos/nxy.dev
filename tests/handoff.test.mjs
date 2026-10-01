@@ -253,3 +253,60 @@ test('sessionstart hook: a pointer only when there is a handoff, nothing in manu
   writeFileSync(join(s.repo, '.nxy', 'config.json'), JSON.stringify({ memory: { mode: 'manual' } }));
   assert.equal(s.run('sessionstart.mjs', {}).trim(), '', 'manual: memory only when asked');
 });
+
+test('cli round trip: save from a subdirectory, pointer after /clear, show, proactive, replace, done', () => {
+  const s = sandbox();
+  const MEM = join(ROOT, 'hosts', 'claude-code', 'entries', 'mem.mjs');
+  const sub = join(s.repo, 'packages', 'app');
+  mkdirSync(sub, { recursive: true });
+  const env = { ...process.env, NXY_HOME: join(s.dir, 'home'), CLAUDE_PROJECT_DIR: s.repo };
+  const mem = (cwd, args, input) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', MEM, ...args], {
+    cwd, env, encoding: 'utf8', input: input ?? '', stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const rows = () => {
+    const db = openStore({ path: join(s.dir, 'home', 'memory', 'memory.db') });
+    try { return listMemories(db, { project: PROJECT, allAreas: true, limit: 50 }).filter((m) => m.type === 'handoff'); } finally { db.close(); }
+  };
+
+  assert.match(mem(sub, ['handoff', 'save'], BODY), /saved handoff for `feature\/x`/);
+  assert.equal(rows().length, 1);
+
+  const clear = JSON.parse(s.run('sessionstart.mjs', { source: 'clear' })).hookSpecificOutput.additionalContext;
+  assert.match(clear, /handoff for branch `feature\/x`.*handoff show/);
+  assert.ok(!clear.includes('the rule'), 'assisted mode: a pointer, not the body');
+
+  for (const dir of [sub, s.repo]) {
+    const shown = mem(dir, ['handoff', 'show']);
+    assert.match(shown, /core\/memory\/handoff\.mjs — the rule/, 'show returns the saved body from any directory');
+  }
+
+  mkdirSync(join(s.repo, '.nxy'), { recursive: true });
+  writeFileSync(join(s.repo, '.nxy', 'config.json'), JSON.stringify({ memory: { mode: 'proactive' } }));
+  const proactive = JSON.parse(s.run('sessionstart.mjs', { source: 'clear' })).hookSpecificOutput.additionalContext;
+  assert.match(proactive, /core\/memory\/handoff\.mjs — the rule/, 'proactive: the body comes with the session');
+  writeFileSync(join(s.repo, '.nxy', 'config.json'), JSON.stringify({}));
+
+  const next = BODY.replace('- hooks', '- second version');
+  assert.match(mem(sub, ['handoff', 'save'], next), /replaced handoff/);
+  assert.equal(rows().length, 1, 'a second save replaces, no second row');
+  assert.match(mem(s.repo, ['handoff', 'show']), /second version/);
+
+  mem(s.repo, ['handoff', 'done']);
+  assert.equal(s.run('sessionstart.mjs', { source: 'clear' }).trim(), '', 'done: no pointer any more');
+  assert.match(mem(s.repo, ['search', 'second', '--type', 'handoff']), /handoff/i, 'the archive stays searchable');
+});
+
+test('cli round trip: a body saved without a plan keeps the plan already there', () => {
+  const s = sandbox();
+  const MEM = join(ROOT, 'hosts', 'claude-code', 'entries', 'mem.mjs');
+  const env = { ...process.env, NXY_HOME: join(s.dir, 'home'), CLAUDE_PROJECT_DIR: s.repo };
+  const mem = (args, input) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', MEM, ...args], {
+    cwd: s.repo, env, encoding: 'utf8', input, stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const plan = '## Plan\nGoal: keep me\n### Batch 1 — x\nAccept: `npm test`';
+  assert.match(mem(['handoff', 'save'], `${BODY}\n${plan}`), /plan [0-9a-f]+ kept/);
+  assert.match(mem(['handoff', 'save'], BODY.replace('- hooks', '- later')), /plan [0-9a-f]+ kept/);
+  const shown = mem(['handoff', 'show'], '');
+  assert.match(shown, /later/);
+  assert.match(shown, /Goal: keep me/, 'the plan survives a save that did not carry it');
+});

@@ -153,6 +153,20 @@ export function parseDecisions(plan) {
   return out;
 }
 
+/**
+ * The plan's `Suite: <repo> — \`command\`` lines: the full suite of each repo the plan touches.
+ * @param {string} plan
+ * @returns {{repo: string, command: string}[]}
+ */
+export function parseSuites(plan) {
+  const out = [];
+  for (const l of norm(plan).split('\n')) {
+    const m = /^\s*Suite:\s*(.*?)\s+[—–-]\s+`([^`]+)`/i.exec(l);
+    if (m && m[2].trim()) out.push({ repo: m[1].trim(), command: m[2].trim() });
+  }
+  return out;
+}
+
 /** The `## Plan` section of a handoff body (heading included), or null. */
 export function extractPlan(body) {
   const m = PLAN_RE.exec(String(body || '').replace(/\r\n/g, '\n'));
@@ -190,6 +204,8 @@ export function validatePlan(plan) {
     if (!acc || !acc[1].trim()) errors.push(`batch ${i + 1} has no "Accept:" line`);
     else if (parseAccept(acc[1]).kind === 'none') {
       errors.push(`batch ${i + 1}: "Accept:" needs the command that proves it, in backticks (\`mvn -q test -Dtest=FooTest\`), or "manual — <what to look at>"`);
+    } else if (/[\w@.-]\\[\w@.-]/.test(acc[1].replace(/'[^']*'|"[^"]*"/g, "''"))) {
+      errors.push(`batch ${i + 1}: "Accept:" runs in the implementer's Bash tool, where backslashes are escapes: write paths with forward slashes (venv/Scripts/python.exe)`);
     }
   });
   if (!/`?[\w@.-]+(?:\/[\w@.-]+)+\.[A-Za-z0-9]{1,8}/.test(text) && !/`[\w@.-]+\.[A-Za-z0-9]{1,8}(?::\d+)?`/.test(text)) {

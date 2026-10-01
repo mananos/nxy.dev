@@ -10,7 +10,7 @@
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { claudeProjectsDir, projectSlug } from './paths.mjs';
-import { addUsage, costFor, emptyUsage, isSyntheticModel, isZeroUsage, toUsage, totalInput } from '../../core/pricing.mjs';
+import { addUsage, costFor, emptyUsage, estimateBasis, isSyntheticModel, isZeroUsage, toUsage, totalInput } from '../../core/pricing.mjs';
 import { addCall, finishBucket, newBucket } from '../../core/metrics/aggregate.mjs';
 import { hourTtlWhatIf } from '../../core/metrics/cache-ttl.mjs';
 
@@ -476,6 +476,7 @@ export function formatTtlWhatIf(w) {
  * @property {ReturnType<typeof emptyUsage>} usage
  * @property {number} usd             parte con tarifa
  * @property {number} usdUnknown      llamadas sin tarifa (→ `$X+?`)
+ * @property {number} [usdEstimated]  llamadas tarifadas por familia (→ `$X*`)
  * @property {string|null} model
  * @property {number} calls
  * @property {number} turns           prompts humanos vistos (sólo transcript principal)
@@ -562,6 +563,7 @@ export function readIncremental(path, state, opts = {}) {
           state.usdUnknown = (state.usdUnknown || 0) + 1; // `|| 0`: caches previos a este campo
           if (inTurn) state.turnUsdUnknown = (state.turnUsdUnknown || 0) + 1;
         }
+        if (usd !== null && usd > 0 && estimateBasis(model)) state.usdEstimated = (state.usdEstimated || 0) + 1;
         state.calls++;
       } else if (usage.output > prevOut) {
         const delta = { ...emptyUsage(), output: usage.output - prevOut };

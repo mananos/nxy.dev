@@ -2,7 +2,7 @@
 /**
  * Finding the docs a change concerns (core/docs.mjs), on disk.
  *
- * With rg: one search over `*.md`/`*.mdx`, respecting .gitignore — milliseconds. Without it: a walk
+ * With rg: one search over user-facing docs only (README, root `.md`, `docs/` `doc/` `documentation/` `wiki/`, or the `docs.paths` folders), respecting .gitignore — milliseconds. Without it: a walk
  * over the repo's `.md` files that skips dependency and build folders, reading each once — a few
  * hundred ms on a big monorepo, and it runs once per review, never per edit.
  *
@@ -12,7 +12,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { findRg, rgSearch } from '../../core/rg.mjs';
-import { docTerms, termsPattern, wikiDirFromCi } from '../../core/docs.mjs';
+import { docTerms, isUserDoc, termsPattern, userDocGlobs, wikiDirFromCi } from '../../core/docs.mjs';
 
 const SKIP = new Set(['node_modules', '.git', '.nxy', 'target', 'build', 'dist', 'out', '.next', '.angular', 'vendor', '.venv', 'venv', '__pycache__', 'coverage', '.gradle', '.idea', '.vscode']);
 const MAX_FILES = 5000;
@@ -75,9 +75,14 @@ export function findDocs(root, changed, docsCfg = {}, rgBin = findRg()) {
   const alreadyChanged = new Set(changed);
   /** @type {Map<string, {line: number, text: string}[]>} */
   const hits = new Map();
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  const configured = Array.isArray(docsCfg.paths) && docsCfg.paths.length > 0;
   const add = (path, line, text) => {
     if (alreadyChanged.has(path)) return;
+    if (!configured && !isUserDoc(path, wikiDir)) return;
     const list = hits.get(path) || [];
+    counts.set(path, (counts.get(path) || 0) + 1);
     if (list.length < 3) list.push({ line, text: text.trim().slice(0, 160) });
     hits.set(path, list);
   };
@@ -85,7 +90,8 @@ export function findDocs(root, changed, docsCfg = {}, rgBin = findRg()) {
   if (rgBin) {
     for (const r of roots) {
       // The same folders the walk skips: .gitignore does not always list them (or there is no repo).
-      const globs = ['*.md', '*.mdx', ...[...SKIP].map((d) => `!${d}`)];
+      const base = configured ? ['*.md', '*.mdx'] : userDocGlobs(wikiDir);
+      const globs = [...base, ...[...SKIP].map((d) => `!${d}`)];
       const res = rgSearch(join(root, r), termsPattern(terms), { bin: rgBin, fixed: false, globs, maxRows: 300 });
       for (const row of res.rows) add((r === '.' ? row.path : `${r.replace(/\/+$/, '')}/${row.path}`).replace(/^\.\//, ''), row.line, row.text);
     }
@@ -103,5 +109,7 @@ export function findDocs(root, changed, docsCfg = {}, rgBin = findRg()) {
       }
     }
   }
-  return { docs: [...hits].map(([path, lines]) => ({ path, lines })).sort((a, b) => a.path.localeCompare(b.path)), wikiDir, terms };
+  const docs = [...hits].map(([path, lines]) => ({ path, lines }));
+  docs.sort((a, b) => (counts.get(b.path) || 0) - (counts.get(a.path) || 0) || a.path.localeCompare(b.path));
+  return { docs, wikiDir, terms };
 }

@@ -52,7 +52,7 @@ export function normalizeModel(id) {
     .replace(/^anthropic\./, '')
     .replace(/-v\d+:\d+$/, '')
     .replace(/@\d{8}$/, '')
-    .replace(/\[1m\]$/, '')
+    .replace(/\[[^\]]*\]$/, '')
     .replace(/-\d{8}$/, '')
     .replace(/-latest$/, '');
 }
@@ -99,6 +99,65 @@ export function toUsage(u) {
 }
 
 /**
+ * Familia de un id de modelo: opus|sonnet|haiku|fable|mythos (también el orden viejo
+ * `claude-3-5-haiku`), o null si no es ninguna.
+ * @param {string} id
+ */
+export function familyOf(id) {
+  const m = /(opus|sonnet|haiku|fable|mythos)/.exec(normalizeModel(id));
+  return m ? m[1] : null;
+}
+
+/**
+ * Grupos de dígitos de una clave, sin la fecha: `claude-sonnet-5-5` → [5, 5]; `claude-3-5-haiku` → [3, 5].
+ * @param {string} key
+ * @returns {number[]}
+ */
+export function versionOf(key) {
+  return (String(key).match(/\d+/g) || []).map(Number);
+}
+
+function cmpVersion(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+/**
+ * Precio de un modelo: clave exacta, o (estimado) la mayor versión conocida de la misma familia
+ * que sea <= la pedida (si no hay, la menor por encima). Familia desconocida → null.
+ * @param {string} model
+ * @returns {{price: ModelPrice, key: string, estimated: boolean}|null}
+ */
+export function priceFor(model) {
+  const models = loadPricing().models;
+  const id = normalizeModel(model);
+  if (models[id]) return { price: models[id], key: id, estimated: false };
+  const fam = familyOf(id);
+  if (!fam) return null;
+  const want = versionOf(id);
+  const same = Object.keys(models)
+    .filter((k) => familyOf(k) === fam)
+    .map((k) => ({ k, v: versionOf(k) }))
+    .sort((a, b) => cmpVersion(a.v, b.v));
+  if (!same.length) return null;
+  const below = same.filter((e) => cmpVersion(e.v, want) <= 0);
+  const pick = below.length ? below[below.length - 1] : same[0];
+  return { price: models[pick.k], key: pick.k, estimated: true };
+}
+
+/**
+ * Clave con la que se estimó el precio de `model`, o null si es exacto o no tiene precio.
+ * @param {string} model
+ */
+export function estimateBasis(model) {
+  const r = priceFor(model);
+  return r && r.estimated ? r.key : null;
+}
+
+/**
  * Cache-aware cost in USD. Una llamada sin tokens cuesta 0 sea cual sea el modelo (no hay nada
  * que tarifar). Con tokens y modelo desconocido devuelve `null` — nunca un número inventado.
  * @param {string} model
@@ -107,7 +166,7 @@ export function toUsage(u) {
  */
 export function costFor(model, usage) {
   if (isZeroUsage(usage)) return 0;
-  const price = loadPricing().models[normalizeModel(model)];
+  const price = priceFor(model)?.price;
   if (!price) return null;
   const fast = usage.speed === 'fast' && price.fast ? price.fast : null;
   const inputRate = fast ? fast.input : price.input;

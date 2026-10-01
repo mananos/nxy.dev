@@ -9,22 +9,19 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseAccept, parseBatches, planHash } from '../core/plan.mjs';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { parseAccept, parseBatches } from '../core/plan.mjs';
 import {
-  CONTINUE, afterBatch, batchOfPrompt, batchVerdict, blockingBatch, continueQuestion, runMatches,
+  CONTINUE, afterBatch, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, batchVerdict, blockingBatch, continueQuestion, launchNote,
+  progressLine, reviewInstruction, runMatches, suiteFixOfPrompt, suiteFixVerdict, unnamedBatchMessage,
 } from '../core/verify.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
-import { APPROVE, approvalQuestion } from '../core/plan.mjs';
 import { claimSendBack, readVerify, recordBatch } from '../hosts/claude-code/verify-state.mjs';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
-const MEM = join(ROOT, 'hosts', 'claude-code', 'entries', 'mem.mjs');
+import { ROOT, sandbox as makeSandbox } from './sandbox.mjs';
 
 const ACCEPT1 = './mvnw -q test -Dtest=ClienteServiceTest';
 const ACCEPT2 = 'npx vitest run src/cliente.test.ts';
@@ -65,6 +62,30 @@ test('runMatches: the exit status has to be the command\'s own', () => {
   assert.equal(runMatches('./mvnw -q test', ACCEPT1), false, 'the suite is not the batch\'s test');
 });
 
+test('runMatches: equivalent ways of typing the same command', () => {
+  const acc = String.raw`venv\Scripts\python.exe -m pytest tests/x.py`;
+  const ok = [
+    'venv/Scripts/python.exe -m pytest tests/x.py',
+    './venv/Scripts/python.exe -m pytest tests/x.py',
+    '"venv/Scripts/python.exe" -m pytest tests/x.py',
+    'venv/Scripts/python -m pytest tests/x.py',
+    '& ./venv/Scripts/python.exe -m pytest tests/x.py',
+    String.raw`& .\venv\Scripts\python.exe -m pytest tests/x.py`,
+    'cd api && ./venv/Scripts/python.exe -m pytest tests/x.py 2>&1',
+  ];
+  for (const r of ok) assert.equal(runMatches(r, acc), true, r);
+  const bad = [
+    'venv/Scripts/python.exe -m pytest tests/x.py | tail',
+    'venv/Scripts/python.exe -m pytest tests/x.py; echo done',
+    'venv/Scripts/python.exe -m pytest tests/x.py || true',
+    'venv/Scripts/python.exe -m pytest tests/y.py',
+  ];
+  for (const r of bad) assert.equal(runMatches(r, acc), false, r);
+  const accept = { kind: /** @type {const} */ ('command'), command: acc };
+  assert.deepEqual(batchVerdict([edit, run('./venv/Scripts/python.exe -m pytest tests/x.py')], accept), { status: 'pass' });
+  assert.deepEqual(batchVerdict([edit, run('venv/Scripts/python.exe -m pytest tests/x.py | tail')], accept), { status: 'not-run' });
+});
+
 test('batchVerdict: the last matching run after the last edit decides', () => {
   assert.deepEqual(batchVerdict([edit, run(ACCEPT1)], cmd), { status: 'pass' });
   assert.deepEqual(batchVerdict([run(ACCEPT1), edit], cmd), { status: 'not-run' }, 'a run before an edit proves nothing');
@@ -87,6 +108,54 @@ test('blockingBatch and batchOfPrompt', () => {
   assert.equal(batchOfPrompt('fix the typo'), null);
 });
 
+test('running: dependents wait, progress says so; a suite fix is never a batch', () => {
+  assert.deepEqual(blockingBatch({ 1: { status: 'running' } }, [1], () => false), { k: 1, why: 'pending' });
+  assert.match(progressLine([{ n: 1 }, { n: 2 }], { 1: { status: 'running' } }), /1 running, 2 pending/);
+  assert.equal(suiteFixOfPrompt('Suite fix — batch 3 typecheck'), true);
+  assert.equal(batchOfPrompt('Suite fix — batch 3 typecheck'), null);
+  assert.equal(suiteFixOfPrompt('Batch 3 — typecheck'), false);
+  assert.equal(suiteFixOfPrompt(`${CONTEXT_OPEN}\nSuite fix mentioned here\n${CONTEXT_CLOSE}\nBatch 2 — x`), false);
+  assert.equal(batchOfPrompt(`${CONTEXT_OPEN}\nSuite fix mentioned here\n${CONTEXT_CLOSE}\nBatch 2 — x`), 2);
+  assert.match(unnamedBatchMessage([1, 2], true), /Suite fix — /);
+  assert.doesNotMatch(unnamedBatchMessage([1, 2]), /Suite fix/);
+});
+
+test('suiteFixVerdict: every suite command green after the last edit', () => {
+  const cmds = ['npm run typecheck', 'npm test'];
+  /** @type {any[]} */
+  const green = [{ kind: 'edit' }, { kind: 'run', command: 'npm run typecheck', ok: true }, { kind: 'run', command: 'npm test', ok: true }];
+  assert.equal(suiteFixVerdict(green, cmds).status, 'pass');
+  /** @type {any[]} */
+  const stale = [{ kind: 'run', command: 'npm test', ok: true }, { kind: 'edit' }, { kind: 'run', command: 'npm run typecheck', ok: true }];
+  const v = suiteFixVerdict(stale, cmds);
+  assert.equal(v.status, 'not-run');
+  assert.deepEqual(v.failed, ['npm test']);
+  /** @type {any[]} */
+  const red = [{ kind: 'edit' }, { kind: 'run', command: 'npm test', ok: false, error: 'boom' }, { kind: 'run', command: 'npm run typecheck', ok: true }];
+  assert.equal(suiteFixVerdict(red, cmds).status, 'fail');
+  assert.equal(suiteFixVerdict(green, []).status, 'none');
+});
+
+test('post-suite texts: tester, suite fix, reviewer, launch, review instruction', () => {
+  const next = reviewInstruction({ hash: 'abc12345', project: 'C:\\repo', needed: true });
+  assert.match(next, /nxy:reviewer.*Review nxy plan abc12345 \(project: C:\/repo\)/);
+  assert.match(reviewInstruction({ hash: 'abc12345', project: '/r', needed: false, reason: 'only docs' }), /No review needed.*only docs/);
+  assert.equal(afterTester({ hash: 'abc12345', red: [], reviewNext: next }), next);
+  const red = afterTester({ hash: 'abc12345', red: [{ command: 'npm test', error: 'boom' }] });
+  assert.match(red, /✘.*`npm test` \(boom\)/s);
+  assert.match(red, /Suite fix — <what failed>/);
+  assert.match(afterSuiteFix({ hash: 'abc12345', verdict: { status: 'pass' }, commands: ['npm test'], reviewNext: next }), /✔.*\n.*nxy:reviewer/s);
+  for (const verdict of /** @type {import('../core/verify.mjs').Verdict[]} */ ([{ status: 'none' }, { status: 'pass' }])) {
+    const none = afterSuiteFix({ hash: 'abc12345', verdict, commands: [], reviewNext: next });
+    assert.match(none, /not verified.*no suite command to re-run — tell the user/);
+    assert.doesNotMatch(none, /✔|nxy:reviewer/);
+  }
+  assert.match(afterSuiteFix({ hash: 'abc12345', verdict: { status: 'fail', error: 'x' }, commands: ['npm test'] }), /✘.*failed after the last edit \(x\)/);
+  assert.equal(afterReviewer({ hash: 'abc12345', recorded: true }), '');
+  assert.match(afterReviewer({ hash: 'abc12345', recorded: false }), /returned without recording a review of plan abc12345.*again once.*tell the user/);
+  assert.match(launchNote('batch', 7), /batch 7 launched in the background.*do not dispatch/);
+});
+
 test('afterBatch: ✔, ✘ with the question to ask, and the full suite once all are green', () => {
   const base = { hash: 'abc12345', command: ACCEPT1, batches: [1, 2, 3] };
   const red = afterBatch({ ...base, n: 1, verdict: { status: 'fail', error: 'Exit code 1' }, recorded: {} });
@@ -98,64 +167,7 @@ test('afterBatch: ✔, ✘ with the question to ask, and the full suite once all
   assert.match(last, /All 3 batches of plan abc12345 verified[\s\S]*nxy:tester/);
 });
 
-/** A repo on a branch with an approved plan, and helpers to run the hooks as Claude Code would. */
-function sandbox() {
-  const dir = mkdtempSync(join(tmpdir(), 'nxy-verify-'));
-  const repo = join(dir, 'repo');
-  mkdirSync(join(repo, '.git'), { recursive: true });
-  writeFileSync(join(repo, '.git', 'HEAD'), 'ref: refs/heads/feature/x\n');
-  writeFileSync(join(repo, '.git', 'config'), '[remote "origin"]\n\turl = git@github.com:x/y.git\n');
-  const env = { ...process.env, NXY_HOME: join(dir, 'home'), CLAUDE_PROJECT_DIR: repo };
-  const hash = planHash(PLAN);
-  spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', MEM, 'handoff', 'plan', '--cwd', repo], { input: PLAN, encoding: 'utf8', env });
-
-  /** The main transcript: cheap context, the plan approved, and any other answers. */
-  const main = (answers = {}) => {
-    /** @type {object[]} */
-    const lines = [{ type: 'assistant', message: { usage: { cache_read_input_tokens: 20_000 } } }];
-    Object.entries({ [approvalQuestion(hash)]: APPROVE, ...answers }).forEach(([q, a], i) => {
-      lines.push({ type: 'assistant', message: { content: [{ type: 'tool_use', id: `q${i}`, name: 'AskUserQuestion', input: { questions: [{ question: q }] } }] } });
-      lines.push({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: `q${i}`, content: 'ok' }] }, toolUseResult: { answers: { [q]: a } } });
-    });
-    const p = join(dir, `main-${Math.random().toString(36).slice(2)}.jsonl`);
-    writeFileSync(p, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
-    return p;
-  };
-
-  /** An implementer's transcript: its prompt, then edits and runs ({edit} | {run, ok, out}). */
-  const agent = (n, steps) => {
-    /** @type {object[]} */
-    const lines = [{ type: 'user', isSidechain: true, message: { role: 'user', content: `${CONTEXT_OPEN}\n${PLAN}\n${CONTEXT_CLOSE}\n\nBatch ${n} — do it` } }];
-    steps.forEach((s, i) => {
-      const tool = s.edit ? { name: 'Edit', input: { file_path: 'x' } } : { name: 'Bash', input: { command: s.run } };
-      lines.push({ type: 'assistant', isSidechain: true, message: { content: [{ type: 'tool_use', id: `t${i}`, ...tool }] } });
-      lines.push({ type: 'user', isSidechain: true, message: { content: [{ type: 'tool_result', tool_use_id: `t${i}`, is_error: s.ok === false, content: s.out || 'ok' }] } });
-    });
-    const p = join(dir, `agent-${Math.random().toString(36).slice(2)}.jsonl`);
-    writeFileSync(p, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
-    return p;
-  };
-
-  const payload = (o) => JSON.stringify({ cwd: repo, session_id: 's1', ...o });
-  /** SubagentStop: exit status and what the implementer is told. */
-  const stop = (agentId, transcript, agentType = 'nxy:implementer') => {
-    const r = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(HOOKS, 'subagentstop.mjs')], {
-      input: payload({ hook_event_name: 'SubagentStop', agent_id: agentId, agent_type: agentType, agent_transcript_path: transcript }), encoding: 'utf8', env,
-    });
-    return { status: r.status, stderr: r.stderr };
-  };
-  const hook = (file, o) => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(HOOKS, file)], { input: payload(o), encoding: 'utf8', env });
-  const dispatch = (prompt, transcript = main()) => {
-    const out = hook('pretooluse-agent.mjs', { tool_name: 'Agent', transcript_path: transcript, tool_input: { subagent_type: 'nxy:implementer', prompt } });
-    return out.trim() ? JSON.parse(out).hookSpecificOutput : null;
-  };
-  const returned = (n) => {
-    const out = hook('posttooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:implementer', prompt: `Batch ${n} — do it` } });
-    return out.trim() ? JSON.parse(out).hookSpecificOutput.additionalContext : '';
-  };
-  const recorded = () => readVerify(repo, 'feature/x', hash).batches;
-  return { hash, main, agent, stop, dispatch, returned, recorded };
-}
+const sandbox = () => makeSandbox(PLAN);
 
 test('flow: unproven → sent back once; red stops the next batch until retried green or waved through', () => {
   const s = sandbox();
@@ -172,10 +184,11 @@ test('flow: unproven → sent back once; red stops the next batch until retried 
   const blocked = s.dispatch('Batch 2 — do it');
   assert.equal(blocked?.permissionDecision, 'deny');
   assert.match(blocked?.permissionDecisionReason, /batch 1 of plan .* did not pass/);
-  assert.notEqual(s.dispatch('Batch 1 — retry with the failure')?.permissionDecision, 'deny', 'retrying is always allowed');
-
   const waved = s.main({ [continueQuestion(s.hash, 1)]: CONTINUE });
   assert.notEqual(s.dispatch('Batch 2 — do it', waved)?.permissionDecision, 'deny', '"Continue anyway" lets batch 2 through');
+  assert.notEqual(s.dispatch('Batch 1 — retry with the failure')?.permissionDecision, 'deny', 'retrying is always allowed');
+  assert.equal(s.recorded()['1'].status, 'running', 'the retry is in flight: the old verdict is not read');
+  assert.equal(s.dispatch('Batch 2 — do it', waved)?.permissionDecision, 'deny', 'batch 1 re-running: its dependents wait (pending)');
 
   // The retry: a piped run does not count; the plain one after the fix does.
   const piped = s.agent(1, [{ edit: true }, { run: `${ACCEPT1} | tail -20` }]);

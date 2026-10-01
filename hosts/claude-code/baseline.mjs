@@ -1,22 +1,25 @@
 // @ts-check
 /**
  * The "before" of a plan (0.4.2): a copy of each file the first time the plan's work touches it,
- * taken by the edit hook. The review diffs these copies against the files as they are now.
+ * taken by the edit hook (and by the Bash hook for recognised console writes: `sed -i`, `>`, `tee`,
+ * `cp`/`mv`; see core/shellwrites.mjs). The review diffs these copies against the files as they are now.
  *
- * Why copies and not git: `git diff HEAD` would put the user's own uncommitted changes in those
- * files into the review as if the plan had made them, and nxy does not run git actions on the
- * user's repo. Only files the plan edits are copied, once each (<1 ms for a source file); a file
+ * Why copies are the primary source: they separate the plan's edit from the user's own uncommitted
+ * changes in the same file, which `git diff HEAD` would mix together. Git (gitstate.mjs, read-only,
+ * never writes into .git) only covers files that changed with no copy. Only files the plan edits
+ * are copied, once each (<1 ms for a source file); a file
  * over MAX_COPY_BYTES is recorded as changed but not copied. It lives in
  * `.nxy/local/baseline/<branch>/` and is removed with the handoff (`mem handoff done`).
  */
 import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, relative, resolve } from 'node:path';
-import { ensureDir, nxyRuntimeDir } from '../../core/paths.mjs';
+import { MAX_COPY_BYTES, ensureDir, gitRoot, nxyRuntimeDir } from '../../core/paths.mjs';
 import { fileDiff } from '../../core/diff.mjs';
+import { gitChangedFiles } from './gitstate.mjs';
+import { readMarker } from './plan-approval.mjs';
 
-/** Generated bundles, lockfiles, dumps: recorded as changed, not diffed. */
-export const MAX_COPY_BYTES = 2 * 1024 * 1024;
+export { MAX_COPY_BYTES };
 
 const slug = (branch) => String(branch || 'no-branch').replace(/[^A-Za-z0-9._-]+/g, '_');
 const dirOf = (cwd, branch) => join(nxyRuntimeDir(cwd), 'baseline', slug(branch));
@@ -89,6 +92,11 @@ export function snapshot(cwd, branch, filePath) {
   }
 }
 
+/** Where the review packet is saved: next to the copies, so it goes with them. */
+export function packetPath(cwd, branch) {
+  return join(dirOf(cwd, branch), 'review-packet.md');
+}
+
 /** Removes the branch's copies (the task is over). */
 export function clearBaseline(cwd, branch) {
   try {
@@ -115,13 +123,14 @@ const read = (p) => {
 export function changedFiles(cwd, branch) {
   const index = readBaseline(cwd, branch);
   const dir = dirOf(cwd, branch);
+  const root = gitRoot(cwd) ?? cwd;
   const out = [];
   for (const [abs, e] of Object.entries(index)) {
-    const rel = relative(cwd, abs);
+    const rel = relative(root, abs);
     const label = (rel && !rel.startsWith('..') ? rel : abs).replace(/\\/g, '/');
     const now = existsSync(abs) ? read(abs) : null;
     if (e.skipped === 'large') {
-      out.push({ path: label, abs, status: 'changed (large, not diffed)', added: 0, removed: 0, diff: '', ranges: [], content: null });
+      out.push({ path: label, abs, status: 'changed (large, not diffed)', added: 0, removed: 0, diff: '', ranges: [], content: null, source: 'copy' });
       continue;
     }
     const before = e.existed && e.copy ? read(join(dir, e.copy)) : null;
@@ -129,7 +138,29 @@ export function changedFiles(cwd, branch) {
     const d = fileDiff(label, before, now);
     if (!d.text) continue;
     const status = before == null ? 'new' : now == null ? 'deleted' : 'modified';
-    out.push({ path: label, abs, status, added: d.added, removed: d.removed, diff: d.text, ranges: d.ranges, content: now });
+    out.push({ path: label, abs, status, added: d.added, removed: d.removed, diff: d.text, ranges: d.ranges, content: now, source: 'copy' });
   }
   return out.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/**
+ * Everything the review reads: the copies' changes, plus what git shows changed since approval
+ * with no copy (marked `source: 'git'`). A path in both appears once, as the copy.
+ * @param {string} cwd
+ * @param {string|null} branch
+ * @param {string|null} [hash] the plan hash (default: the marker's)
+ */
+export function reviewFiles(cwd, branch, hash) {
+  const files = changedFiles(cwd, branch);
+  const h = hash || readMarker(cwd, branch)?.hash || null;
+  if (!h) return { files, notReviewed: [], note: null, git: null };
+  const covered = new Set(Object.keys(readBaseline(cwd, branch)));
+  const g = gitChangedFiles(cwd, branch, h, covered);
+  const seen = new Set(files.map((f) => f.path));
+  return {
+    files: [...files, ...g.files.filter((f) => !seen.has(f.path))].sort((a, b) => a.path.localeCompare(b.path)),
+    notReviewed: g.notReviewed,
+    note: g.note,
+    git: { atApproval: g.atApproval, now: g.now },
+  };
 }

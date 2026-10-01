@@ -279,7 +279,7 @@ export function checkpoint2(o) {
  * The packet the reviewer reads: plan, lenses, conventions, and the diff. The diff is cut past
  * `maxDiffLines`; the reviewer reads the rest of those files itself.
  * @param {{planHash: string, plan: string, conventions: {title: string, body: string}[], lenses: {lens: Lens, files: string[]}[],
- *   files: {path: string, status: string, added: number, removed: number, diff: string}[], recordCmd: string, maxDiffLines?: number}} o
+ *   files: {path: string, status: string, added: number, removed: number, diff: string, source?: string}[], recordCmd: string, maxDiffLines?: number}} o
  */
 export function reviewPacket(o) {
   const max = o.maxDiffLines ?? 3000;
@@ -295,13 +295,18 @@ export function reviewPacket(o) {
     ...(o.conventions.length ? o.conventions.map((c) => `- ${c.title}${c.body && c.body !== c.title ? `: ${c.body.split('\n')[0]}` : ''}`) : ['- none recorded']),
     '',
     '## Changed files',
-    ...o.files.map((f) => `- ${f.path} (${f.status}, +${f.added} −${f.removed})`),
+    ...o.files.map((f) => `- ${f.path} (${f.status}${f.source === 'git' ? ' (git)' : ''}, +${f.added} −${f.removed})`),
     '',
     '## Diff (against each file as it was before the plan\'s first edit)',
+    ...(o.files.some((f) => f.source === 'git')
+      ? ['(git) files had no copy taken before the change: their diff is against HEAD, so it is the plan\'s only if the file was clean when the plan was approved.', '']
+      : []),
   ];
   let used = 0;
   const cut = [];
-  for (const f of o.files) {
+  // Code first, tests last: the reviewer reads in that order, and a cut takes tests before code.
+  const ordered = [...o.files.filter((f) => !isTestPath(f.path)), ...o.files.filter((f) => isTestPath(f.path))];
+  for (const f of ordered) {
     if (!f.diff) continue;
     const lines = f.diff.split('\n');
     if (used + lines.length > max) {
@@ -319,4 +324,38 @@ export function reviewPacket(o) {
     `Record it — nxy decides which findings are the change's — with:\n${o.recordCmd} <<'EOF'\n[ ... ]\nEOF`,
   );
   return out.join('\n');
+}
+
+/**
+ * An index of a packet's text: its `## ` sections and each file's diff with the line it starts at
+ * (1-based, what Read's `offset` takes) and how many lines it has. Test files are marked.
+ * @param {string} text
+ * @param {{path: string, maxPart?: number}} o `path` is where the packet was saved
+ */
+export function packetOutline(text, o) {
+  const maxPart = o.maxPart ?? 300;
+  const lines = text.split('\n');
+  /** @type {{start: number, label: string, diff: boolean}[]} */
+  const marks = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (/^## /.test(l)) marks.push({ start: i + 1, label: l, diff: false });
+    else if (l.startsWith('--- ') && (lines[i + 1] || '').startsWith('+++ ')) {
+      const m = /^(?:\+\+\+ b\/|--- a\/)(.+)$/.exec(lines[i + 1]) || /^--- a\/(.+)$/.exec(l);
+      const p = m ? m[1] : l.slice(4);
+      marks.push({ start: i + 1, label: `${p}${isTestPath(p) ? ' (test)' : ''}`, diff: true });
+    } else if (/^\(diff cut at /.test(l)) marks.push({ start: i + 1, label: l, diff: false });
+  }
+  const rows = marks.map((m, i) => {
+    let end = (marks[i + 1] ? marks[i + 1].start - 1 : lines.length);
+    while (end > m.start && lines[end - 1] === '') end--;
+    const n = end - m.start + 1;
+    const parts = m.diff && n > maxPart ? ` (${Math.ceil(n / maxPart)} parts)` : '';
+    return `  line ${m.start}, ${n} lines${parts}: ${m.label}`;
+  });
+  return [
+    `Index of ${o.path} (${lines.length} lines):`,
+    ...rows,
+    `Read it with Read offset/limit, at most ${maxPart} lines per part, code first, tests last. Never print it through Bash.`,
+  ].join('\n');
 }

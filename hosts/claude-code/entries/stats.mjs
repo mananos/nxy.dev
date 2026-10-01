@@ -10,7 +10,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { clip, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, table } from '../../../core/format.mjs';
+import { clip, estimatedNote, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, table } from '../../../core/format.mjs';
 import { readJsonl } from '../../../core/jsonl.mjs';
 import { nxyRuntimeDir } from '../../../core/paths.mjs';
 import { formatBreaks, formatTtlWhatIf, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
@@ -65,7 +65,7 @@ if (opts.json) {
 
 const usdLabel = cfg.metrics.subscription ? 'USD-equiv' : 'USD';
 /** USD de un bucket ya cerrado: `$X`, `$X+?` si quedaron llamadas sin tarifa, `?` si ninguna la tiene. */
-const bucketUsd = (b) => fmtUsdPartial(b.usd, b.usdPartial);
+const bucketUsd = (b) => fmtUsdPartial(b.usd, b.usdPartial, b.usdEstimated);
 const out = [];
 out.push(`nxy stats — session ${s.sessionId.slice(0, 8)} · ${s.project}${s.gitBranch ? ` · ${s.gitBranch}` : ''}${s.version ? ` · Claude Code ${s.version}` : ''}`);
 out.push(`started ${fmtDate(s.firstTs)} · wall ${fmtDuration(s.wallMs)} · active ${fmtDuration(s.activeMs)} · turns ${s.turns} · API calls ${s.usage.calls} (main ${s.main.calls}, subagents ${s.subagents.calls} in ${s.agents.length} agents)`);
@@ -95,6 +95,7 @@ out.push(
   ),
 );
 if (s.unknownModels.length) out.push(`(no pricing for: ${s.unknownModels.join(', ')} — ${usdLabel} shown as $…+? where affected)`);
+if (s.usage.usdEstimated) out.push(estimatedNote(s.usage.estimatedModels));
 out.push('');
 
 const bucketCols = (first) => [
@@ -105,10 +106,10 @@ const bucketCols = (first) => [
   { key: 'cacheR', label: 'cache-r', align: 'right', fmt: fmtTokens },
   { key: 'output', label: 'output', align: 'right', fmt: fmtTokens },
   { key: 'hit', label: 'hit', align: 'right', fmt: (v) => fmtPct(v) },
-  { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) },
+  { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial, r.usdEstimated) },
 ];
 const bucketRow = (name, b, extra = {}) => ({
-  name, calls: b.calls, input: b.usage.input, cacheW: b.usage.cacheWrite5m + b.usage.cacheWrite1h, cacheR: b.usage.cacheRead, output: b.usage.output, hit: b.cacheHitPct, usd: b.usd, usdPartial: b.usdPartial, ...extra,
+  name, calls: b.calls, input: b.usage.input, cacheW: b.usage.cacheWrite5m + b.usage.cacheWrite1h, cacheR: b.usage.cacheRead, output: b.usage.output, hit: b.cacheHitPct, usd: b.usd, usdPartial: b.usdPartial, usdEstimated: b.usdEstimated, ...extra,
 });
 const byUsd = (a, b) => b.usd - a.usd || b.calls - a.calls;
 
@@ -124,10 +125,10 @@ if (Object.keys(s.byAgentType).length) {
   out.push('');
   out.push('AGENTS');
   out.push(table(s.agents.slice(0, 20).map((a) => ({
-    type: a.agentType, desc: clip(a.description, 40), model: a.model || '?', tokens: a.totalInput + a.usage.output, usd: a.usd, usdPartial: a.usdPartial, dur: a.durationMs,
+    type: a.agentType, desc: clip(a.description, 40), model: a.model || '?', tokens: a.totalInput + a.usage.output, usd: a.usd, usdPartial: a.usdPartial, usdEstimated: a.usdEstimated, dur: a.durationMs,
   })), [
     { key: 'type', label: 'type' }, { key: 'desc', label: 'description' }, { key: 'model', label: 'model' },
-    { key: 'tokens', label: 'tokens', align: 'right', fmt: fmtTokens }, { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial) }, { key: 'dur', label: 'time', align: 'right', fmt: fmtDuration },
+    { key: 'tokens', label: 'tokens', align: 'right', fmt: fmtTokens }, { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial, r.usdEstimated) }, { key: 'dur', label: 'time', align: 'right', fmt: fmtDuration },
   ]));
   out.push('');
 }

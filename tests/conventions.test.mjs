@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { conventionSheet, pathsIn } from '../core/memory/conventions.mjs';
-import { docTerms, docsQuestion, termsPattern, wikiDirFromCi } from '../core/docs.mjs';
+import { docTerms, docsQuestion, isUserDoc, termsPattern, wikiDirFromCi } from '../core/docs.mjs';
 import { checkpoint2 } from '../core/review.mjs';
 import { APPROVE, approvalQuestion, planHash } from '../core/plan.mjs';
 import { findDocs } from '../hosts/claude-code/docs.mjs';
@@ -82,6 +82,37 @@ test('findDocs: the same answer with rg and without it', () => {
   assert.deepEqual(findDocs(root, ['api/ClienteService.java'], { paths: ['docs/nothing-here'] }, null).docs, [], '`docs.paths` narrows the search');
 });
 
+test('findDocs: prompts and plugin files are not docs; README and docs/** are', () => {
+  const root = mkdtempSync(join(tmpdir(), 'nxy-docs2-'));
+  for (const d of ['agents', 'skills/x', 'docs', 'pkg', 'custom']) mkdirSync(join(root, d), { recursive: true });
+  const line = 'Usa ClienteService para el alta.\n';
+  writeFileSync(join(root, 'agents', 'implementer.md'), line);
+  writeFileSync(join(root, 'agents', 'README.md'), line);
+  writeFileSync(join(root, 'skills', 'x', 'SKILL.md'), line);
+  writeFileSync(join(root, 'README.md'), `${line}${line}`);
+  writeFileSync(join(root, 'docs', 'alta.md'), line);
+  writeFileSync(join(root, 'pkg', 'README.md'), line);
+  writeFileSync(join(root, 'custom', 'notes.md'), line);
+  const paths = (r) => r.docs.map((d) => d.path);
+  const expected = ['README.md', 'docs/alta.md', 'pkg/README.md'];
+  assert.deepEqual(paths(findDocs(root, ['api/ClienteService.java'], {}, null)), expected, 'without rg: most hits first, then path');
+  const rg = findRg();
+  if (rg) assert.deepEqual(paths(findDocs(root, ['api/ClienteService.java'], {}, rg)), expected, 'with rg');
+  assert.deepEqual(paths(findDocs(root, ['api/ClienteService.java'], { paths: ['custom'] }, null)), ['custom/notes.md'], '`docs.paths` is trusted as-is');
+  if (rg) assert.deepEqual(paths(findDocs(root, ['api/ClienteService.java'], { paths: ['custom'] }, rg)), ['custom/notes.md'], '`docs.paths` with rg');
+
+  assert.equal(isUserDoc('agents/a.md'), false);
+  assert.equal(isUserDoc('gentle-ai/docs/a.md'), false);
+  assert.equal(isUserDoc('.github/README.md'), false);
+  assert.equal(isUserDoc('wiki/a.mdx'), true);
+  assert.equal(isUserDoc('other/a.md'), false);
+  assert.equal(isUserDoc('other/wiki-sync/a.md', 'other/wiki-sync'), true);
+
+  const many = Array.from({ length: 109 }, (_, i) => `docs/d${i}.md`);
+  const { question } = docsQuestion('abc', many);
+  assert.equal(question.options[0].description, 'docs/d0.md, docs/d1.md, docs/d2.md, +106 more');
+});
+
 /** A repo with a plan, a doc that names the changed class, and helpers. */
 function sandbox() {
   const dir = mkdtempSync(join(tmpdir(), 'nxy-conv-'));
@@ -142,7 +173,7 @@ test('flow: docs that name the change are offered at checkpoint 2; escapes kept;
   s.node([REVIEW, 'escape', 'Every new endpoint has an integration test', '--as', 'lens']);
   const lens = readFileSync(join(s.repo, '.nxy', 'lenses', 'repo.md'), 'utf8');
   assert.match(lens, /^---\nname: repo\n[\s\S]*always: true\n---\n- Every new endpoint has an integration test\n$/);
-  assert.match(s.node([REVIEW, 'packet']).stdout, /### This repo — what past reviews missed \(lens: repo\)\n- Every new endpoint has an integration test/);
+  assert.match(s.node([REVIEW, 'packet', '--full']).stdout, /### This repo — what past reviews missed \(lens: repo\)\n- Every new endpoint has an integration test/);
   assert.match(s.node([REVIEW, 'status']).stdout, /escapes: 2[\s\S]*api\s+0\s+0\s+0\s+1/);
   assert.match(s.node([REVIEW, 'escape', 'x']).stdout, /--as convention\|lens/, 'where it goes is always the user\'s call');
 

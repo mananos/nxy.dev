@@ -31,6 +31,44 @@ export function docTerms(paths) {
   return [...out];
 }
 
+const NOT_DOCS = ['agents', 'skills', 'commands', 'lenses', 'gentle-ai'];
+const DOC_DIRS = ['docs', 'doc', 'documentation', 'wiki'];
+
+/**
+ * Is this `.md`/`.mdx` something a user reads as documentation? The root's files, any README outside
+ * dot-folders, anything under a docs-like folder or the CI wiki folder. Prompts and plugin files
+ * (`agents/`, `skills/`, ...) name code all the time but are not docs.
+ * @param {string} path repo-relative, forward slashes
+ * @param {string|null} [wikiDir]
+ */
+export function isUserDoc(path, wikiDir = null) {
+  const p = String(path).replace(/\\/g, '/').replace(/^\.\//, '');
+  if (!/\.mdx?$/i.test(p)) return false;
+  const w = wikiDir ? wikiDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '') : '';
+  if (w && p.startsWith(`${w}/`)) return true;
+  const segs = p.split('/');
+  const base = /** @type {string} */ (segs.pop());
+  if (segs.some((s) => s.startsWith('.'))) return false;
+  if (segs.length && NOT_DOCS.includes(segs[0])) return false;
+  if (!segs.length) return true;
+  if (/^README/i.test(base)) return true;
+  return segs.some((s) => DOC_DIRS.includes(s.toLowerCase()));
+}
+
+/**
+ * The rg globs for the same rule as isUserDoc (isUserDoc still filters what comes back).
+ * @param {string|null} [wikiDir]
+ */
+export function userDocGlobs(wikiDir = null) {
+  const w = wikiDir ? wikiDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '') : '';
+  return [
+    '/*.md', '/*.mdx', '**/README*.md', '**/README*.mdx',
+    ...DOC_DIRS.flatMap((d) => [`**/${d}/**/*.md`, `**/${d}/**/*.mdx`]),
+    ...(w ? [`${w}/**/*.md`, `${w}/**/*.mdx`] : []),
+    ...NOT_DOCS.map((d) => `!/${d}/**`),
+  ];
+}
+
 /** A regex source matching any term as a whole word (dots inside a term are literal). */
 export function termsPattern(terms) {
   return terms.map((t) => `\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).join('|');
@@ -102,7 +140,7 @@ export function docsPacket(o) {
  * @param {string[]} docs
  */
 export function docsQuestion(id, docs) {
-  const shown = docs.slice(0, 4).join(', ') + (docs.length > 4 ? `, +${docs.length - 4} more` : '');
+  const shown = docs.slice(0, 3).join(', ') + (docs.length > 3 ? `, +${docs.length - 3} more` : '');
   return {
     question: {
       question: `Update the docs that mention this change (review ${id})?`,

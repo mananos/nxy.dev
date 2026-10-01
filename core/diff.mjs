@@ -1,8 +1,9 @@
 // @ts-check
 /**
  * Line diff for the review (0.4.2): what a plan changed, between the copy nxy kept before the plan's
- * first edit of a file and the file as it is now. No git: it works outside a repo, across repos, and
- * never mixes in changes the user already had uncommitted.
+ * first edit of a file and the file as it is now. Pure text diff, no git: it works outside a repo and
+ * across repos; the copies keep the user's own uncommitted changes out of it (git's HEAD is only the
+ * base for files that had no copy).
  *
  * Common prefix and suffix are trimmed first (an edit touches a few lines of a long file), and the
  * middle is an LCS. A middle too large for that is reported as replaced whole — correct, just less

@@ -15,9 +15,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fileDiff } from '../core/diff.mjs';
 import {
-  batchForFile, checkpoint2, classifyFindings, globToRegExp, mergeLenses, parseFindings, parseLens, reviewNeeded, selectLenses,
+  batchForFile, checkpoint2, classifyFindings, globToRegExp, mergeLenses, packetOutline, parseFindings, parseLens, reviewNeeded, reviewPacket,
+  selectLenses,
 } from '../core/review.mjs';
 import { afterBatch } from '../core/verify.mjs';
+import { recordSuite } from '../hosts/claude-code/verify-state.mjs';
 import { APPROVE, approvalQuestion, planHash } from '../core/plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -110,6 +112,28 @@ test('a review fix closes without another suite or review', () => {
   assert.doesNotMatch(text, /nxy:tester/);
 });
 
+test('packet: code diffs before test diffs, and an outline that stays short for a big diff', () => {
+  const mk = (path, n) => {
+    const d = fileDiff(path, null, Array.from({ length: n }, (_, i) => `line ${i}`).join('\n'));
+    return { path, status: 'new', added: d.added, removed: 0, diff: d.text };
+  };
+  const files = [mk('tests/a.test.mjs', 500), mk('src/a.mjs', 900), mk('src/b.mjs', 600)];
+  const text = reviewPacket({
+    planHash: 'abc123', plan: '## Plan\nGoal: x', conventions: [], lenses: [], files, recordCmd: 'rec', maxDiffLines: 5000,
+  });
+  const at = (p) => text.indexOf(`+++ b/${p}`);
+  assert.ok(at('src/a.mjs') < at('src/b.mjs') && at('src/b.mjs') < at('tests/a.test.mjs'), 'tests last');
+  const out = packetOutline(text, { path: 'x/review-packet.md' });
+  assert.ok(out.split('\n').length < 40);
+  assert.match(out, /tests\/a\.test\.mjs \(test\)/);
+  assert.doesNotMatch(out, /src\/a\.mjs \(test\)/);
+  assert.match(out, /lines \(4 parts\): src\/a\.mjs/);
+  const lines = text.split('\n');
+  const start = Number(/line (\d+), \d+ lines.*: src\/b\.mjs/.exec(out)?.[1]);
+  assert.equal(lines[start - 1], '--- /dev/null');
+  assert.equal(lines[start], '+++ b/src/b.mjs');
+});
+
 test('flow: copies before the first edit → packet → record → checkpoint 2 → fix counted → done clears', () => {
   const dir = mkdtempSync(join(tmpdir(), 'nxy-review-'));
   const repo = join(dir, 'repo');
@@ -138,22 +162,39 @@ test('flow: copies before the first edit → packet → record → checkpoint 2 
 
   // First edits (an implementer's): copies taken; a second edit of the same file keeps the first copy.
   hook('pretooluse-edit.mjs', { tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: repoFile } });
-  writeFileSync(repoFile, userBefore.replace('  int f10;', '  List<Contacto> contactos; // N+1 here'));
+  writeFileSync(repoFile, userBefore.replace('  int f10;', '  List<Contacto> contactos; // N+1 here ## Your answer'));
   hook('pretooluse-edit.mjs', { tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: repoFile } });
   writeFileSync(repoFile, readFileSync(repoFile, 'utf8').replace('  int f11;', '  int f11b;'));
   const newFile = join(repo, 'src', 'app', 'CuitService.java');
   hook('pretooluse-edit.mjs', { tool_name: 'Write', agent_id: 'a2', tool_input: { file_path: newFile } });
   writeFileSync(newFile, 'class CuitService {\n  boolean valid(String c) { return c.length() == 11; }\n}\n');
 
-  const packet = node([REVIEW, 'packet', '--cwd', repo]).stdout;
+  const packet = node([REVIEW, 'packet', '--full', '--cwd', repo]).stdout;
   assert.match(packet, new RegExp(`# nxy review packet · plan ${hash}`));
   assert.match(packet, /### Persistence \(JPA \/ ORM\) \(lens: persistence\) — src\/app\/ClienteRepository\.java/);
   assert.match(packet, /- src\/app\/CuitService\.java \(new, \+3 −0\)/);
   assert.match(packet, /\+ {2}List<Contacto> contactos;/);
   assert.doesNotMatch(packet, /^[+-].*the user's uncommitted line/m, 'what the user had before is context at most, never a change');
-  assert.match(packet, /review\.mjs" record <<'EOF'/);
+  assert.match(packet, /review\.mjs" record --cwd "[^"]+" <<'EOF'/);
 
-  const findings = JSON.stringify([
+  // The default packet is a file plus an index; the offsets point at each file's diff in it.
+  const short = node([REVIEW, 'packet', '--cwd', repo]).stdout;
+  const savedAt = /Saved at (.+review-packet\.md) \(/.exec(short)?.[1];
+  assert.ok(savedAt && existsSync(savedAt), 'the packet is saved');
+  assert.match(short, /Index of .+review-packet\.md/);
+  assert.match(short, /review\.mjs" record --cwd "[^"]+" <<'EOF'/, 'the answer format and record command are printed');
+  assert.ok(short.split('\n').length < 120);
+  assert.ok(packet.indexOf('## Your answer') < packet.lastIndexOf('## Your answer'), 'the heading text also appears inside a diff');
+  assert.doesNotMatch(short, /N\+1 here/, 'the printed answer section is the real one, not cut from the diff');
+  const savedLines = readFileSync(savedAt, 'utf8').split('\n');
+  for (const p of ['src/app/ClienteRepository.java', 'src/app/CuitService.java']) {
+    const at = Number(new RegExp(`line (\\d+), \\d+ lines: ${p.replace(/[./]/g, '\\$&')}`).exec(short)?.[1]);
+    assert.ok(at > 0, `${p} is in the index`);
+    assert.match(savedLines[at - 1], /^--- (a\/|\/dev\/null)/);
+    assert.match(savedLines[at], new RegExp(`^\\+\\+\\+ b/${p.replace(/[./]/g, '\\$&')}$`));
+  }
+
+  const findings =JSON.stringify([
     { lens: 'persistence', severity: 'high', file: 'src/app/ClienteRepository.java', line: 13, title: 'N+1 on contactos', fix: 'fetch join' },
     { lens: 'base', severity: 'low', file: 'src/app/ClienteRepository.java', line: 3, title: 'stray comment' },
   ]);
@@ -179,10 +220,47 @@ test('flow: copies before the first edit → packet → record → checkpoint 2 
   assert.equal(out.permissionDecision, 'allow');
   assert.match(node([REVIEW, 'status', '--cwd', repo]).stdout, /persistence\s+1\s+1\s+0[\s\S]*base\s+0\s+0\s+1/);
 
-  // After the tester: the reviewer is dictated.
+  // After the tester (its suite recorded green): the reviewer is dictated.
+  recordSuite(repo, hash, { status: 'done', ts: Date.now(), red: [], ran: [] });
   const afterTester = hook('posttooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:tester', prompt: `Full suite for nxy plan ${hash}` } });
-  assert.match(JSON.parse(afterTester).hookSpecificOutput.additionalContext, new RegExp(`nxy:reviewer subagent once with "Review nxy plan ${hash}"`));
+  assert.match(JSON.parse(afterTester).hookSpecificOutput.additionalContext, new RegExp(`nxy:reviewer subagent once with "Review nxy plan ${hash} \\(project: `));
 
   node([MEM, 'handoff', 'done', '--cwd', repo]);
+  assert.ok(!existsSync(savedAt), 'the saved packet goes with the task');
   assert.ok(!existsSync(join(repo, '.nxy', 'local', 'baseline')) || !readdirSync(join(repo, '.nxy', 'local', 'baseline')).length, 'the copies go with the task');
+});
+
+test('one .nxy root: plan saved from a subdirectory, edit hook at the project dir, packet from either', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-review-root-'));
+  const repo = join(dir, 'repo');
+  const sub = join(repo, 'sub');
+  mkdirSync(join(repo, '.git'), { recursive: true });
+  mkdirSync(join(repo, 'src'), { recursive: true });
+  mkdirSync(sub, { recursive: true });
+  writeFileSync(join(repo, '.git', 'HEAD'), 'ref: refs/heads/feature/y\n');
+  writeFileSync(join(repo, '.git', 'config'), '[remote "origin"]\n\turl = git@github.com:x/z.git\n');
+  /** @type {NodeJS.ProcessEnv} */
+  const base = { ...process.env, NXY_HOME: join(dir, 'home') };
+  delete base.CLAUDE_PROJECT_DIR;
+  const shell = (args, input, cwd) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', ...args], { input, encoding: 'utf8', env: base, cwd });
+  const file = join(repo, 'src', 'Svc.java');
+  writeFileSync(file, 'class Svc {\n  int a;\n}\n');
+  const PLAN = ['## Plan', 'Goal: x', '### Batch 1 — api: svc', '- `src/Svc.java:2` — change a', 'Accept: `./mvnw -q test`'].join('\n');
+
+  assert.equal(shell([MEM, 'handoff', 'plan'], PLAN, sub).status, 0);
+  execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(HOOKS, 'pretooluse-edit.mjs')], {
+    input: JSON.stringify({ cwd: sub, session_id: 's1', tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: file } }),
+    encoding: 'utf8', env: { ...base, CLAUDE_PROJECT_DIR: repo },
+  });
+  writeFileSync(file, 'class Svc {\n  int b;\n}\n');
+
+  for (const where of [sub, repo]) {
+    const packet = shell([REVIEW, 'packet', '--full'], '', where);
+    assert.equal(packet.status, 0, packet.stderr);
+    assert.match(packet.stdout, /- src\/Svc\.java \(modified, \+1 −1\)/, `listed from ${where === sub ? 'sub' : 'repo'}`);
+    assert.match(packet.stdout, /-  int a;\n\+  int b;/);
+    assert.match(packet.stdout, /review\.mjs" record --cwd "/);
+  }
+  assert.ok(!existsSync(join(sub, '.nxy')), 'no second .nxy under the subdirectory');
+  assert.ok(existsSync(join(repo, '.nxy', 'local')));
 });

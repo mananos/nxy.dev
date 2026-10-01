@@ -26,6 +26,9 @@ Also when the repo sets `flow.plan: "always"` in `.nxy/config.json` and the chan
 2. After Approve **you do not edit**: one `nxy:implementer` per batch, its prompt starting `Batch N — `. Batches whose `Depends:` already passed can go in parallel (several Agent calls in one message).
 3. After each batch nxy adds `nxy verify: batch N ✔ / ✘ / – manual`. On ✘, dispatch that batch again with the failure, or ask the user exactly as nxy says.
 4. When every batch is green nxy says to dispatch `nxy:tester` once, then `nxy:reviewer` once. The reviewer returns **checkpoint 2**: ask it as given, dispatch one implementer per finding the user picks, and `nxy:documenter` if the user picks "Update docs".
+   - If an agent returns "Async agent launched", wait for nxy's completion note before the next step: do not dispatch its dependents, the tester or the reviewer meanwhile.
+   - A red full suite means one `nxy:implementer` whose prompt starts `Suite fix — <what failed>`, then the reviewer.
+   - The reviewer reads the review packet in parts (a file, not one dump).
 5. Close by telling the user what was done, what was verified, what was fixed and what was left.
 
 ## Always

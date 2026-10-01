@@ -4,7 +4,7 @@
  * `/nxy:review` — the review of a finished plan (core/review.mjs).
  *
  * Usage:
- *   review.mjs packet            what the reviewer reads: plan, lenses, conventions, diff
+ *   review.mjs packet [--full]   what the reviewer reads: saved to a file, an index printed (--full prints it all)
  *   review.mjs record <stdin>    the reviewer's findings (JSON) → classified, saved, checkpoint 2
  *   review.mjs show [<id>]       the last review (or that one) again
  *   review.mjs docs              what the documenter reads: the docs that name the change, and the diff
@@ -13,19 +13,21 @@
  *   review.mjs status            findings per lens, how many the user chose to fix, escapes
  *
  * The diff is the plan's: each file against the copy kept before the plan's first edit of it
- * (hosts/claude-code/baseline.mjs). No git involved.
+ * (hosts/claude-code/baseline.mjs); files changed without a copy come from a read-only git status
+ * (hosts/claude-code/gitstate.mjs), marked `(git)`.
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { parseArgs } from '../../../core/format.mjs';
-import { PLUGIN_ROOT, ensureDir, gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { PLUGIN_ROOT, ensureDir, gitBranch, gitRoot, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { appendJsonl, readJsonl } from '../../../core/jsonl.mjs';
 import { extractPlan, parseBatches, planHash } from '../../../core/plan.mjs';
 import {
-  batchForFile, checkpoint2, classifyFindings, mergeLenses, parseFindings, parseLens, reviewId, reviewNeeded, reviewPacket,
-  selectLenses,
+  batchForFile, checkpoint2, classifyFindings, mergeLenses, packetOutline, parseFindings, parseLens, reviewId, reviewNeeded,
+  reviewPacket, selectLenses,
 } from '../../../core/review.mjs';
-import { changedFiles } from '../baseline.mjs';
+import { packetPath, readBaseline, reviewFiles } from '../baseline.mjs';
+import { readMarker } from '../plan-approval.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import { findDocs } from '../docs.mjs';
 import { docsPacket, docsQuestion } from '../../../core/docs.mjs';
@@ -38,6 +40,32 @@ const branch = gitBranch(cwd);
 const SELF = join(PLUGIN_ROOT, 'hosts', 'claude-code', 'entries', 'review.mjs').replace(/\\/g, '/');
 const statePath = join(nxyRuntimeDir(cwd), 'review.json');
 const ledgerPath = join(nxyRuntimeDir(cwd), 'review.jsonl');
+
+/**
+ * Why a packet is empty: where nxy looked, how many baseline copies it found, whether the plan
+ * marker is there. Returned as lines so a later source of changes can add its own.
+ * @param {string|null} planHash
+ * @param {{note: string|null, git: {atApproval: number, now: number|null}|null}} [rv] the review's git result
+ */
+function emptyWhy(planHash, rv) {
+  const copies = Object.keys(readBaseline(cwd, branch)).length;
+  const marker = readMarker(cwd, branch);
+  return [
+    `looked in ${join(nxyRuntimeDir(cwd), 'baseline').replace(/\\/g, '/')} (project ${(gitRoot(cwd) ?? cwd).replace(/\\/g, '/')}, branch ${branch || '(none)'})`,
+    `baseline copies: ${copies} · plan marker: ${marker ? `present (${marker.hash})` : 'absent'}${planHash && marker && marker.hash !== planHash ? ` (the handoff's plan is ${planHash})` : ''}`,
+    ...(rv ? [rv.note ? `git: ${rv.note}` : rv.git ? `git: ${rv.git.atApproval} file(s) dirty at approval, ${rv.git.now ?? '?'} dirty now` : 'git: not checked (no plan marker)'] : []),
+  ];
+}
+
+/** The `## Not reviewed` section and git note of a packet, as lines (empty when there is nothing to say). */
+function notReviewedLines(rv) {
+  const out = [];
+  if (rv.notReviewed.length) {
+    out.push('', '## Not reviewed', ...rv.notReviewed.map((n) => `- ${n.path}: ${n.reason}`));
+  }
+  if (rv.note) out.push('', `Git: ${rv.note}; only the files nxy copied before the plan touched them were reviewed.`);
+  return out;
+}
 
 /** @param {string} dir */
 function lensesIn(dir) {
@@ -88,10 +116,13 @@ switch (action) {
       console.log(`no plan in the handoff of \`${branch || '(no branch)'}\`: nothing to review`);
       break;
     }
-    const files = changedFiles(cwd, branch);
+    const rv = reviewFiles(cwd, branch, hash);
+    const files = rv.files;
     const need = reviewNeeded(files.map((f) => f.path));
     if (!need.needed) {
       console.log(`no review needed for plan ${hash}: ${need.reason}.`);
+      if (!files.length) for (const l of emptyWhy(hash, rv)) console.log(l);
+      for (const l of notReviewedLines(rv)) console.log(l);
       break;
     }
     const lenses = selectLenses(
@@ -101,10 +132,33 @@ switch (action) {
     const { listMemories, openStore } = await import('../../../core/memory/store.mjs');
     const conventions = listMemories(openStore(), { project, allAreas: true, type: 'convention', limit: 200 })
       .map((m) => ({ title: m.title, body: m.body }));
-    console.log(reviewPacket({
+    const packet = reviewPacket({
       planHash: hash, plan, conventions, lenses, files,
-      recordCmd: `node --disable-warning=ExperimentalWarning "${SELF}" record`,
-    }));
+      recordCmd: `node --disable-warning=ExperimentalWarning "${SELF}" record --cwd "${cwd.replace(/\\/g, '/')}"`,
+    });
+    const notes = notReviewedLines(rv);
+    if (opts.full) {
+      console.log(packet);
+      for (const l of notes) console.log(l);
+      break;
+    }
+    // The packet can be thousands of lines: it is saved, and only an index and the way to answer are printed.
+    const saved = packetPath(cwd, branch);
+    const text = [packet, ...notes].join('\n');
+    ensureDir(dirname(saved));
+    writeFileSync(saved, text, 'utf8');
+    const shown = saved.replace(/\\/g, '/');
+    const answerAt = packet.lastIndexOf('## Your answer'); // the answer is the packet's last section; a diff may quote the heading
+    console.log([
+      `# nxy review packet · plan ${hash}`,
+      '',
+      `Saved at ${shown} (${text.split('\n').length} lines, ${Math.ceil(Buffer.byteLength(text) / 1024)} KB).`,
+      '',
+      packetOutline(text, { path: shown }),
+      ...notes,
+      '',
+      answerAt >= 0 ? packet.slice(answerAt) : '',
+    ].join('\n'));
     break;
   }
 
@@ -122,8 +176,8 @@ switch (action) {
       process.exitCode = 1;
       break;
     }
-    const files = changedFiles(cwd, branch);
-    const classified = classifyFindings(findings, new Map(files.map((f) => [f.path, f.ranges])));
+    const files = reviewFiles(cwd, branch, hash).files;
+    const classified = classifyFindings(findings, new Map(files.map((f) => /** @type {[string, [number, number][]]} */ ([f.path, f.ranges]))));
     const docs = loadConfig(cwd).roles?.documenter ? findDocs(cwd, files.map((f) => f.path), loadConfig(cwd).docs || {}) : null;
     const state = {
       docs,
@@ -164,7 +218,7 @@ switch (action) {
       break;
     }
     const { plan } = await currentPlan();
-    const files = changedFiles(cwd, branch);
+    const files = reviewFiles(cwd, branch).files;
     console.log(docsPacket({
       id: state.id, plan: plan || '(the plan was already closed)', files,
       docs: state.docs.docs, wikiDir: state.docs.wikiDir,

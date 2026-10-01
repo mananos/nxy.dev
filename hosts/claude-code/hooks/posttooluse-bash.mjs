@@ -14,6 +14,7 @@ import { appendJsonl } from '../../../core/jsonl.mjs';
 import { nxyRuntimeDir } from '../../../core/paths.mjs';
 import { decide } from '../../../core/filter/decide.mjs';
 import { engineInfo } from '../../../core/filter/engine.mjs';
+import { takeNotes } from '../agent-notes.mjs';
 import { claudeSettingsFiles } from '../settings.mjs';
 import { commandHead, commandKind } from '../../../core/filter/kind.mjs';
 import { extractRecallHash, usesRtk } from '../../../core/filter/rtk.mjs';
@@ -28,6 +29,8 @@ function responseText(resp) {
   return '';
 }
 
+/** @type {string[]} */
+let notes = [];
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const command = input?.tool_input?.command;
@@ -36,6 +39,8 @@ try {
     // `cwd` = sub, and config/metrics must not move around mid-session.
     const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input.cwd === 'string' ? input.cwd : process.cwd()));
     const cfg = loadConfig(cwd);
+    // Notes are for the main thread: a subagent Bash call must not consume them.
+    if (!input.agent_id) notes = takeNotes(cwd);
     if (cfg.modules.metrics) {
       const text = responseText(input.tool_response ?? input.tool_result);
       const wrapped = usesRtk(command);
@@ -80,5 +85,8 @@ try {
 } catch (err) {
   // fail-open: never block the tool call; NXY_DEBUG=1 surfaces the error on stderr
   if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] ${String((err instanceof Error && err.stack) || err)}\n`);
+}
+if (notes.length) {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: notes.join('\n\n') } }));
 }
 process.exit(0);

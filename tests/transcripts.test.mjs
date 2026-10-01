@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
 import { breakCause, formatBreaks, listSessions, newIncrementalState, parseSession, readIncremental, resolveSession, summarizeBreaks } from '../hosts/claude-code/transcripts.mjs';
-import { costFor, emptyUsage, isSyntheticModel, isZeroUsage, normalizeModel, toUsage } from '../core/pricing.mjs';
+import { costFor, emptyUsage, estimateBasis, familyOf, isSyntheticModel, priceFor, versionOf, isZeroUsage, normalizeModel, toUsage } from '../core/pricing.mjs';
 
 const close = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 
@@ -39,6 +39,36 @@ test('pricing: normalizeModel covers direct API, Bedrock and Vertex ids', () => 
   assert.equal(isSyntheticModel('<anything-else>'), true);
   assert.equal(isSyntheticModel('claude-opus-5'), false);
   assert.equal(isSyntheticModel(''), false);
+});
+
+test('pricing: any [..] suffix is stripped', () => {
+  assert.equal(normalizeModel('claude-sonnet-5-5[1m]'), 'claude-sonnet-5-5');
+  assert.equal(normalizeModel('claude-opus-5-20260401[200k]'), 'claude-opus-5');
+});
+
+test('pricing: priceFor is exact for known ids and estimates by family for newer ones', () => {
+  for (const id of ['claude-sonnet-5-5', 'claude-sonnet-5-5[1m]', 'claude-opus-5-5-20260922', 'claude-fable-5-1', 'claude-haiku-4-5-20251001', 'claude-haiku-4-5-20251001[1m]']) {
+    const r = priceFor(id);
+    assert.ok(r, id);
+    assert.equal(r.estimated, false, `${id} prices exactly`);
+    assert.equal(estimateBasis(id), null);
+  }
+  assert.equal(priceFor('claude-sonnet-5-5[1m]')?.key, 'claude-sonnet-5-5');
+  // newer than anything in the table: highest known version of the family at or below it
+  for (const id of ['claude-sonnet-5-6', 'claude-sonnet-5-6[1m]', 'claude-sonnet-5-6-20270101']) {
+    const r = priceFor(id);
+    assert.equal(r?.estimated, true, id);
+    assert.equal(r?.key, 'claude-sonnet-5-5', id);
+    assert.equal(estimateBasis(id), 'claude-sonnet-5-5');
+  }
+  assert.equal(priceFor('claude-opus-9')?.key, 'claude-opus-5-5', 'opus 9 → highest known opus');
+  assert.equal(priceFor('claude-haiku-1')?.key, 'claude-haiku-3-5', 'older than any known: the lowest above');
+  assert.equal(priceFor('claude-3-5-haiku-20241022')?.key, 'claude-haiku-3-5', 'old family-last order');
+  assert.equal(familyOf('claude-3-5-haiku-20241022'), 'haiku');
+  assert.deepEqual(versionOf('claude-sonnet-5-5'), [5, 5]);
+  assert.equal(priceFor('claude-future-9'), null, 'unknown family stays unpriced');
+  assert.equal(estimateBasis('claude-future-9'), null);
+  close(costFor('claude-sonnet-5-6', toUsage({ input_tokens: 1_000_000 })) ?? -1, 2, 'estimated cost uses the basis rates');
 });
 
 test('pricing: zero usage costs $0 for any model; unknown model with tokens is null', () => {

@@ -141,11 +141,13 @@ Si no estás seguro, usá `/nxy:feature`: Claude arranca diciendo qué tamaño l
 1. **Claude decide el tamaño** y, si es grande, despacha al *planner* (Sonnet, effort high), que busca en el repo, reutiliza lo que existe y arma un plan por lotes, cada uno con su comando de verificación (`Accept:`).
 2. **Preguntas (a veces).** Si el plan depende de algo que sólo vos sabés ("¿endpoint nuevo o extender el existente?"), te lo pregunta con opciones (`Plan Q1`, `Plan Q2`…). La primera es la recomendada.
 3. **Aprobás el plan.** Claude te lo muestra y te pregunta **Approve** o **Change**. Hasta que elijas Approve no se escribe una línea de código. Si hubo preguntas, también te ofrece guardar tus respuestas como **convenciones del repo**, para que la próxima vez no pregunte.
-4. **Lotes verificados.** Un implementer por lote. Después de cada uno ves `nxy verify: batch 1 ✔` o `✘`. Con un ✘ elegís **Retry**, **Continue anyway** o **Stop**. Los lotes que no dependen entre sí (un repo de back y uno de front) corren en paralelo.
-5. **Suite completa.** Con todo en verde, un *tester* (Haiku) corre una vez la suite de cada repo tocado y te dice sólo lo que falló.
-6. **Review.** Un *reviewer* (Sonnet) mira únicamente lo que cambió el plan, con lentes elegidas por el tipo de archivo (persistencia, API, frontend, base de datos, seguridad). Ves los hallazgos numerados (`R1 high …`) y **elegís cuáles se arreglan**. Si algún `.md` del repo nombra lo que cambió, te ofrece **Update docs**.
+4. **Lotes verificados.** Un implementer por lote. Después de cada uno ves `nxy verify: batch 1 ✔` o `✘`. Con un ✘ elegís **Retry**, **Continue anyway** o **Stop**. Los lotes que no dependen entre sí (un repo de back y uno de front) corren en paralelo. Si un agente corre en segundo plano, al lanzarlo sólo ves "lanzado en segundo plano": el veredicto llega **cuando el agente termina**, no al lanzarlo, y hasta entonces nxy no deja despachar lo que depende de él. No tenés que hacer nada: esperá el aviso.
+5. **Suite completa.** Con todo en verde, un *tester* (Haiku) corre una vez la suite de cada repo tocado y te dice sólo lo que falló. Si la suite sale en rojo, un único implementer la arregla en un lugar propio (`Suite fix — <qué falló>`); nxy lo verifica volviendo a correr los comandos que fallaron y recién después pasa a la review. La review no arranca mientras la suite sigue corriendo.
+6. **Review.** Un *reviewer* (Sonnet) mira únicamente lo que cambió el plan, con lentes elegidas por el tipo de archivo (persistencia, API, frontend, base de datos, seguridad). Ves los hallazgos numerados (`R1 high …`) y **elegís cuáles se arreglan**. Si el reviewer vuelve sin registrar la review, nxy lo manda de vuelta una vez y, si falla otra vez, te lo muestra como una falla. Para leer el cambio, el reviewer lo recibe como un archivo (`.nxy/local/baseline/<rama>/review-packet.md`, unos 130 KB para un diff de 2.000 líneas; se reemplaza en cada review y se borra con `mem handoff done`) y lo lee por partes; vos no tenés que abrirlo (`review.mjs packet --full` lo imprime entero si lo querés ver). Un archivo marcado `(git)` lo cambió el plan sin que nxy tuviera una copia: se compara contra HEAD, en modo lectura (nxy nunca escribe dentro de `.git`). La sección `## Not reviewed` nombra los archivos que ya tenías modificados antes de aprobar y no tienen copia: nxy no puede separar tu parte de la del plan, así que los nombra en vez de adivinar. Si te importan, mirá ese diff vos. Si algún documento para usuarios (README, un `.md` en la raíz, o lo que esté en `docs/`, `doc/`, `documentation/` o `wiki/`) nombra lo que cambió, te ofrece **Update docs**, con los 3 primeros y "+N más"; los prompts de agentes y skills nunca se ofrecen.
 7. **Cierre.** Claude te resume qué hizo, qué se verificó y qué quedó. Vos mirás el diff, commiteás y abrís el PR: **nxy nunca commitea ni pushea**.
 8. **Cuando la rama se mergea**, decile a Claude "cerrá el handoff" (`mem handoff done`): deja de aparecer al abrir sesiones, pero sigue buscable.
+
+Los subagentes no pueden escribir archivos del proyecto por consola: un hook les deniega `sed -i`, las redirecciones, `tee` y los heredocs hacia archivos del proyecto, y el agente reintenta con Edit/Write. No ves nada ni tenés que hacer algo. El hilo principal no se ve afectado, y `cp`/`mv` y los archivos temporales siguen permitidos.
 
 Qué te toca a vos en todo el proceso: contestar las preguntas, leer el plan como un diseño en un PR (¿reusa lo que existe?, ¿cada `Accept:` prueba lo correcto?) y elegir qué hallazgos arreglar.
 
@@ -230,6 +232,8 @@ Una línea siempre visible que responde tres preguntas: **¿cuánto me cuesta lo
 | `5h 62% · 7d 31%` | Consumo de las ventanas de tu suscripción | Si vas al 90 % de la de 5 h, lo pesado puede esperar |
 
 El `~` quiere decir *equivalente en USD*: con suscripción no pagás por token, pero es lo que ese uso costaría con API key.
+
+Un `*` después de un monto (en la statusline, `/nxy:stats` y `/nxy:trend`) quiere decir que un modelo todavía no está en la tabla de precios de nxy y se calculó con la versión más cercana de la misma familia (por ejemplo, un futuro `claude-sonnet-5-6` con las tarifas de `claude-sonnet-5-5`); una línea de nota nombra el modelo y la base usada. Un `+?` quiere decir que el modelo es de una familia desconocida y no se pudo calcular. No tenés que hacer nada: el número se vuelve exacto cuando un release de nxy actualiza la tabla. Sonnet 5.5 ya tiene precio exacto.
 
 Los umbrales son en tokens y no en porcentaje porque lo que encarece cada paso es cuánto se reenvía, no qué fracción de la ventana ocupa. Colores, presets (`vivid`, `classic`, `powerline`) y layout (`line`, `two-line`) se cambian en la [configuración](docs/configuracion.md#statusline) y se ven al instante.
 
@@ -367,13 +371,13 @@ nxy también cuesta algo, y está medido:
 - **Contexto fijo:** ~1.000 tokens en cada llamada: las descripciones de 9 comandos, 7 agentes y 2 skills. A precio de cache es menos de un centavo cada 30 llamadas.
 - **Tiempo por hook** (medido en Windows, Node 22): 40–50 ms típico; ~105 ms antes de cada comando Bash con rtk (incluye preguntarle a rtk) y ~40 ms después; ~130 ms al abrir la sesión.
 - **Tokens de los hooks:** cero cuando no frenan nada. Cuando frenan, el mensaje. Los punteros de memoria, ~30 tokens cada uno, hasta tres por mensaje y cada memoria una vez por sesión.
-- **Disco:** la base de memoria en `~/.nxy/memory/`, y por repo `.nxy/local/` (una línea por comando Bash, el índice, y durante un plan una copia de cada archivo que toca, que se borra con `handoff done`).
+- **Disco:** la base de memoria en `~/.nxy/memory/`, y por repo `.nxy/local/` (una línea por comando Bash, el índice, y durante un plan una copia de cada archivo que toca y una lista corta de los archivos que ya estaban modificados al aprobar, que se borran con `handoff done`).
 
 ## Estado del proyecto
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.0.0-rc.1` |
+| Versión actual | `1.0.0-rc.2` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Construido y con tests (0.2 a 0.4); falta probarlo en sesiones reales |
 | Próximo | 1–2 semanas de uso real con la rc, ajustes, `1.0.0` |
