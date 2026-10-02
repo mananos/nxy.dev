@@ -13,16 +13,20 @@
  */
 import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, relative, resolve } from 'node:path';
-import { MAX_COPY_BYTES, ensureDir, gitRoot, nxyRuntimeDir } from '../../core/paths.mjs';
+import { isAbsolute, join, relative, resolve } from 'node:path';
+import { MAX_COPY_BYTES, ensureDir, nxyRuntimeDir, toNativePath } from '../../core/paths.mjs';
+import { planFiles } from '../../core/plan.mjs';
 import { fileDiff } from '../../core/diff.mjs';
-import { gitChangedFiles } from './gitstate.mjs';
+import { dirtyFiles, gitChangedFiles, readDirtyAtApproval } from './gitstate.mjs';
+import { primaryRoot, repoLabel, repoNames, repoOf, undeclaredRepos } from './repos.mjs';
 import { readMarker } from './plan-approval.mjs';
+import { diffInventory, inventoryDiffers } from './inventory.mjs';
 
 export { MAX_COPY_BYTES };
 
 const slug = (branch) => String(branch || 'no-branch').replace(/[^A-Za-z0-9._-]+/g, '_');
-const dirOf = (cwd, branch) => join(nxyRuntimeDir(cwd), 'baseline', slug(branch));
+export const baselineDir = (cwd, branch) => join(nxyRuntimeDir(cwd), 'baseline', slug(branch));
+const dirOf = baselineDir;
 const idOf = (abs) => createHash('sha1').update(abs).digest('hex').slice(0, 16);
 
 /**
@@ -92,6 +96,84 @@ export function snapshot(cwd, branch, filePath) {
   }
 }
 
+const MAX_PLAN_COPIES = 200;
+
+/**
+ * The "before" of every file the plan names, taken when the plan is saved (so a change made with no
+ * edit hook, e.g. by a script, still has something to diff against). `snapshot()` keeps the first
+ * copy, so a revised plan never overwrites an earlier "before".
+ * @param {string} cwd @param {string|null} branch @param {string} plan
+ * @param {({root: string}|string)[]} [repos] primary first, then the declared repos
+ * @returns {{taken: number, skipped: number}}
+ */
+export function snapshotPlanFiles(cwd, branch, plan, repos = []) {
+  const roots = [primaryRoot(cwd), ...repos.map((r) => (typeof r === 'string' ? r : r.root))].map((r) => resolve(r));
+  const within = (root, abs) => {
+    const rel = relative(root, abs);
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+  };
+  let taken = 0;
+  let skipped = 0;
+  const files = planFiles(plan);
+  const rec = readDirtyAtApproval(cwd, branch);
+  const dirtyCache = new Map();
+  for (const f of files) {
+    if (taken >= MAX_PLAN_COPIES) {
+      skipped += 1;
+      continue;
+    }
+    const p = toNativePath(f);
+    const abs = isAbsolute(p) ? resolve(p) : (roots.map((r) => resolve(r, p)).find((c) => existsSync(c)) ?? resolve(roots[0], p));
+    if (!roots.some((r) => within(r, abs))) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      if (existsSync(abs) && statSync(abs).isDirectory()) {
+        skipped += 1;
+        continue;
+      }
+    } catch {
+      skipped += 1;
+      continue;
+    }
+    if (changedSinceTask(cwd, branch, abs, rec, dirtyCache)) {
+      skipped += 1;
+      continue;
+    }
+    if (snapshot(cwd, branch, abs)) taken += 1;
+  }
+  return { taken, skipped };
+}
+
+/**
+ * At a revised approval: a file that git (dirty now, not at the first approval) or the inventory
+ * (different content than at the first approval) already reports changed must not be copied as its
+ * "before": the copy would swallow that change. It stays in the git/inventory half of the review.
+ */
+function changedSinceTask(cwd, branch, abs, rec, dirtyCache) {
+  if (existsSync(join(dirOf(cwd, branch), `${idOf(abs)}.json`))) return false;
+  try {
+    if (rec) {
+      const roots = [{ root: rec.root, files: rec.files, available: rec.available }, ...rec.others].filter((r) => r.root && r.available);
+      const key = (p) => (process.platform === 'win32' ? resolve(p).toLowerCase() : resolve(p));
+      const hit = roots
+        .filter((r) => { const rel = relative(key(r.root), key(abs)); return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel); })
+        .sort((a, b) => b.root.length - a.root.length)[0];
+      if (hit) {
+        if (!dirtyCache.has(hit.root)) dirtyCache.set(hit.root, dirtyFiles(hit.root));
+        const now = dirtyCache.get(hit.root);
+        const rel = relative(resolve(hit.root), abs).replace(/\\/g, '/');
+        const lc = (s) => (process.platform === 'win32' ? s.toLowerCase() : s);
+        if (now && now.some((f) => lc(f) === lc(rel)) && !hit.files.some((f) => lc(f) === lc(rel))) return true;
+      }
+    }
+    return inventoryDiffers(cwd, branch, abs);
+  } catch {
+    return false;
+  }
+}
+
 /** Where the review packet is saved: next to the copies, so it goes with them. */
 export function packetPath(cwd, branch) {
   return join(dirOf(cwd, branch), 'review-packet.md');
@@ -123,11 +205,12 @@ const read = (p) => {
 export function changedFiles(cwd, branch) {
   const index = readBaseline(cwd, branch);
   const dir = dirOf(cwd, branch);
-  const root = gitRoot(cwd) ?? cwd;
+  const marked = readMarker(cwd, branch)?.repos ?? [];
+  const repoFor = new Map(Object.keys(index).map((abs) => [abs, repoOf(cwd, abs, [...marked, ...undeclaredRepos(cwd)])]));
+  const names = repoNames([primaryRoot(cwd), ...marked, ...undeclaredRepos(cwd), ...[...repoFor.values()].flatMap((r) => (r ? [r.root] : []))]);
   const out = [];
   for (const [abs, e] of Object.entries(index)) {
-    const rel = relative(root, abs);
-    const label = (rel && !rel.startsWith('..') ? rel : abs).replace(/\\/g, '/');
+    const label = repoLabel(repoFor.get(abs) ?? null, abs, names);
     const now = existsSync(abs) ? read(abs) : null;
     if (e.skipped === 'large') {
       out.push({ path: label, abs, status: 'changed (large, not diffed)', added: 0, removed: 0, diff: '', ranges: [], content: null, source: 'copy' });
@@ -152,15 +235,26 @@ export function changedFiles(cwd, branch) {
  */
 export function reviewFiles(cwd, branch, hash) {
   const files = changedFiles(cwd, branch);
-  const h = hash || readMarker(cwd, branch)?.hash || null;
-  if (!h) return { files, notReviewed: [], note: null, git: null };
+  const marker = readMarker(cwd, branch);
+  const h = hash || marker?.hash || null;
+  if (!h) return { files, notReviewed: [], note: null, git: null, coverage: [] };
   const covered = new Set(Object.keys(readBaseline(cwd, branch)));
-  const g = gitChangedFiles(cwd, branch, h, covered);
+  const g = gitChangedFiles(cwd, branch, covered, marker?.repos ?? []);
+  const inv = diffInventory(cwd, branch, marker?.repos ?? [], covered);
   const seen = new Set(files.map((f) => f.path));
+  const seenAbs = new Set(files.map((f) => f.abs));
+  const fromGit = g.files.filter((f) => !seen.has(f.path));
+  for (const f of fromGit) {
+    seen.add(f.path);
+    if (f.abs) seenAbs.add(f.abs);
+  }
+  const fromInv = inv.files.filter((f) => !seen.has(f.path) && !seenAbs.has(f.abs));
   return {
-    files: [...files, ...g.files.filter((f) => !seen.has(f.path))].sort((a, b) => a.path.localeCompare(b.path)),
+    files: [...files, ...fromGit, ...fromInv].sort((a, b) => a.path.localeCompare(b.path)),
     notReviewed: g.notReviewed,
     note: g.note,
     git: { atApproval: g.atApproval, now: g.now },
+    coverage: inv.coverage,
+    more: inv.more,
   };
 }

@@ -14,7 +14,7 @@ import { join, relative } from 'node:path';
 import { findRg, rgSearch } from '../../core/rg.mjs';
 import { docTerms, isUserDoc, termsPattern, userDocGlobs, wikiDirFromCi } from '../../core/docs.mjs';
 
-const SKIP = new Set(['node_modules', '.git', '.nxy', 'target', 'build', 'dist', 'out', '.next', '.angular', 'vendor', '.venv', 'venv', '__pycache__', 'coverage', '.gradle', '.idea', '.vscode']);
+export const SKIP_DIRS = new Set(['node_modules', '.git', '.nxy', 'target', 'build', 'dist', 'out', '.next', '.angular', 'vendor', '.venv', 'venv', '__pycache__', 'coverage', '.gradle', '.idea', '.vscode']);
 const MAX_FILES = 5000;
 const MAX_BYTES = 1024 * 1024;
 
@@ -54,7 +54,7 @@ function walkMd(root, dir, out = []) {
   for (const e of entries) {
     if (out.length >= MAX_FILES) break;
     if (e.isDirectory()) {
-      if (!SKIP.has(e.name)) walkMd(root, join(dir, e.name), out);
+      if (!SKIP_DIRS.has(e.name)) walkMd(root, join(dir, e.name), out);
     } else if (/\.mdx?$/i.test(e.name)) out.push(join(dir, e.name));
   }
   return out;
@@ -91,7 +91,7 @@ export function findDocs(root, changed, docsCfg = {}, rgBin = findRg()) {
     for (const r of roots) {
       // The same folders the walk skips: .gitignore does not always list them (or there is no repo).
       const base = configured ? ['*.md', '*.mdx'] : userDocGlobs(wikiDir);
-      const globs = [...base, ...[...SKIP].map((d) => `!${d}`)];
+      const globs = [...base, ...[...SKIP_DIRS].map((d) => `!${d}`)];
       const res = rgSearch(join(root, r), termsPattern(terms), { bin: rgBin, fixed: false, globs, maxRows: 300 });
       for (const row of res.rows) add((r === '.' ? row.path : `${r.replace(/\/+$/, '')}/${row.path}`).replace(/^\.\//, ''), row.line, row.text);
     }

@@ -34,6 +34,9 @@ export const CHANGE = 'Change';
 export const PLAN_TEMPLATE = [
   '## Plan',
   'Goal: <one line: what is true when this is done>',
+  '### Repos',
+  '- `.` — <role of the session\'s own repo; the whole section is optional, only for tasks that touch other repos>',
+  '- `/abs/path/to/other-repo` — role (api, web, shared lib)',
   '### Batch 1 — <repo or area>: <what this batch does>',
   '- `path/to/File.java:120` — <the change, at class/method level>',
   '- `path/to/new-file.ts` (new) — <what it holds>',
@@ -106,8 +109,57 @@ export function parseAccept(text) {
   return c && c[1].trim() ? { kind: 'command', command: c[1].trim() } : { kind: 'none' };
 }
 
-/** The `### ...` sections that are batches (everything but `### Questions`). */
-const batchSections = (text) => norm(text).split(/^###\s+/m).slice(1).filter((s) => !/^Questions\s*$/i.test(s.split('\n')[0]));
+/** The `### ...` sections that are batches (everything but `### Questions` and `### Repos`). */
+const batchSections = (text) => norm(text).split(/^###\s+/m).slice(1).filter((s) => !/^(Questions|Repos)\s*$/i.test(s.split('\n')[0]));
+
+const REPOS_RE = /^###\s*Repos\s*$([\s\S]*?)(?=^#{2,3}\s|(?![\s\S]))/im;
+
+/**
+ * The repos a plan declares (`### Repos`): one bullet each, the path in backticks (or the text
+ * before ` — `), the role after it. Paths are kept as written: resolving them is the host's job.
+ * @param {string} plan
+ * @returns {{path: string, role: string}[]}
+ */
+export function parseRepos(plan) {
+  const m = REPOS_RE.exec(norm(plan));
+  if (!m) return [];
+  const out = [];
+  for (const raw of m[1].split('\n')) {
+    const b = /^\s*[-*]\s+(.+?)\s*$/.exec(raw);
+    if (!b) continue;
+    const tick = /^`([^`]*)`\s*(?:[—–-]\s*)?(.*)$/.exec(b[1]);
+    if (tick) {
+      out.push({ path: tick[1].trim(), role: tick[2].trim() });
+      continue;
+    }
+    const [path, ...role] = b[1].split(DASH_RE);
+    out.push({ path: path.trim(), role: role.join(' — ').trim() });
+  }
+  return out;
+}
+
+/**
+ * The files a plan's batches name: the backticked path-like tokens of each bullet before its first
+ * ` — ` (the description after it, `Accept:` and `Risks:` are never read). Deduped, in order.
+ * @param {string} plan
+ * @returns {string[]}
+ */
+export function planFiles(plan) {
+  const out = [];
+  for (const s of batchSections(plan)) {
+    for (const raw of s.split('\n')) {
+      const b = /^\s*-\s+(.+)$/.exec(raw);
+      if (!b) continue;
+      const head = b[1].split(DASH_RE)[0];
+      for (const m of head.matchAll(/`([^`]+)`/g)) {
+        const p = m[1].trim().replace(/:\d+(?:-\d+)?$/, '');
+        if (!p || /[\s*]/.test(p) || !(p.includes('/') || /\.[A-Za-z0-9]+$/.test(p))) continue;
+        if (!out.includes(p)) out.push(p);
+      }
+    }
+  }
+  return out;
+}
 
 /**
  * The plan's batches, numbered as written ("### Batch 2 — ...") or by position.
@@ -218,6 +270,9 @@ export function validatePlan(plan) {
     const bad = b.depends.filter((d) => !earlier.has(d));
     if (bad.length) errors.push(`batch ${b.n}: "Depends:" can only name batches written before it (${bad.join(', ')} is not)`);
   });
+  parseRepos(text).forEach((r, i) => {
+    if (!r.path) errors.push(`"### Repos" bullet ${i + 1} has no path: write it in backticks (\`/abs/path/to/repo\`)`);
+  });
   const questions = parseQuestions(text);
   questions.forEach((q, i) => {
     const n = q.options.length;
@@ -282,6 +337,49 @@ export function questionsInstruction(hash, questions) {
   ].join('\n');
 }
 
+export const SAVE_CONVENTION = 'Save as convention';
+export const DONT_SAVE = "Don't save";
+/** Convention groups per call: with the approval question, at most 4 questions. */
+const MAX_OFFERS = (PER_CALL - 1) * PER_CALL;
+
+/**
+ * The convention questions of the checkpoint. AskUserQuestion rejects a question with fewer than 2
+ * options, so one offer is a single-select "Save / Don't save"; 2-4 are one multiSelect; more are
+ * split evenly into groups of at most 4 (5 gives 3+2, never a group of 1). At most 12 are offered.
+ * @param {{rule: string, why: string}[]} offers
+ */
+export function conventionQuestions(offers) {
+  const list = (offers || []).slice(0, MAX_OFFERS);
+  const n = list.length;
+  if (!n) return [];
+  if (n === 1) {
+    return [{
+      question: 'Save as a repo convention? The next plan will follow it instead of asking.',
+      header: 'Convention',
+      multiSelect: false,
+      options: [
+        { label: SAVE_CONVENTION, description: list[0].rule },
+        { label: DONT_SAVE, description: 'keep it for this task only' },
+      ],
+    }];
+  }
+  const g = Math.ceil(n / PER_CALL);
+  const base = Math.floor(n / g);
+  const extra = n % g;
+  let at = 0;
+  return Array.from({ length: g }, (_, i) => {
+    const size = base + (i < extra ? 1 : 0);
+    const part = list.slice(at, at + size);
+    at += size;
+    return {
+      question: `Save as repo conventions${g > 1 ? ` (${i + 1}/${g})` : ''}? The next plan will follow them instead of asking.`,
+      header: 'Convention',
+      multiSelect: true,
+      options: part.map((d) => ({ label: d.rule, description: d.why || d.rule })),
+    };
+  });
+}
+
 /**
  * What the main thread has to do to pass the checkpoint, spelled out so it can comply in one call.
  * When the plan carries decisions the user made (its answered questions) that are not conventions
@@ -290,8 +388,10 @@ export function questionsInstruction(hash, questions) {
  * @param {{offers?: {rule: string, why: string}[], saveCmd?: string}} [o]
  */
 export function checkpointInstruction(hash, o = {}) {
-  const offers = (o.offers || []).slice(0, (PER_CALL - 1) * PER_CALL);
-  const groups = chunks(offers, PER_CALL);
+  const all = o.offers || [];
+  const offers = all.slice(0, MAX_OFFERS);
+  const convQuestions = conventionQuestions(offers);
+  const single = offers.length === 1;
   const input = {
     questions: [
       {
@@ -303,18 +403,19 @@ export function checkpointInstruction(hash, o = {}) {
           { label: CHANGE, description: 'say what to change' },
         ],
       },
-      ...groups.map((g, i) => ({
-        question: `Save as repo conventions${groups.length > 1 ? ` (${i + 1}/${groups.length})` : ''}? The next plan will follow them instead of asking.`,
-        header: 'Convention',
-        multiSelect: true,
-        options: g.map((d) => ({ label: d.rule, description: d.why || d.rule })),
-      })),
+      ...convQuestions,
     ],
   };
+  const saveCmd = o.saveCmd || 'mem save';
+  const pickLine = single
+    ? `If the user picks "${SAVE_CONVENTION}": ${saveCmd} "${offers[0].rule}" --type convention --body "${offers[0].rule}: <the question it settles>"`
+    : `For each convention the user picks: ${saveCmd} "<rule>" --type convention --body "<rule>: <the question it settles>"`;
+  const left = all.length - offers.length;
   return [
     `Checkpoint: show the user the plan (verbatim, it is short) and ask with AskUserQuestion, with exactly this input:`,
     `  ${JSON.stringify(input)}`,
-    ...(offers.length ? [`For each convention the user picks: ${o.saveCmd || 'mem save'} "<rule>" --type convention --body "<rule>: <the question it settles>"`] : []),
+    ...(offers.length ? [pickLine] : []),
+    ...(left > 0 ? [`${left} more decision${left === 1 ? ' was' : 's were'} not offered as conventions (the call holds at most ${PER_CALL} questions).`] : []),
     `Nothing is written — no Edit, no implementer — until the user picks "${APPROVE}". On "${CHANGE}", revise the plan (new hash) and ask again.`,
     `After "${APPROVE}": one nxy:implementer per batch, each prompt starting "Batch N — "; batches whose dependencies passed can go in parallel. nxy verifies each against its Accept command.`,
   ].join('\n');

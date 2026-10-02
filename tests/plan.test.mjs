@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   APPROVE, CHANGE, PLAN_TEMPLATE, approvalQuestion, checkpointDenyMessage, checkpointInstruction, decideCheckpoint, extractPlan,
-  parseDecisions, parseQuestions, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
+  conventionQuestions, planFiles, parseBatches, parseDecisions, parseQuestions, parseRepos, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
 } from '../core/plan.mjs';
 import { subagentContextBlock, validateHandoff } from '../core/memory/handoff.mjs';
 import { findApproval } from '../hosts/claude-code/plan-approval.mjs';
@@ -243,11 +243,101 @@ test('checkpoint offers the decisions as conventions, in the same AskUserQuestio
   const text = checkpointInstruction('abc12345', { offers: parseDecisions(FINAL), saveCmd: 'SAVE' });
   const input = inputOf(text);
   assert.equal(input.questions[0].question, approvalQuestion('abc12345'), 'approval stays the first question');
-  assert.deepEqual(input.questions[1].options, [{ label: 'New endpoint for corporate customers', description: 'new endpoint or extend POST /clientes?' }]);
-  assert.equal(input.questions[1].multiSelect, true);
-  assert.match(text, /SAVE "<rule>" --type convention/);
+  assert.deepEqual(input.questions[1].options, [
+    { label: 'Save as convention', description: 'New endpoint for corporate customers' },
+    { label: "Don't save", description: 'keep it for this task only' },
+  ]);
+  assert.equal(input.questions[1].multiSelect, false, 'one option alone would be rejected by AskUserQuestion');
+  assert.match(text, /If the user picks "Save as convention": SAVE "New endpoint for corporate customers" --type convention/);
   const many = Array.from({ length: 20 }, (_, i) => ({ rule: `r${i}`, why: '' }));
   assert.equal(inputOf(checkpointInstruction('x', { offers: many })).questions.length, 4, 'never more than AskUserQuestion takes');
+});
+
+test('conventionQuestions: every shape is valid for AskUserQuestion (2 to 4 options)', () => {
+  const offers = (n) => Array.from({ length: n }, (_, i) => ({ rule: `r${i}`, why: `w${i}` }));
+  const sizes = (n) => conventionQuestions(offers(n)).map((q) => q.options.length);
+  assert.deepEqual(conventionQuestions([]), []);
+  assert.deepEqual(sizes(1), [2]);
+  assert.equal(conventionQuestions(offers(1))[0].multiSelect, false);
+  assert.deepEqual(sizes(2), [2]);
+  assert.deepEqual(sizes(4), [4]);
+  assert.equal(conventionQuestions(offers(4))[0].multiSelect, true);
+  assert.deepEqual(sizes(5), [3, 2]);
+  assert.deepEqual(sizes(9), [3, 3, 3]);
+  assert.deepEqual(sizes(20), [4, 4, 4], 'capped at 12 rules');
+  assert.match(conventionQuestions(offers(5))[0].question, /\(1\/2\)/);
+  for (let n = 1; n <= 30; n++) {
+    const qs = conventionQuestions(offers(n));
+    assert.ok(qs.every((q) => q.options.length >= 2 && q.options.length <= 4), `n=${n}`);
+    const call = inputOf(checkpointInstruction('x', { offers: offers(n) })).questions;
+    assert.ok(call.length <= 4, `n=${n}: at most 4 questions per call`);
+    assert.equal(call[0].question, approvalQuestion('x'));
+  }
+  const text = checkpointInstruction('x', { offers: offers(20) });
+  assert.match(text, /8 more decisions were not offered/);
+  assert.doesNotMatch(checkpointInstruction('x', { offers: offers(12) }), /not offered/);
+});
+
+const REPOS_PLAN = [
+  '## Plan',
+  'Goal: x',
+  '### Repos',
+  '- `.` — the api',
+  '- `/abs/other-repo` — web',
+  '- ../shared-lib — shared lib',
+  '- `C:/work/bare`',
+  '### Batch 1 — api: x',
+  '- `src/a.ts:3` — y',
+  'Accept: `npm test`',
+].join('\n');
+
+test('parseRepos: a Repos section is not a batch; bullets without a path are an error', () => {
+  assert.deepEqual(parseRepos(REPOS_PLAN), [
+    { path: '.', role: 'the api' },
+    { path: '/abs/other-repo', role: 'web' },
+    { path: '../shared-lib', role: 'shared lib' },
+    { path: 'C:/work/bare', role: '' },
+  ]);
+  assert.deepEqual(parseRepos(PLAN), []);
+  assert.equal(parseBatches(REPOS_PLAN).length, 1);
+  assert.deepEqual(parseBatches(REPOS_PLAN)[0].depends, []);
+  assert.equal(parseBatches(PLAN)[1].depends[0], 1);
+  assert.equal(validatePlan(REPOS_PLAN).ok, true);
+  assert.deepEqual(validatePlan(REPOS_PLAN).batches, 1);
+  assert.match(validatePlan(REPOS_PLAN.replace('- `C:/work/bare`', '- `` — nothing')).errors.join(), /Repos" bullet 4 has no path/);
+  assert.equal(validatePlan(PLAN_TEMPLATE).ok, true);
+  assert.equal(parseRepos(PLAN_TEMPLATE).length, 2);
+});
+
+/** A main transcript from hand-written AskUserQuestion exchanges. */
+function rawTranscript(dir, calls) {
+  const lines = [];
+  calls.forEach(({ questions, answers, isError = false }, i) => {
+    lines.push({ type: 'assistant', message: { content: [{ type: 'tool_use', id: `r${i}`, name: 'AskUserQuestion', input: { questions: questions.map((question) => ({ question, header: 'h', options: [] })) } }] } });
+    lines.push({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: `r${i}`, is_error: isError, content: 'x' }] }, toolUseResult: { answers } });
+  });
+  const p = join(dir, `raw${Math.random().toString(36).slice(2)}.jsonl`);
+  writeFileSync(p, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  return p;
+}
+
+test('findApproval with the convention question beside it', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-plan-'));
+  const h = 'cccc3333';
+  const A = approvalQuestion(h);
+  const conv = conventionQuestions([{ rule: 'Use records', why: '' }])[0].question;
+  assert.equal(findApproval(rawTranscript(dir, [{ questions: [A], answers: { [A]: APPROVE } }]), h), true, 'approval alone');
+  assert.equal(findApproval(rawTranscript(dir, [{ questions: [A, conv], answers: { [A]: APPROVE, [conv]: 'Save as convention' } }]), h), true);
+  assert.equal(findApproval(rawTranscript(dir, [{ questions: [A, conv], answers: { [A]: APPROVE, [conv]: "Don't save" } }]), h), true, "Don't save changes nothing");
+  for (const free of ['ok, dale', 'Other: approve it', '']) {
+    assert.equal(findApproval(rawTranscript(dir, [{ questions: [A, conv], answers: { [A]: free } }]), h), false, `free text "${free}"`);
+  }
+  assert.equal(findApproval(rawTranscript(dir, [{ questions: [A, conv], answers: { [A]: APPROVE }, isError: true }]), h), false, 'a rejected call');
+  assert.equal(findApproval(rawTranscript(dir, [
+    { questions: [A], answers: { [A]: APPROVE } },
+    { questions: [A], answers: { [A]: CHANGE } },
+  ]), h), false, 'Change after Approve');
+  assert.equal(findApproval(rawTranscript(dir, [{ questions: [conv], answers: { [conv]: 'Save as convention' } }]), h), false, 'a convention answer alone');
 });
 
 test('flow: draft with questions → answers → final plan → approval; known conventions are not offered again', () => {
@@ -284,4 +374,25 @@ test('flow: draft with questions → answers → final plan → approval; known 
   s.mem(['save', 'New endpoint for corporate customers', '--type', 'convention', '--body', 'x']);
   assert.match(s.mem(['list', '--type', 'convention']).stdout, /convention[\s\S]*New endpoint for corporate customers/);
   assert.doesNotMatch(s.mem(['handoff', 'next']).stdout, /Convention/, 'a decision already kept as a convention is not offered again');
+});
+
+test('planFiles: paths before the dash, line suffix stripped, deduped, nothing else read', () => {
+  const plan = [
+    '## Plan', 'Goal: x',
+    '### Repos', '- `/abs/other/repo` — role, `not/read.js`',
+    '### Batch 1 — a: files',
+    '- `src/a.js:120` — change `helper.js` and `fooBar`',
+    '- `src/b.js:10-20`, `lib/c.mjs` — two files',
+    '- `src/new.js` (new) — created',
+    '- `src/*.js` — glob, skipped',
+    '- `identifier` — not a path',
+    'Accept: `node tests/accept.test.mjs`',
+    'Risks: `src/risk.js` is touched',
+    '### Batch 2 — b: more',
+    '- `src/a.js` — again',
+    '- `docs/x.md` — doc',
+    'Accept: manual — look',
+  ].join('\n');
+  assert.deepEqual(planFiles(plan), ['src/a.js', 'src/b.js', 'lib/c.mjs', 'src/new.js', 'docs/x.md']);
+  assert.deepEqual(planFiles('Goal: x'), []);
 });

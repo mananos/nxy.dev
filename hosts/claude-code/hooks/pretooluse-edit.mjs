@@ -15,6 +15,7 @@
  * Fail-open, like every other nxy hook: any error, any unknown, and the edit goes through.
  */
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
 import { gitBranch, toNativePath } from '../../../core/paths.mjs';
 import { decideGate } from '../../../core/gate.mjs';
@@ -29,6 +30,14 @@ import {
 import { isApproved, readMarker } from '../plan-approval.mjs';
 import { snapshot } from '../baseline.mjs';
 import { writeStopState } from '../stop-state.mjs';
+import { noteUndeclaredRepo, primaryRoot, repoNames, repoOf } from '../repos.mjs';
+import { pushNote } from '../agent-notes.mjs';
+
+/** Same root, compared the way repos.mjs does (resolved, case-insensitive on Windows). */
+const sameRoot = (a, b) => {
+  const n = (p) => resolve(toNativePath(p)).replace(/[\\/]+$/, '');
+  return process.platform === 'win32' ? n(a).toLowerCase() === n(b).toLowerCase() : n(a) === n(b);
+};
 
 const GATED_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
 
@@ -58,7 +67,16 @@ try {
     const isSubagent = isSubagentCall(input, transcript);
     const contextTokens = isSubagent ? null : lastContextTokens(transcript);
     const hasImplementer = Boolean(cfg.roles && cfg.roles.implementer);
-    const file = typeof input?.tool_input?.file_path === 'string' ? input.tool_input.file_path : undefined;
+    const ti = input?.tool_input;
+    const file = typeof ti?.file_path === 'string' ? ti.file_path : (typeof ti?.notebook_path === 'string' ? ti.notebook_path : undefined);
+    const branch = gitBranch(cwd);
+    const onBranch = file ? readMarker(cwd, branch) : null;
+    // Gate scope (1.0.1): a file outside the project dir AND outside every git root (the scratchpad,
+    // Claude's own memory) is not the project's work: no gate, no copy, no ledger row. `.nxy/` and
+    // `.git/` are inside a repo, so they stay gated like any file.
+    const abs = file ? resolve(typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, toNativePath(file)) : null;
+    const fileRepo = abs ? repoOf(cwd, abs, onBranch?.repos || []) : null;
+    if (file && !fileRepo) process.exit(0);
     // Whether this session already edited another file (for `flow.plan: "always"`, 0.4.4).
     const before = file && typeof input.session_id === 'string' ? readSession(cwd, input.session_id).files : [];
     // What the session is working on is recall's strongest signal (memories attached to it).
@@ -66,13 +84,17 @@ try {
     const current = file && typeof input.session_id === 'string' ? readSession(cwd, input.session_id).files.at(-1) : null;
     const touchedOther = Boolean(current) && before.some((f) => f !== current);
     // The plan's "before" (0.4.2): the first time its work touches a file, keep a copy for the review.
-    const branch = gitBranch(cwd);
-    const onBranch = file ? readMarker(cwd, branch) : null;
-    if (file && onBranch && !onBranch.questions) snapshot(cwd, branch, toNativePath(file));
+    if (abs && onBranch && !onBranch.questions) {
+      snapshot(cwd, branch, abs);
+      // A repo the plan did not declare: remembered, and the main thread is told once.
+      if (fileRepo && !fileRepo.primary && !(onBranch.repos || []).some((r) => sameRoot(r, fileRepo.root)) && noteUndeclaredRepo(cwd, fileRepo.root)) {
+        pushNote(cwd, `${repoNames([primaryRoot(cwd), ...(onBranch.repos || []), fileRepo.root]).get(fileRepo.root)} is not in the plan; its prior uncommitted changes cannot be told apart`);
+      }
+    }
 
     // A plan waiting for the user's approval stops everything else: nothing is written before the
-    // checkpoint (0.4.0). Then the handoff, which never consumes the gate's escape: `/nxy:gate
-    // once` means "edit here", not "skip writing down where we are".
+    // checkpoint (0.4.0). Then the handoff, which yields to the user's `/nxy:gate once` like the
+    // other rules (one escape lets the edit through both).
     const pending = isSubagent ? null : readMarker(cwd, branch);
     const pendingHash = pending ? pending.hash : null;
     const checkpoint = decideCheckpoint({
@@ -111,8 +133,9 @@ try {
     } else if (planRule) {
       recordGate(cwd, { ts: Date.now(), tool: input.tool_name, allow: true, reason: 'escape', contextTokens, threshold: gateCfg.contextTokens });
     } else if (handoff.block) {
-      recordGate(cwd, { ts: Date.now(), tool: input.tool_name, allow: false, reason: handoff.reason, contextTokens, threshold: gateCfg.contextTokens });
-      deny(handoff.message || 'nxy: save a handoff first');
+      const escaped = consumeEscape(cwd, gateCfg.escapeMinutes);
+      recordGate(cwd, { ts: Date.now(), tool: input.tool_name, allow: escaped, reason: escaped ? 'escape' : handoff.reason, contextTokens, threshold: gateCfg.contextTokens });
+      if (!escaped) deny(handoff.message || 'nxy: save a handoff first');
     } else if (gateCfg.enabled !== false) {
       const verdict = decideGate(
         {

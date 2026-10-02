@@ -1,6 +1,6 @@
 {
   "name": "nxy",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.1-rc.1",
   "private": true,
   "description": "Claude Code plugin: fewer tokens without losing quality — metrics, output filtering, scout, write gate, plan, verification, review and memory",
   "type": "module",

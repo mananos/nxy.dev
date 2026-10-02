@@ -279,7 +279,7 @@ export function checkpoint2(o) {
  * The packet the reviewer reads: plan, lenses, conventions, and the diff. The diff is cut past
  * `maxDiffLines`; the reviewer reads the rest of those files itself.
  * @param {{planHash: string, plan: string, conventions: {title: string, body: string}[], lenses: {lens: Lens, files: string[]}[],
- *   files: {path: string, status: string, added: number, removed: number, diff: string, source?: string}[], recordCmd: string, maxDiffLines?: number}} o
+ *   files: {path: string, status: string, added: number, removed: number, diff: string, source?: string}[], recordCmd: string, maxDiffLines?: number, coverage?: string[]}} o
  */
 export function reviewPacket(o) {
   const max = o.maxDiffLines ?? 3000;
@@ -295,11 +295,14 @@ export function reviewPacket(o) {
     ...(o.conventions.length ? o.conventions.map((c) => `- ${c.title}${c.body && c.body !== c.title ? `: ${c.body.split('\n')[0]}` : ''}`) : ['- none recorded']),
     '',
     '## Changed files',
-    ...o.files.map((f) => `- ${f.path} (${f.status}${f.source === 'git' ? ' (git)' : ''}, +${f.added} −${f.removed})`),
+    ...o.files.map((f) => `- ${f.path} (${f.status}${f.source === 'git' ? ' (git)' : f.source === 'inventory' ? ' (inventory)' : ''}, +${f.added} −${f.removed})`),
     '',
     '## Diff (against each file as it was before the plan\'s first edit)',
     ...(o.files.some((f) => f.source === 'git')
       ? ['(git) files had no copy taken before the change: their diff is against HEAD, so it is the plan\'s only if the file was clean when the plan was approved.', '']
+      : []),
+    ...(o.files.some((f) => f.source === 'inventory')
+      ? ['(inventory) files changed with no copy and no git (a script, a generator, an editor outside Claude): new ones are shown whole; "changed outside the plan\'s copies; no before" ones have no diff: read them with Read and judge whether the change belongs to the plan.', '']
       : []),
   ];
   let used = 0;
@@ -317,6 +320,7 @@ export function reviewPacket(o) {
     out.push(f.diff, '');
   }
   if (cut.length) out.push(`(diff cut at ${max} lines; read these files yourself around their changes: ${cut.join(', ')})`, '');
+  if (o.coverage?.length) out.push('## Coverage (what was and was not looked at; a conclusion must not rest on what is not covered)', ...o.coverage, '');
   out.push(
     '## Your answer',
     'A JSON array, one object per finding, [] when there is none:',

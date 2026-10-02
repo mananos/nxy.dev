@@ -292,6 +292,7 @@ export function handoffDenyMessage(o) {
     'EOF',
     '',
     '~20 lines. Keep it current: save again after each finished task (it replaces the previous one).',
+    'To let one small edit through without a handoff (for example right after `mem handoff done`), the user can run `/nxy:gate once`.',
     o.then,
   ].join('\n');
 }

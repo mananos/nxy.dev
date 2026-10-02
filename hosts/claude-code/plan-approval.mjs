@@ -27,16 +27,18 @@ const MAX_SCAN_BYTES = 32 * 1024 * 1024;
 /**
  * Records that the branch has a plan with this hash and this many open questions (null clears it).
  * @param {string} cwd @param {string|null} branch @param {string|null} hash @param {number} [questions]
+ * @param {string[]} [repos] roots of the repos the plan declares, the primary first
  */
-export function writeMarker(cwd, branch, hash, questions = 0) {
+export function writeMarker(cwd, branch, hash, questions = 0, repos = []) {
   try {
     if (!hash) {
       rmSync(markerPath(cwd), { force: true });
       rmSync(join(nxyRuntimeDir(cwd), 'plan-dirty.json'), { force: true });
+      rmSync(join(nxyRuntimeDir(cwd), 'plan-extra-repos.json'), { force: true });
       return;
     }
     ensureDir(nxyRuntimeDir(cwd));
-    writeFileSync(markerPath(cwd), JSON.stringify({ branch: branch || null, hash, questions }), 'utf8');
+    writeFileSync(markerPath(cwd), JSON.stringify({ branch: branch || null, hash, questions, repos }), 'utf8');
   } catch {
     /* best-effort */
   }
@@ -44,14 +46,14 @@ export function writeMarker(cwd, branch, hash, questions = 0) {
 
 /**
  * The plan pending on this branch, or null.
- * @returns {{hash: string, questions: number}|null}
+ * @returns {{hash: string, questions: number, repos: string[]}|null}
  */
 export function readMarker(cwd, branch) {
   try {
     if (!existsSync(markerPath(cwd))) return null;
     const m = JSON.parse(readFileSync(markerPath(cwd), 'utf8'));
     return m && (m.branch || null) === (branch || null) && typeof m.hash === 'string'
-      ? { hash: m.hash, questions: Number(m.questions) || 0 }
+      ? { hash: m.hash, questions: Number(m.questions) || 0, repos: Array.isArray(m.repos) ? m.repos.map(String) : [] }
       : null;
   } catch {
     return null;

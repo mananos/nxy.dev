@@ -141,20 +141,24 @@ function sandbox(contextTokens = 150_000) {
 /** @param {string} out */
 const reason = (out) => JSON.parse(out).hookSpecificOutput.permissionDecisionReason;
 
-test('edit hook: handoff first, then the gate — and the escape is not burnt on the handoff', () => {
+test('edit hook: handoff first, then the gate — and one `/nxy:gate once` covers the handoff refusal', () => {
   const s = sandbox();
-  armEscape(s.repo, 5);
-  const first = reason(s.run('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: 'a.ts' } }));
+  const edit = () => s.run('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: 'a.ts' } });
+  const first = reason(edit());
   assert.match(first, /no handoff yet/);
   assert.match(first, /handoff save <<'EOF'/);
   assert.match(first, /dispatch the `implementer`/, 'one message covers both steps: no wasted retry');
-  assert.ok(escapeUntil(s.repo, 5), '`/nxy:gate once` survives the handoff refusal');
+  assert.match(first, /\/nxy:gate once/, 'and it says how to let one edit through');
 
+  armEscape(s.repo, 5);
+  assert.equal(edit().trim(), '', 'armed escape + no handoff + over threshold: one edit goes through');
+  assert.equal(escapeUntil(s.repo, 5), null, 'and it is spent');
+  assert.match(reason(edit()), /no handoff yet/, 'the next one is refused again');
+
+  armEscape(s.repo, 5);
   s.save();
-  assert.equal(s.run('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: 'a.ts' } }).trim(), '',
-    'with a handoff, the armed escape lets the edit through');
-  assert.match(reason(s.run('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: 'a.ts' } })), /main thread context is 150k/,
-    'and after that it is the plain gate again');
+  assert.equal(edit().trim(), '', 'with a handoff, the armed escape lets the edit through');
+  assert.match(reason(edit()), /main thread context is 150k/, 'and after that it is the plain gate again');
 
   assert.equal(sandbox().run('pretooluse-edit.mjs', { tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: 'a.ts' } }).trim(), '',
     'a payload that says "subagent" is never gated, even if it points at the main transcript');
