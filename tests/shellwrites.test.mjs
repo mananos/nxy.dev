@@ -34,6 +34,9 @@ test('recognised writes', () => {
   assert.deepEqual(targets('echo x > "my file.txt"'), [abs('my file.txt')]);
   assert.deepEqual(targets('cd sub && echo x > f'), [abs('sub', 'f')]);
   assert.deepEqual(targets('FOO=1 sudo rtk sed -i s/a/b/ f'), [abs('f')]);
+  // `~` inside a word is literal: Windows 8.3 names (the CI runner's temp is `RUNNER~1`).
+  assert.deepEqual(targets('sed -i s/a/b/ RUNNER~1/f'), [abs('RUNNER~1', 'f')]);
+  assert.deepEqual(targets('cd RUNNER~1 && echo x > f'), [abs('RUNNER~1', 'f')]);
 });
 
 test('cp into an existing directory', () => {
@@ -57,6 +60,8 @@ test('ignored', () => {
   assert.deepEqual(targets('cat > out.txt <<EOF\nfoo > x\nEOF'), [abs('out.txt')]);
   assert.deepEqual(targets('echo x > "$OUT"'), []);
   assert.deepEqual(targets('ls *.txt'), []);
+  assert.deepEqual(targets('echo x > ~/out.txt'), []);
+  assert.deepEqual(targets('cd ~ && echo x > rel'), []);
   assert.deepEqual(targets('cd - && echo x > rel'), []);
   assert.deepEqual(targets('echo "line one\na > x" '), []);
   assert.deepEqual(targets("echo 'line one\na > x'"), []);
