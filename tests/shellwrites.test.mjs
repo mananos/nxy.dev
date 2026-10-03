@@ -34,6 +34,9 @@ test('recognised writes', () => {
   assert.deepEqual(targets('echo x > "my file.txt"'), [abs('my file.txt')]);
   assert.deepEqual(targets('cd sub && echo x > f'), [abs('sub', 'f')]);
   assert.deepEqual(targets('FOO=1 sudo rtk sed -i s/a/b/ f'), [abs('f')]);
+  // `~` inside a word is literal: Windows 8.3 names (the CI runner's temp is `RUNNER~1`).
+  assert.deepEqual(targets('sed -i s/a/b/ RUNNER~1/f'), [abs('RUNNER~1', 'f')]);
+  assert.deepEqual(targets('cd RUNNER~1 && echo x > f'), [abs('RUNNER~1', 'f')]);
 });
 
 test('cp into an existing directory', () => {
@@ -57,6 +60,8 @@ test('ignored', () => {
   assert.deepEqual(targets('cat > out.txt <<EOF\nfoo > x\nEOF'), [abs('out.txt')]);
   assert.deepEqual(targets('echo x > "$OUT"'), []);
   assert.deepEqual(targets('ls *.txt'), []);
+  assert.deepEqual(targets('echo x > ~/out.txt'), []);
+  assert.deepEqual(targets('cd ~ && echo x > rel'), []);
   assert.deepEqual(targets('cd - && echo x > rel'), []);
   assert.deepEqual(targets('echo "line one\na > x" '), []);
   assert.deepEqual(targets("echo 'line one\na > x'"), []);
@@ -102,6 +107,8 @@ test('hook copies before sed -i, a redirect and cp, only with an active plan', (
     assert.equal(out.status, 0);
   }
   const base = readBaseline(repo, branch);
+  // f.txt is named by the plan, so it was pre-copied at approval; g.txt and h.txt are not in the plan:
+  // they are the proof that the hook itself copies console-write targets.
   assert.deepEqual(Object.keys(base).sort(), [join(repo, 'f.txt'), join(repo, 'g.txt'), join(repo, 'h.txt')].sort());
   const copy = base[join(repo, 'g.txt')];
   assert.ok(copy.copy);
@@ -118,7 +125,8 @@ test('hook: targets outside the project, under .nxy or under .git are not copied
   writeFileSync(join(repo, '.nxy', 'note.txt'), 'n\n');
   writeFileSync(join(repo, '.git', 'note.txt'), 'g\n');
   for (const c of [`echo x > "${outsideCmd}"`, 'echo x > .nxy/note.txt', 'echo x > .git/note.txt']) assert.equal(hook(event(c)).status, 0);
-  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')), []);
+  // only f.txt: plan-named, pre-copied at approval (not by the hook); none of these targets was copied by the hook
+  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt']);
 });
 
 test('hook: a subagent shell write into the project is denied; main thread and other cases pass', () => {
@@ -147,7 +155,7 @@ test('hook: nothing for 2>&1, >/dev/null; malformed events exit 0 silently', () 
   const { repo, env, plan, hook, event } = setup();
   spawnSync(process.execPath, [...NODE, MEM, 'handoff', 'plan'], { input: plan, encoding: 'utf8', env, cwd: repo });
   for (const c of ['ls 2>&1', 'ls >/dev/null 2>&1']) hook(event(c));
-  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')), []);
+  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt'], 'only the plan\'s own pre-copy');
   for (const bad of ['not json', JSON.stringify({ tool_name: 'Bash', tool_input: {} }), '']) {
     const r = hook(bad);
     assert.equal(r.status, 0);

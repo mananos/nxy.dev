@@ -8,9 +8,11 @@
  * Fail-open: any error means "run the original command untouched".
  */
 import { readFileSync } from 'node:fs';
-import { isAbsolute, relative } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { gitBranch, gitRoot, toNativePath } from '../../../core/paths.mjs';
+import { gitBranch, toNativePath } from '../../../core/paths.mjs';
+import { noteUndeclaredRepo, primaryRoot, repoNames, repoOf } from '../repos.mjs';
+import { pushNote } from '../agent-notes.mjs';
 import { readMarker } from '../plan-approval.mjs';
 import { snapshot } from '../baseline.mjs';
 import { writeTargets } from '../../../core/shellwrites.mjs';
@@ -20,6 +22,24 @@ import { decide } from '../../../core/filter/decide.mjs';
 import { engineInfo } from '../../../core/filter/engine.mjs';
 import { claudeSettingsFiles } from '../settings.mjs';
 import { pinRtkPath, rtkRewrite, silenceRtkHookWarning } from '../../../core/filter/rtk.mjs';
+
+const sameRoot = (a, b) => {
+  const n = (p) => resolve(toNativePath(p)).replace(/[\\/]+$/, '');
+  return process.platform === 'win32' ? n(a).toLowerCase() === n(b).toLowerCase() : n(a) === n(b);
+};
+
+/**
+ * The repo a write target belongs to (the project's, a declared one, or a git repo found by walking
+ * up from the target), or null when it is outside every repo or inside nxy state / git internals.
+ * @param {string} cwd @param {string} target @param {string[]} repos
+ */
+function projectTarget(cwd, target, repos) {
+  const repo = repoOf(cwd, target, repos);
+  if (!repo) return null;
+  const rel = relative(repo.root, resolve(cwd, target));
+  if (!rel || rel.startsWith('..')) return null;
+  return rel.split(/[\\/]/).some((s) => s === '.nxy' || s === '.git') ? null : repo;
+}
 
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
@@ -32,12 +52,9 @@ try {
     // (the payload carries `agent_id` only inside a subagent). Its own try: on error, allow.
     try {
       if (typeof input.agent_id === 'string' && input.agent_id) {
-        const root = gitRoot(cwd) ?? cwd;
-        const inside = writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name, { content: true }).some((t) => {
-          const rel = relative(root, t);
-          if (!rel || rel.startsWith('..') || isAbsolute(rel)) return false;
-          return !rel.split(/[\\/]/).some((s) => s === '.nxy' || s === '.git');
-        });
+        const targets = writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name, { content: true });
+        const repos = targets.length ? (readMarker(cwd, gitBranch(cwd))?.repos || []) : [];
+        const inside = targets.some((t) => projectTarget(cwd, t, repos) != null);
         if (inside) {
           process.stdout.write(
             JSON.stringify({
@@ -61,13 +78,16 @@ try {
       const branch = gitBranch(cwd);
       const plan = readMarker(cwd, branch);
       if (plan && !plan.questions) {
-        // Only files inside the project, never nxy state (.nxy) or git internals (.git).
-        const root = gitRoot(cwd) ?? cwd;
+        // Only files inside a repo (the project's, a declared one or any git repo), never nxy state
+        // (.nxy) or git internals (.git).
+        const known = plan.repos || [];
         for (const t of writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name)) {
-          const rel = relative(root, t);
-          if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue;
-          if (rel.split(/[\\/]/).some((s) => s === '.nxy' || s === '.git')) continue;
+          const repo = projectTarget(cwd, t, known);
+          if (!repo) continue;
           snapshot(cwd, branch, t);
+          if (!repo.primary && !known.some((r) => sameRoot(r, repo.root)) && noteUndeclaredRepo(cwd, repo.root)) {
+            pushNote(cwd, `${repoNames([primaryRoot(cwd), ...known, repo.root]).get(repo.root)} is not in the plan; its prior uncommitted changes cannot be told apart`);
+          }
         }
       }
     } catch {

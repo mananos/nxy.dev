@@ -17,7 +17,7 @@
  * (hosts/claude-code/gitstate.mjs), marked `(git)`.
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from '../../../core/format.mjs';
 import { PLUGIN_ROOT, ensureDir, gitBranch, gitRoot, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { appendJsonl, readJsonl } from '../../../core/jsonl.mjs';
@@ -30,6 +30,8 @@ import { packetPath, readBaseline, reviewFiles } from '../baseline.mjs';
 import { readMarker } from '../plan-approval.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import { findDocs } from '../docs.mjs';
+import { conventionsOf, repoOf, touchedRepos } from '../repos.mjs';
+import { coverageLines, inventoryWhy } from '../coverage.mjs';
 import { docsPacket, docsQuestion } from '../../../core/docs.mjs';
 import { loadConfig } from '../../../core/config.mjs';
 
@@ -45,7 +47,7 @@ const ledgerPath = join(nxyRuntimeDir(cwd), 'review.jsonl');
  * Why a packet is empty: where nxy looked, how many baseline copies it found, whether the plan
  * marker is there. Returned as lines so a later source of changes can add its own.
  * @param {string|null} planHash
- * @param {{note: string|null, git: {atApproval: number, now: number|null}|null}} [rv] the review's git result
+ * @param {{note: string|null, git: {atApproval: number, now: number|null}|null, coverage?: any}} [rv] the review's git result
  */
 function emptyWhy(planHash, rv) {
   const copies = Object.keys(readBaseline(cwd, branch)).length;
@@ -54,16 +56,29 @@ function emptyWhy(planHash, rv) {
     `looked in ${join(nxyRuntimeDir(cwd), 'baseline').replace(/\\/g, '/')} (project ${(gitRoot(cwd) ?? cwd).replace(/\\/g, '/')}, branch ${branch || '(none)'})`,
     `baseline copies: ${copies} · plan marker: ${marker ? `present (${marker.hash})` : 'absent'}${planHash && marker && marker.hash !== planHash ? ` (the handoff's plan is ${planHash})` : ''}`,
     ...(rv ? [rv.note ? `git: ${rv.note}` : rv.git ? `git: ${rv.git.atApproval} file(s) dirty at approval, ${rv.git.now ?? '?'} dirty now` : 'git: not checked (no plan marker)'] : []),
+    ...(rv && inventoryWhy(rv.coverage) ? [/** @type {string} */ (inventoryWhy(rv.coverage))] : []),
   ];
 }
 
-/** The `## Not reviewed` section and git note of a packet, as lines (empty when there is nothing to say). */
-function notReviewedLines(rv) {
+/** The `## Coverage` bullets: what covered each repo without git (empty when every repo has git). */
+function coverageOf(rv) {
+  return coverageLines(rv.coverage, rv, Object.keys(readBaseline(cwd, branch)));
+}
+
+/**
+ * The `## Not reviewed` section and git note of a packet, as lines (empty when there is nothing to say).
+ * `withCoverage` adds the `## Coverage` section too, for output that is not the packet itself.
+ */
+function notReviewedLines(rv, withCoverage = false) {
   const out = [];
   if (rv.notReviewed.length) {
     out.push('', '## Not reviewed', ...rv.notReviewed.map((n) => `- ${n.path}: ${n.reason}`));
   }
-  if (rv.note) out.push('', `Git: ${rv.note}; only the files nxy copied before the plan touched them were reviewed.`);
+  const cov = coverageOf(rv);
+  if (rv.note) {
+    out.push('', `Git: ${rv.note}; ${cov.length ? 'those files were reviewed from nxy\'s copies and its inventory (see Coverage)' : 'only the files nxy copied before the plan touched them were reviewed'}.`);
+  }
+  if (withCoverage && cov.length) out.push('', '## Coverage', ...cov);
   return out;
 }
 
@@ -73,6 +88,38 @@ function lensesIn(dir) {
   return readdirSync(dir).filter((n) => n.endsWith('.md')).sort()
     .map((n) => parseLens(readFileSync(join(dir, n), 'utf8'), n.replace(/\.md$/, '')))
     .filter((l) => l !== null);
+}
+
+/**
+ * `findDocs` per touched repo, with that repo's root and its repo-relative changed files. The primary's
+ * docs keep their relative path; another repo's are listed by absolute path (forward slashes).
+ * @param {{path: string, abs?: string}[]} files @param {any} docsCfg
+ */
+function findDocsAcross(files, docsCfg) {
+  const roots = touchedRepos(cwd, branch);
+  const primary = roots[0];
+  /** @type {Map<string, string[]>} */
+  const groups = new Map(roots.map((r) => [r, []]));
+  for (const f of files) {
+    const repo = f.abs ? repoOf(cwd, f.abs, roots) : null;
+    if (!repo) {
+      groups.get(primary)?.push(f.path);
+      continue;
+    }
+    const key = roots.find((r) => resolve(r) === resolve(repo.root));
+    const list = groups.get(key ?? primary) ?? groups.get(primary);
+    list?.push(key === primary ? f.path : relative(repo.root, f.abs ?? f.path).replace(/\\/g, '/'));
+  }
+  /** @type {{docs: any[], wikiDir: string|null, terms: string[]}} */
+  const out = { docs: [], wikiDir: null, terms: [] };
+  for (const [root, changed] of groups) {
+    if (!changed.length) continue;
+    const r = findDocs(root, changed, docsCfg);
+    if (root === primary) out.wikiDir = r.wikiDir;
+    out.terms = [...new Set([...out.terms, ...r.terms])];
+    for (const d of r.docs) out.docs.push(root === primary ? d : { ...d, path: join(root, d.path).replace(/\\/g, '/') });
+  }
+  return out;
 }
 
 async function currentPlan() {
@@ -122,18 +169,25 @@ switch (action) {
     if (!need.needed) {
       console.log(`no review needed for plan ${hash}: ${need.reason}.`);
       if (!files.length) for (const l of emptyWhy(hash, rv)) console.log(l);
-      for (const l of notReviewedLines(rv)) console.log(l);
+      for (const l of notReviewedLines(rv, true)) console.log(l);
       break;
     }
+    // Every touched repo's lenses over the plugin's; the primary's last, so it wins.
+    const roots = touchedRepos(cwd, branch);
     const lenses = selectLenses(
-      mergeLenses(lensesIn(join(PLUGIN_ROOT, 'lenses')), lensesIn(join(cwd, '.nxy', 'lenses'))),
+      [...roots].reverse().reduce((acc, r) => mergeLenses(acc, lensesIn(join(r, '.nxy', 'lenses'))), lensesIn(join(PLUGIN_ROOT, 'lenses'))),
       files.map((f) => ({ path: f.path, content: f.content })),
     );
-    const { listMemories, openStore } = await import('../../../core/memory/store.mjs');
-    const conventions = listMemories(openStore(), { project, allAreas: true, type: 'convention', limit: 200 })
-      .map((m) => ({ title: m.title, body: m.body }));
+    const { openStore } = await import('../../../core/memory/store.mjs');
+    const db = openStore();
+    let conventions;
+    try {
+      conventions = (await conventionsOf(db, roots, { limit: 200 })).map((m) => ({ title: m.title, body: m.body }));
+    } finally {
+      db.close();
+    }
     const packet = reviewPacket({
-      planHash: hash, plan, conventions, lenses, files,
+      planHash: hash, plan, conventions, lenses, files, coverage: coverageOf(rv),
       recordCmd: `node --disable-warning=ExperimentalWarning "${SELF}" record --cwd "${cwd.replace(/\\/g, '/')}"`,
     });
     const notes = notReviewedLines(rv);
@@ -178,7 +232,7 @@ switch (action) {
     }
     const files = reviewFiles(cwd, branch, hash).files;
     const classified = classifyFindings(findings, new Map(files.map((f) => /** @type {[string, [number, number][]]} */ ([f.path, f.ranges]))));
-    const docs = loadConfig(cwd).roles?.documenter ? findDocs(cwd, files.map((f) => f.path), loadConfig(cwd).docs || {}) : null;
+    const docs = loadConfig(cwd).roles?.documenter ? findDocsAcross(files, loadConfig(cwd).docs || {}) : null;
     const state = {
       docs,
       id: reviewId(hash),

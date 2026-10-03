@@ -26,6 +26,12 @@ for (const file of ['implementer.md', 'documenter.md']) {
   });
 }
 
+test('reviewer.md explains (inventory) files and reads ## Coverage', () => {
+  const text = read('reviewer.md');
+  assert.match(text, /\(inventory\)/);
+  assert.match(text, /## Coverage/);
+});
+
 test('every agent file has name, description and tools in its frontmatter', () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith('.md'));
   assert.ok(files.length > 0);

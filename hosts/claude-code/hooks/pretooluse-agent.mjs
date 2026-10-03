@@ -159,7 +159,9 @@ try {
       /** @type {{title: string, area: string|null}[]} */
       let conventions = [];
       try {
-        conventions = listMemories(db, { project: known.project, allAreas: true, type: 'convention', limit: 500 });
+        const { conventionsOf, touchedRepos } = await import('../repos.mjs');
+        conventions = await conventionsOf(db, touchedRepos(cwd, gitBranch(cwd)));
+        if (!conventions.length) conventions = listMemories(db, { project: known.project, allAreas: true, type: 'convention', limit: 500 });
       } finally {
         db.close();
       }

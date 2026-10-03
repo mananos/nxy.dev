@@ -44,7 +44,7 @@ if (action === 'on' || action === 'off') {
   const mins = cfg.gate?.escapeMinutes ?? 5;
   const until = armEscape(cwd, mins);
   console.log(`gate: the next main-thread edit goes through unblocked (expires in ${mins} min, ${new Date(until).toLocaleTimeString()}).`);
-  console.log('Single use: the edit after that is subject to the threshold again.');
+  console.log('Covers the plan, threshold and no-handoff refusals. Single use: the edit after that is subject to them again.');
 } else if (action !== 'status') {
   console.log(`unknown action "${action}". Use: status | on | off | once`);
 }

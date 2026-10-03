@@ -151,6 +151,23 @@ Los subagentes no pueden escribir archivos del proyecto por consola: un hook les
 
 Qué te toca a vos en todo el proceso: contestar las preguntas, leer el plan como un diseño en un PR (¿reusa lo que existe?, ¿cada `Accept:` prueba lo correcto?) y elegir qué hallazgos arreglar.
 
+### Una tarea en varios repos
+
+Abrí Claude Code en un repo y nombrá en el pedido las rutas de los otros. El plan trae una sección `### Repos` con cada uno y su rol (api, web, lib compartida).
+
+- **Qué ves.** Al aprobar, nxy anota **una sola vez por tarea** qué archivos ya estaban modificados en cada repo. Un plan revisado no repite la foto; sólo toma la de un repo que el plan nuevo suma. Se borra con `mem handoff done`. La review muestra los archivos como `<repo>/<ruta>`; si dos repos se llaman igual, nxy agrega carpetas hasta distinguirlos (`clientX/api`, `clientY/api`), sin configurar nada. Las convenciones, lentes y docs de cada repo tocado se aplican.
+- **Qué significa.** Si se edita un repo que el plan no declaró, sale el aviso `<repo> is not in the plan; its prior uncommitted changes cannot be told apart` y sus cambios previos quedan en `## Not reviewed`.
+- **Qué hacés.** Declaralo en `### Repos` y volvé a aprobar.
+
+Regla del gate: sólo quedan libres los archivos fuera del proyecto y de todo repo git (el scratchpad, la memoria de Claude). Los de `.nxy/` siguen con gate porque son archivos tuyos que se commitean. `/nxy:gate once` ahora también deja pasar una edición después de `mem handoff done`.
+
+### Cambios hechos fuera de Claude (scripts, generadores, proyectos sin git)
+
+- **Qué ves.** Al aprobar, nxy copia los archivos que el plan nombra (hasta 200) y, en carpetas sin git, anota una lista liviana: ruta, tamaño, fecha y huella del contenido de cada archivo. Saltea `node_modules`, `target`, `dist`, `build`, `.git`, `.nxy` y similares; los archivos por encima del límite de copia sólo llevan tamaño y fecha. La lista se toma una vez por tarea, al primer plan aprobado; un plan revisado no la rehace. Con git no se hace inventario: git ya lo cubre.
+- **Qué significa.** La review marca esos archivos `(inventory)`: los nuevos se revisan enteros; los modificados dicen "changed outside the plan's copies; no before" (no hay un antes: el revisor los lee y avisa si parecen fuera del plan). Un archivo que sólo cambió de fecha o se reescribió igual (`touch`, guardar sin cambios) no aparece. La sección `## Coverage` dice qué cubrió cada repo y qué no: carpetas salteadas, archivos grandes que cambian sin tocar tamaño ni fecha, más de 20.000 archivos (`too many files`, sólo copias).
+- **Qué hacés.** Si algo importante queda sin cubrir, miralo a mano o nombrá el archivo en el plan.
+- **Costo.** Al aprobar se lee cada archivo una vez (0,3 a 1 s para 5.000 archivos / ~30 MB); al revisar sólo se recorre y se lee lo que cambió de tamaño o fecha (0,1 a 0,3 s para 5.000 archivos). Unos 110 bytes por archivo. Se borra con `mem handoff done`.
+
 ### Cuando la sesión se pone cara
 
 Cada mensaje reenvía todo el contexto acumulado: con 200k encima, cada paso cuesta el doble que con 100k. Cuando la statusline se pone roja:
@@ -185,7 +202,11 @@ Cuando nxy frena algo, el mensaje le dice a Claude exactamente qué hacer, así 
 | `… has no handoff yet. Save one before starting write work` | Sesión cargada y la rama no tiene handoff: Claude lo guarda antes de seguir | Nada; pasa una vez por rama |
 | Pregunta `Plan Q1` / `Plan Q2` | El plan necesita una decisión tuya | Contestá. Si te da lo mismo, la recomendada |
 | Pregunta **Approve nxy plan …?** | Hay un plan esperando tu aprobación | Leelo y elegí Approve o Change |
-| **Save as repo conventions?** | Tus respuestas pueden quedar como reglas del repo | Marcá sólo las que valen para todo el repo ("DTOs como records"), no las de esta tarea |
+| **Save as repo conventions?** | Tus respuestas pueden quedar como reglas del repo. Con una sola decisión la pregunta es "Save as convention / Don't save"; con 2 a 4 se marcan las que valen; con más de 4 se reparten en varias preguntas de hasta 4 | Guardá sólo las que valen para todo el repo ("DTOs como records"), no las de esta tarea |
+| `<repo> is not in the plan; its prior uncommitted changes cannot be told apart` | Se editó un repo que el plan no declaró: sus cambios previos quedan en `## Not reviewed` | Declaralo en `### Repos` del plan y volvé a aprobar |
+| `warning: <ruta> does not exist` / `is not a git repo; its changes are not reviewed through git` | Un repo declarado en el plan no existe o no tiene git | Corregí la ruta; sin git, la revisión se apoya en copias e inventario |
+| `copied the "before" of N file(s) the plan names` | Al aprobar, nxy copió los archivos que el plan nombra para poder compararlos después | Nada |
+| Sección `## Coverage` en la review | Dice qué cubrió cada repo sin git y qué no (`too many files`: más de 20.000 archivos, sólo copias) | Si algo importante queda sin cubrir, miralo a mano o nombrá el archivo en el plan |
 | `nxy verify: batch 2 ✘ … failed after the last edit` | El test del lote falló después del último cambio | **Retry** si es del cambio; **Continue anyway** si ya fallaba antes; **Stop** para mirarlo vos |
 | `nxy verify: batch 3 – manual` | Ningún comando prueba ese lote (algo visual) | Miralo vos; el plan dice qué mirar |
 | Pregunta **Review** con `R1`, `R2`… | Hallazgos de la review de lo que cambió el plan | Marcá los que querés arreglar antes del PR. Los *preexisting* son informativos |
@@ -377,7 +398,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.0.0-rc.2` |
+| Versión actual | `1.0.1-rc.1` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Construido y con tests (0.2 a 0.4); falta probarlo en sesiones reales |
 | Próximo | 1–2 semanas de uso real con la rc, ajustes, `1.0.0` |

@@ -81,7 +81,31 @@ export function pushNote(cwd, text) {
   }
 }
 
-/** The waiting notes, oldest first, each delivered to one caller only. Empty when none. */
+/**
+ * Runs `fn`, retrying while Windows reports the file busy (another process or an antivirus has it
+ * open). Any other error, ENOENT included, is thrown at once.
+ * @template T @param {() => T} fn @returns {T}
+ */
+function retryBusy(fn) {
+  for (let i = 0; ; i++) {
+    try {
+      return fn();
+    } catch (e) {
+      const code = /** @type {any} */ (e)?.code;
+      if (i >= 20 || !['EPERM', 'EBUSY', 'EACCES'].includes(code)) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
+}
+
+/**
+ * The waiting notes, oldest first, each delivered to one caller only. Empty when none.
+ *
+ * A note is claimed by creating `<note>.lock` exclusively (`wx`), atomic on NTFS and POSIX. Not by
+ * renaming it: on Windows a rename opens the source first, so a second reader can move the file a
+ * first one already renamed and both deliver it. The owner deletes the note before its lock, so a
+ * late reader that gets the lock finds no note.
+ */
 export function takeNotes(cwd) {
   const dir = notesDir(cwd);
   if (!existsSync(dir)) return [];
@@ -94,21 +118,41 @@ export function takeNotes(cwd) {
   const out = [];
   for (const name of names) {
     const path = join(dir, name);
-    const claimed = `${path}.${process.pid}.${randomBytes(2).toString('hex')}.taken`;
+    const lock = `${path}.lock`;
     try {
-      renameSync(path, claimed); // only one process wins the rename
+      writeFileSync(lock, String(process.pid), { flag: 'wx' });
     } catch {
+      // Another reader holds it; a lock a day old belongs to a reader that died: drop both.
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > NOTE_TTL_MS) {
+          rmSync(path, { force: true });
+          rmSync(lock, { force: true });
+        }
+      } catch {
+        /* gone meanwhile */
+      }
       continue;
     }
+    let text = '';
+    let fresh = false;
+    let removed = false;
     try {
-      const text = readFileSync(claimed, 'utf8').trim();
-      const fresh = Date.now() - statSync(claimed).mtimeMs <= NOTE_TTL_MS;
-      if (text && fresh && !out.includes(text)) out.push(text);
+      text = retryBusy(() => readFileSync(path, 'utf8')).trim();
+      fresh = Date.now() - statSync(path).mtimeMs <= NOTE_TTL_MS;
+      retryBusy(() => rmSync(path));
+      removed = true;
     } catch {
-      /* unreadable: dropped */
-    } finally {
-      rmSync(claimed, { force: true });
+      /* ENOENT: a reader before us delivered it */
     }
+    // Read but not removed: the lock stays, so nobody delivers it again.
+    if (removed || !text) {
+      try {
+        retryBusy(() => rmSync(lock, { force: true }));
+      } catch {
+        /* a leftover lock delivers nothing */
+      }
+    }
+    if (text && fresh && !out.includes(text)) out.push(text);
   }
   return out;
 }

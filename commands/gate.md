@@ -1,5 +1,5 @@
 ---
-description: Write gate — stops the main thread from editing once its context is expensive (nxy)
+description: Write gate — stops the main thread from editing once its context is expensive; `once` lets one edit through the plan, threshold or no-handoff refusal (nxy)
 argument-hint: [status | on | off | once]
 allowed-tools: Bash(node:*)
 ---

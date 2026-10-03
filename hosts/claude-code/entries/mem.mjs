@@ -33,13 +33,15 @@ import { librarianRoute, linkCandidates, linkRequest } from '../../../core/memor
 import { loadConfig } from '../../../core/config.mjs';
 import { noteFetch, recallSummary } from '../recall-state.mjs';
 import {
-  PLAN_TEMPLATE, QUESTIONS_TEMPLATE, checkpointInstruction, extractPlan, parseDecisions, parseQuestions, planHash,
+  PLAN_TEMPLATE, QUESTIONS_TEMPLATE, checkpointInstruction, extractPlan, parseDecisions, parseQuestions, parseRepos, planHash,
   questionsInstruction, validatePlan, withPlan,
 } from '../../../core/plan.mjs';
 import { writeMarker } from '../plan-approval.mjs';
 import { memCommand } from '../handoff.mjs';
-import { clearBaseline } from '../baseline.mjs';
-import { recordDirtyAtApproval } from '../gitstate.mjs';
+import { clearBaseline, snapshotPlanFiles } from '../baseline.mjs';
+import { clearDirtyAtApproval, recordDirtyAtApproval } from '../gitstate.mjs';
+import { resolveRepos } from '../repos.mjs';
+import { takeInventory } from '../inventory.mjs';
 import { markHandoffSaved } from '../stop-state.mjs';
 import { progressFor } from '../verify-state.mjs';
 import { exportProject, importProject, memoryDir } from '../../../core/memory/exchange.mjs';
@@ -257,8 +259,14 @@ switch (action) {
       const res = saveHandoff(db, { project, branch, body, share: Boolean(opts.share) });
       markHandoffSaved(cwd, branch);
       const plan = extractPlan(body);
-      writeMarker(cwd, branch, plan ? planHash(plan) : null, plan ? parseQuestions(plan).length : 0);
-      if (plan) recordDirtyAtApproval(cwd, branch, planHash(plan));
+      const repos = plan ? resolveRepos(cwd, parseRepos(plan)) : [];
+      writeMarker(cwd, branch, plan ? planHash(plan) : null, plan ? parseQuestions(plan).length : 0, repos.map((r) => r.root));
+      if (plan) {
+        recordDirtyAtApproval(cwd, branch, repos, planHash(plan));
+        const pre = snapshotPlanFiles(cwd, branch, plan, repos);
+        if (pre.taken > 0) console.log(`copied the "before" of ${pre.taken} file(s) the plan names`);
+        takeInventory(cwd, branch, repos);
+      }
       console.log(`${res.created ? 'saved' : 'replaced'} handoff for \`${label}\` (${check.lines} lines, route: ${check.route})${plan ? ` · plan ${planHash(plan)} kept` : ''}${opts.share ? ' · shared: `mem export` will write it' : ''}`);
       for (const w of check.warnings) console.log(`warning: ${w}`);
       console.log('Save again after each finished task; `mem handoff done` archives it when the branch is finished.');
@@ -279,8 +287,15 @@ switch (action) {
       saveHandoff(db, { project, branch, body: withPlan(base, plan), share: Boolean(live && !live.private) });
       markHandoffSaved(cwd, branch);
       const hash = planHash(plan);
-      writeMarker(cwd, branch, hash, check.questions);
-      recordDirtyAtApproval(cwd, branch, hash);
+      const repos = resolveRepos(cwd, parseRepos(plan));
+      writeMarker(cwd, branch, hash, check.questions, repos.map((r) => r.root));
+      recordDirtyAtApproval(cwd, branch, repos, hash);
+      const pre = snapshotPlanFiles(cwd, branch, plan, repos);
+      if (pre.taken > 0) console.log(`copied the "before" of ${pre.taken} file(s) the plan names`);
+      takeInventory(cwd, branch, repos);
+      for (const r of repos) {
+        if (r.git === false && !r.primary) console.log(`warning: ${r.root} ${r.missing ? 'does not exist' : 'is not a git repo'}; its changes are not reviewed through git`);
+      }
       const open = check.questions ? `, ${check.questions} open question${check.questions === 1 ? '' : 's'}` : '';
       console.log(`plan ${hash} saved in the handoff of \`${label}\` (${check.batches} batch${check.batches === 1 ? '' : 'es'}${open})\n`);
       console.log(`Next (main thread): ${nextStep(plan)}`);
@@ -297,6 +312,7 @@ switch (action) {
       markHandoffSaved(cwd, branch, null);
       writeMarker(cwd, branch, null);
       clearBaseline(cwd, branch);
+      clearDirtyAtApproval(cwd);
       const id = archiveHandoff(db, project, branch);
       console.log(id
         ? `archived handoff for \`${label}\` as ${id}\nStill searchable: mem search "<words>" --type handoff`

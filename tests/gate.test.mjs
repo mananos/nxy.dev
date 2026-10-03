@@ -8,13 +8,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decideGate, describeGate } from '../core/gate.mjs';
 import { isSubagentTranscript, lastContextTokens } from '../hosts/claude-code/context.mjs';
 import { armEscape, clearEscape, consumeEscape, escapeUntil } from '../hosts/claude-code/gate-state.mjs';
+import { gateLedgerPath } from '../hosts/claude-code/gate-ledger.mjs';
+import { writeMarker } from '../hosts/claude-code/plan-approval.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOK = join(ROOT, 'hosts', 'claude-code', 'hooks', 'pretooluse-edit.mjs');
@@ -128,6 +130,43 @@ test('describeGate: states threshold, implementer availability and escape', () =
   const off = describeGate({ ...CFG, enabled: false }, { contextTokens: null, hasImplementer: false, escapeUntil: null });
   assert.match(off, /DISABLED/);
   assert.match(off, /never blocks/, 'without an implementer it says the gate is inert');
+});
+
+test('hook scope: only files outside the project and outside every git root are free', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-scope-'));
+  const A = join(dir, 'A');
+  const B = join(dir, 'B');
+  const out = join(dir, 'scratch');
+  for (const d of [A, join(A, '.nxy'), B, out]) mkdirSync(d, { recursive: true });
+  mkdirSync(join(A, '.git'));
+  mkdirSync(join(B, '.git'));
+  const big = transcript(dir, 'big.jsonl', { cacheRead: 153_000 });
+  const run = (file, cwd = A) => execFileSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ tool_name: 'Edit', cwd, transcript_path: big, tool_input: { file_path: file } }),
+    encoding: 'utf8',
+    env: { ...process.env, NXY_HOME: join(dir, 'home'), CLAUDE_PROJECT_DIR: cwd },
+  });
+  const rows = () => {
+    try { return readFileSync(gateLedgerPath(A), 'utf8').trim().split('\n').filter(Boolean).length; } catch { return 0; }
+  };
+
+  assert.equal(run(join(out, 'note.md')).trim(), '', 'outside the project and any git: allowed');
+  assert.equal(rows(), 0, 'and it leaves no ledger row');
+  assert.match(JSON.parse(run(join(A, 'src.ts'))).hookSpecificOutput.permissionDecisionReason, /implementer/, 'inside the project: denied');
+  assert.match(JSON.parse(run('rel.ts')).hookSpecificOutput.permissionDecisionReason, /implementer/, 'a relative path is the project\'s');
+  assert.match(JSON.parse(run(join(B, 'x.ts'))).hookSpecificOutput.permissionDecisionReason, /implementer/, 'another git repo: denied');
+  assert.match(JSON.parse(run(join(A, '.nxy', 'config.json'))).hookSpecificOutput.permissionDecisionReason, /implementer/, '.nxy is gated like any project file');
+
+  // A project that is not a git repo keeps its gates.
+  const P = join(dir, 'plain');
+  mkdirSync(P);
+  assert.match(JSON.parse(run(join(P, 'a.ts'), P)).hookSpecificOutput.permissionDecisionReason, /implementer/);
+  assert.equal(run(join(out, 'n.md'), P).trim(), '');
+
+  // A pending plan blocks B too, and not the outside file.
+  writeMarker(A, null, 'abcd1234', 0, [A, B]);
+  assert.match(JSON.parse(run(join(B, 'x.ts'))).hookSpecificOutput.permissionDecisionReason, /plan|approv/i);
+  assert.equal(run(join(out, 'note.md')).trim(), '');
 });
 
 test('hook end to end: allows, denies, and never blocks a subagent', () => {

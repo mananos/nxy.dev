@@ -37,7 +37,7 @@ function setup() {
   git('config', 'user.email', 'nxy@example.com');
   git('config', 'core.autocrlf', 'false');
   git('remote', 'add', 'origin', 'git@github.com:x/gitreview.git');
-  for (const f of ['a.js', 'b.js', 'd.js']) writeFileSync(join(repo, f), lines('orig'));
+  for (const f of ['a.js', 'b.js', 'd.js', 'e.js']) writeFileSync(join(repo, f), lines('orig'));
   git('add', '.');
   git('commit', '-q', '-m', 'init');
   const env = { ...process.env, NXY_HOME: join(dir, 'home'), CLAUDE_PROJECT_DIR: repo };
@@ -60,6 +60,7 @@ test('git: files changed without a copy are found, dirty-at-approval ones are na
   // After the plan: b.js and c.js change with no hook; d.js through the Edit hook (a copy).
   writeFileSync(join(repo, 'b.js'), lines('plan'));
   writeFileSync(join(repo, 'c.js'), 'brand new\n');
+  writeFileSync(join(repo, 'e.js'), lines('script')); // tracked, not named by the plan, no copy
   hook('pretooluse-edit.mjs', { tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: join(repo, 'd.js') } });
   writeFileSync(join(repo, 'd.js'), lines('edited'));
   // a.js changes again with no copy: cannot be told from the user's part.
@@ -73,8 +74,10 @@ test('git: files changed without a copy are found, dirty-at-approval ones are na
   const packet = out.stdout;
   assert.ok(readFileSync(indexPath).equals(indexBefore), '.git/index is byte-identical after the packet');
 
-  assert.match(packet, /- b\.js \(modified \(git\), \+1 −1\)/);
+  assert.match(packet, /- b\.js \(modified, \+1 −1\)/, 'named by the plan: copied at approval, not marked (git)');
   assert.match(packet, /- c\.js \(new \(git\), \+1 −0\)/);
+  assert.match(packet, /- e\.js \(modified \(git\), \+1 −1\)/, 'tracked, not named, no copy: found through git');
+  assert.match(packet, /-line2 orig\n\+line2 script/, 'e.js against HEAD');
   assert.match(packet, /- d\.js \(modified, \+1 −1\)/, 'a copy, not marked (git)');
   assert.doesNotMatch(packet, /- a\.js \(/, 'a.js is not in the changed list');
   assert.match(packet, /-line2 orig\n\+line2 plan/, 'b.js against HEAD');
@@ -103,8 +106,8 @@ test('git: the tester hook dispatches the reviewer when only a git-found file ch
   const { repo, node, hook } = setup();
   const body = ['route: implementer', '## Done', '- none', '## Next', '- review'].join('\n');
   assert.equal(node([MEM, 'handoff', 'save', '--cwd', repo], `${body}\n\n${PLAN}\n`).status, 0);
-  // No copy exists: b.js changes with no hook.
-  writeFileSync(join(repo, 'b.js'), lines('plan'));
+  // No copy exists: e.js (tracked, not named by the plan) changes with no hook.
+  writeFileSync(join(repo, 'e.js'), lines('plan'));
   recordSuite(repo, planHash(PLAN), { status: 'done', ts: Date.now(), red: [], ran: [] });
   const out = hook('posttooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:tester', prompt: 'run the full suite' } });
   assert.match(out, /dispatch the nxy:reviewer subagent/);
@@ -118,13 +121,16 @@ test('git: not a git repo, the packet says so and reviews the copies', (t) => {
   const env = { ...process.env, NXY_HOME: join(dir, 'home'), CLAUDE_PROJECT_DIR: plain };
   const node = (args, input) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', ...args], { input, encoding: 'utf8', env, cwd: plain });
   writeFileSync(join(plain, 'b.js'), lines('orig'));
+  writeFileSync(join(plain, 'f.js'), lines('orig')); // not named by the plan: only the hook can copy it
   assert.equal(node([MEM, 'handoff', 'plan', '--cwd', plain], PLAN).status, 0);
   execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(HOOKS, 'pretooluse-edit.mjs')], {
-    input: JSON.stringify({ cwd: plain, session_id: 's1', tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: join(plain, 'b.js') } }),
+    input: JSON.stringify({ cwd: plain, session_id: 's1', tool_name: 'Edit', agent_id: 'a1', tool_input: { file_path: join(plain, 'f.js') } }),
     encoding: 'utf8', env,
   });
   writeFileSync(join(plain, 'b.js'), lines('plan'));
+  writeFileSync(join(plain, 'f.js'), lines('hook'));
   const packet = node([REVIEW, 'packet', '--full', '--cwd', plain]).stdout;
   assert.match(packet, /- b\.js \(modified, \+1 −1\)/);
+  assert.match(packet, /- f\.js \(modified, \+1 −1\)/, 'the hook copy of a file the plan does not name');
   assert.match(packet, /Git: not a git repo/);
 });

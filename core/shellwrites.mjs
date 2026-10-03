@@ -110,7 +110,8 @@ function tokenize(seg, posix) {
   return toks;
 }
 
-const UNRESOLVABLE = /[$`*?{~]/;
+// `~` expands only at the start of a word; inside one it is literal (8.3 names: `C:\Users\RUNNER~1`).
+const UNRESOLVABLE = /[$`*?{]|^~/;
 const base = (p) => p.split(/[\\/]/).filter(Boolean).pop() || p;
 
 /**
