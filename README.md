@@ -398,7 +398,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.0.1-rc.1` |
+| Versión actual | `1.0.1` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Construido y con tests (0.2 a 0.4); falta probarlo en sesiones reales |
 | Próximo | 1–2 semanas de uso real con la rc, ajustes, `1.0.0` |
