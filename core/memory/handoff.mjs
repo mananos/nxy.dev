@@ -266,14 +266,23 @@ export function staleHandoffMessage(branch, showCmd, saveCmd) {
 /**
  * Removes any block already in the prompt — a re-dispatch that copied the previous prompt, or a
  * model imitating the block. The runtime's copy is the only one that survives, and it is fresh.
+ * A complete block goes wherever it is; an unterminated open tag is cut to the end only when it
+ * starts a line (a copied block). Mid-line it is prose mentioning the tag and is left alone.
  * @param {string} prompt
  */
 export function stripContextBlock(prompt) {
   const open = CONTEXT_OPEN.slice(0, '<nxy-context'.length);
   let out = String(prompt || '');
-  for (let i = out.indexOf(open); i !== -1; i = out.indexOf(open)) {
+  let from = 0;
+  for (let i = out.indexOf(open, from); i !== -1; i = out.indexOf(open, from)) {
     const end = out.indexOf(CONTEXT_CLOSE, i);
-    out = end === -1 ? out.slice(0, i) : out.slice(0, i) + out.slice(end + CONTEXT_CLOSE.length);
+    if (end !== -1) {
+      out = out.slice(0, i) + out.slice(end + CONTEXT_CLOSE.length);
+      continue;
+    }
+    const lineStart = out.lastIndexOf('\n', i - 1) + 1;
+    if (/^[ \t]*$/.test(out.slice(lineStart, i))) { out = out.slice(0, lineStart); break; }
+    from = i + open.length;
   }
   return out.trim();
 }
