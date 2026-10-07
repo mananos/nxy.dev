@@ -147,6 +147,16 @@ Si no estás seguro, usá `/nxy:feature`: Claude arranca diciendo qué tamaño l
 7. **Cierre.** Claude te resume qué hizo, qué se verificó y qué quedó. Vos mirás el diff, commiteás y abrís el PR: **nxy nunca commitea ni pushea**.
 8. **Cuando la rama se mergea**, decile a Claude "cerrá el handoff" (`mem handoff done`): deja de aparecer al abrir sesiones, pero sigue buscable.
 
+### Con Mods: el orquestador corre el plan
+
+Si tu Claude Code soporta Mods (verificado en 2.1.292), nxy puede correr el plan aprobado sin pasar por la conversación. Viene prendido por defecto.
+
+- **Qué ves.** Al aprobar un plan recién aprobado aparece el panel `nxy`: "lote N de M", un ✔, ✘ o "corriendo" por lote, y el paso actual (lotes, suite, review). Un plan que ya venía en curso sigue por el camino de siempre.
+- **Qué significa.** nxy corre los lotes (en paralelo los que no dependen entre sí), el tester y el reviewer por su cuenta, y te devuelve la conversación en el checkpoint 2, o antes si hace falta una decisión (suite en rojo, review que no quedó registrada, Stop). Mientras tanto Claude espera y nxy le rechaza despachar a mano.
+- **Qué hacés.** Con un ✘ el panel te ofrece **Retry**, **Continue anyway** o **Stop**. Con `flow.pauseAfterBatch: true` también pausa entre tandas de lotes: **Continue**, **Adjust** o **Stop**; Adjust le devuelve el plan a Claude para que te pregunte qué cambiar. En una terminal sin interfaz (por ejemplo `claude -p`) no hay botones: un ✘ o una pausa vuelven a Claude con el texto de siempre.
+- **Costo.** El hilo principal queda inactivo: en las transcripciones locales, orquestar era ~78 % de lo que gastaba el hilo principal mientras corría un plan. Se paga una reescritura de caché por plan.
+- **Apagarlo.** `{ "flow": { "orchestrator": "off" } }`. Sin Mods, o con una versión de Claude Code que no los soporta, el módulo no carga y todo funciona como antes.
+
 Los subagentes no pueden escribir archivos del proyecto por consola: un hook les deniega `sed -i`, las redirecciones, `tee` y los heredocs hacia archivos del proyecto, y el agente reintenta con Edit/Write. No ves nada ni tenés que hacer algo. El hilo principal no se ve afectado, y `cp`/`mv` y los archivos temporales siguen permitidos.
 
 Qué te toca a vos en todo el proceso: contestar las preguntas, leer el plan como un diseño en un PR (¿reusa lo que existe?, ¿cada `Accept:` prueba lo correcto?) y elegir qué hallazgos arreglar.
@@ -208,6 +218,7 @@ Cuando nxy frena algo, el mensaje le dice a Claude exactamente qué hacer, así 
 | `copied the "before" of N file(s) the plan names` | Al aprobar, nxy copió los archivos que el plan nombra para poder compararlos después | Nada |
 | Sección `## Coverage` en la review | Dice qué cubrió cada repo sin git y qué no (`too many files`: más de 20.000 archivos, sólo copias) | Si algo importante queda sin cubrir, miralo a mano o nombrá el archivo en el plan |
 | `nxy verify: batch 2 ✘ … failed after the last edit` | El test del lote falló después del último cambio | **Retry** si es del cambio; **Continue anyway** si ya fallaba antes; **Stop** para mirarlo vos |
+| `nxy: the orchestrator is running plan … so this dispatch is refused` | El orquestador (panel `nxy`) despacha lotes, tester y reviewer por su cuenta; Claude intentó hacerlo a mano | Nada: Claude termina el turno y nxy te devuelve la conversación en el checkpoint 2. Si no corre nada y quedó trabado: `node <plugin>/hosts/claude-code/entries/orch.mjs release --cwd <repo>` |
 | `nxy verify: batch 3 – manual` | Ningún comando prueba ese lote (algo visual) | Miralo vos; el plan dice qué mirar |
 | Pregunta **Review** con `R1`, `R2`… | Hallazgos de la review de lo que cambió el plan | Marcá los que querés arreglar antes del PR. Los *preexisting* son informativos |
 | Pregunta **Docs** | Hay `.md` en el repo que nombran lo que cambió | **Update docs** si querés que viajen en el mismo PR |
@@ -364,6 +375,8 @@ Lo que se cambia más seguido:
 | Que nxy no inyecte nada de memoria solo | `{ "memory": { "mode": "manual" } }` |
 | Que el documenter busque docs en otra carpeta | `{ "docs": { "paths": ["wiki/"] } }` |
 | Lentes de review propias del repo | Un `.md` en `.nxy/lenses/` (se commitea) |
+| Que el orquestador espere tu OK entre tandas de lotes | `{ "flow": { "pauseAfterBatch": true } }` (default `false`) |
+| Apagar el orquestador de planes (con Mods) | `{ "flow": { "orchestrator": "off" } }` (default `"auto"`) |
 
 ### Modelo y effort de cada agente
 

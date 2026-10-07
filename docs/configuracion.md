@@ -141,6 +141,10 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 
 `"plan": "always"`: en ese repo, todo cambio que toca un segundo archivo pasa primero por el planner. Sin ese valor decide Claude con la receta por tamaño.
 
+`"pauseAfterBatch": true`: el orquestador espera tu OK (Continue / Adjust / Stop) entre tandas de lotes. Default `false`.
+
+`"orchestrator": "off"`: apaga el orquestador de planes que se activa con Mods. Default `"auto"`.
+
 ### `docs`
 
 `"paths": ["wiki/"]` fija dónde busca docs el documenter. Sin eso busca los `.md` del repo que nombran lo que cambió y la carpeta que tu CI publique a una wiki.

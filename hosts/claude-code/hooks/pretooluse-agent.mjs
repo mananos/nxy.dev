@@ -38,7 +38,10 @@ import {
 } from '../../../core/verify.mjs';
 import { gitBranch, nxyRuntimeDir } from '../../../core/paths.mjs';
 import { appendJsonl } from '../../../core/jsonl.mjs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { consumeTicket, readActive, readOrchState } from '../orch-state.mjs';
+import { denyMessage, ticketOf } from '../../../core/orchestrator.mjs';
 import { findAnswer, isApproved } from '../plan-approval.mjs';
 import {
   progressFor, readSuite, readVerify, recordBatch, recordReviewLaunch, recordSuite, recordSuiteFix,
@@ -66,7 +69,7 @@ function suiteRunning(cwd, hash) {
  * @param {string} plan @param {string} hash @param {string} prompt @param {string} cwd
  * @param {string|null|undefined} transcript
  */
-function batchGate(plan, hash, prompt, cwd, transcript) {
+function batchGate(plan, hash, prompt, cwd, transcript, wavedThrough = /** @type {number[]} */ ([])) {
   const all = parseBatches(plan);
   const batches = all.map((b) => b.n);
   const n = batchOfPrompt(prompt);
@@ -79,7 +82,7 @@ function batchGate(plan, hash, prompt, cwd, transcript) {
     return null;
   }
   if (n == null || !batch) return { reason: 'batch-unnamed', message: unnamedBatchMessage(batches, allDone) };
-  const hit = blockingBatch(state.batches, batch.depends, (red) => findAnswer(transcript, continueQuestion(hash, red)) === CONTINUE);
+  const hit = blockingBatch(state.batches, batch.depends, (red) => wavedThrough.includes(red) || findAnswer(transcript, continueQuestion(hash, red)) === CONTINUE);
   return hit == null ? null : { reason: hit.why === 'red' ? 'batch-red' : 'batch-pending', message: blockedDispatchMessage(hash, hit.k, n, hit.why) };
 }
 
@@ -94,6 +97,27 @@ try {
   // The tester starts the full suite; the reviewer must not start while it runs (its verdict arrives
   // when it ends, possibly in the background). Recorded here, from the dispatch itself.
   let denied = false;
+  // While the orchestrator runs a plan, only its own (ticketed) dispatches of the three roles pass.
+  let ticketed = false;
+  if (isAgentTool && typeof agent === 'string' && (IMPLEMENTER.test(agent) || TESTER.test(agent) || REVIEWER.test(agent))) {
+    const marker = readActive(cwd);
+    const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
+    if (marker && !isSubagentCall(input, transcript)) {
+      const ticket = ticketOf(toolInput.description);
+      ticketed = ticket != null && consumeTicket(cwd, ticket.nonce);
+      if (!ticketed) {
+        let hash = typeof marker.hash === 'string' ? marker.hash : '';
+        if (!hash) {
+          const known = await lookupHandoff(cwd);
+          const plan = known.handoff ? extractPlan(known.handoff.body) : null;
+          hash = plan ? planHash(plan) : '';
+        }
+        const release = `node ${join(dirname(fileURLToPath(import.meta.url)), '..', 'entries', 'orch.mjs')} release --cwd ${cwd}`;
+        emit({ permissionDecision: 'deny', permissionDecisionReason: denyMessage(hash, release) });
+        process.exit(0);
+      }
+    }
+  }
   if (isAgentTool && typeof agent === 'string' && (TESTER.test(agent) || REVIEWER.test(agent))) {
     const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
     if (!isSubagentCall(input, transcript)) {
@@ -135,7 +159,7 @@ try {
     // With the plan approved, each dispatch is one of its batches (0.4.1): named, so the SubagentStop
     // hook can verify it, and never on top of a batch that ended red unless the user said so.
     const batchBlock = !checkpoint.block && !verdict.block && plan && hash && !isSubagent
-      ? batchGate(plan, hash, typeof toolInput.prompt === 'string' ? toolInput.prompt : '', cwd, transcript)
+      ? batchGate(plan, hash, typeof toolInput.prompt === 'string' ? toolInput.prompt : '', cwd, transcript, ticketed ? readOrchState(cwd).continued : [])
       : null;
 
     if (checkpoint.block && hash) {

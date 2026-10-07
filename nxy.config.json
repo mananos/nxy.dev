@@ -64,6 +64,10 @@
       "provider": "claude"
     }
   },
+  "flow": {
+    "pauseAfterBatch": false,
+    "orchestrator": "auto"
+  },
   "memory": {
     "mode": "assisted",
     "handoff": {

@@ -20,6 +20,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
 import { ensureDir, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { ticketOf } from '../../../core/orchestrator.mjs';
 import { batchOfPrompt, cutSuggestion, launchNote, suiteFixOfPrompt } from '../../../core/verify.mjs';
 import { completionLines } from '../agent-done.mjs';
 import { isAsyncLaunch, markAsync, takeNotes } from '../agent-notes.mjs';
@@ -37,7 +38,10 @@ try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const toolInput = input?.tool_input;
   const agent = toolInput?.subagent_type;
-  const mainThread = (input?.tool_name === 'Agent' || input?.tool_name === 'Task') && !input.agent_id && typeof agent === 'string';
+  // An agent the orchestrator spawned (ticket sentinel in its description): its verdict goes to the
+  // module, never to the main thread's context.
+  const orchestrated = ticketOf(toolInput?.description) != null;
+  const mainThread = !orchestrated && (input?.tool_name === 'Agent' || input?.tool_name === 'Task') && !input.agent_id && typeof agent === 'string';
   const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : process.cwd()));
   let pause = false;
   const prompt = typeof toolInput?.prompt === 'string' ? toolInput.prompt : '';
