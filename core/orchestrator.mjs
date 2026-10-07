@@ -177,7 +177,7 @@ export const COMPOSE_SECTION = [
 /**
  * What the main thread is told when the orchestrator hands the conversation back.
  * `ctx`: {hash, project, n, command, verdict, batches, recorded, dependents, tester, review, request}.
- * @param {'checkpoint2' | 'suite-red' | 'review-skipped' | 'stopped' | 'adjust' | 'red' | 'pause'} reason
+ * @param {'checkpoint2' | 'suite-red' | 'review-skipped' | 'stopped' | 'adjust' | 'red' | 'pause' | 'failed'} reason
  * @param {any} ctx
  */
 export function handbackText(reason, ctx = {}) {
@@ -199,6 +199,16 @@ export function handbackText(reason, ctx = {}) {
       ].join('\n');
     case 'review-skipped':
       return reviewInstruction({ hash, project: ctx.project ?? '', needed: false, reason: ctx.reason });
+    case 'failed': {
+      const all = (ctx.batches ?? []).map(Number);
+      const done = finishedBatches(/** @type {any} */ ({ batches: all.map((n) => ({ n })), verdicts: ctx.recorded ?? {}, continued: ctx.continued ?? [] }));
+      const left = all.filter((n) => !done.includes(n));
+      return [
+        `nxy: the orchestrator failed while running plan ${hash} and handed it back.`,
+        `Finished batches: ${done.length ? done.join(', ') : 'none'}. Left: ${left.length ? left.join(', ') : 'none'}.`,
+        'Next: carry on with the plan by hand, the way it ran before the orchestrator: dispatch the nxy:implementer for each batch left, then the tester and the reviewer as usual.',
+      ].join('\n');
+    }
     case 'stopped':
       return `nxy: the user stopped plan ${hash} in the nxy panel${ctx.n != null ? ` at batch ${ctx.n}` : ''}. Report what was done and what is left; do not dispatch anything else for this plan.`;
     case 'adjust':

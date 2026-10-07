@@ -132,3 +132,41 @@ test('Stop ignores edits that did not happen and plan batch work; progress is de
   const out = JSON.parse(s.hook('pretooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:implementer', prompt: 'Batch 2 — b' } })).hookSpecificOutput;
   assert.match(out.updatedInput.prompt, /Progress \(recorded by nxy[^\n]*batch 1 ✔, 2 pending\n<\/nxy-context>/, 'the implementer sees it too');
 });
+
+test('Stop ignores edits outside every git root (Claude\'s own memory dir); repo edits still count', () => {
+  const s = sandbox();
+  s.node([MEM, 'handoff', 'save'], s.HANDOFF);
+  // Native path of a file with no .git above it (backslashes + drive letter on Windows).
+  const outside = join(s.dir, 'claude-home', 'projects', 'p', 'memory', 'note.md');
+  mkdirSync(dirname(outside), { recursive: true });
+  writeFileSync(outside, 'x');
+  s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: outside } });
+  assert.equal(s.stop().status, 0, 'a file outside the project and every git root is not the task\'s work');
+  s.edit('src/a.ts');
+  assert.equal(s.stop().status, 2, 'an edit inside the repo still blocks once');
+  assert.equal(s.stop().status, 0);
+});
+
+// No leak reproduced in this tree (installed hooks identical); the Stop message that started this was legitimate.
+test('Stop ignores an MSYS-style path (/c/...) to a file outside every git root', { skip: process.platform !== 'win32' && 'MSYS drive paths only exist on Windows' }, () => {
+  const s = sandbox();
+  s.node([MEM, 'handoff', 'save'], s.HANDOFF);
+  const outside = join(s.dir, 'claude-home', 'memory', 'note.md');
+  mkdirSync(dirname(outside), { recursive: true });
+  writeFileSync(outside, 'x');
+  const msys = outside.replace(/^([A-Za-z]):/, (_, d) => `/${d.toLowerCase()}`).replace(/\\/g, '/');
+  s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: msys } });
+  assert.equal(s.stop().status, 0, 'normalised, still outside every git root: not the task\'s work');
+});
+
+test('Stop counts an edit in another git repo (not the project) as work: current behaviour, multi-repo', () => {
+  const s = sandbox();
+  s.node([MEM, 'handoff', 'save'], s.HANDOFF);
+  const other = join(s.dir, 'other-repo');
+  mkdirSync(join(other, '.git'), { recursive: true });
+  const file = join(other, 'src', 'x.ts');
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, 'x');
+  s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: file } });
+  assert.equal(s.stop().status, 2, 'a file under an ancestor .git that is not the project is a git root of its own: it counts');
+});

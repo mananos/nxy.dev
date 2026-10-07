@@ -254,7 +254,15 @@ export function createDriver($, opts) {
         return await fn();
       } catch (err) {
         try { await release(); } catch { /* ignore */ }
+        const wasOurs = !!st?.ours && !st.done;
         if (st) { st.ours = false; }
+        if (wasOurs && snap?.hash && finished !== snap.hash) {
+          // The mod failed after taking over: tell the main thread, once, so the plan goes on by hand.
+          try {
+            const v = build();
+            await handback('failed', { batches: v.batches.map((x) => x.n), recorded: v.verdicts });
+          } catch { /* the hand-back itself failed: stay silent, never loop */ }
+        }
         return undefined;
       }
     });

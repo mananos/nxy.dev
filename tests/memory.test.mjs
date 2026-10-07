@@ -9,10 +9,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { activeScopes, areaFor, normalizeRemote, projectKey, repoRoot } from '../core/memory/scope.mjs';
+import { activeScopes, areaFor, gitRemote, normalizeRemote, projectKey, repoRoot } from '../core/memory/scope.mjs';
 import {
   TYPES, countsByScope, deleteMemory, getMemory, listMemories, makeId, openStore, saveMemory, searchMemories,
 } from '../core/memory/store.mjs';
@@ -35,6 +35,26 @@ function fakeRepo(remote = 'git@github.com:mananos/nxy.dev.git') {
     `[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = ${remote}\n\tfetch = +refs/heads/*\n`, 'utf8');
   return dir;
 }
+
+test('scope: a git worktree keeps the project of its main repo', () => {
+  const main = fakeRepo();
+  const wtGit = join(main, '.git', 'worktrees', 'x');
+  mkdirSync(wtGit, { recursive: true });
+  const mkWt = (commondir) => {
+    const wt = mkdtempSync(join(tmpdir(), 'nxy-wt-'));
+    writeFileSync(join(wt, '.git'), `gitdir: ${wtGit}\n`, 'utf8');
+    if (commondir !== null) writeFileSync(join(wtGit, 'commondir'), commondir, 'utf8');
+    return wt;
+  };
+  const want = gitRemote(main);
+  assert.equal(want, 'git@github.com:mananos/nxy.dev.git');
+
+  assert.equal(gitRemote(mkWt('../..\n')), want, 'relative commondir');
+  assert.equal(gitRemote(mkWt(join(main, '.git'))), want, 'absolute commondir');
+
+  rmSync(join(wtGit, 'commondir'), { force: true });
+  assert.equal(gitRemote(mkWt(null)), null, 'no commondir, no config: null');
+});
 
 test('scope: one repo is one project however it was cloned', () => {
   const same = [

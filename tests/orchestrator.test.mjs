@@ -102,6 +102,13 @@ test('prompts match what the main thread is told today', () => {
   assert.match(batchPrompt({ text: 'Batch 1 — x', failure: 'boom' }), /^Batch 1 — x\n\n.*boom/s);
 });
 
+test('failed hand-back names the hash, finished and pending batches, and the by-hand path', () => {
+  const t = handbackText('failed', { hash: 'abc12345', batches: [1, 2, 3], recorded: { 1: { status: 'pass' } } });
+  assert.match(t, /plan abc12345/);
+  assert.match(t, /Finished batches: 1\. Left: 2, 3\./);
+  assert.match(t, /by hand/);
+});
+
 test('checkpoint 2 carries the reviewer report verbatim', () => {
   const report = 'R1 — something\n  detail';
   assert.ok(handbackText('checkpoint2', { hash: 'h', review: { id: 'r1' }, report }).includes(report));

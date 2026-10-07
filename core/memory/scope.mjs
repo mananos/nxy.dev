@@ -45,6 +45,20 @@ function gitDir(root) {
 }
 
 /**
+ * Where `config` lives: the gitdir itself, or for a linked worktree (no `config` of its own) the
+ * common dir named by its `commondir` file (relative to the worktree gitdir, or absolute).
+ */
+function configDir(gd) {
+  if (existsSync(join(gd, 'config'))) return gd;
+  try {
+    const common = readFileSync(join(gd, 'commondir'), 'utf8').trim();
+    return common ? resolve(gd, common) : gd;
+  } catch {
+    return gd;
+  }
+}
+
+/**
  * Normalises a git remote URL into a stable project key.
  *
  * `git@github.com:mananos/nxy.dev.git`, `https://github.com/mananos/nxy.dev.git` and
@@ -72,7 +86,7 @@ export function gitRemote(cwd) {
   if (!gd) return null;
   let text;
   try {
-    text = readFileSync(join(gd, 'config'), 'utf8');
+    text = readFileSync(join(configDir(gd), 'config'), 'utf8');
   } catch {
     return null;
   }

@@ -205,6 +205,12 @@ test('a throwing process.run releases the marker', async () => {
   w.failRun = true;
   await d.step();
   assert.equal(w.marker().ts, 0);
+  assert.equal(w.submitted.length, 1);
+  assert.match(w.submitted[0].text, /orchestrator failed while running plan abc12345/);
+  assert.match(w.submitted[0].text, /Left: 1, 2, 3/);
+  assert.equal(w.appended.length, 1);
+  await d.step();
+  assert.equal(w.submitted.length, 1, 'a second failure does not hand back again');
 });
 
 test('a refused spawn records the batch as not run', async () => {

@@ -46,7 +46,7 @@ import { markHandoffSaved } from '../stop-state.mjs';
 import { progressFor } from '../verify-state.mjs';
 import { exportProject, importProject, memoryDir } from '../../../core/memory/exchange.mjs';
 import {
-  TEMPLATE, archiveHandoff, liveHandoff, saveHandoff, validateHandoff,
+  TEMPLATE, archiveHandoff, liveHandoff, saveHandoff, stripDerivedLines, validateHandoff,
 } from '../../../core/memory/handoff.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
@@ -245,7 +245,7 @@ switch (action) {
     };
 
     if (sub === 'save') {
-      let body = readBody();
+      let body = stripDerivedLines(readBody());
       const check = validateHandoff(body);
       if (!check.ok) {
         console.log(`handoff not saved: ${check.errors.join('; ')}\n\nExpected shape (~20 lines):\n${TEMPLATE}`);
