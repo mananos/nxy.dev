@@ -37,7 +37,7 @@ function world(over = {}) {
       run: async (argv) => {
         w.runs.push(argv);
         if (w.failRun) throw new Error('boom');
-        return { exitCode: 0, stdout: argv.includes('snapshot') ? JSON.stringify(w.plan) : '{}', stderr: '' };
+        return { exitCode: 0, stdout: argv.includes('snapshot') ? JSON.stringify(w.plan) : (w.out ?? '{}'), stderr: '' };
       },
     },
     agent: {
@@ -220,6 +220,108 @@ test('a refused spawn records the batch as not run', async () => {
   await d.step();
   assert.equal(w.spawns.length, 0);
   assert.deepEqual(d.view().buttons, ['Retry', 'Continue anyway', 'Stop']);
+});
+
+test('idle: turns and agent turns without an AskUserQuestion run no node and write nothing', async () => {
+  const w = world();
+  const d = w.driver();
+  for (let i = 0; i < 5; i++) await d.step('turn');
+  await d.onAgentDone('ag9', 'x');
+  assert.equal(w.runs.length, 0);
+  assert.equal(w.files.size, 0);
+  assert.equal(w.spawns.length, 0);
+});
+
+test("step('ask') snapshots and takes over; later turns move on; a late approval is still seen", async () => {
+  const w = world();
+  const d = w.driver();
+  await d.step('ask');
+  assert.equal(w.runs.filter((a) => a.includes('snapshot')).length, 1);
+  assert.equal(w.spawns.length, 1);
+  w.verdict(1, 'pass');
+  await d.step('turn');
+  assert.equal(w.spawns.length, 3, 'a main turn moves an owned plan on');
+
+  const late = world({ fresh: false });
+  const l = late.driver();
+  await l.step('ask');
+  assert.equal(late.spawns.length, 0);
+  late.plan.fresh = true;
+  await l.step('turn');
+  assert.equal(late.spawns.length, 1);
+});
+
+test('status(): ready, running, paused, ready after the hand-back', async () => {
+  const w = world({ config: { pauseAfterBatch: true, orchestrator: 'auto' } });
+  const d = w.driver();
+  assert.equal(d.status(), 'nxy ● ready');
+  await d.step();
+  assert.equal(d.status(), 'nxy ▶ batch 1/3');
+  w.verdict(1, 'pass');
+  await d.onAgentDone(w.agentOf('implementer', 1), 'x');
+  assert.match(d.status(), /^nxy ⏸ /);
+  await d.press('Stop');
+  assert.equal(d.status(), 'nxy ● ready');
+});
+
+test('panel() before any snapshot uses setConfig and setUsage and runs no node', () => {
+  const w = world();
+  const d = w.driver();
+  d.setConfig({ panel: 'off', gate: { enabled: true, contextTokens: 100000 } });
+  d.setUsage({ tokens: 46000, percent: 46 });
+  const text = d.panel().rows.map((r) => r.text);
+  assert.ok(text.some((t) => t.startsWith('plan: not read yet')));
+  assert.ok(text.some((t) => t.startsWith('gate: threshold 100000') && t.includes('46k')));
+  assert.equal(w.runs.length, 0);
+  assert.equal(d.panelSetting(), 'off');
+});
+
+test('openPanel reads the plan: none, then a plan; panelSetting follows the snapshot', async () => {
+  const none = world({ hash: null, approved: false, fresh: false, batches: [] });
+  const dn = none.driver();
+  dn.setConfig({ panel: 'off' });
+  await dn.openPanel();
+  assert.ok(dn.panel().rows.some((r) => r.text === 'plan: none'));
+  assert.equal(dn.panelSetting(), 'off', 'the snapshot has no ui.panel: the fallback stays');
+
+  const w = world({ config: { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' } } });
+  const d = w.driver();
+  d.setConfig({ panel: 'off' });
+  await d.openPanel();
+  assert.ok(d.panel().rows.some((r) => r.text.startsWith(`plan: ${HASH}`)));
+  assert.equal(d.panelSetting(), 'auto');
+});
+
+test('launcher buttons run the entry with --cwd and show the output in the panel only', async () => {
+  const w = world();
+  const d = w.driver();
+  w.out = 'stats line one';
+  await d.press('Stats');
+  assert.equal(w.runs.length, 1);
+  assert.match(w.runs[0].find((a) => a.endsWith('stats.mjs')), /entries[\\/]stats\.mjs$|entries\/stats\.mjs$/);
+  assert.deepEqual(w.runs[0].slice(-2), ['--cwd', '/proj']);
+  assert.ok(d.panel().rows.some((r) => r.text === 'stats line one'));
+  assert.equal(w.appended.length, 0);
+  assert.equal(w.submitted.length, 0);
+
+  await d.press('Filter on');
+  assert.deepEqual(w.runs[1].slice(-3), ['on', '--cwd', '/proj']);
+  assert.ok(w.runs[1].at(-4).endsWith('filter.mjs'));
+
+  w.failRun = true;
+  await d.press('Trend');
+  assert.ok(d.panel().rows.some((r) => r.text.includes('Trend failed: boom')));
+});
+
+test('with a plan taken over view() is still the pane view, and Refresh only refreshes', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.step();
+  assert.ok(d.view());
+  const before = w.spawns.length;
+  await d.press('Refresh');
+  assert.equal(w.spawns.length, before);
+  assert.ok(d.view());
 });
 
 test('mod files have no node: import and no dynamic import', () => {

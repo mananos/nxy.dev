@@ -64,7 +64,8 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
     "documenter":  { "model": "sonnet", "provider": "claude" },
     "librarian":   { "model": "haiku",  "provider": "claude" }
   },
-  "memory": { "mode": "assisted", "handoff": { "required": true } }
+  "memory": { "mode": "assisted", "handoff": { "required": true } },
+  "ui": { "panel": "auto" }
 }
 ```
 
@@ -144,6 +145,10 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 `"pauseAfterBatch": true`: el orquestador espera tu OK (Continue / Adjust / Stop) entre tandas de lotes. Default `false`.
 
 `"orchestrator": "off"`: apaga el orquestador de planes que se activa con Mods. Default `"auto"`.
+
+### `ui`
+
+`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`.
 
 ### `docs`
 

@@ -147,3 +147,82 @@ test('the module-side sources stay free of node: imports, dynamic import and pro
     assert.doesNotMatch(src, /\bprocess\./, f);
   }
 });
+
+// ---- always-on panel ----
+import {
+  wantsSnapshot, statusText, panelView, readModConfig, launcherOf, isPanelAction, LAUNCHER,
+} from '../core/orchestrator.mjs';
+
+test('wantsSnapshot: the one table of when node may run', () => {
+  assert.equal(wantsSnapshot({ trigger: 'ask' }), true);
+  assert.equal(wantsSnapshot({ trigger: 'panel' }), true);
+  assert.equal(wantsSnapshot({ trigger: 'turn', asked: false, owned: false }), false);
+  assert.equal(wantsSnapshot({ trigger: 'turn', asked: true, owned: false }), true);
+  assert.equal(wantsSnapshot({ trigger: 'turn', asked: false, owned: true }), true);
+  assert.equal(wantsSnapshot({ trigger: 'agent', asked: true, owned: false }), false);
+  assert.equal(wantsSnapshot({ trigger: 'agent', owned: true }), true);
+  assert.equal(wantsSnapshot({ trigger: 'press', owned: false }), false);
+  assert.equal(wantsSnapshot({ trigger: 'press', owned: true }), true);
+});
+
+test('statusText: ready, batch N/M, tester, review, pause, red', () => {
+  assert.equal(statusText(null), 'nxy ● ready');
+  assert.equal(statusText(snap({ launched: { 1: 5 } })), 'nxy ▶ batch 1/2');
+  assert.equal(statusText(snap({ verdicts: { 1: pass() }, launched: { 1: 5 } })), 'nxy ▶ batch 2/2');
+  const allPass = { verdicts: { 1: pass(), 2: pass() }, launched: { 1: 5, 2: 5 } };
+  assert.equal(statusText(snap(allPass)), 'nxy ▶ tester');
+  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] } })), 'nxy ▶ review');
+  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] }, review: { id: 'r' } })), 'nxy ● ready');
+  assert.equal(statusText(snap({ stopped: true })), 'nxy ● ready');
+  const paused = snap({ pauseAfterBatch: true, verdicts: { 1: pass() }, launched: { 1: 5 } });
+  assert.equal(statusText(paused), 'nxy ⏸ paused after batch 1');
+  assert.equal(statusText(paused, { type: 'ask', kind: 'pause', batches: [2] }), 'nxy ⏸ paused after batch 1');
+  const red = snap({ verdicts: { 1: fail() }, launched: { 1: 5 } });
+  assert.equal(statusText(red), 'nxy ✘ batch 1 needs you');
+  assert.equal(statusText(red, { type: 'ask', kind: 'red', batch: 1 }), 'nxy ✘ batch 1 needs you');
+});
+
+test('launcher: labels map to entries; unknown is null', () => {
+  assert.deepEqual(launcherOf('Filter on'), { script: 'filter', args: ['on'] });
+  assert.deepEqual(launcherOf('Handoff'), { script: 'mem', args: ['handoff', 'show'] });
+  assert.equal(launcherOf('Nope'), null);
+  assert.equal(isPanelAction('Refresh'), true);
+  assert.equal(isPanelAction('Close'), true);
+  assert.equal(isPanelAction('Trend'), true);
+  assert.equal(isPanelAction('Retry'), false);
+  assert.equal(LAUNCHER.length, 6);
+});
+
+test('panelView: plan, handoff, gate, orchestrator, output', () => {
+  const now = 10_000_000;
+  const cfg = { gate: { enabled: true, contextTokens: 100000 } };
+  const none = panelView({ snap: /** @type {any} */ ({ hash: null, batches: [], config: cfg, handoff: null }), usage: { tokens: 46000, percent: 46 }, now });
+  assert.deepEqual(none.rows.map((r) => r.text), ['plan: none', 'handoff: none', 'gate: threshold 100000 · context now 46k (46%)']);
+  assert.deepEqual(none.buttons, ['Refresh', ...LAUNCHER.map((l) => l.label), 'Close']);
+  const withPlan = panelView({ snap: { ...snap({ verdicts: { 1: pass() }, launched: { 1: 5 } }), approved: true, handoff: { updated: now - 12 * 60000 }, config: { gate: { enabled: false }, orchestrator: 'off' } }, now });
+  assert.deepEqual(withPlan.rows.map((r) => r.text), ['plan: abc12345 · batch 2 of 2 · approved', 'handoff: updated 12 min ago', 'gate: off', 'orchestrator: off']);
+  const notApproved = panelView({ snap: { ...snap(), approved: false, config: cfg }, usage: null, now });
+  assert.match(notApproved.rows[0].text, /not approved yet$/);
+  assert.equal(notApproved.rows.at(-1)?.text, 'gate: threshold 100000 · context now unknown');
+  const long = Array.from({ length: 40 }, (_, i) => (i === 0 ? 'x'.repeat(300) : `l${i}`)).join('\n');
+  const out = panelView({ snap: null, output: { label: 'Stats', text: long } });
+  const texts = out.rows.map((r) => r.text);
+  assert.equal(texts.at(-1), '… (10 more lines)');
+  assert.ok(texts.every((t) => t.length <= 160));
+});
+
+test('panelView with snap null shows what the Mod already has', () => {
+  const v = panelView({ snap: null, fallback: { gate: { enabled: true, contextTokens: 5000 } }, usage: { tokens: 1500, percent: 30 } });
+  assert.deepEqual(v.rows.map((r) => r.text), ['plan: not read yet — press Refresh', 'handoff: not read yet', 'gate: threshold 5000 · context now 2k (30%)']);
+});
+
+test('readModConfig: defaults, user, project, broken text, ui.panel off', () => {
+  const d = JSON.stringify({ ui: { panel: 'auto' }, gate: { enabled: false, contextTokens: 100000 } });
+  assert.deepEqual(readModConfig([d]), { panel: 'auto', gate: { enabled: false, contextTokens: 100000 } });
+  assert.deepEqual(readModConfig([d, JSON.stringify({ gate: { enabled: true } }), JSON.stringify({ gate: { contextTokens: 5 } })]),
+    { panel: 'auto', gate: { enabled: true, contextTokens: 5 } });
+  assert.deepEqual(readModConfig([d, '{ nope', null]), { panel: 'auto', gate: { enabled: false, contextTokens: 100000 } });
+  assert.equal(readModConfig([d, JSON.stringify({ ui: { panel: 'off' } })]).panel, 'off');
+  assert.equal(readModConfig([JSON.stringify({ ui: { panel: 'weird' } })]).panel, 'auto');
+  assert.deepEqual(readModConfig(null), { panel: 'auto', gate: { enabled: false, contextTokens: 0 } });
+});

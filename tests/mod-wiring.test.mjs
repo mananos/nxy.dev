@@ -31,7 +31,26 @@ test('every command hook script exists and no command carries a personal path', 
   }
 });
 
+test('register.tsx wires the status entry, /nxy-panel and the idle-free turn step', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.match(src, /\$\.command\.register/);
+  assert.match(src, /'command\.run'/);
+  assert.match(src, /\$\.ui\.status/);
+  assert.match(src, /step\('turn'\)/);
+  assert.match(src, /on\('command\.run'[\s\S]*?\}\)\.catch\(/);
+  assert.match(src, /on\('command\.run'[\s\S]*?if \(headless\) return \{ text:[\s\S]*?\}\)\.catch\(/);
+  assert.match(src, /panelSetting\(\) === 'auto'[\s\S]{0,120}\$\.ui\.open/);
+  assert.doesNotMatch(src, /from\s+'node:/);
+});
+
 const hasClaude = spawnSync('claude', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
+test('every <Button in register.tsx has an onPress (the engine skips the render otherwise)', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  const buttons = src.match(/<Button\b[^>]*?\/>|<Button\b[^>]*?>/gs) ?? [];
+  assert.ok(buttons.length > 0);
+  for (const b of buttons) assert.match(b, /onPress=/, b);
+});
+
 test('claude plugin validate accepts the plugin', { skip: !hasClaude && 'claude not on PATH' }, () => {
   const r = spawnSync('claude', ['plugin', 'validate', root], { shell: true, encoding: 'utf8' });
   assert.equal(r.status, 0, `${r.stdout}\n${r.stderr}`);

@@ -93,5 +93,18 @@ test('release removes the marker', () => {
 test('the default config has the orchestrator on and no pause', () => {
   const sb = sandbox(PLAN);
   const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
-  assert.deepEqual(s.config, { pauseAfterBatch: false, orchestrator: 'auto' });
+  assert.deepEqual(s.config, { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' }, gate: { enabled: true, contextTokens: 100000 } });
+});
+
+test('ui.panel off from the project config, and the handoff age', () => {
+  const sb = sandbox(PLAN);
+  mkdirSync(join(sb.repo, '.nxy'), { recursive: true });
+  writeFileSync(join(sb.repo, '.nxy', 'config.json'), JSON.stringify({ ui: { panel: 'off' } }));
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.equal(s.config.ui.panel, 'off');
+  assert.equal(typeof s.handoff.updated, 'number');
+  // no handoff (an empty NXY_HOME): the early-return branch still carries it, as null
+  const none = run({ ...sb, env: { ...sb.env, NXY_HOME: join(sb.dir, 'empty-home') } }, ['snapshot', '--cwd', sb.repo]);
+  assert.equal(none.handoff, null);
+  assert.equal(none.config.ui.panel, 'off');
 });

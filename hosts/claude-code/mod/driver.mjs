@@ -12,6 +12,7 @@ import {
   ORCH_DIR, MARKER_FILE, TICKET_DIR, PAUSE_CONTINUE, PAUSE_ADJUST, PAUSE_STOP,
   RETRY, CONTINUE, STOP, finishedBatches,
   nextActions, batchPrompt, testerPrompt, reviewerPrompt, ticketDescription, handbackText, paneView,
+  wantsSnapshot, statusText, panelView, launcherOf, isPanelAction, PANEL_REFRESH,
 } from '../../../core/orchestrator.mjs';
 
 const CONTINUE_ANYWAY = CONTINUE;
@@ -48,6 +49,12 @@ export function createDriver($, opts) {
   /** @type {Promise<any>} */ let chain = Promise.resolve();
   /** @type {string|null} plan hashes this driver already handed back: never taken over again */
   let finished = null;
+
+  /** @type {any} */ let cfg = {};
+  /** @type {{tokens: number, percent: number}|null} */ let usage = null;
+  /** @type {{label: string, text: string}|null} */ let output = null;
+  let asked = false;
+  const isOwned = () => !!st && st.ours === true && !st.done;
 
   const dir = () => `${runtimeDir}/${ORCH_DIR}`;
   const entry = () => `${$.plugin.root}/hosts/claude-code/entries/orch.mjs`;
@@ -271,12 +278,19 @@ export function createDriver($, opts) {
   }
 
   /** Looks at the plan and acts: takes over a fresh approved plan, or moves ours forward. */
-  function step() {
-    return queue(async () => { await refresh(); await stepInner(); });
+  /** @param {'ask'|'turn'|'agent'|'press'|'panel'} [trigger] */
+  function step(trigger = 'ask') {
+    if (trigger === 'ask') asked = true;
+    return queue(async () => {
+      if (!wantsSnapshot({ trigger, asked, owned: isOwned() })) return;
+      await refresh();
+      await stepInner();
+    });
   }
 
   /** An agent the module spawned answered. */
   function onAgentDone(agentId, answer) {
+    if (!wantsSnapshot({ trigger: 'agent', asked, owned: isOwned() })) return Promise.resolve();
     return queue(async () => {
       await refresh();
       if (!snap?.ok || !snap.hash) return;
@@ -310,6 +324,10 @@ export function createDriver($, opts) {
 
   /** The user pressed a button of the pane. */
   function press(action) {
+    if (isPanelAction(action)) {
+      if (action === PANEL_REFRESH) return queue(refresh);
+      return queue(() => runLauncher(action));
+    }
     return queue(async () => {
       if (!st || st.done || !st.ask || !snap?.ok) return;
       const ask = st.ask;
@@ -339,5 +357,32 @@ export function createDriver($, opts) {
     return paneView(build(), st.ask);
   }
 
-  return { step, onAgentDone, press, view, refresh: () => queue(refresh), release: () => queue(() => release()) };
+  /** The status line under the prompt, from the cached snapshot (no node). */
+  function status() {
+    return statusText(isOwned() && snap?.ok ? build() : null, st?.ask ?? null);
+  }
+
+  /** The panel without a taken-over plan, from what the Mod already has. */
+  function panel() {
+    return panelView({ snap: snap?.ok ? snap : null, usage, now: Date.now(), output, fallback: { gate: cfg.gate } });
+  }
+
+  const setConfig = (c) => { cfg = c && typeof c === 'object' ? c : {}; };
+  const panelSetting = () => snap?.config?.ui?.panel ?? cfg.panel ?? 'auto';
+  const setUsage = (u) => { usage = u ?? null; };
+
+  async function runLauncher(label) {
+    const l = launcherOf(label);
+    if (!l) return;
+    const script = `${$.plugin.root}/hosts/claude-code/entries/${l.script}.mjs`;
+    try {
+      const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...l.args, '--cwd', cwd]);
+      const text = `${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd();
+      output = { label, text };
+    } catch (err) {
+      output = { label, text: `nxy: ${label} failed: ${/** @type {any} */ (err)?.message ?? err}` };
+    }
+  }
+
+  return { step, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

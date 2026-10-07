@@ -19,10 +19,13 @@ test('loadConfig: defaults, project override and env precedence', () => {
   const base = loadConfig(cwd, {});
   assert.equal(base.modules.filter, true);
   assert.equal(base.filter.engine, 'auto');
+  assert.equal(base.ui?.panel, 'auto');
 
   mkdirSync(join(cwd, '.nxy'));
   writeFileSync(join(cwd, '.nxy', 'config.json'), JSON.stringify({ modules: { filter: false } }));
   assert.equal(loadConfig(cwd, {}).modules.filter, false);
+  writeFileSync(join(cwd, '.nxy', 'config.json'), JSON.stringify({ modules: { filter: false }, ui: { panel: 'off' } }));
+  assert.equal(loadConfig(cwd, {}).ui?.panel, 'off', 'project override of ui.panel wins');
   assert.equal(loadConfig(cwd, { NXY_FILTER: '1' }).modules.filter, true, 'env wins over file');
   assert.equal(loadConfig(cwd, { NXY_ENGINE: 'off' }).filter.engine, 'off');
 

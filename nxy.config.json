@@ -68,6 +68,9 @@
     "pauseAfterBatch": false,
     "orchestrator": "auto"
   },
+  "ui": {
+    "panel": "auto"
+  },
   "memory": {
     "mode": "assisted",
     "handoff": {

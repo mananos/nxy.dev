@@ -269,3 +269,156 @@ export function paneView(snap, ask = null) {
   }
   return { rows, buttons };
 }
+
+// ---- always-on panel (1.1.0): when node may run, the status line, the launcher and the idle view ----
+
+/**
+ * The one place that says when the Mod may run the snapshot (a node process).
+ * @param {{trigger: 'ask' | 'turn' | 'agent' | 'press' | 'panel', asked?: boolean, owned?: boolean}} o
+ */
+export function wantsSnapshot({ trigger, asked = false, owned = false }) {
+  if (trigger === 'ask' || trigger === 'panel') return true;
+  if (trigger === 'turn') return !!asked || !!owned;
+  if (trigger === 'agent' || trigger === 'press') return !!owned;
+  return false;
+}
+
+/**
+ * The status line under the prompt.
+ * @param {Snap | null} snap the plan the orchestrator took over, or null
+ * @param {Action | null} [ask] the open `ask` action, if any
+ */
+export function statusText(snap, ask = null) {
+  const ready = 'nxy ● ready';
+  if (!snap) return ready;
+  const { phase, actions } = nextActions(snap);
+  const eff = effective(snap);
+  const total = snap.batches.length;
+  const doneCount = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
+  const open = ask && ask.type === 'ask' ? ask : actions.find((a) => a.type === 'ask') ?? null;
+  if (open && open.type === 'ask') {
+    if (open.kind === 'red') return `nxy ✘ batch ${open.batch} needs you`;
+    const fin = finishedBatches(snap);
+    return `nxy ⏸ paused after batch ${fin.length ? Math.max(...fin) : doneCount}`;
+  }
+  if (actions.some((a) => a.type === 'handback')) return ready;
+  if (phase === 'batches') return `nxy ▶ batch ${Math.min(total, doneCount + 1)}/${total}`;
+  if (phase === 'suite') return 'nxy ▶ tester';
+  if (phase === 'review') return 'nxy ▶ review';
+  return ready;
+}
+
+export const PANEL_REFRESH = 'Refresh';
+export const PANEL_CLOSE = 'Close';
+
+/** Quick actions of the panel: a button label -> an nxy entry script and its arguments. */
+export const LAUNCHER = [
+  { label: 'Stats', script: 'stats', args: [] },
+  { label: 'Trend', script: 'trend', args: [] },
+  { label: 'Filter status', script: 'filter', args: ['status'] },
+  { label: 'Filter on', script: 'filter', args: ['on'] },
+  { label: 'Filter off', script: 'filter', args: ['off'] },
+  { label: 'Handoff', script: 'mem', args: ['handoff', 'show'] },
+];
+
+/** @param {string} label @returns {{script: string, args: string[]} | null} */
+export function launcherOf(label) {
+  const e = LAUNCHER.find((l) => l.label === label);
+  return e ? { script: e.script, args: [...e.args] } : null;
+}
+
+/** @param {string} label */
+export const isPanelAction = (label) => label === PANEL_REFRESH || label === PANEL_CLOSE || LAUNCHER.some((l) => l.label === label);
+
+/** @param {number} ms */
+function agoText(ms) {
+  const min = Math.max(0, Math.floor(ms / 60000));
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `${h} h ago`;
+  return `${Math.floor(h / 24)} days ago`;
+}
+
+/**
+ * Clip a launcher's output for the pane: at most `maxLines` lines, long lines cut at 160 columns.
+ * @param {string} text @param {number} [maxLines]
+ */
+function clipOutput(text, maxLines = 30) {
+  const lines = String(text ?? '').replace(/\s+$/, '').split(/\r?\n/).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l));
+  if (lines.length <= maxLines) return lines;
+  return [...lines.slice(0, maxLines), `… (${lines.length - maxLines} more lines)`];
+}
+
+/**
+ * What the pane draws when no plan is taken over.
+ * @param {{
+ *   snap: (Snap & {approved?: boolean, handoff?: {updated: number} | null, config?: {gate?: {enabled?: boolean, contextTokens?: number}, orchestrator?: string}}) | null,
+ *   usage?: {tokens: number, percent: number} | null, now?: number,
+ *   output?: {label: string, text: string} | null,
+ *   fallback?: {gate?: {enabled?: boolean, contextTokens?: number}},
+ * }} o
+ * @returns {{rows: {text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[], buttons: string[]}}
+ */
+export function panelView({ snap, usage = null, now = Date.now(), output = null, fallback = {} }) {
+  /** @type {{text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[]} */
+  const rows = [];
+  const gate = snap?.config?.gate ?? fallback.gate;
+  if (!snap) {
+    rows.push({ text: 'plan: not read yet — press Refresh', tone: 'dim' });
+    rows.push({ text: 'handoff: not read yet', tone: 'dim' });
+  } else {
+    if (!snap.hash) rows.push({ text: 'plan: none', tone: 'dim' });
+    else {
+      const eff = effective(snap);
+      const total = snap.batches.length;
+      const doneCount = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
+      rows.push({ text: `plan: ${snap.hash} · batch ${Math.min(total, doneCount + 1)} of ${total} · ${snap.approved ? 'approved' : 'not approved yet'}`, tone: 'info' });
+    }
+    const upd = snap.handoff?.updated;
+    rows.push(typeof upd === 'number'
+      ? { text: `handoff: updated ${agoText(now - upd)}`, tone: 'info' }
+      : { text: 'handoff: none', tone: 'dim' });
+  }
+  if (!gate?.enabled) rows.push({ text: 'gate: off', tone: 'dim' });
+  else {
+    const ctx = usage ? `context now ${Math.round(usage.tokens / 1000)}k (${Math.round(usage.percent)}%)` : 'context now unknown';
+    rows.push({ text: `gate: threshold ${gate.contextTokens ?? 0} · ${ctx}`, tone: 'info' });
+  }
+  if (snap?.config?.orchestrator === 'off') rows.push({ text: 'orchestrator: off', tone: 'dim' });
+  if (output) {
+    rows.push({ text: `— ${output.label}`, tone: 'dim' });
+    for (const text of clipOutput(output.text, 30)) rows.push({ text, tone: 'info' });
+  }
+  return { rows, buttons: [PANEL_REFRESH, ...LAUNCHER.map((l) => l.label), PANEL_CLOSE] };
+}
+
+/** @param {unknown} v */
+const isPlain = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
+/** Same deep-merge as core/config.mjs (this file may not import it). */
+function merge(base, src) {
+  const out = { ...base };
+  for (const [k, v] of Object.entries(src || {})) out[k] = isPlain(v) && isPlain(base?.[k]) ? merge(base[k], v) : v;
+  return out;
+}
+
+/**
+ * The two settings the Mod needs before the first snapshot, from the config files' texts
+ * (plugin defaults, user, project; broken or missing ones skipped, later wins).
+ * @param {(string | null | undefined)[] | null} texts
+ * @returns {{panel: 'auto' | 'off', gate: {enabled: boolean, contextTokens: number}}}
+ */
+export function readModConfig(texts) {
+  let cfg = {};
+  for (const t of texts ?? []) {
+    if (typeof t !== 'string') continue;
+    try {
+      const j = JSON.parse(t);
+      if (isPlain(j)) cfg = merge(cfg, j);
+    } catch { /* a broken file is skipped */ }
+  }
+  return {
+    panel: cfg.ui?.panel === 'off' ? 'off' : 'auto',
+    gate: { enabled: cfg.gate?.enabled === true, contextTokens: Number(cfg.gate?.contextTokens) || 0 },
+  };
+}

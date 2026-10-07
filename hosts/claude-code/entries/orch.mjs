@@ -32,7 +32,13 @@ async function snapshot(cwd, opts) {
     runtimeDir: nxyRuntimeDir(cwd),
     projectDir: cwd,
     branch: branch || null,
-    config: { pauseAfterBatch: cfg.flow?.pauseAfterBatch === true, orchestrator: cfg.flow?.orchestrator === 'off' ? 'off' : 'auto' },
+    config: {
+      pauseAfterBatch: cfg.flow?.pauseAfterBatch === true,
+      orchestrator: cfg.flow?.orchestrator === 'off' ? 'off' : 'auto',
+      ui: { panel: cfg.ui?.panel === 'off' ? 'off' : 'auto' },
+      gate: { enabled: cfg.gate?.enabled === true, contextTokens: cfg.gate?.contextTokens ?? 0 },
+    },
+    handoff: known.handoff ? { updated: known.handoff.updated } : null,
   };
   if (!plan) return { ...base, hash: null, approved: false, fresh: false, questions: 0, batches: [], verdicts: {}, suite: null, review: null, reviewNeeded: { needed: false, reason: '' } };
 

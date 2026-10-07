@@ -12,6 +12,15 @@ test('README documents the orchestrator config and its refusal message', () => {
   assert.ok(readme.includes('orch.mjs release'));
 });
 
+test('README documents the panel, its command and how to turn it off', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('/nxy-panel'));
+  assert.ok(readme.includes('"plan":"always"'));
+  assert.ok(readme.includes('nxy ● ready'));
+  assert.ok(readme.includes('"panel": "off"'));
+  assert.ok(readme.includes('claude -p "/nxy-panel"'));
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);
