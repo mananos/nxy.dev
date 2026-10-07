@@ -113,7 +113,7 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
 
 Los cambios se ven en el próximo refresco, sin reiniciar.
 
-**Cómo se mantiene actualizada.** `/nxy:statusline --apply` no apunta a una versión del plugin sino a un lanzador en `~/.nxy/statusline.mjs`, que en cada arranque usa la versión de nxy que Claude Code tiene instalada. Para desarrollo, `node hosts/claude-code/entries/statusline-setup.mjs --apply` desde un clon la apunta a ese clon.
+**Cómo se mantiene actualizada.** `/nxy:statusline --apply` no apunta a una versión del plugin sino a un lanzador en `~/.nxy/statusline.mjs`, que en cada arranque usa la versión de nxy que Claude Code tiene instalada. El lanzador se regenera al iniciar la sesión cuando nxy lo cambia. Para desarrollo, `node hosts/claude-code/entries/statusline-setup.mjs --apply` desde un clon la apunta a ese clon.
 
 ### `scout`
 

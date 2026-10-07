@@ -10,10 +10,10 @@ import { statSync } from 'node:fs';
 import { gitBranch } from '../../core/paths.mjs';
 import { extractPlan, parseBatches, planHash } from '../../core/plan.mjs';
 import {
-  afterBatch, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, reviewInstruction, suiteFixOfPrompt,
+  afterBatch, afterReviewRecorded, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, reviewInstruction, suiteFixOfPrompt,
 } from '../../core/verify.mjs';
 import { lookupHandoff } from './handoff.mjs';
-import { readSuite, readSuiteFix, readVerify, reviewLaunchTs, reviewRecorded } from './verify-state.mjs';
+import { readReview, readSuite, readSuiteFix, readVerify, reviewLaunchTs } from './verify-state.mjs';
 
 /** The review instruction (or why there is none) once the suite is green. */
 async function reviewNext(cwd, hash) {
@@ -68,7 +68,8 @@ export async function completionLines({ cwd, role, prompt = '' }) {
     lines.push(afterTester({ hash, red, reviewNext: red.length ? undefined : await reviewNext(cwd, hash) }));
     pause = true;
   } else if (role === 'reviewer') {
-    if (reviewRecorded(cwd, hash)) { /* the record command printed the verdict itself */ }
+    const review = readReview(cwd, hash);
+    if (review) lines.push(afterReviewRecorded({ hash, id: review.id }));
     else if (await reviewExpected(cwd, hash)) lines.push(afterReviewer({ hash, recorded: false }));
     else lines.push(`nxy: the reviewer returned and saved no review packet for plan ${hash}: there was nothing to review.`);
     pause = true;
@@ -79,7 +80,7 @@ export async function completionLines({ cwd, role, prompt = '' }) {
       const first = /** @type {any} */ (red[0]);
       // No suite command to re-run: not verified, never a pass, and the review does not open.
       const none = !red.length && !(rec.ran || []).length;
-      const verdict = none ? { status: 'none' } : red.length ? { status: first?.status === 'not-run' ? 'not-run' : 'fail', error: first?.error } : { status: 'pass' };
+      const verdict = none ? { status: 'none' } : red.length ? { status: first?.status === 'not-run' ? 'not-run' : 'fail', error: first?.error, detail: first?.detail } : { status: 'pass' };
       lines.push(afterSuiteFix({
         hash, verdict: /** @type {any} */ (verdict), commands: red.length ? red.map((r) => r.command) : rec.ran || [],
         reviewNext: red.length || none ? undefined : await reviewNext(cwd, hash),
@@ -99,7 +100,7 @@ export async function completionLines({ cwd, role, prompt = '' }) {
           command: batch.accept.kind === 'command' ? batch.accept.command : undefined,
           batches: batches.map((b) => b.n),
           dependents: batches.filter((b) => b.depends.includes(n)).map((b) => b.n),
-          fix: /\bfix R\d+ of review\b/.test(prompt),
+          fix: ((m) => (m ? { finding: m[1], review: m[2] } : null))(/\bfix (R\d+) of review ([0-9a-f]+)/.exec(prompt)),
         }));
         pause = true;
       }

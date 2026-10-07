@@ -12,7 +12,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { packetPath } from '../hosts/claude-code/baseline.mjs';
-import { recordSuite } from '../hosts/claude-code/verify-state.mjs';
+import { nxyRuntimeDir } from '../core/paths.mjs';
+import { readVerify, recordSuite } from '../hosts/claude-code/verify-state.mjs';
 import { HOOKS, sandbox } from './sandbox.mjs';
 
 const A1 = 'node check-one.js';
@@ -105,7 +106,9 @@ test('the reviewer waits for the full suite; a red suite goes to its own fix slo
 
   // A run before the last edit proves nothing; the one after does.
   const stale = s.agent('Suite fix — typecheck failed', [{ run: SUITE }, { edit: true }]);
-  assert.equal(s.stop('f2', stale).status, 2);
+  const staleStop = s.stop('f2', stale);
+  assert.equal(staleStop.status, 2);
+  assert.match(staleStop.stderr, /not run after your last edit \(it ran before the last edit\)/, 'the send-back says why');
   const good = s.agent('Suite fix — typecheck failed', [{ edit: true }, { run: SUITE }]);
   assert.equal(s.stop('f3', good).status, 0);
   const fixed = s.returnedAs('Suite fix — typecheck failed');
@@ -177,10 +180,56 @@ test('a background reviewer: the report waits for its end, and is left as a note
   savePacket(s);
   assert.match(s.returnedAs('Review nxy plan x', 'nxy:reviewer', ASYNC), /the review launched in the background/);
   const silent = s.agent('Review nxy plan x', []);
-  assert.equal(s.stop('r2', silent, 'nxy:reviewer').status, 2);
-  assert.equal(s.returnedAs('look', 'nxy:scout'), '', 'a send-back leaves no note');
-  assert.equal(s.stop('r2', silent, 'nxy:reviewer').status, 0);
-  assert.match(s.returnedAs('look', 'nxy:scout'), /returned without recording a review/);
+  assert.equal(s.stop('r2', silent, 'nxy:reviewer').status, 0, 'a background stop is final: never sent back');
+  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, [], 'nothing claimed');
+  assert.match(s.returnedAs('look', 'nxy:scout'), /returned without recording a review[\s\S]*dispatch nxy:reviewer again once/);
+});
+
+test('a background reviewer that recorded its review leaves the recorded note, never "recorded nothing"', () => {
+  const s = sandbox(PLAN);
+  verified(s);
+  s.dispatch('Review nxy plan x', undefined, 'nxy:reviewer');
+  savePacket(s);
+  s.returnedAs('Review nxy plan x', 'nxy:reviewer', ASYNC);
+  writeFileSync(join(nxyRuntimeDir(s.repo), 'review.json'), JSON.stringify({ planHash: s.hash, id: 'abc123', ts: Date.now() + 1000, findings: [] }));
+  assert.equal(s.stop('r3', s.agent('Review nxy plan x', []), 'nxy:reviewer').status, 0);
+  const note = s.returnedAs('look', 'nxy:scout');
+  assert.match(note, /review abc123 of plan .* was recorded[\s\S]*checkpoint 2/);
+  assert.doesNotMatch(note, /recorded nothing|without recording/);
+});
+
+test('a background batch that ran its Accept piped is not sent back: recorded not-run, the note says why and what to do', () => {
+  const s = sandbox(PLAN);
+  s.dispatch('Batch 1 — do it');
+  s.returnedAs('Batch 1 — do it', 'nxy:implementer', ASYNC);
+  const piped = s.agent(1, [{ edit: true }, { run: `cd ${s.repo.replace(/\\/g, '/')} && ${A1} 2>&1 | tail -40` }]);
+  assert.equal(s.stop('b1', piped).status, 0);
+  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, [], 'no sent-* file');
+  assert.equal(s.recorded()['1'].status, 'not-run');
+  assert.match(String(s.recorded()['1'].detail),/piped through tail/);
+  const note = s.returnedAs('look', 'nxy:scout');
+  assert.match(note, /✘[\s\S]*piped through tail[\s\S]*Batch 1 — /);
+  assert.equal(s.returnedAs('look', 'nxy:scout'), '', 'delivered once');
+});
+
+test('the same piped batch in the foreground is still sent back once, then stops', () => {
+  const s = sandbox(PLAN);
+  s.dispatch('Batch 1 — do it');
+  const piped = s.agent(1, [{ edit: true }, { run: `${A1} 2>&1 | tail -40` }]);
+  assert.equal(s.stop('b2', piped).status, 2);
+  assert.equal(s.stop('b2', piped).status, 0);
+});
+
+test('a failed run followed by a rerun with the path written absolute under the repo passes, no failure note', () => {
+  const s = sandbox(PLAN);
+  s.dispatch('Batch 1 — do it');
+  s.returnedAs('Batch 1 — do it', 'nxy:implementer', ASYNC);
+  const abs = `node ${s.repo.replace(/\\/g, '/')}/check-one.js`;
+  assert.equal(s.stop('b3', s.agent(1, [{ edit: true }, { run: A1, ok: false }, { run: abs }])).status, 0);
+  assert.equal(s.recorded()['1'].status, 'pass');
+  const note = s.returnedAs('look', 'nxy:scout');
+  assert.match(note, /batch 1 ✔/);
+  assert.doesNotMatch(note, /✘/);
 });
 
 test('R2: a tester whose suite is still running or unrecorded is not reported as green', () => {
@@ -226,6 +275,25 @@ test('R5: the tester red list drops a command that later passed and keeps only t
   assert.doesNotMatch(red, /probe\.js/);
 });
 
+test('R3: the tester is root-aware: a failing `cd "<root>" && suite` is red, a later clean run supersedes it, a piped run is not green', () => {
+  const s = sandbox(PLAN);
+  verified(s);
+  const quoted = `cd "${s.repo.replace(/\//g, '\\')}" && ${SUITE}`;
+  s.dispatch('Full suite for nxy plan x', undefined, 'nxy:tester');
+  s.stop('t1', s.agent('Full suite', [{ run: quoted, ok: false, out: 'Exit code 1\ntypecheck failed' }]), 'nxy:tester');
+  assert.match(s.returnedAs('Full suite', 'nxy:tester'), /✘[\s\S]*npm run check/);
+
+  s.dispatch('Full suite again', undefined, 'nxy:tester');
+  s.stop('t2', s.agent('Full suite', [{ run: quoted, ok: false }, { run: SUITE }]), 'nxy:tester');
+  assert.doesNotMatch(s.returnedAs('Full suite', 'nxy:tester'), /✘/, 'a later clean run supersedes');
+
+  s.dispatch('Full suite third', undefined, 'nxy:tester');
+  s.stop('t3', s.agent('Full suite', [{ run: `${SUITE} 2>&1 | head -40` }]), 'nxy:tester');
+  const piped = s.returnedAs('Full suite', 'nxy:tester');
+  assert.match(piped, /✘[\s\S]*npm run check/);
+  assert.doesNotMatch(piped, /full suite done/);
+});
+
 test('R7: a reviewer that returns with no packet (no review needed) is not sent back', () => {
   const s = sandbox(PLAN);
   verified(s);
@@ -268,6 +336,16 @@ test('R9: a stale async marker does not make a later sync run deliver its verdic
   s.stop('a1', s.agent(1, [{ edit: true }, { run: A1 }]));
   assert.match(s.returned(1), /batch 1 ✔/, 'sync: the verdict right away');
   assert.equal(s.returnedAs('look', 'nxy:scout'), '', 'no second copy as a note');
+});
+
+test('a background suite fix left unproven is not sent back and its note carries the next step', () => {
+  const s = sandbox(PLAN);
+  verified(s);
+  s.dispatch('Suite fix — typecheck failed');
+  s.returnedAs('Suite fix — typecheck failed', 'nxy:implementer', ASYNC);
+  assert.equal(s.stop('f9', s.agent('Suite fix — typecheck failed', [{ edit: true }])).status, 0);
+  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, []);
+  assert.match(s.returnedAs('look', 'nxy:scout'), /suite fix ✘[\s\S]*npm run check[\s\S]*Dispatch nxy:implementer again/);
 });
 
 test('a suite fix with no command to re-run is not verified, not sent back and does not open the review', () => {

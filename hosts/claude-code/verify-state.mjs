@@ -28,7 +28,7 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
 
 /**
- * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, ts: number}>, sentBack: string[]}} VerifyState
+ * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}>, sentBack: string[]}} VerifyState
  */
 
 /**
@@ -67,7 +67,7 @@ export function readVerify(cwd, branch, hash) {
  * Records one batch's verdict in its own file, replaced atomically (write aside, then rename), so a
  * parallel batch never overwrites it and a reader never sees half a file.
  * @param {string} cwd @param {string|null} branch @param {string} hash @param {number|string} n
- * @param {{status: import('../../core/verify.mjs').Status, error?: string, ts: number}} verdict
+ * @param {{status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}} verdict
  */
 export function recordBatch(cwd, branch, hash, n, verdict) {
   try {
@@ -131,7 +131,7 @@ function readPlanFile(cwd, hash, name) {
 }
 
 /**
- * @typedef {{status: 'running' | 'done', ts: number, red?: {command: string, error?: string}[], ran?: string[]}} SuiteRecord
+ * @typedef {{status: 'running' | 'done', ts: number, red?: {command: string, error?: string, status?: string, detail?: string}[], ran?: string[]}} SuiteRecord
  */
 
 /** The full suite's state for this plan (`suite.json`). @param {string} cwd @param {string} hash @param {SuiteRecord} rec */
@@ -169,12 +169,21 @@ export function reviewLaunchTs(cwd, hash) {
  * @param {string} cwd @param {string} hash @param {number} [sinceTs]
  */
 export function reviewRecorded(cwd, hash, sinceTs) {
+  return !!readReview(cwd, hash, sinceTs);
+}
+
+/**
+ * The review of this plan recorded since `sinceTs` (default: the last reviewer launch), or null.
+ * @param {string} cwd @param {string} hash @param {number} [sinceTs]
+ * @returns {{id: string, ts: number}|null}
+ */
+export function readReview(cwd, hash, sinceTs) {
   const since = typeof sinceTs === 'number' ? sinceTs : (readPlanFile(cwd, hash, 'reviewlaunch.json')?.ts ?? 0);
   try {
     const r = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
-    return !!r && r.planHash === hash && typeof r.ts === 'number' && r.ts >= since;
+    return r && r.planHash === hash && typeof r.ts === 'number' && r.ts >= since ? { id: String(r.id ?? ''), ts: r.ts } : null;
   } catch {
-    return false;
+    return null;
   }
 }
 

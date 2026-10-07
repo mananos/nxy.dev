@@ -23,7 +23,7 @@ export const STOP = 'Stop';
 /**
  * @typedef {{kind: 'edit'} | {kind: 'run', command: string, ok: boolean, error?: string}} Event
  * @typedef {'pass' | 'fail' | 'not-run' | 'manual' | 'none' | 'running'} Status
- * @typedef {{status: Status, error?: string}} Verdict
+ * @typedef {{status: Status, error?: string, detail?: string}} Verdict
  */
 
 /** Red: the approved criterion did not pass. `manual` and `none` are not red — they were never runnable. */
@@ -58,14 +58,51 @@ export function canonCommand(s) {
  * `;` or `||` would report the exit status of something else, and a red test would read green.
  * @param {string} run
  * @param {string} accept
+ * @param {string} [root] the project root (see `inspectRun`)
  */
-export function runMatches(run, accept) {
-  const r = canonCommand(run);
-  const a = canonCommand(accept);
-  if (!a) return false;
+export function runMatches(run, accept, root) {
+  return inspectRun(run, accept, root).match;
+}
+
+const REDIRECTIONS = /^\s*(?:\d?>>?&?\s*\S+\s*)*/;
+
+/** `<root>/` out of a canonical command (also the Git Bash `/c/...` form of a drive), case-insensitive. */
+function stripRoot(s, root) {
+  const base = canonCommand(root || '').replace(/\/+$/, '');
+  if (!base) return s;
+  const forms = [base];
+  const drive = /^([a-z]):(\/.*)?$/i.exec(base);
+  if (drive) forms.push(`/${drive[1]}${drive[2] || ''}`);
+  let out = s;
+  for (const f of forms) {
+    out = out.replace(new RegExp(`(?<=^|\\s)${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`, 'gi'), '');
+  }
+  return out;
+}
+
+/**
+ * Like `runMatches`, and when the run contains the accept command but nothing certifies it, says why.
+ * @param {string} run
+ * @param {string} accept
+ * @param {string} [root] the project root: a path under it written absolute equals the relative one
+ * @returns {{match: boolean, why?: string}}
+ */
+export function inspectRun(run, accept, root) {
+  const r = stripRoot(canonCommand(run), root);
+  const a = stripRoot(canonCommand(accept), root);
+  if (!a) return { match: false };
   const i = r.lastIndexOf(a);
-  if (i < 0) return false;
-  return /^\s*(?:\d?>>?&?\s*\S+\s*)*(?:&&.*)?$/.test(r.slice(i + a.length));
+  if (i < 0) return { match: false };
+  const tail = r.slice(i + a.length);
+  if (/^\s*(?:\d?>>?&?\s*\S+\s*)*(?:&&.*)?$/.test(tail)) return { match: true };
+  const rest = tail.replace(REDIRECTIONS, '');
+  if (rest.startsWith('||')) return { match: false, why: 'followed by ||: a failure is hidden' };
+  if (rest.startsWith('|')) {
+    const word = /^\|\s*(\S+)/.exec(rest)?.[1];
+    return { match: false, why: `piped through ${word || 'another command'}: the exit code is hidden` };
+  }
+  if (rest.startsWith(';')) return { match: false, why: 'followed by ;: the exit code is the last command one' };
+  return { match: false };
 }
 
 /**
@@ -73,9 +110,10 @@ export function runMatches(run, accept) {
  * last edit decides; a run before an edit proves nothing about the code as it was left.
  * @param {Event[]} events
  * @param {import('./plan.mjs').Accept} accept
+ * @param {string} [root] the project root, for absolute paths under it
  * @returns {Verdict}
  */
-export function batchVerdict(events, accept) {
+export function batchVerdict(events, accept, root) {
   if (accept.kind === 'manual') return { status: 'manual' };
   if (accept.kind !== 'command') return { status: 'none' };
   let lastEdit = -1;
@@ -84,11 +122,20 @@ export function batchVerdict(events, accept) {
   });
   /** @type {Verdict} */
   let verdict = { status: 'not-run' };
+  let nearMiss = '';
+  let before = false;
   events.forEach((e, i) => {
-    if (i > lastEdit && e.kind === 'run' && runMatches(e.command, accept.command)) {
-      verdict = e.ok ? { status: 'pass' } : { status: 'fail', ...(e.error ? { error: e.error } : {}) };
-    }
+    if (e.kind !== 'run') return;
+    const r = inspectRun(e.command, accept.command, root);
+    if (i > lastEdit) {
+      if (r.match) verdict = e.ok ? { status: 'pass' } : { status: 'fail', ...(e.error ? { error: e.error } : {}) };
+      else if (r.why) nearMiss = r.why;
+    } else if (r.match && e.ok) before = true;
   });
+  if (verdict.status === 'not-run') {
+    if (nearMiss) verdict = { status: 'not-run', detail: nearMiss };
+    else if (before) verdict = { status: 'not-run', detail: 'it ran before the last edit' };
+  }
   return verdict;
 }
 
@@ -129,7 +176,7 @@ export function continueQuestion(hash, n) {
 export function stopMessage(n, command, verdict) {
   const why = verdict.status === 'fail'
     ? `it failed after your last edit${verdict.error ? ` (${verdict.error})` : ''}`
-    : 'it has not been run after your last edit';
+    : `it has not been run after your last edit${verdict.detail ? `: ${verdict.detail}` : ''}`;
   return [
     `nxy verify: batch ${n}'s acceptance command has not passed — ${why}.`,
     `Run it exactly as written, not piped and not in the background: \`${command}\``,
@@ -139,11 +186,11 @@ export function stopMessage(n, command, verdict) {
 
 /**
  * The line the main thread sees when an implementer returns, and what to do next.
- * A fix from the review's checkpoint 2 (`fix`) closes with its own line: one correction round, so
- * it never leads to another suite and another review.
+ * A fix from the review's checkpoint 2 (`fix`: the finding and the review) closes with its own line:
+ * the other picked findings are dispatched next, and it never leads to another suite and review.
  * `dependents`: the batches that build on this one (default: the next one).
- * @param {{hash: string, n: number, command?: string, verdict: Verdict, batches: number[], recorded: Record<string, {status: Status}>, fix?: boolean,
- *   dependents?: number[]}} o
+ * @param {{hash: string, n: number, command?: string, verdict: Verdict, batches: number[], recorded: Record<string, {status: Status}>,
+ *   fix?: {finding?: string, review?: string} | boolean | null, dependents?: number[]}} o
  */
 export function afterBatch(o) {
   const { hash, n, verdict } = o;
@@ -162,9 +209,12 @@ export function afterBatch(o) {
         ],
       }],
     };
+    const notRun = verdict.status === 'not-run';
     return [
-      `nxy verify: batch ${n} ✘${cmd} ${verdict.status === 'fail' ? `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}` : 'was not run after the last edit'}.`,
-      `Re-dispatch the implementer for batch ${n} with the failure (always allowed), or ask the user with AskUserQuestion, with exactly this input:`,
+      `nxy verify: batch ${n} ✘${cmd} ${notRun ? `was not run after the last edit${verdict.detail ? ` (${verdict.detail})` : ''}` : `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}`}.`,
+      notRun
+        ? `Next: dispatch \`Batch ${n} — run the acceptance command only\` again, to run the Accept exactly as written and alone (no cd, pipe, redirection or absolute path): the code may already be right. Or ask the user with AskUserQuestion, with exactly this input:`
+        : `Re-dispatch the implementer for batch ${n} with the failure (always allowed), or ask the user with AskUserQuestion, with exactly this input:`,
       `  ${JSON.stringify(input)}`,
       waiting.length
         ? `${waiting.length === 1 ? `Batch ${waiting[0]}` : `Batches ${waiting.join(', ')}`} will not be dispatched until batch ${n} passes or the user picks "${CONTINUE}".`
@@ -174,7 +224,10 @@ export function afterBatch(o) {
   const mark = verdict.status === 'pass' ? `✔${cmd} passed` : verdict.status === 'manual' ? '– manual: the user checks it' : '– no acceptance command';
   const lines = [`nxy verify: batch ${n} ${mark}.`];
   if (o.fix) {
-    lines.push('Review fix done. One correction round only: no new suite or review for it; tell the user what was fixed and what was left.');
+    const f = typeof o.fix === 'object' ? o.fix : {};
+    const what = f.finding && f.review ? `${f.finding} of review ${f.review}` : f.finding ? f.finding : 'the picked finding';
+    const rid = f.review || '<id>';
+    lines.push(`Review fix ${what} done (batch ${n} ✔). If the user picked more findings, dispatch the remaining ones next, each as its own \`Batch ${n} — fix R<k> of review ${rid}: ...\` (they can run in parallel); once every picked finding is fixed there is no new suite or review: tell the user what was fixed and what was left.`);
     return lines.join('\n');
   }
   const done = o.batches.every((k) => {
@@ -219,7 +272,7 @@ export function cutSuggestion(tokens, warn, saveCmd, showCmd) {
  * The plan's progress, derived from what nxy recorded (0.4.5): never written by the model, so it is
  * never stale. Shown by `handoff show` and in the implementer's context block.
  * @param {{n: number}[]} batches
- * @param {Record<string, {status: Status, error?: string}>} recorded
+ * @param {Record<string, {status: Status, error?: string, detail?: string}>} recorded
  * @param {{id: string, change: number, preexisting: number, chosen: number}|null} [review]
  */
 export function progressLine(batches, recorded, review = null) {
@@ -231,7 +284,7 @@ export function progressLine(batches, recorded, review = null) {
     if (r.status === 'pass') return `${n} ✔`;
     if (r.status === 'manual') return `${n} – manual`;
     if (r.status === 'none') return `${n} – no command`;
-    return `${n} ✘${r.status === 'not-run' ? ' (not run)' : r.error ? ` (${r.error})` : ''}`;
+    return `${n} ✘${r.status === 'not-run' ? ` (not run${r.detail ? `: ${r.detail}` : ''})` : r.error ? ` (${r.error})` : ''}`;
   };
   const rv = review ? ` · review ${review.id}: ${review.change} from the change, ${review.chosen} chosen to fix, ${review.preexisting} preexisting` : '';
   return `Progress (recorded by nxy, not by the model): batch ${batches.map((b) => mark(b.n)).join(', ')}${rv}`;
@@ -255,16 +308,17 @@ export function suiteFixOfPrompt(prompt) {
  * The verdict of a post-suite fix: every suite command must have run green after the last edit.
  * @param {Event[]} events
  * @param {string[]} commands
+ * @param {string} [root] the project root, for absolute paths under it
  * @returns {Verdict & {failed?: string[]}}
  */
-export function suiteFixVerdict(events, commands) {
+export function suiteFixVerdict(events, commands, root) {
   if (!commands.length) return { status: 'none' };
   /** @type {string[]} */
   const failed = [];
   /** @type {Verdict} */
   let first = { status: 'pass' };
   for (const command of commands) {
-    const v = batchVerdict(events, { kind: 'command', command });
+    const v = batchVerdict(events, { kind: 'command', command }, root);
     if (v.status !== 'pass') {
       failed.push(command);
       if (first.status === 'pass') first = v;
@@ -275,11 +329,11 @@ export function suiteFixVerdict(events, commands) {
 
 /**
  * What the main thread hears when the full suite ends.
- * @param {{hash: string, red: {command: string, error?: string}[], reviewNext?: string}} o
+ * @param {{hash: string, red: {command: string, error?: string, detail?: string}[], reviewNext?: string}} o
  */
 export function afterTester({ hash, red, reviewNext }) {
   if (!red.length) return reviewNext || `nxy: full suite done for plan ${hash}.`;
-  const list = red.map((r) => `\`${r.command}\`${r.error ? ` (${r.error})` : ''}`).join(', ');
+  const list = red.map((r) => `\`${r.command}\`${r.error ? ` (${r.error})` : r.detail ? ` (${r.detail})` : ''}`).join(', ');
   return [
     `nxy: full suite of plan ${hash} ✘ — failed: ${list}.`,
     'Dispatch nxy:implementer once with "Suite fix — <what failed>"; nxy verifies it by re-running those commands. Then the review.',
@@ -299,7 +353,7 @@ export function afterSuiteFix({ hash, verdict, commands, reviewNext }) {
     return `nxy verify: suite fix ✔ ${list} passed for plan ${hash}.${reviewNext ? `\n${reviewNext}` : ''}`;
   }
   return [
-    `nxy verify: suite fix ✘ ${verdict.status === 'fail' ? `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}` : 'did not run the suite commands after the last edit'}: ${list}.`,
+    `nxy verify: suite fix ✘ ${verdict.status === 'fail' ? `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}` : `did not run the suite commands after the last edit${verdict.detail ? ` (${verdict.detail})` : ''}`}: ${list}.`,
     'Dispatch nxy:implementer again once with the failure ("Suite fix — ..."), or tell the user.',
   ].join('\n');
 }
@@ -311,6 +365,14 @@ export function afterSuiteFix({ hash, verdict, commands, reviewNext }) {
 export function afterReviewer({ hash, recorded }) {
   if (recorded) return '';
   return `nxy: the reviewer returned without recording a review of plan ${hash}: dispatch nxy:reviewer again once, reading the packet in parts and ending with the record command; if it fails again tell the user.`;
+}
+
+/**
+ * The reviewer recorded its review: what the main thread must do with it.
+ * @param {{hash: string, id: string}} o
+ */
+export function afterReviewRecorded({ hash, id }) {
+  return `nxy: review ${id} of plan ${hash} was recorded; checkpoint 2 (the findings to fix) is in the reviewer's report: show it to the user.`;
 }
 
 /**

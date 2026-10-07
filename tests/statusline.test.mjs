@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { render } from '../hosts/claude-code/statusline.mjs';
-import { shimSource, versionsDirFor } from '../hosts/claude-code/entries/statusline-setup.mjs';
+import { SHIM_GENERATION, shimSource, versionsDirFor } from '../hosts/claude-code/entries/statusline-setup.mjs';
 import { colorize, severity } from '../core/format.mjs';
 import { gitBranch } from '../core/paths.mjs';
 import { loadConfig } from '../core/config.mjs';
@@ -203,11 +203,11 @@ test('gitBranch: reads HEAD from .git dir, worktree pointer, detached head; null
 test('statusline shim: resolves the newest installed version, honours env, falls back to the checkout', () => {
   const root = mkdtempSync(join(tmpdir(), 'nxy-shim-'));
   const plugin = join(root, 'plugins', 'cache', 'nxy-dev', 'nxy');
-  // Two layouts coexist in the wild: 0.1.x shipped `scripts/metrics/`, 0.2.0+ ships
-  // `hosts/claude-code/`. The shim resolves versions it did not generate, so it must find both.
+  // 0.1.x shipped `scripts/metrics/`, 0.2.0+ ships `hosts/claude-code/`. The shim only runs the
+  // new layout: a cached 0.1.x is never executed (the bridge file covers the old shim instead).
   const OLD = ['scripts', 'metrics'];
   const NEW = ['hosts', 'claude-code'];
-  const fake = (dir, tag, layout = OLD) => {
+  const fake = (dir, tag, layout = NEW) => {
     mkdirSync(join(dir, ...layout), { recursive: true });
     writeFileSync(join(dir, ...layout, 'statusline.mjs'), `export function main() { process.stdout.write(${JSON.stringify(tag)}); }\n`);
   };
@@ -231,8 +231,8 @@ test('statusline shim: resolves the newest installed version, honours env, falls
   writeFileSync(join(root, 'plugins', 'installed_plugins.json'), '{not json');
   assert.equal(runShim(shimSource(join(plugin, '0.1.2'))), 'v0.1.10', 'broken registry → newest');
   // a throwing main never leaves the statusline blank
-  mkdirSync(join(plugin, '0.1.11', ...OLD), { recursive: true });
-  writeFileSync(join(plugin, '0.1.11', ...OLD, 'statusline.mjs'), "export function main() { throw new Error('boom'); }\n");
+  mkdirSync(join(plugin, '0.1.11', ...NEW), { recursive: true });
+  writeFileSync(join(plugin, '0.1.11', ...NEW, 'statusline.mjs'), "export function main() { throw new Error('boom'); }\n");
   assert.equal(runShim(shimSource(join(plugin, '0.1.2'))), 'nxy ?', 'error inside main → placeholder, exit 0');
   assert.equal(runShim(shimSource(checkout)), 'dev', 'no cache layout → the checkout that ran --apply');
   assert.equal(runShim(shimSource(join(plugin, '0.1.2')), { NXY_STATUSLINE: join(checkout, ...NEW, 'statusline.mjs') }), 'dev', 'env override wins');
@@ -241,4 +241,43 @@ test('statusline shim: resolves the newest installed version, honours env, falls
   fake(join(plugin, '0.2.1'), 'v0.2.1', NEW);
   writeFileSync(join(root, 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins: { 'nxy@nxy-dev': [{ scope: 'user', installPath: join(plugin, '0.2.1'), version: '0.2.1' }] } }));
   assert.equal(runShim(shimSource(join(plugin, '0.2.1'))), 'v0.2.1', 'hosts/claude-code layout resolves too');
+
+  // 0.1.x layout is never resolved: only-0.1.x cache → placeholder; registry on an old install → next candidate
+  const plugin2 = join(root, 'p2', 'plugins', 'cache', 'nxy-dev', 'nxy');
+  fake(join(plugin2, '0.1.2'), 'old', OLD);
+  mkdirSync(join(plugin2, '0.2.0'));
+  assert.equal(runShim(shimSource(join(plugin2, '0.1.2'))), 'nxy ?', '0.1.x only + empty 0.2.0 → not run, placeholder');
+  assert.equal(runShim(shimSource(join(plugin2, '0.2.0'))), 'nxy ?', 'own fallback missing too → placeholder');
+  fake(join(plugin2, '0.3.0'), 'v0.3.0');
+  writeFileSync(join(root, 'p2', 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins: { 'nxy@nxy-dev': [{ scope: 'user', installPath: join(plugin2, '0.1.2'), version: '0.1.2' }] } }));
+  assert.equal(runShim(shimSource(join(plugin2, '0.3.0'))), 'v0.3.0', 'registry on an OLD-layout install falls through to the newest valid one');
+});
+
+test('statusline shim: carries the generation stamp on its first line', () => {
+  const first = shimSource(join(tmpdir(), 'x')).split('\n')[0];
+  assert.ok(first.startsWith('// nxy-shim ') && first.includes(`generation=${SHIM_GENERATION}`), first);
+});
+
+test('statusline bridge: scripts/metrics/statusline.mjs re-exports main; the old 0.1.3 shim runs it', async () => {
+  const bridge = await import('../scripts/metrics/statusline.mjs');
+  const real = await import('../hosts/claude-code/statusline.mjs');
+  assert.equal(bridge.main, real.main);
+
+  // stand-in for the 0.1.3 shim: only knows scripts/metrics, installPath from the registry (= repo root)
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-oldshim-'));
+  const repoRoot = join(import.meta.dirname, '..');
+  const shim = join(dir, 'old-shim.mjs');
+  writeFileSync(
+    shim,
+    [
+      "import { join } from 'node:path';",
+      "import { pathToFileURL } from 'node:url';",
+      `const installPath = ${JSON.stringify(repoRoot)};`,
+      "const { main } = await import(pathToFileURL(join(installPath, 'scripts', 'metrics', 'statusline.mjs')).href);",
+      'main();',
+      '',
+    ].join('\n'),
+  );
+  const out = execFileSync(process.execPath, [shim], { input: '{}', env: { ...process.env, NXY_HOME: join(dir, 'home') }, encoding: 'utf8' });
+  assert.ok(out.length > 0 && !out.includes('nxy ?'), out);
 });

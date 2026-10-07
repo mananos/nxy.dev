@@ -63,6 +63,16 @@ export function takeAsync(cwd, key) {
   }
 }
 
+/** Whether the launch was marked in the last 6 hours (a background agent); the marker is kept. */
+export function hasAsync(cwd, key) {
+  try {
+    const ts = Number(readFileSync(join(asyncDir(cwd), safe(key)), 'utf8'));
+    return Number.isFinite(ts) && Date.now() - ts <= ASYNC_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
 /** Leaves a note for the main thread; the same text already waiting is not added twice. */
 export function pushNote(cwd, text) {
   const body = String(text || '').trim();

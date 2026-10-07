@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url';
 import { parseAccept, parseBatches } from '../core/plan.mjs';
 import {
   CONTINUE, afterBatch, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, batchVerdict, blockingBatch, continueQuestion, launchNote,
-  progressLine, reviewInstruction, runMatches, suiteFixOfPrompt, suiteFixVerdict, unnamedBatchMessage,
+  inspectRun, progressLine, reviewInstruction, runMatches, stopMessage, suiteFixOfPrompt, suiteFixVerdict, unnamedBatchMessage,
 } from '../core/verify.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
 import { claimSendBack, readVerify, recordBatch } from '../hosts/claude-code/verify-state.mjs';
@@ -83,15 +83,15 @@ test('runMatches: equivalent ways of typing the same command', () => {
   for (const r of bad) assert.equal(runMatches(r, acc), false, r);
   const accept = { kind: /** @type {const} */ ('command'), command: acc };
   assert.deepEqual(batchVerdict([edit, run('./venv/Scripts/python.exe -m pytest tests/x.py')], accept), { status: 'pass' });
-  assert.deepEqual(batchVerdict([edit, run('venv/Scripts/python.exe -m pytest tests/x.py | tail')], accept), { status: 'not-run' });
+  assert.deepEqual(batchVerdict([edit, run('venv/Scripts/python.exe -m pytest tests/x.py | tail')], accept).status, 'not-run');
 });
 
 test('batchVerdict: the last matching run after the last edit decides', () => {
   assert.deepEqual(batchVerdict([edit, run(ACCEPT1)], cmd), { status: 'pass' });
-  assert.deepEqual(batchVerdict([run(ACCEPT1), edit], cmd), { status: 'not-run' }, 'a run before an edit proves nothing');
+  assert.equal(batchVerdict([run(ACCEPT1), edit], cmd).status, 'not-run', 'a run before an edit proves nothing');
   assert.deepEqual(batchVerdict([edit, run(ACCEPT1, false, 'Exit code 1')], cmd), { status: 'fail', error: 'Exit code 1' });
   assert.deepEqual(batchVerdict([edit, run(ACCEPT1, false, 'x'), edit, run(ACCEPT1)], cmd), { status: 'pass' }, 'fixed and rerun');
-  assert.deepEqual(batchVerdict([edit, run(`${ACCEPT1} | tail`)], cmd), { status: 'not-run' });
+  assert.deepEqual(batchVerdict([edit, run(`${ACCEPT1} | tail`)], cmd).status, 'not-run');
   assert.deepEqual(batchVerdict([], { kind: 'manual', note: '' }), { status: 'manual' });
 });
 
@@ -144,6 +144,8 @@ test('post-suite texts: tester, suite fix, reviewer, launch, review instruction'
   const red = afterTester({ hash: 'abc12345', red: [{ command: 'npm test', error: 'boom' }] });
   assert.match(red, /✘.*`npm test` \(boom\)/s);
   assert.match(red, /Suite fix — <what failed>/);
+  const near = afterTester({ hash: 'abc12345', red: [{ command: 'npm test', detail: 'not certified: piped through tail: the exit code is hidden' }] });
+  assert.match(near, /✘.*`npm test` \(not certified: piped through tail/s, 'a near miss shows its detail');
   assert.match(afterSuiteFix({ hash: 'abc12345', verdict: { status: 'pass' }, commands: ['npm test'], reviewNext: next }), /✔.*\n.*nxy:reviewer/s);
   for (const verdict of /** @type {import('../core/verify.mjs').Verdict[]} */ ([{ status: 'none' }, { status: 'pass' }])) {
     const none = afterSuiteFix({ hash: 'abc12345', verdict, commands: [], reviewNext: next });
@@ -165,6 +167,71 @@ test('afterBatch: ✔, ✘ with the question to ask, and the full suite once all
   assert.doesNotMatch(afterBatch({ ...base, n: 1, verdict: { status: 'pass' }, recorded: {} }), /nxy:tester/, 'not until every batch is green');
   const last = afterBatch({ ...base, n: 2, verdict: { status: 'pass' }, recorded: { 1: { status: 'pass' }, 3: { status: 'manual' } } });
   assert.match(last, /All 3 batches of plan abc12345 verified[\s\S]*nxy:tester/);
+});
+
+test('runMatches with a root: an absolute path under it equals the relative one', () => {
+  const rel = 'node --test tests/x.test.mjs';
+  const root = 'C:\\work\\proj';
+  for (const run of [
+    'node --test C:/work/proj/tests/x.test.mjs',
+    'node --test C:\\work\\proj\\tests\\x.test.mjs',
+    'node --test "C:/work/proj/tests/x.test.mjs"',
+    'node --test c:/WORK/proj/tests/x.test.mjs',
+    'node --test /c/work/proj/tests/x.test.mjs',
+  ]) assert.equal(runMatches(run, rel, root), true, run);
+  assert.equal(runMatches('node --test C:/work/proj/tests/y.test.mjs', rel, root), false);
+  assert.equal(runMatches('node --test C:/work/other/tests/x.test.mjs', rel, root), false);
+  assert.equal(runMatches('node --test C:/work/proj/tests/x.test.mjs', rel), false, 'no root, no equivalence');
+  assert.equal(runMatches('node --test /srv/proj/tests/x.test.mjs', rel, '/srv/proj'), true);
+  assert.equal(runMatches(`cd ${root} && ${rel}`, rel, root), true, 'a leading cd stays accepted');
+  assert.equal(runMatches('cd /srv/proj && node --test tests/x.test.mjs', rel, '/srv/proj'), true);
+});
+
+test('inspectRun names why a near-miss does not count', () => {
+  const a = 'npm test';
+  assert.deepEqual(inspectRun('npm test', a), { match: true });
+  assert.deepEqual(inspectRun('echo hi', a), { match: false });
+  assert.deepEqual(inspectRun('npm test 2>&1 | tail -40', a), { match: false, why: 'piped through tail: the exit code is hidden' });
+  assert.deepEqual(inspectRun('npm test; echo done', a), { match: false, why: 'followed by ;: the exit code is the last command one' });
+  assert.deepEqual(inspectRun('npm test || true', a), { match: false, why: 'followed by ||: a failure is hidden' });
+});
+
+test('batchVerdict detail: piped near-miss, run before the last edit', () => {
+  const accept = { kind: 'command', command: 'npm test' };
+  /** @type {any[]} */
+  const piped = [{ kind: 'edit' }, { kind: 'run', command: 'cd /srv/proj && npm test 2>&1 | tail -40', ok: true }];
+  assert.deepEqual(batchVerdict(piped, /** @type {any} */ (accept), '/srv/proj'), { status: 'not-run', detail: 'piped through tail: the exit code is hidden' });
+  /** @type {any[]} */
+  const before = [{ kind: 'run', command: 'npm test', ok: true }, { kind: 'edit' }];
+  assert.deepEqual(batchVerdict(before, /** @type {any} */ (accept)), { status: 'not-run', detail: 'it ran before the last edit' });
+  assert.deepEqual(batchVerdict([{ kind: 'edit' }], /** @type {any} */ (accept)), { status: 'not-run' });
+  /** @type {any[]} */
+  const ok = [{ kind: 'edit' }, { kind: 'run', command: 'npm test | tail', ok: true }, { kind: 'run', command: 'npm test', ok: true }];
+  assert.deepEqual(batchVerdict(ok, /** @type {any} */ (accept)), { status: 'pass' });
+});
+
+test('messages carry the detail and the next step', () => {
+  assert.match(stopMessage(1, 'npm test', { status: 'not-run', detail: 'piped through tail: the exit code is hidden' }), /not been run after your last edit: piped through tail/);
+  assert.doesNotMatch(stopMessage(1, 'npm test', { status: 'not-run' }), /last edit:/);
+  const base = { hash: 'abc12345', command: 'npm test', batches: [1, 2], recorded: {} };
+  const withDetail = afterBatch({ ...base, n: 1, verdict: { status: 'not-run', detail: 'piped through tail: the exit code is hidden' } });
+  assert.match(withDetail, /was not run after the last edit \(piped through tail/);
+  assert.match(withDetail, /Batch 1 — run the acceptance command only.*exactly as written and alone/);
+  const plain = afterBatch({ ...base, n: 1, verdict: { status: 'not-run' } });
+  assert.match(plain, /was not run after the last edit\./);
+  assert.match(plain, /Batch 1 — run the acceptance command only/);
+  const fail = afterBatch({ ...base, n: 1, verdict: { status: 'fail', error: 'boom' } });
+  assert.match(fail, /failed after the last edit \(boom\)/);
+  assert.doesNotMatch(fail, /run the acceptance command only/);
+  const fixed = afterBatch({ ...base, n: 3, verdict: { status: 'pass' }, fix: { finding: 'R1', review: 'f7cbdc' } });
+  assert.match(fixed, /Review fix R1 of review f7cbdc done \(batch 3 ✔\)/);
+  assert.match(fixed, /picked more findings, dispatch the remaining ones next.*Batch 3 — fix R<k> of review f7cbdc/);
+  assert.doesNotMatch(fixed, /round|nxy:tester/i);
+  assert.match(afterSuiteFix({ hash: 'abc12345', verdict: { status: 'not-run', detail: 'piped through tail: the exit code is hidden' }, commands: ['npm test'] }), /did not run the suite commands after the last edit \(piped through tail/);
+  assert.match(progressLine([{ n: 1 }], { 1: { status: 'not-run', detail: 'piped through tail: the exit code is hidden' } }), /1 ✘ \(not run: piped through tail/);
+  assert.match(progressLine([{ n: 1 }], { 1: { status: 'not-run' } }), /1 ✘ \(not run\)/);
+  const sf = suiteFixVerdict(/** @type {any[]} */ ([{ kind: 'edit' }, { kind: 'run', command: 'npm test | tail', ok: true }]), ['npm test']);
+  assert.equal(sf.detail, 'piped through tail: the exit code is hidden');
 });
 
 const sandbox = () => makeSandbox(PLAN);

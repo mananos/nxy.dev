@@ -6,7 +6,10 @@
  *    hook never has to spawn `rtk --version`;
  *  - points at the branch's live handoff, per memory mode (core/memory/handoff.mjs). In the
  *    default `assisted` mode that is one line (~40 tokens), only when a handoff exists;
- *    otherwise stdout stays empty (zero context cost).
+ *    otherwise stdout stays empty (zero context cost);
+ *  - migrates the statusline (hosts/claude-code/statusline-migrate.mjs): keeps the ~/.nxy shim
+ *    current and rewrites a direct nxy cache-path command, with a one-time notice emitted as
+ *    systemMessage (user-visible) in the same single JSON as the handoff additionalContext.
  * Diagnostics go to stderr (visible with `claude --debug`).
  */
 import { readFileSync } from 'node:fs';
@@ -15,6 +18,7 @@ import { toNativePath } from '../../../core/paths.mjs';
 import { resolveEngine, writeEngineCache } from '../../../core/filter/engine.mjs';
 import { claudeSettingsFiles } from '../settings.mjs';
 import { lookupHandoff, memCommand } from '../handoff.mjs';
+import { migrateStatusline } from '../statusline-migrate.mjs';
 
 try {
   let cwd = process.cwd();
@@ -24,29 +28,53 @@ try {
   } catch {
     /* no/invalid stdin: fall back to process.cwd() */
   }
-  const cfg = loadConfig(cwd);
-  const info = resolveEngine(cfg, claudeSettingsFiles(cwd));
-  writeEngineCache(info);
-  if (cfg.modules.filter && info.engine === 'off' && info.reason !== 'config') {
-    process.stderr.write(`[nxy] filter engine off (${info.reason}). Run /nxy:filter status for install hints.\n`);
+  // The migration needs no config, so it runs first: a filter/config failure must not skip it.
+  /** @type {string[]} */
+  const contexts = [];
+  /** @type {string | null} */
+  let userNotice = null;
+  try {
+    const notice = migrateStatusline();
+    if (notice) userNotice = notice;
+  } catch (err) {
+    if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] statusline migration: ${String((err instanceof Error && err.stack) || err)}\n`);
   }
-  if (info.rtkHookDetected) {
-    process.stderr.write('[nxy] RTK\'s own hook is installed; nxy will not rewrite commands (metrics only).\n');
+
+  /** @type {any} */
+  let cfg = null;
+  try {
+    cfg = loadConfig(cwd);
+    const info = resolveEngine(cfg, claudeSettingsFiles(cwd));
+    writeEngineCache(info);
+    if (cfg.modules.filter && info.engine === 'off' && info.reason !== 'config') {
+      process.stderr.write(`[nxy] filter engine off (${info.reason}). Run /nxy:filter status for install hints.\n`);
+    }
+    if (info.rtkHookDetected) {
+      process.stderr.write('[nxy] RTK\'s own hook is installed; nxy will not rewrite commands (metrics only).\n');
+    }
+  } catch (err) {
+    if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] filter setup: ${String((err instanceof Error && err.stack) || err)}\n`);
   }
 
   // Separate from the filter on purpose: a memory failure must not cost the session its filter.
-  const mode = cfg.memory?.mode || 'assisted';
-  if (mode !== 'manual') {
+  const mode = cfg?.memory?.mode || 'assisted';
+  if (cfg && mode !== 'manual') {
     try {
       const { sessionStartContext } = await import('../../../core/memory/handoff.mjs');
       const { handoff } = await lookupHandoff(cwd);
       const context = sessionStartContext(mode, handoff, memCommand('handoff show'));
-      if (context) {
-        process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context } }));
-      }
+      if (context) contexts.push(context);
     } catch (err) {
       if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] handoff: ${String((err instanceof Error && err.stack) || err)}\n`);
     }
+  }
+  if (contexts.length || userNotice) {
+    /** @type {Record<string, unknown>} */
+    const out = {};
+    // systemMessage is shown to the user; additionalContext goes only to the model.
+    if (userNotice) out.systemMessage = userNotice;
+    if (contexts.length) out.hookSpecificOutput = { hookEventName: 'SessionStart', additionalContext: contexts.join('\n\n') };
+    process.stdout.write(JSON.stringify(out));
   }
 } catch (err) {
   // fail-open: never block the tool call; NXY_DEBUG=1 surfaces the error on stderr

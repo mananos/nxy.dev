@@ -107,8 +107,9 @@ test('findings: parsed, classified by where they point, offered only when they a
 });
 
 test('a review fix closes without another suite or review', () => {
-  const text = afterBatch({ hash: 'h', n: 1, verdict: { status: 'pass' }, batches: [1], recorded: {}, fix: true, command: 'x' });
-  assert.match(text, /One correction round only/);
+  const text = afterBatch({ hash: 'h', n: 1, verdict: { status: 'pass' }, batches: [1], recorded: {}, fix: { finding: 'R1', review: 'abc123' }, command: 'x' });
+  assert.match(text, /Review fix R1 of review abc123 done/);
+  assert.doesNotMatch(text, /One correction round only|round is over/i);
   assert.doesNotMatch(text, /nxy:tester/);
 });
 

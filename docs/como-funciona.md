@@ -30,7 +30,7 @@ Todo lo que nxy decide lo decide código (reglas sobre números, SQLite, el tran
 
 ## El filtro de comandos
 
-1. **Al abrir la sesión** (`SessionStart`), nxy resuelve el motor una vez: si está `rtk`, qué versión, y si rtk tiene su propio hook instalado. Lo guarda en `~/.nxy/cache/engine.json` para que el hook de cada comando no tenga que volver a preguntar.
+1. **Al abrir la sesión** (`SessionStart`), nxy resuelve el motor una vez: si está `rtk`, qué versión, y si rtk tiene su propio hook instalado. Lo guarda en `~/.nxy/cache/engine.json` para que el hook de cada comando no tenga que volver a preguntar. En el mismo momento mantiene al día el lanzador de la statusline (`~/.nxy/statusline.mjs`) y, si venías de nxy 0.1.x con un comando que apunta directo a la caché del plugin, lo reescribe una vez para que use el lanzador (con backup de `settings.json` y un aviso).
 2. **Antes de cada comando** (`PreToolUse` de Bash y PowerShell) decide si lo reescribe. **Nunca** toca:
    - comandos con `NXY_RAW=1` (al inicio o en cualquier segmento: `cd api && NXY_RAW=1 grep …`) o con `# raw`;
    - lo que ya empieza con `rtk`, heredocs, `$(...)`, redirecciones a archivo (`> out.log`; `2>&1` y `>/dev/null` sí se permiten: descartan, no escriben), `&` al final, `cd`/`export` solos;
@@ -172,13 +172,13 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 ## La verificación de cada lote
 
 - Cada `Accept:` es un comando en backticks: el test más chico que prueba el lote (una clase o un archivo, no la suite), o `manual — <qué mirar>`.
-- El implementer lo corre después de su último cambio. Al terminar, el hook `SubagentStop` lee **el transcript del implementer** (no su resumen) y verifica que el comando haya corrido después del último `Edit`, tal como está escrito (sin pipe) y con salida 0. Acepta formas equivalentes del comando (barras `/` o `\`, comillas, `./` al principio, `.exe`, `& ` de PowerShell), pero no las que llevan pipe, `;` o `||`. El planner no escribe rutas con barra invertida en `Accept:`, porque corre en Bash.
-- Si no lo corrió o falló, lo manda de vuelta **una vez** (exit 2) con el comando exacto. La segunda vez lo deja terminar y el lote queda en rojo.
+- El implementer lo corre después de su último cambio. Al terminar, el hook `SubagentStop` lee **el transcript del implementer** (no su resumen) y verifica que el comando haya corrido después del último `Edit`, tal como está escrito (sin pipe) y con salida 0. Acepta formas equivalentes del comando (barras `/` o `\`, comillas, `./` al principio, `.exe`, `& ` de PowerShell, un argumento de ruta escrito absoluto que resuelve al mismo archivo dentro de la raíz del proyecto, un `cd <raíz> &&` al principio), pero nunca las que llevan pipe, `;` o `||`: en ese caso el veredicto dice por qué no cuenta. El planner no escribe rutas con barra invertida en `Accept:`, porque corre en Bash.
+- Si no lo corrió o falló, a un agente en primer plano lo manda de vuelta **una vez** (exit 2) con el comando exacto (en segundo plano no hay vuelta, ver abajo). La segunda vez lo deja terminar y el lote queda en rojo.
 - Los veredictos quedan en `.nxy/local/verify/<plan>/`, un archivo por lote reemplazado de forma atómica, para que dos lotes en paralelo que terminan juntos no se pisen. Una carpeta sin veredictos nuevos en 30 días se borra sola.
 - Mientras un lote esté en rojo no se despachan los que dependen de él, salvo que elijas **Continue anyway**.
 - Con todos en verde, nxy indica despachar el **tester** (Haiku) una vez: corre la suite completa de cada repo tocado (o la línea `Suite:` del plan) y devuelve sólo lo que falló. Es informativo: no frena nada.
-- **Agentes en segundo plano.** Al lanzarlos nxy sólo avisa "lanzado en segundo plano" y no calcula veredicto. El veredicto se calcula en `SubagentStop` y se entrega una sola vez al principal, por el hook `Stop` (exit 2), el próximo prompt o el próximo Bash (una nota por archivo en `.nxy/local/notes/`, que se reclama por rename y se descarta al día). Un lote en curso figura `running` y sus dependientes quedan `pending`; un lote que muere sin `SubagentStop` sigue así hasta que se despacha de nuevo.
-- **Suite en rojo.** Un único implementer con prompt `Suite fix — <qué falló>`, sólo permitido con todos los lotes verificados y la suite terminada. nxy lo verifica corriendo de nuevo las líneas `Suite:` del plan (o, sin ellas, los comandos que fallaron en el tester); se manda de vuelta una vez como un lote. Después viene la review. El reviewer se deniega mientras la suite corre, y si termina sin registrar la review se lo manda de vuelta una vez y luego se informa.
+- **Agentes en segundo plano.** Al lanzarlos nxy sólo avisa "lanzado en segundo plano" y no calcula veredicto. El veredicto se calcula en `SubagentStop` y se entrega una sola vez al principal, por el hook `Stop` (exit 2), el próximo prompt o el próximo Bash. Un agente en segundo plano nunca se manda de vuelta: su parada es final, porque no continúa. Un lote, un suite fix o una review sin probar quedan registrados y el principal recibe una nota con lo que pasó y el paso siguiente (despachar de nuevo `Batch N — ` sólo para correr el Accept, porque el código puede estar bien). Si en el checkpoint 2 elegís varios hallazgos, cada uno es su propio fix: la nota nombra el hallazgo (`Review fix R1 of review <id> done`) y dice que el resto se despacha a continuación. La nota del reviewer dice que la review quedó registrada. Las notas son un archivo cada una en `.nxy/local/notes/`, se reclaman por rename y se descartan al día. Un lote en curso figura `running` y sus dependientes quedan `pending`; un lote que muere sin `SubagentStop` sigue así hasta que se despacha de nuevo.
+- **Suite en rojo.** Un único implementer con prompt `Suite fix — <qué falló>`, sólo permitido con todos los lotes verificados y la suite terminada. nxy lo verifica corriendo de nuevo las líneas `Suite:` del plan (o, sin ellas, los comandos que fallaron en el tester); se manda de vuelta una vez como un lote. Después viene la review. El reviewer se deniega mientras la suite corre, y si termina sin registrar la review se lo manda de vuelta una vez (sólo en primer plano; en segundo plano se informa directamente).
 
 ## La review
 
@@ -211,7 +211,7 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 
 | Evento | Qué hace | Tokens |
 | --- | --- | --- |
-| `SessionStart` | Resuelve el motor del filtro; una línea si la rama tiene handoff | ~40 si hay handoff |
+| `SessionStart` | Resuelve el motor del filtro; una línea si la rama tiene handoff; migra la statusline de 0.1.x (aviso una sola vez) | ~40 si hay handoff |
 | `UserPromptSubmit` | Punteros a memorias; recordatorio de escape en rama revisada | ~30 por puntero |
 | `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk; con un plan activo, copia antes los archivos que el comando va a escribir (`sed -i`, `>`, `tee`, `cp`/`mv`) | 0 |
 | `PreToolUse` Edit/Write | Freno de escritura, handoff obligatorio, checkpoint del plan, copia para la review | 0 salvo que frene |

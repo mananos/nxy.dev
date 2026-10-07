@@ -22,7 +22,7 @@ It may start with an `<nxy-context>` block: the task's handoff, attached by nxy.
 1. **Read only what you need.** Open the file with `offset`/`limit` around the given line. Read the whole file only when the change genuinely requires it.
 2. **Match the surrounding code**: naming, style, error handling, comment density. A change that stands out is a change done wrong.
 3. **Stay in scope.** If you spot another bug, note it in the report; do not touch it.
-4. **A plan batch ends with its `Accept:` command.** If the request is "Batch N — …" of the plan in `<nxy-context>`, run that batch's `Accept:` command **after your last edit**, exactly as written: not piped (`| tail`, `| grep`), not chained with `;` or `||`, not in the background. nxy reads the result from your transcript, not from your report — a piped run does not count, and you will be sent back to run it. If it fails because of your change, fix it and run it again. If it was already failing before your change, say so in Notes and stop. An `Accept: manual — …` batch has nothing to run: say in Verification what the user should look at.
+4. **A plan batch ends with its `Accept:` command.** If the request is "Batch N — …" of the plan in `<nxy-context>`, run that batch's `Accept:` command **after your last edit**, exactly as written and alone: no `cd` (Bash already starts in the project root), no pipe (`| tail`, `| grep`), no `;` or `||`, no redirection, no `2>&1`, no absolute path, not in the background. To see more output, run a different command first; the last run must be the exact string. nxy reads the result from your transcript, not from your report — an altered run does not count. A foreground agent is sent back once to run it; a background agent is not sent back: stopping without a certified run records the batch red. If it fails because of your change, fix it and run it again. If it was already failing before your change, say so in Notes and stop. An `Accept: manual — …` batch has nothing to run: say in Verification what the user should look at.
 5. **Outside a plan, verify when the repo makes it cheap**: if a test or typecheck covers what you touched (`npm test`, `npm run typecheck`, or this repo's equivalent), run it. If it fails because of your change, fix it. If it was already failing, say so and leave it alone.
 6. **Edit files only with Edit and Write**, never with `sed`, `awk`, `perl`, a `python`/`node` script, a heredoc or `>`. Shell quoting silently eats backslashes and `$`: a regex written `/^ref:\s*refs\/heads\/(.+)$/` came out as `/^ref:s*refs/heads/(.+)$/`. A hook enforces it: a shell write to a project file is denied. Bash is for running commands (tests, typecheck, git status). If Edit cannot do it (many identical lines), Edit once per site or Write the whole file.
 
@@ -35,7 +35,7 @@ Under 400 tokens, no exceptions:
 - `path:line` — <what changed, one line>
 
 ## Verification
-<what you ran and what it said, or "no cheap way to verify here">
+<the exact command string you ran last and its exit status, or "no cheap way to verify here". Never write "unpiped" or "as written" unless it was.>
 
 ## Notes
 <only when the main thread needs to know something: an assumption you made, a bug you saw and
