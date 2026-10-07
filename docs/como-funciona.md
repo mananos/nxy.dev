@@ -54,7 +54,7 @@ Todo lo que nxy decide lo decide código (reglas sobre números, SQLite, el tran
 
 ## Las métricas
 
-Cada respuesta de la API deja en el transcript (`~/.claude/projects/**/*.jsonl`) el `usage` que Anthropic factura: input, cache write (5 min y 1 h), cache read, output. nxy sólo lo lee. El único cálculo es el precio en USD, con la [tabla oficial](https://platform.claude.com/docs/en/about-claude/pricing) guardada en `core/pricing.json`.
+Cada respuesta de la API deja en el transcript (`~/.claude/projects/**/*.jsonl`) el `usage` que Anthropic factura: input, cache write (5 min y 1 h), cache read, output. nxy sólo lo lee. El único cálculo es el precio en USD, con la [tabla oficial](https://platform.claude.com/docs/en/about-claude/pricing) guardada en `core/pricing.json`. Para mantenerla: `npm run pricing:check` baja esa página, la compara con la tabla y lista qué modelo falta o qué precio cambió; no escribe nada y el plugin nunca lo corre (nxy no sale a internet).
 
 - **La statusline** es incremental: guarda por sesión hasta dónde leyó cada transcript y en cada refresco lee sólo lo nuevo.
 - **`stats` y `trend`** leen los transcripts enteros del período. Una línea `<synthetic>` (mensaje interno de Claude Code, usage en cero) no cuenta como llamada. Un modelo que no está en la tabla de precios se marca como parcial en vez de inventar un precio.

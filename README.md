@@ -381,7 +381,17 @@ Lo que se cambia más seguido:
 
 **El effort no se puede cambiar hoy.** Claude Code no permite elegirlo por despacho, así que vale el que trae cada agente en `agents/*.md`. Editar esos archivos funciona, pero se pisa al actualizar el plugin.
 
-`.nxy/` se comparte; `.nxy/local/` es estado de tu checkout (ledgers, índice, copias para la review) y va en `.gitignore`. La referencia completa, con statusline y temas: [`docs/configuracion.md`](docs/configuracion.md).
+### Dónde guarda nxy sus cosas
+
+Igual que `.claude`, hay una carpeta tuya y una por repo:
+
+| Carpeta | Qué tiene | ¿Se commitea? |
+| --- | --- | --- |
+| `~/.nxy/` | Tu config global, la base de memoria (`memory/memory.db`), la caché del filtro y de la statusline, y el lanzador `statusline.mjs` | No: es de tu máquina |
+| `<repo>/.nxy/` | `config.json`, `memory/*.md` exportadas y `lenses/`: lo que el equipo comparte | **Sí** |
+| `<repo>/.nxy/local/` | El estado de tu tarea en este checkout: handoff, plan, ledgers, índice y las copias para la review | No: va en `.gitignore` |
+
+Borrar `.nxy/local/` de un repo descarta la tarea en curso de ese checkout y nada más; el índice se rehace solo. La referencia completa, con statusline y temas: [`docs/configuracion.md`](docs/configuracion.md).
 
 ## Si algo no anda
 
@@ -408,7 +418,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.0.2-rc.1` |
+| Versión actual | `1.0.2` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Publicado en `1.0.1`, probado en sesiones reales (Linux/WSL y Windows) durante las rc |
 | Después | CLI `nxy` (`doctor`, `stats`, `trend`, `mem`) para operarlo sin abrir Claude Code |

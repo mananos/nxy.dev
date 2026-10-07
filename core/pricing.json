@@ -1,13 +1,13 @@
 {
   "_source": "https://platform.claude.com/docs/en/about-claude/pricing",
-  "_fetched": "2026-09-30",
+  "_fetched": "2026-10-06",
   "_unit": "USD per 1M tokens. cache_read is 0.1x input (0.05x on Opus 5.5, 0.025x on Fable 5.1). Long context (>200K) has no surcharge on 4.6+ models.",
   "models": {
     "claude-fable-5-1":  { "input": 10,   "cache_write_5m": 12.5,  "cache_write_1h": 20,   "cache_read": 0.25, "output": 50 },
     "claude-mythos-5-1": { "input": 10,   "cache_write_5m": 12.5,  "cache_write_1h": 20,   "cache_read": 0.25, "output": 50 },
     "claude-fable-5":    { "input": 10,   "cache_write_5m": 12.5,  "cache_write_1h": 20,   "cache_read": 1,    "output": 50 },
     "claude-mythos-5":   { "input": 10,   "cache_write_5m": 12.5,  "cache_write_1h": 20,   "cache_read": 1,    "output": 50 },
-    "claude-opus-5-5":   { "input": 4,    "cache_write_5m": 5,     "cache_write_1h": 8,    "cache_read": 0.2,  "output": 20 },
+    "claude-opus-5-5":   { "input": 4,    "cache_write_5m": 5,     "cache_write_1h": 8,    "cache_read": 0.2,  "output": 20, "fast": { "input": 8, "output": 40 } },
     "claude-opus-5":     { "input": 5,    "cache_write_5m": 6.25,  "cache_write_1h": 10,   "cache_read": 0.5,  "output": 25, "fast": { "input": 10, "output": 50 } },
     "claude-opus-4-8":   { "input": 5,    "cache_write_5m": 6.25,  "cache_write_1h": 10,   "cache_read": 0.5,  "output": 25, "fast": { "input": 10, "output": 50 } },
     "claude-opus-4-7":   { "input": 5,    "cache_write_5m": 6.25,  "cache_write_1h": 10,   "cache_read": 0.5,  "output": 25 },

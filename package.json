@@ -1,6 +1,6 @@
 {
   "name": "nxy",
-  "version": "1.0.2-rc.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Claude Code plugin: fewer tokens without losing quality — metrics, output filtering, scout, write gate, plan, verification, review and memory",
   "type": "module",
@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node --disable-warning=ExperimentalWarning --test \"tests/**/*.test.mjs\"",
     "typecheck": "tsc -p jsconfig.json",
+    "pricing:check": "node scripts/pricing-check.mjs",
     "check": "npm run typecheck && npm test"
   },
   "devDependencies": {
