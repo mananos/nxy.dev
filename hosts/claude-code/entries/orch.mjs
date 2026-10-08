@@ -17,11 +17,11 @@ import { join } from 'node:path';
 import { parseArgs } from '../../../core/format.mjs';
 import { gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { loadConfig } from '../../../core/config.mjs';
-import { extractPlan, parseBatches, parseQuestions, planHash } from '../../../core/plan.mjs';
+import { batchFiles, extractPlan, parseBatches, parseGoal, parseQuestions, planHash } from '../../../core/plan.mjs';
 import { claudeProjectsDir, projectSlug } from '../paths.mjs';
 import { isApproved } from '../plan-approval.mjs';
 import { lookupHandoff } from '../handoff.mjs';
-import { readReview, readSuite, readVerify } from '../verify-state.mjs';
+import { readReview, readReviewDetail, readSuite, readVerify } from '../verify-state.mjs';
 import { clearOrch } from '../orch-state.mjs';
 
 /** A batch title without its "Batch N — " prefix (the raw title when it does not match). */
@@ -49,7 +49,7 @@ async function snapshot(cwd, opts) {
     },
     handoff: known.handoff ? { updated: known.handoff.updated } : null,
   };
-  if (!plan) return { ...base, hash: null, approved: false, fresh: false, questions: 0, batches: [], verdicts: {}, suite: null, review: null, reviewNeeded: { needed: false, reason: '' } };
+  if (!plan) return { ...base, goal: '', reviewDetail: null, hash: null, approved: false, fresh: false, questions: 0, batches: [], verdicts: {}, suite: null, review: null, reviewNeeded: { needed: false, reason: '' } };
 
   const hash = planHash(plan);
   const questions = parseQuestions(plan).length;
@@ -78,10 +78,12 @@ async function snapshot(cwd, opts) {
     approved,
     fresh,
     questions,
-    batches: parseBatches(plan).map((b) => ({ n: b.n, title: titleOf(b.title), depends: b.depends, text: b.text, accept: b.accept.kind })),
+    goal: parseGoal(plan),
+    batches: parseBatches(plan).map((b) => ({ n: b.n, title: titleOf(b.title), depends: b.depends, text: b.text, files: batchFiles(b.text), accept: b.accept })),
     verdicts,
     suite: suite ? { status: suite.status, red: suite.red || [] } : null,
     review,
+    reviewDetail: await readReviewDetail(cwd, hash),
     reviewNeeded: need,
   };
 }

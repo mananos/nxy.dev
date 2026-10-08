@@ -328,6 +328,59 @@ test('a tab press runs no node and changes the tab', async () => {
   assert.equal(w.runs.length, before);
 });
 
+const REVIEW = (id) => ({
+  id, ts: 1, chosen: [],
+  findings: [
+    { id: 'R1', severity: 'high', lens: 'x', file: 'a.mjs', line: 3, title: 'one', cause: 'c' },
+    { id: 'R2', severity: 'low', lens: 'x', file: 'b.mjs', line: 4, title: 'two', cause: 'c' },
+  ],
+});
+const block = (d, type) => d.panel().blocks.find((b) => b.type === type);
+
+test('batch:N opens and closes a batch, picks tick findings; none of it runs node', async () => {
+  const w = world({ reviewDetail: REVIEW('rv1'), approved: true, fresh: false });
+  const d = w.driver();
+  await d.start();
+  await d.press('tab:plan');
+  const before = w.runs.length;
+  await d.press('batch:2');
+  assert.equal(block(d, 'batches').items.find((i) => i.n === 2).open, true);
+  await d.press('batch:2');
+  assert.equal(block(d, 'batches').items.find((i) => i.n === 2).open, false);
+  await d.press('pick:R1');
+  assert.deepEqual(block(d, 'checkpoint').findings.filter((f) => f.picked).map((f) => f.id), ['R1']);
+  await d.press('pick:R1');
+  assert.equal(block(d, 'checkpoint').picked, 0);
+  assert.equal(w.runs.length, before);
+});
+
+test('fix-picked submits the ticked ids once; with none ticked it does nothing', async () => {
+  const w = world({ reviewDetail: REVIEW('rv1'), fresh: false });
+  const d = w.driver();
+  await d.start();
+  await d.press('fix-picked');
+  assert.equal(w.submitted.length, 0);
+  await d.press('pick:R1');
+  await d.press('pick:R2');
+  await d.press('fix-picked');
+  assert.equal(w.submitted.length, 1);
+  assert.equal(w.submitted[0].text, 'Arreglar los hallazgos R1, R2 del review rv1 (marcados en el panel de nxy)');
+});
+
+test('the ticks are cleared when another review shows up', async () => {
+  const w = world({ reviewDetail: REVIEW('rv1'), fresh: false });
+  const d = w.driver();
+  await d.start();
+  await d.press('tab:plan');
+  await d.press('pick:R1');
+  assert.equal(block(d, 'checkpoint').picked, 1);
+  w.plan.reviewDetail = REVIEW('rv2');
+  await d.refresh();
+  assert.equal(block(d, 'checkpoint').picked, 0);
+  await d.press('fix-picked');
+  assert.equal(w.submitted.length, 0);
+});
+
 test('launcher buttons run the entry with --cwd and show the output in the panel only', async () => {
   const w = world();
   const d = w.driver();
@@ -493,6 +546,28 @@ test('the Plan tab opens when a plan is taken over, then the tab is the user\'s 
   w.verdict(1, 'pass');
   await d.step('turn');
   assert.equal(tabOf(d), 'home', 'not flipped again for the same plan');
+});
+
+test('batch:N closes the running batch that is open by default, and reopens it', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.step('ask');
+  const open = () => block(d, 'batches').items.filter((i) => i.open).map((i) => i.n);
+  assert.deepEqual(open(), [1], 'default: the running batch is open');
+  await d.press('batch:1');
+  assert.deepEqual(open(), [], 'closed');
+  await d.press('batch:1');
+  assert.deepEqual(open(), [1]);
+});
+
+test('panel() is read-only: it never changes the tab', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  await d.step('ask');
+  await d.press('tab:home');
+  d.panel(); d.panel();
+  assert.equal(tabOf(d), 'home');
 });
 
 test('with a plan taken over view() is the orchestrator snapshot, and Refresh only refreshes', async () => {

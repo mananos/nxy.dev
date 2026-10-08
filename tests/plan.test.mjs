@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   APPROVE, CHANGE, PLAN_TEMPLATE, approvalQuestion, checkpointDenyMessage, checkpointInstruction, decideCheckpoint, extractPlan,
-  conventionQuestions, planFiles, parseBatches, parseDecisions, parseQuestions, parseRepos, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
+  batchFiles, conventionQuestions, parseGoal, planFiles, parseBatches, parseDecisions, parseQuestions, parseRepos, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
 } from '../core/plan.mjs';
 import { subagentContextBlock, validateHandoff } from '../core/memory/handoff.mjs';
 import { findApproval } from '../hosts/claude-code/plan-approval.mjs';
@@ -395,4 +395,12 @@ test('planFiles: paths before the dash, line suffix stripped, deduped, nothing e
   ].join('\n');
   assert.deepEqual(planFiles(plan), ['src/a.js', 'src/b.js', 'lib/c.mjs', 'src/new.js', 'docs/x.md']);
   assert.deepEqual(planFiles('Goal: x'), []);
+});
+
+test('parseGoal and batchFiles: the Goal line and one batch\'s files', () => {
+  const plan = ['## Plan', 'Goal:  ship it ', '### Batch 1 — a', '- `src/a.js:3` — x', '- `src/a.js`, `lib/b.mjs` — y', 'Accept: manual — look'].join('\n');
+  assert.equal(parseGoal(plan), 'ship it');
+  assert.equal(parseGoal('## Plan\n### Batch 1 — a'), '');
+  assert.deepEqual(batchFiles(parseBatches(plan)[0].text), ['src/a.js', 'lib/b.mjs']);
+  assert.deepEqual(batchFiles(''), []);
 });

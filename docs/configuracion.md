@@ -148,7 +148,7 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 
 ### `ui`
 
-`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods).
+`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La pestaña Config (5) muestra estos valores de sólo lectura; editarlos desde el panel llega en la fase 4, hoy se edita `.nxy/config.json`.
 
 El botón **Filter** del panel escribe `modules.filter` en el `.nxy/config.json` del repo (el que se commitea), igual que `/nxy:filter on|off`.
 

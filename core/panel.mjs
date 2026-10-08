@@ -3,8 +3,10 @@
  * The nxy panel's view model (1.1.0): pure data in, pure data out. The Mod's pane (register.tsx)
  * only draws what `buildPanel` returns; the headless fallback prints `panelText` of the same view.
  *
- * Adding a tab = one entry in TABS plus one section builder in BUILDERS. Adding a button = one entry
- * in LAUNCHER (with its own `tab`).
+ * A tab's body is a list of typed blocks (`view.blocks`): hero, tiles, now, actions, goal, batches,
+ * suite, checkpoint, note, kv, agents. The renderer only draws blocks.
+ * Adding a tab = one entry in TABS plus one builder in BUILDERS (it returns `{blocks}`). Adding a
+ * button = one entry in LAUNCHER (with its own `tab`).
  *
  * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs and batch-status.mjs only.
  */
@@ -27,9 +29,15 @@ export function clipOutput(text, maxLines = 30) {
 /** @typedef {'ok' | 'error' | 'running' | 'info' | 'dim'} Tone */
 
 export const TABS = [
-  { id: 'home', label: 'Home', hotkey: '1' },
+  { id: 'home', label: 'Inicio', hotkey: '1' },
   { id: 'plan', label: 'Plan', hotkey: '2' },
+  { id: 'agents', label: 'Agentes', hotkey: '3' },
+  { id: 'stats', label: 'Stats', hotkey: '4' },
+  { id: 'config', label: 'Config', hotkey: '5' },
 ];
+
+/** The hotkey of the checkpoint's "Arreglar N" button: not a/c/x/y/n/e/r/d, not a launcher's, not a tab digit. */
+const FIX_HOTKEY = 'z';
 
 /**
  * What a launcher entry's `needs` asks of the panel's state ({snap, owned}).
@@ -42,7 +50,7 @@ export const NEEDS = {
 };
 
 /**
- * True when the entry's `needs` (if any) holds for this state: the Home buttons and the driver's
+ * True when the entry's `needs` (if any) holds for this state: the buttons and the driver's
  * presses both ask this.
  * @param {{needs?: keyof typeof NEEDS}} entry @param {{snap: any, owned?: boolean}} state
  */
@@ -59,7 +67,7 @@ export const LAUNCHER = [
   { id: 'gate-once', tab: 'home', label: 'Gate once', hotkey: 'g', script: 'gate', args: ['once'] },
   { id: 'handoff', tab: 'home', label: 'Handoff', hotkey: 'h', script: 'mem', args: ['handoff', 'show'] },
   {
-    id: 'plan-done', tab: 'home', label: 'Terminar plan', hotkey: 'e', script: 'mem', args: ['handoff', 'done'],
+    id: 'plan-done', tab: 'plan', label: 'Terminar plan', hotkey: 'e', script: 'mem', args: ['handoff', 'done'],
     needs: 'plan', after: 'refresh', confirm: 'Terminar el plan y archivar el handoff?',
   },
   {
@@ -68,10 +76,10 @@ export const LAUNCHER = [
     hotkey: 'f', script: 'filter', args: (ctx) => (ctx?.filter === true ? ['off'] : ['on']), after: 'refresh',
   },
   { id: 'stats', tab: 'home', label: 'Stats', hotkey: 's', script: 'stats', args: [] },
-  { id: 'trend', tab: 'home', label: 'Trend', hotkey: 't', script: 'trend', args: [] },
+  { id: 'trend', tab: 'stats', label: 'Trend', hotkey: 't', script: 'trend', args: [] },
 ];
 
-const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no'];
+const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked'];
 
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
@@ -95,7 +103,41 @@ export function launcherOf(id, ctx = {}) {
 export const filterCtx = (snap) => (typeof snap?.config?.filter === 'boolean' ? { filter: snap.config.filter } : {});
 
 /** @param {string} id */
-export const isPanelAction = (id) => PANEL_IDS.includes(id) || id.startsWith('tab:') || LAUNCHER.some((l) => l.id === id);
+export const isPanelAction = (id) => PANEL_IDS.includes(id) || id.startsWith('tab:') || /^batch:\d+$/.test(id)
+  || /^pick:\S+$/.test(id) || LAUNCHER.some((l) => l.id === id);
+
+// ---- layout (pure: the renderer asks it for widths) ----
+
+/**
+ * The column plan for a body `bodyColumns` wide: a centred column of at most 78 cells with a margin.
+ * @param {number} bodyColumns
+ */
+export function layoutOf(bodyColumns) {
+  const W = Math.max(28, Math.floor(Number(bodyColumns) || 0));
+  const pad = W >= 50 ? 2 : 1;
+  const CW = Math.min(78, W - 2 * pad);
+  const wide = CW >= 64;
+  const narrow = CW < 44;
+  const stacked = CW < 52;
+  const tilesPerRow = stacked ? 1 : wide ? 3 : 2;
+  const tileW = Math.floor((CW - (tilesPerRow - 1)) / tilesPerRow);
+  return { W, pad, CW, wide, narrow, stacked, tilesPerRow, tileW };
+}
+
+/**
+ * How the lifecycle draws in `CW` cells: `track` (one node per step, labels aligned under their span)
+ * when every span fits the longest label plus a space, else `wrap` (the steps flow over lines).
+ * Labels are never cut.
+ * @param {{label: string, state: string}[]} steps @param {number} CW
+ * @returns {{mode: 'track', span: number} | {mode: 'wrap', lines: any[][]}}
+ */
+export function lifecycleLayout(steps, CW) {
+  const n = steps.length;
+  const longest = Math.max(0, ...steps.map((s) => s.label.length));
+  const span = n ? Math.floor(CW / n) : 0;
+  if (n && span >= longest + 1) return { mode: 'track', span };
+  return { mode: 'wrap', lines: fitSteps(/** @type {any} */ (steps), CW) };
+}
 
 // ---- helpers the renderer shares ----
 
@@ -144,6 +186,15 @@ function agoEs(ms) {
   return `hace ${Math.floor(h / 24)} días`;
 }
 
+/** A duration for the pane: "42s", "3m 05s", "1h 02m". @param {number} ms */
+export function durText(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+}
+
 /** @param {number} used @param {number} limit @returns {Tone} */
 const barTone = (used, limit) => (limit > 0 && used / limit >= 0.9 ? 'error' : limit > 0 && used / limit >= 0.7 ? 'running' : 'ok');
 
@@ -179,95 +230,263 @@ export function lifecycle(snap) {
   return steps;
 }
 
-// ---- section builders ----
+// ---- block builders ----
+
+/** @param {any} inFlight @returns {{role: string, batch?: number}[]} */
+const agentsOf = (inFlight) => (Array.isArray(inFlight) ? inFlight : Object.values(inFlight ?? {})).filter(Boolean);
+
+/** Running-agent rows with time since their batch launched. @param {any} snap @param {{role: string, batch?: number}[]} agents @param {number} now */
+const agentRows = (snap, agents, now) => agents.map((a) => ({
+  role: a.role, batch: a.batch ?? null,
+  sinceMs: a.batch != null && typeof snap?.launched?.[String(a.batch)] === 'number' ? Math.max(0, now - snap.launched[String(a.batch)]) : null,
+}));
+
+/** Batch state by number. @param {any} snap @returns {{n: number, state: 'done' | 'running' | 'red' | 'pending', status?: string}[]} */
+function batchStates(snap) {
+  if (!snap?.hash || !snap.batches?.length) return [];
+  const eff = effective(snap);
+  return snap.batches.map((/** @type {any} */ b) => {
+    const s = eff[String(b.n)]?.status;
+    return { n: b.n, status: s, state: !s ? 'pending' : s === 'running' ? 'running' : isRed(s) ? 'red' : 'done' };
+  });
+}
+
+/** "lotes 3–5", "lote 4", "lotes 2, 4" @param {number[]} ns */
+function batchRange(ns) {
+  const s = [...ns].sort((a, b) => a - b);
+  if (s.length === 1) return `lote ${s[0]}`;
+  const contiguous = s.every((n, i) => i === 0 || n === s[i - 1] + 1);
+  return contiguous ? `lotes ${s[0]}–${s[s.length - 1]}` : `lotes ${s.join(', ')}`;
+}
 
 /** @param {any} usage @param {any} gate */
-function contextRow(usage, gate) {
-  if (!usage) return { label: 'Contexto', value: 'desconocido', tone: /** @type {Tone} */ ('dim') };
+function contextTile(usage, gate) {
+  if (!usage) return { id: 'context', label: 'Contexto', value: 'desconocido', tone: /** @type {Tone} */ ('dim'), bar: null, hints: /** @type {string[]} */ ([]) };
   if (gate?.enabled && gate.contextTokens > 0) {
     const left = Math.max(0, gate.contextTokens - usage.tokens);
     const tone = barTone(usage.tokens, gate.contextTokens);
     return {
-      label: 'Contexto', value: `${kFmt(usage.tokens)} / ${kFmt(gate.contextTokens)}`, tone,
-      bar: { used: usage.tokens, limit: gate.contextTokens, tone }, note: `gate on · ${kFmt(left)} left`,
+      id: 'context', label: 'Contexto', value: `${kFmt(usage.tokens)} / ${kFmt(gate.contextTokens)}`, tone,
+      bar: { used: usage.tokens, limit: gate.contextTokens, tone }, hints: ['gate on', `${kFmt(left)} libres`],
     };
   }
   if (usage.window > 0) {
     const tone = barTone(usage.tokens, usage.window);
     return {
-      label: 'Contexto', value: `${kFmt(usage.tokens)} / ${kFmt(usage.window)}`, tone,
-      bar: { used: usage.tokens, limit: usage.window, tone }, note: 'gate off',
+      id: 'context', label: 'Contexto', value: `${kFmt(usage.tokens)} / ${kFmt(usage.window)}`, tone,
+      bar: { used: usage.tokens, limit: usage.window, tone }, hints: ['gate off'],
     };
   }
-  return { label: 'Contexto', value: kFmt(usage.tokens), tone: /** @type {Tone} */ ('info'), note: 'gate off' };
+  return { id: 'context', label: 'Contexto', value: kFmt(usage.tokens), tone: /** @type {Tone} */ ('info'), bar: null, hints: ['gate off'] };
 }
 
-/** @param {any} c */
-function homeSection({ snap, owned, usage, now, gate }) {
-  /** @type {any[]} */
-  const rows = [];
-  if (!snap) {
-    rows.push({ label: 'Plan', value: 'sin leer', tone: 'dim' });
-    rows.push({ label: 'Handoff', value: 'sin leer', tone: 'dim' });
-  } else {
-    if (!snap.hash) rows.push({ label: 'Plan', value: 'ninguno', tone: 'dim' });
-    else {
-      const eff = effective(snap);
-      const dn = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
-      const state = owned ? `lotes ${dn}/${snap.batches.length}` : snap.approved ? 'aprobado' : 'sin aprobar';
-      rows.push({ label: 'Plan', value: `${snap.hash} · ${state}`, tone: 'info' });
-      rows.push({ label: 'Ciclo', value: '', tone: 'info', steps: lifecycle(snap) });
-    }
-    const upd = snap.handoff?.updated;
-    if (typeof upd !== 'number') rows.push({ label: 'Handoff', value: 'ninguno', tone: 'dim' });
-    else {
-      const newest = Math.max(0, ...Object.values(snap.verdicts ?? {}).map((v) => /** @type {any} */ (v)?.ts ?? 0));
-      const stale = newest > upd;
-      rows.push({
-        label: 'Handoff', value: `${agoEs(now - upd)}${stale ? ' · desactualizado' : ''}`, tone: stale ? 'error' : 'info',
-      });
-    }
+/** @param {any} usage */
+function costTile(usage) {
+  if (!usage || (usage.costUsd == null && !usage.model)) {
+    return { id: 'cost', label: 'Costo', value: 'desconocido', tone: /** @type {Tone} */ ('dim'), hints: /** @type {string[]} */ ([]) };
   }
-  rows.push(contextRow(usage, gate));
-  if (!usage || (usage.costUsd == null && !usage.model)) rows.push({ label: 'Sesión', value: 'desconocido', tone: 'dim' });
-  else {
-    const bits = [usage.costUsd != null ? `$${Number(usage.costUsd).toFixed(2)}` : null, usage.model || null].filter(Boolean);
-    rows.push({ label: 'Sesión', value: bits.join(' · '), tone: 'info' });
-  }
+  return {
+    id: 'cost', label: 'Costo', value: usage.costUsd != null ? `$${Number(usage.costUsd).toFixed(2)}` : '—',
+    tone: /** @type {Tone} */ ('info'), hints: usage.model ? [String(usage.model)] : [],
+  };
+}
+
+/** The cache card: unknown until phase 2 feeds `cache`. @param {any} cache */
+function cacheTile(cache) {
+  if (!cache) return { id: 'cache', label: 'Cache', known: false, value: 'desconocido', tone: /** @type {Tone} */ ('dim'), bar: null, hints: /** @type {string[]} */ ([]) };
+  const hint = [];
+  if (typeof cache.ttlLeftMs === 'number') hint.push(cache.ttlLeftMs > 0 ? `vence en ${durText(cache.ttlLeftMs)}` : 'fría');
+  if (typeof cache.coldCostUsd === 'number') hint.push(`en frío: $${cache.coldCostUsd.toFixed(2)}`);
+  const pct = Math.max(0, Math.min(100, Number(cache.hitPct) || 0));
+  return {
+    id: 'cache', label: 'Cache', known: true, value: `${Math.round(pct)}%`, tone: /** @type {Tone} */ (cache.ttlLeftMs > 0 ? 'ok' : 'running'),
+    bar: { used: pct, limit: 100, tone: cache.ttlLeftMs > 0 ? 'ok' : 'running' }, hints: hint,
+  };
+}
+
+/** The launcher buttons of a tab, resolved and filtered by `needs`. */
+function tabActions(tab, snap, owned) {
   const ctx = filterCtx(snap);
-  const actions = LAUNCHER.filter((l) => l.tab === 'home' && launcherAvailable(l, { snap, owned }))
+  return LAUNCHER.filter((l) => l.tab === tab && launcherAvailable(l, { snap, owned }))
     .map((l) => {
       const e = /** @type {NonNullable<ReturnType<typeof launcherOf>>} */ (launcherOf(l.id, ctx));
       return { id: e.id, label: e.label, hotkey: e.hotkey };
     });
-  return { rows, actions };
+}
+
+/** @param {string} tab @param {any} c */
+const actionsBlock = (tab, c) => {
+  const actions = tabActions(tab, c.snap, c.owned);
+  return actions.length ? [{ type: 'actions', actions }] : [];
+};
+
+/** @param {any} c */
+function homeBlocks(c) {
+  const { snap, owned, usage, now, gate, cache } = c;
+  const inFlight = agentsOf(c.inFlight ?? snap?.inFlight);
+  /** @type {any} */
+  const hero = { type: 'hero', status: 'plan', planValue: '', headline: '', batch: null, elapsedMs: null, steps: [], meta: '', handoff: null };
+  if (!snap) {
+    Object.assign(hero, { status: 'unread', planValue: 'sin leer', headline: 'Leyendo el plan…', meta: '', handoff: { value: 'sin leer', tone: 'dim' } });
+  } else {
+    const upd = snap.handoff?.updated;
+    if (typeof upd !== 'number') hero.handoff = { value: 'ninguno', tone: 'dim' };
+    else {
+      const newest = Math.max(0, ...Object.values(snap.verdicts ?? {}).map((v) => /** @type {any} */ (v)?.ts ?? 0));
+      const stale = newest > upd;
+      hero.handoff = { value: `${agoEs(now - upd)}${stale ? ' · desactualizado' : ''}`, tone: stale ? 'error' : 'info' };
+    }
+    if (!snap.hash) Object.assign(hero, { status: 'none', planValue: 'ninguno', headline: 'Sin plan en esta rama' });
+    else {
+      const states = batchStates(snap);
+      const dn = states.filter((b) => b.state === 'done').length;
+      const state = owned ? `lotes ${dn}/${snap.batches.length}` : snap.approved ? 'aprobado' : 'sin aprobar';
+      hero.planValue = `${snap.hash} · ${state}`;
+      const cur = states.find((b) => b.state === 'running') ?? states.find((b) => b.state !== 'done');
+      if (cur) {
+        const b = snap.batches.find((/** @type {any} */ x) => x.n === cur.n);
+        hero.batch = { n: cur.n, total: snap.batches.length, title: b?.title || `Batch ${cur.n}`, state: cur.state };
+        const launched = snap.launched?.[String(cur.n)];
+        if (cur.state === 'running' && typeof launched === 'number') hero.elapsedMs = Math.max(0, now - launched);
+        hero.headline = `Lote ${cur.n} de ${snap.batches.length} · ${hero.batch.title}`;
+      } else hero.headline = 'Todos los lotes terminaron';
+      hero.steps = lifecycle(snap);
+      hero.meta = ['plan ' + snap.hash, snap.approved ? 'aprobado' : 'sin aprobar',
+        typeof upd === 'number' ? `handoff ${hero.handoff.value}` : null].filter(Boolean).join(' · ');
+    }
+  }
+  /** @type {any} */
+  const now_ = { type: 'now', agents: agentRows(snap, inFlight, now), next: '' };
+  if (snap?.hash) {
+    const running = new Set(inFlight.map((a) => a.batch).filter((n) => n != null));
+    const states = batchStates(snap);
+    const left = states.filter((b) => b.state === 'pending' && !running.has(b.n)).map((b) => b.n);
+    const bits = [];
+    if (left.length) bits.push(batchRange(left));
+    if (!(snap.suite && suiteDone(snap.suite))) bits.push('la suite');
+    if (!snap.review) bits.push('la review');
+    if (bits.length) now_.next = `después: ${bits.length > 1 ? `${bits.slice(0, -1).join(', ')} y ${bits[bits.length - 1]}` : bits[0]}`;
+  }
+  return [
+    hero,
+    { type: 'tiles', tiles: [contextTile(usage, gate), costTile(usage), cacheTile(cache)] },
+    now_,
+    ...actionsBlock('home', { snap, owned }),
+  ];
+}
+
+/** Plan tab. @param {any} c */
+function planBlocks(c) {
+  const { snap, owned, ui, now } = c;
+  const actions = actionsBlock('plan', { snap, owned });
+  if (!snap?.hash || !snap.batches?.length) return [{ type: 'note', text: 'Sin plan en esta rama', tone: 'dim' }, ...actions];
+  const eff = effective(snap);
+  const continued = snap.continued ?? [];
+  const states = batchStates(snap);
+  const runningN = states.find((b) => b.state === 'running')?.n;
+  // undefined/null = default (the running batch open); -1 = all closed; n > 0 = that batch.
+  const expanded = Number(ui.expanded) > 0 ? Number(ui.expanded) : Number(ui.expanded) === -1 ? -1 : null;
+  const items = snap.batches.map((/** @type {any} */ b, /** @type {number} */ i) => {
+    const s = eff[String(b.n)]?.status;
+    const state = states[i].state;
+    const verdict = snap.verdicts?.[String(b.n)];
+    const launched = snap.launched?.[String(b.n)];
+    const note = state === 'red' ? `${s === 'not-run' ? 'accept not run' : 'failed'}${continued.includes(b.n) ? ' (continued anyway)' : ''}` : undefined;
+    const durationMs = state !== 'pending' && typeof launched === 'number' && typeof verdict?.ts === 'number' && state !== 'running'
+      ? Math.max(0, verdict.ts - launched) : state === 'running' && typeof launched === 'number' ? Math.max(0, now - launched) : null;
+    const acc = b.accept;
+    const accept = typeof acc === 'string' ? acc
+      : acc?.kind === 'command' && acc.command ? acc.command : `manual — ${acc?.note ?? ''}`.trimEnd();
+    /** @type {{text: string, tone: Tone}} */
+    const v = state === 'done' ? { text: '✔ verificado por nxy', tone: 'ok' }
+      : state === 'running' ? { text: 'implementer trabajando', tone: 'running' }
+        : state === 'red' ? { text: verdict?.error ? String(verdict.error) : 'no pasó el accept', tone: 'error' }
+          : { text: 'espera al lote anterior', tone: 'dim' };
+    return {
+      n: b.n, title: b.title || `Batch ${b.n}`, state, ...(note ? { note } : {}), durationMs,
+      open: expanded != null ? expanded === b.n : runningN === b.n,
+      files: Array.isArray(b.files) ? b.files : [], accept, verdict: v,
+    };
+  });
+  const suite = snap.suite && suiteDone(snap.suite)
+    ? (suiteIsRed(snap.suite) ? { value: '✘ roja', tone: 'error' } : { value: '✔ verde', tone: 'ok' })
+    : snap.suite || snap.suiteLaunched ? { value: 'corriendo…', tone: 'running' } : { value: 'pendiente', tone: 'dim' };
+  const review = snap.review ? { value: '✔ hecha', tone: 'ok' }
+    : snap.reviewLaunched ? { value: 'corriendo…', tone: 'running' } : { value: 'pendiente', tone: 'dim' };
+  /** @type {any[]} */
+  const blocks = [];
+  if (snap.goal) blocks.push({ type: 'goal', text: String(snap.goal) });
+  blocks.push({ type: 'batches', items });
+  blocks.push({ type: 'suite', rows: [{ label: 'Suite completa', ...suite }, { label: 'Review', ...review }] });
+  const rd = snap.reviewDetail;
+  if (rd?.findings?.length) {
+    const picked = new Set(Array.isArray(ui.picked) ? ui.picked : []);
+    const findings = rd.findings.map((/** @type {any} */ f) => ({
+      id: f.id, severity: f.severity, lens: f.lens, file: f.file, line: f.line,
+      loc: f.file ? `${f.file}${Number.isInteger(f.line) && f.line > 0 ? `:${f.line}` : ''}` : '', title: f.title, cause: f.cause, picked: picked.has(f.id),
+    }));
+    const n = findings.filter((/** @type {any} */ f) => f.picked).length;
+    blocks.push({
+      type: 'checkpoint', id: rd.id, findings, picked: n,
+      fix: n > 0 && !owned ? { id: 'fix-picked', label: `Arreglar ${n}`, hotkey: FIX_HOTKEY } : null,
+    });
+  }
+  return [...blocks, ...actions];
 }
 
 /** @param {any} c */
-function planSection({ snap }) {
-  if (!snap?.hash || !snap.batches?.length) return { rows: [{ label: 'Plan', value: 'sin plan', tone: 'dim' }] };
-  const eff = effective(snap);
-  const continued = snap.continued ?? [];
-  const batches = snap.batches.map((/** @type {any} */ b) => {
-    const s = eff[String(b.n)]?.status;
-    /** @type {'done' | 'running' | 'red' | 'pending'} */
-    const state = !s ? 'pending' : s === 'running' ? 'running' : isRed(s) ? 'red' : 'done';
-    const note = state === 'red' ? `${s === 'not-run' ? 'accept not run' : 'failed'}${continued.includes(b.n) ? ' (continued anyway)' : ''}` : undefined;
-    return { n: b.n, title: b.title || `Batch ${b.n}`, state, ...(note ? { note } : {}) };
-  });
-  const suite = snap.suite && suiteDone(snap.suite)
-    ? (suiteIsRed(snap.suite) ? { value: '✘ red', tone: 'error' } : { value: '✔ green', tone: 'ok' })
-    : snap.suite || snap.suiteLaunched ? { value: 'running…', tone: 'running' } : { value: 'pending', tone: 'dim' };
-  const review = snap.review ? { value: '✔ done', tone: 'ok' }
-    : snap.reviewLaunched ? { value: 'running…', tone: 'running' } : { value: 'pending', tone: 'dim' };
-  return {
-    rows: [{ label: 'Full suite', ...suite }, { label: 'Review', ...review }],
-    batches,
-  };
+function agentsBlocks(c) {
+  const { snap, now } = c;
+  const list = agentRows(snap, agentsOf(c.inFlight ?? snap?.inFlight), now);
+  return [
+    { type: 'agents', agents: list },
+    { type: 'note', text: 'lista completa, tiempo y mensajes: llega en la fase 3', tone: 'dim' },
+  ];
 }
 
-/** One entry per tab id; each returns the tab's section. */
-export const BUILDERS = { home: homeSection, plan: planSection };
+/** @param {any} c */
+function statsBlocks(c) {
+  const { usage } = c;
+  const cost = costTile(usage);
+  return [
+    { type: 'kv', rows: [
+      { label: 'Costo de la sesión', value: cost.value, tone: cost.tone },
+      { label: 'Modelo', value: usage?.model ? String(usage.model) : 'desconocido', tone: usage?.model ? 'info' : 'dim' },
+    ] },
+    { type: 'note', text: 'Stats y Tendencia dibujadas: llega en la fase 2', tone: 'dim' },
+    ...actionsBlock('stats', c),
+  ];
+}
+
+/** @param {any} c */
+function configBlocks(c) {
+  const cfg = c.snap?.config;
+  const unknown = { value: 'desconocido', tone: /** @type {Tone} */ ('dim') };
+  const onOff = (/** @type {any} */ b) => (typeof b === 'boolean' ? { value: b ? 'on' : 'off', tone: /** @type {Tone} */ ('info') } : unknown);
+  const g = cfg?.gate ?? c.gate;
+  const gate = g && typeof g.enabled === 'boolean'
+    ? { value: g.enabled ? `on · umbral ${g.contextTokens > 0 ? kFmt(g.contextTokens) : '—'}` : 'off', tone: /** @type {Tone} */ ('info') } : unknown;
+  const text = (/** @type {any} */ v) => (v == null ? unknown : { value: String(v), tone: /** @type {Tone} */ ('info') });
+  return [
+    { type: 'kv', rows: [
+      { label: 'Gate', ...gate },
+      { label: 'Orquestador', ...text(cfg?.orchestrator) },
+      { label: 'Pausa entre lotes', ...onOff(cfg?.pauseAfterBatch) },
+      { label: 'Panel', ...text(cfg?.ui?.panel) },
+      { label: 'Filtro', ...onOff(cfg?.filter) },
+    ] },
+    { type: 'note', text: 'cambiar desde acá: llega en la fase 4; hoy .nxy/config.json', tone: 'dim' },
+  ];
+}
+
+/** One entry per tab id; each returns the tab's `{blocks}`. */
+export const BUILDERS = {
+  home: (/** @type {any} */ c) => ({ blocks: homeBlocks(c) }),
+  plan: (/** @type {any} */ c) => ({ blocks: planBlocks(c) }),
+  agents: (/** @type {any} */ c) => ({ blocks: agentsBlocks(c) }),
+  stats: (/** @type {any} */ c) => ({ blocks: statsBlocks(c) }),
+  config: (/** @type {any} */ c) => ({ blocks: configBlocks(c) }),
+};
 
 // ---- the view ----
 
@@ -293,22 +512,34 @@ function askOf(snap, ask, ui) {
     { id: PAUSE_CONTINUE, label: PAUSE_CONTINUE, hotkey: 'c' }, { id: PAUSE_ADJUST, label: PAUSE_ADJUST, hotkey: 'a' }, { id: PAUSE_STOP, label: PAUSE_STOP, hotkey: 'x' }] };
 }
 
+/** Last path segment, either separator. @param {unknown} p */
+const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '' : '');
+
 /**
  * @param {{
- *   snap: any, ask?: any, owned?: boolean, ui?: {tab?: string, confirm?: string | null},
+ *   snap: any, ask?: any, owned?: boolean,
+ *   ui?: {tab?: string, confirm?: string | null, expanded?: number | null, picked?: string[]},
  *   output?: {label: string, text: string, running?: boolean} | null,
  *   usage?: {tokens: number, percent?: number, window?: number | null, costUsd?: number | null, model?: string | null} | null,
  *   now?: number, fallback?: {gate?: {enabled?: boolean, contextTokens?: number}},
+ *   inFlight?: Record<string, {role: string, batch?: number}> | {role: string, batch?: number}[],
+ *   cache?: {hitPct: number, ttlLeftMs: number, ttlMs: number, coldCostUsd: number} | null,
  * }} o `owned`: the orchestrator runs the plan in `snap` (the pill and the lotes count follow it).
  */
-export function buildPanel({ snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {} }) {
+export function buildPanel({ snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {}, inFlight, cache = null }) {
   const tab = TABS.some((t) => t.id === ui.tab) ? /** @type {string} */ (ui.tab) : 'home';
   const gate = snap?.config?.gate ?? fallback.gate;
   const ownedSnap = owned && snap?.hash ? snap : null;
-  const build = /** @type {Record<string, (c: any) => any>} */ (BUILDERS)[tab];
+  const build = BUILDERS[/** @type {keyof typeof BUILDERS} */ (tab)];
+  const running = agentsOf(inFlight ?? snap?.inFlight);
+  const progress = batchStates(snap).map((b) => b.state);
   return {
+    tab,
     tabs: TABS.map((t) => ({ ...t, active: t.id === tab })),
-    header: { title: 'nxy', pill: stateOf(ownedSnap, ask) },
+    header: {
+      title: 'nxy', pill: stateOf(ownedSnap, ask),
+      repo: lastSegment(snap?.projectDir), branch: typeof snap?.branch === 'string' ? snap.branch : '', progress,
+    },
     ask: askOf(ownedSnap, ask, ui),
     output: output
       ? {
@@ -317,28 +548,76 @@ export function buildPanel({ snap, ask = null, owned = false, ui = {}, output = 
       }
       : null,
     keys: [{ id: 'refresh', hotkey: 'r' }],
-    sections: [build({ snap, owned, usage, now, gate })],
+    animated: running.length > 0,
+    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache }).blocks,
   };
 }
+
+const GLYPH = { done: '✔', running: '●', red: '✘', pending: '○' };
 
 /** Plain-text dump of a view: the headless run and the unplaced pane. @param {ReturnType<typeof buildPanel>} view */
 export function panelText(view) {
   const out = [];
   out.push(view.tabs.map((t) => (t.active ? `[${t.label}]` : t.label)).join(' '));
   out.push(`${view.header.title} ${view.header.pill.glyph} ${view.header.pill.text}`);
-  for (const sec of view.sections) {
-    if (sec.title) out.push(sec.title);
-    for (const r of sec.rows ?? []) {
-      out.push(`${r.label}: ${r.value ?? ''}`.trimEnd());
-      if (r.bar) out.push(`  ${barText(r.bar.used, r.bar.limit, 10)}`);
-      if (r.note) out.push(`  ${r.note}`);
-      if (r.steps) out.push(`  ${r.steps.map(stepText).join(' › ')}`);
+  for (const b of /** @type {any[]} */ (view.blocks)) {
+    switch (b.type) {
+      case 'hero':
+        out.push(`Plan: ${b.planValue}`);
+        if (b.status === 'plan') {
+          out.push(`  ${b.headline}${b.elapsedMs != null ? ` · ${durText(b.elapsedMs)}` : ''}`);
+          if (b.steps.length) out.push(`  ${b.steps.map(stepText).join(' › ')}`);
+        } else if (b.status === 'none') out.push(`  ${b.headline}`);
+        if (b.handoff) out.push(`Handoff: ${b.handoff.value}`);
+        break;
+      case 'tiles':
+        for (const t of b.tiles) {
+          out.push(`${t.label}: ${t.value}`);
+          if (t.bar) out.push(`  ${barText(t.bar.used, t.bar.limit, 10)}`);
+          if (t.hints.length) out.push(`  ${t.hints.join(' · ')}`);
+        }
+        break;
+      case 'now':
+        out.push('Ahora');
+        if (!b.agents.length) out.push('  nada corriendo');
+        for (const a of b.agents) out.push(`  ● ${a.role}${a.batch != null ? ` · lote ${a.batch}` : ''}${a.sinceMs != null ? ` · ${durText(a.sinceMs)}` : ''}`);
+        if (b.next) out.push(`  ${b.next}`);
+        break;
+      case 'actions':
+        out.push(b.actions.map((a) => `[${a.hotkey}] ${a.label}`).join(' '));
+        break;
+      case 'goal':
+        out.push(`Objetivo: ${b.text}`);
+        break;
+      case 'batches':
+        for (const x of b.items) {
+          out.push(`${GLYPH[x.state] ?? '○'} ${x.title}${x.note ? ` (${x.note})` : ''}`);
+          if (x.open) {
+            for (const f of x.files) out.push(`    ${f}`);
+            out.push(`    accept: ${x.accept}`, `    ${x.verdict.text}`);
+          }
+        }
+        break;
+      case 'suite':
+        for (const r of b.rows) out.push(`${r.label}: ${r.value}`);
+        break;
+      case 'checkpoint':
+        out.push(`Review ${b.id}`);
+        for (const f of b.findings) out.push(`${f.picked ? '[x]' : '[ ]'} ${f.id} ${f.severity ?? ''} ${f.loc} ${f.title ?? ''}`.replace(/ +/g, ' ').trimEnd());
+        if (b.fix) out.push(`[${b.fix.hotkey}] ${b.fix.label}`);
+        break;
+      case 'agents':
+        if (!b.agents.length) out.push('Agentes: ninguno corriendo');
+        for (const a of b.agents) out.push(`● ${a.role}${a.batch != null ? ` · lote ${a.batch}` : ''}${a.sinceMs != null ? ` · ${durText(a.sinceMs)}` : ''}`);
+        break;
+      case 'kv':
+        for (const r of b.rows) out.push(`${r.label}: ${r.value}`);
+        break;
+      case 'note':
+        out.push(b.text);
+        break;
+      default:
     }
-    for (const b of sec.batches ?? []) {
-      const g = b.state === 'done' ? '✔' : b.state === 'running' ? '●' : b.state === 'red' ? '✘' : '○';
-      out.push(`${g} ${b.title}${b.note ? ` (${b.note})` : ''}`);
-    }
-    if (sec.actions?.length) out.push(sec.actions.map((a) => `[${a.hotkey}] ${a.label}`).join(' '));
   }
   if (view.ask) out.push(view.ask.question, view.ask.buttons.map((b) => `[${b.hotkey}] ${b.label}`).join(' '));
   if (view.output) {

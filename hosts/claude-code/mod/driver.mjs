@@ -60,7 +60,18 @@ export function createDriver($, opts) {
    */
   let output = null;
   let runToken = 0;
-  const ui = { tab: 'home', /** @type {string|null} */ confirm: null };
+  const ui = {
+    tab: 'home', /** @type {string|null} */ confirm: null,
+    /** @type {number|undefined} the open batch of the Plan tab */ expanded: undefined,
+    /** @type {Set<string>} findings ticked in checkpoint 2 */ picked: new Set(),
+  };
+  /** @type {string|null} the review the ticks belong to */
+  let pickedFor = null;
+  /** Ticks belong to one review: another review clears them. */
+  function syncPicked() {
+    const id = snap?.ok && snap.reviewDetail ? String(snap.reviewDetail.id ?? '') : null;
+    if (id !== pickedFor) { pickedFor = id; ui.picked.clear(); }
+  }
   /** @type {string|null} the plan hash the Plan tab was already shown for */
   let lastOwnedHash = null;
   /** @type {Promise<any>} the launcher's own lane, independent of `chain` */
@@ -263,6 +274,8 @@ export function createDriver($, opts) {
       // A yes/no asked before the take-over (Terminar plan) no longer applies.
       if (ui.confirm && !allowed(ui.confirm)) ui.confirm = null;
     }
+    // The first time an owned plan appears the panel shows the Plan tab; afterwards the tab is the user's.
+    if (s.hash !== lastOwnedHash) { lastOwnedHash = s.hash; ui.tab = 'plan'; }
     const view = build();
     st.phase = nextActions(view).phase;
     const { actions } = nextActions(view);
@@ -345,6 +358,32 @@ export function createDriver($, opts) {
         if (TABS.some((t) => t.id === id)) ui.tab = id;
         return Promise.resolve();
       }
+      if (action.startsWith('batch:')) {
+        const n = Number(action.slice(6));
+        if (Number.isInteger(n) && n > 0) {
+          // undefined = default (the running batch open); -1 = all closed.
+          const running = panel().blocks?.find((x) => x.type === 'batches')?.items?.find((x) => x.open)?.n;
+          const cur = ui.expanded === undefined ? running : ui.expanded;
+          ui.expanded = cur === n ? -1 : n;
+        }
+        return Promise.resolve();
+      }
+      if (action.startsWith('pick:')) {
+        syncPicked();
+        const id = action.slice(5);
+        if (id) { if (ui.picked.has(id)) ui.picked.delete(id); else ui.picked.add(id); }
+        return Promise.resolve();
+      }
+      if (action === 'fix-picked') {
+        syncPicked();
+        const rid = snap?.ok ? snap.reviewDetail?.id : null;
+        if (!ui.picked.size || isOwned() || !rid) return Promise.resolve();
+        const ids = [...ui.picked].join(', ');
+        const text = `Arreglar los hallazgos ${ids} del review ${rid} (marcados en el panel de nxy)`;
+        // Not awaited: it resolves when the main thread runs the turn.
+        Promise.resolve($.prompt.submit({ text })).catch(() => {});
+        return Promise.resolve();
+      }
       if (action === 'refresh') return queue(refresh);
       if (action === 'dismiss') { output = null; return Promise.resolve(); }
       if (action === 'confirm-no') { ui.confirm = null; return Promise.resolve(); }
@@ -396,10 +435,16 @@ export function createDriver($, opts) {
   function panel() {
     const ok = !!snap?.ok;
     const owned = ok && isOwned();
-    const s = !ok ? null : owned ? { ...build(), approved: snap.approved, handoff: snap.handoff, config: snap.config } : snap;
-    // The first time an owned plan appears the panel shows the Plan tab; afterwards the tab is the user's.
-    if (owned && snap.hash && snap.hash !== lastOwnedHash) { lastOwnedHash = snap.hash; ui.tab = 'plan'; }
-    return buildPanel({ snap: s, ask: st?.ask ?? null, owned, ui, output, usage, now: Date.now(), fallback: { gate: cfg.gate } });
+    syncPicked();
+    const s = !ok ? null : owned
+      ? {
+        ...build(), approved: snap.approved, handoff: snap.handoff, config: snap.config,
+        goal: snap.goal, reviewDetail: snap.reviewDetail, projectDir: snap.projectDir, branch: snap.branch,
+        inFlight: st?.inFlight ?? {},
+      }
+      : { ...snap, launched: st?.launched ?? snap.launched, inFlight: st?.inFlight ?? {} };
+    const uiView = { ...ui, picked: [...ui.picked], expanded: ui.expanded };
+    return buildPanel({ snap: s, ask: st?.ask ?? null, owned, ui: uiView, output, usage, cache: null, now: Date.now(), fallback: { gate: cfg.gate } });
   }
 
   /** Reads the snapshot in the same node that clears the session start. Never throws: a failure leaves no snapshot. */

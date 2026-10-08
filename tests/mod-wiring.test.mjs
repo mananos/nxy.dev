@@ -56,6 +56,36 @@ test('register.tsx draws the console: resolved elements, width, hotkeys, no Clos
   assert.match(src, /on\('session\.start'[\s\S]*?driver\.start\(\)/);
 });
 
+test('register.tsx draws the approved design: Raster, layoutOf, no truncation, the clock outside the render', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.match(src, /from\s*'\.\.\/\.\.\/\.\.\/core\/raster\.mjs'/);
+  assert.match(src, /\blayoutOf\b[^\n]*from\s*'\.\.\/\.\.\/\.\.\/core\/panel\.mjs'/);
+  assert.match(src, /<Raster\b/);
+  assert.doesNotMatch(src, /truncate/);
+  // The ui.render handler: from its `on(` to the next top-level hook; it never starts the clock.
+  const handler = src.match(/on\('ui\.render'[\s\S]*?\n {2}\}\)\n/)?.[0] ?? '';
+  assert.ok(handler.length > 0);
+  assert.doesNotMatch(handler, /clock\.every|startTick/);
+  // `draw` (the render's body) does not either; the tick starts from session.start, command.run and open.
+  const draw = src.slice(src.indexOf('function draw('));
+  assert.doesNotMatch(draw, /clock\.every|startTick/);
+  assert.match(src, /\$\.clock\.every\(250/);
+  assert.match(src, /async function openPane[\s\S]*?\$\.ui\.open[\s\S]*?startTick/);
+  // `h` is the JSX factory: no variable may shadow it.
+  assert.doesNotMatch(src, /\b(?:const|let|var)\s+h\b|[(,]\s*h\s*(?::[^,)]*)?\)\s*=>|\(\s*h\s*[,:]/);
+  assert.doesNotMatch(src, /from\s+'node:/);
+});
+
+test('register.tsx: one tick timer at module level, cancelled before a new one; batches and findings are focusable Buttons', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.match(src, /^let tickTimer\b/m);
+  assert.match(src, /function startTick[\s\S]*?stopTick\(\)[\s\S]*?\$\.clock\.every\(250/);
+  assert.match(src, /function stopTick[\s\S]*?\.cancel\(\)/);
+  // No hotkey on these: the focus ring (Tab / arrows) and Enter reach them, so ids never clash.
+  assert.match(src, /<Button plain label=\{x\.title\}[^>]*onPress=\{press\(`batch:\$\{x\.n\}`\)\}/);
+  assert.match(src, /<Button plain label=\{f\.picked[^>]*onPress=\{press\(`pick:\$\{f\.id\}`\)\}/);
+});
+
 const hasClaude = spawnSync('claude', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
 test('every <Button in register.tsx has an onPress (the engine skips the render otherwise)', () => {
   const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');

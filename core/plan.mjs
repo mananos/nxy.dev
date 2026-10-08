@@ -147,18 +147,39 @@ export function parseRepos(plan) {
 export function planFiles(plan) {
   const out = [];
   for (const s of batchSections(plan)) {
-    for (const raw of s.split('\n')) {
-      const b = /^\s*-\s+(.+)$/.exec(raw);
-      if (!b) continue;
-      const head = b[1].split(DASH_RE)[0];
-      for (const m of head.matchAll(/`([^`]+)`/g)) {
-        const p = m[1].trim().replace(/:\d+(?:-\d+)?$/, '');
-        if (!p || /[\s*]/.test(p) || !(p.includes('/') || /\.[A-Za-z0-9]+$/.test(p))) continue;
-        if (!out.includes(p)) out.push(p);
-      }
+    for (const p of batchFiles(s)) if (!out.includes(p)) out.push(p);
+  }
+  return out;
+}
+
+/**
+ * The files one batch section names (same rules as `planFiles`). Deduped, in order.
+ * @param {string} sectionText a batch's `text`
+ * @returns {string[]}
+ */
+export function batchFiles(sectionText) {
+  const out = [];
+  for (const raw of norm(sectionText).split('\n')) {
+    const b = /^\s*-\s+(.+)$/.exec(raw);
+    if (!b) continue;
+    const head = b[1].split(DASH_RE)[0];
+    for (const m of head.matchAll(/`([^`]+)`/g)) {
+      const p = m[1].trim().replace(/:\d+(?:-\d+)?$/, '');
+      if (!p || /[\s*]/.test(p) || !(p.includes('/') || /\.[A-Za-z0-9]+$/.test(p))) continue;
+      if (!out.includes(p)) out.push(p);
     }
   }
   return out;
+}
+
+/**
+ * The plan's `Goal:` line, or '' when it has none.
+ * @param {string} plan
+ * @returns {string}
+ */
+export function parseGoal(plan) {
+  const m = /^Goal:[ \t]*(.*)$/im.exec(norm(plan));
+  return m ? m[1].trim() : '';
 }
 
 /**

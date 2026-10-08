@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   TABS, LAUNCHER, BUILDERS, NEEDS, launcherOf, launcherAvailable, filterCtx, isPanelAction, buildPanel, panelText, barText, kFmt,
-  fitSteps, lifecycle, clipOutput,
+  fitSteps, lifecycle, clipOutput, layoutOf, lifecycleLayout,
 } from '../core/panel.mjs';
 
 const NOW = 1_000_000_000;
@@ -21,37 +21,52 @@ const pass = (ts = 10) => ({ status: 'pass', ts });
 const fail = (ts = 10) => ({ status: 'fail', error: 'boom', ts });
 const usage = (tokens) => ({ tokens, percent: 10, window: 1000000, costUsd: 1.234, model: 'sonnet' });
 const home = (o) => buildPanel({ snap: snap(), now: NOW, ...o });
-const rowOf = (v, label) => v.sections[0].rows.find((r) => r.label === label);
+const plan = (o) => buildPanel({ snap: snap(), now: NOW, ui: { tab: 'plan' }, ...o });
+const block = (v, type) => v.blocks.find((b) => b.type === type);
+const tile = (v, id) => block(v, 'tiles').tiles.find((t) => t.id === id);
+const actionIds = (v) => v.blocks.filter((b) => b.type === 'actions').flatMap((b) => b.actions.map((a) => a.id));
 const hotkeys = (v) => [
   ...v.tabs.map((t) => t.hotkey), ...v.keys.map((k) => k.hotkey),
-  ...v.sections.flatMap((s) => (s.actions ?? []).map((a) => a.hotkey)),
+  ...v.blocks.filter((b) => b.type === 'actions').flatMap((b) => b.actions.map((a) => a.hotkey)),
+  ...v.blocks.filter((b) => b.type === 'checkpoint' && b.fix).map((b) => b.fix.hotkey),
   ...(v.ask?.buttons ?? []).map((b) => b.hotkey), ...(v.output ? [v.output.dismiss.hotkey] : []),
 ];
 
-test('TABS: order, builders, active tab', () => {
-  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan']);
+test('TABS: five tabs, a builder each, active tab', () => {
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config']);
+  assert.deepEqual(TABS.map((t) => t.hotkey), ['1', '2', '3', '4', '5']);
+  assert.equal(TABS[0].label, 'Inicio');
   for (const t of TABS) assert.equal(typeof BUILDERS[t.id], 'function');
-  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false]);
-  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true]);
+  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false, false, false, false]);
+  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true, false, false, false]);
   assert.equal(home({ ui: { tab: 'nope' } }).tabs[0].active, true);
+  assert.equal(home({}).sections, undefined);
 });
 
 test('Home with no snapshot: reads as not read yet, still has buttons', () => {
   const v = buildPanel({ snap: null, now: NOW });
-  assert.equal(rowOf(v, 'Plan').value, 'sin leer');
-  assert.equal(rowOf(v, 'Contexto').value, 'desconocido');
-  assert.ok(v.sections[0].actions.some((a) => a.id === 'gate-once'));
+  assert.equal(block(v, 'hero').planValue, 'sin leer');
+  assert.equal(tile(v, 'context').value, 'desconocido');
+  assert.ok(actionIds(v).includes('gate-once'));
   assert.deepEqual(v.header.pill, { glyph: '●', text: 'ready', tone: 'ok' });
+  assert.equal(v.animated, false);
 });
 
-test('Home with a plan: hash, state, lifecycle', () => {
+test('Home hero: lote N de M, state, lifecycle, meta line', () => {
   const v = home({});
-  assert.equal(rowOf(v, 'Plan').value, 'abc12345 · aprobado');
-  assert.equal(home({ snap: snap({ approved: false }) }).sections[0].rows[0].value, 'abc12345 · sin aprobar');
-  assert.equal(rowOf(home({ snap: snap({ hash: null, batches: [] }) }), 'Plan').value, 'ninguno');
-  const steps = rowOf(v, 'Ciclo').steps;
-  assert.deepEqual(steps.map((s) => s.label), ['plan', 'aprobado', 'lotes 0/2', 'tester', 'review', 'cierre']);
-  assert.deepEqual(steps.map((s) => s.state), ['done', 'done', 'current', 'pending', 'pending', 'pending']);
+  const hero = block(v, 'hero');
+  assert.equal(hero.planValue, 'abc12345 · aprobado');
+  assert.equal(hero.headline, 'Lote 1 de 2 · First');
+  assert.equal(hero.meta, 'plan abc12345 · aprobado');
+  assert.equal(home({ snap: snap({ approved: false }) }).blocks[0].planValue, 'abc12345 · sin aprobar');
+  const none = block(home({ snap: snap({ hash: null, batches: [] }) }), 'hero');
+  assert.equal(none.planValue, 'ninguno');
+  assert.equal(none.headline, 'Sin plan en esta rama');
+  assert.deepEqual(hero.steps.map((s) => s.label), ['plan', 'aprobado', 'lotes 0/2', 'tester', 'review', 'cierre']);
+  assert.deepEqual(hero.steps.map((s) => s.state), ['done', 'done', 'current', 'pending', 'pending', 'pending']);
+  const run = block(home({ snap: snap({ launched: { 1: NOW - 65000 } }) }), 'hero');
+  assert.equal(run.batch.n, 1);
+  assert.equal(run.elapsedMs, 65000);
 });
 
 test('lifecycle: red batch, red suite, all done', () => {
@@ -63,48 +78,82 @@ test('lifecycle: red batch, red suite, all done', () => {
   assert.deepEqual(lifecycle(null), []);
 });
 
-test('Context row: gate on bar and thresholds, gate off, unknown', () => {
-  const on = rowOf(home({ usage: usage(46000) }), 'Contexto');
+test('Context tile: gate on bar and thresholds, gate off, unknown', () => {
+  const on = tile(home({ usage: usage(46000) }), 'context');
   assert.deepEqual(on.bar, { used: 46000, limit: 100000, tone: 'ok' });
   assert.equal(on.value, '46k / 100k');
-  assert.equal(on.note, 'gate on · 54k left');
-  assert.equal(rowOf(home({ usage: usage(70000) }), 'Contexto').bar.tone, 'running');
-  assert.equal(rowOf(home({ usage: usage(69000) }), 'Contexto').bar.tone, 'ok');
-  assert.equal(rowOf(home({ usage: usage(90000) }), 'Contexto').bar.tone, 'error');
-  const off = rowOf(home({ snap: snap({ config: { gate: { enabled: false }, filter: false } }), usage: usage(46000) }), 'Contexto');
+  assert.deepEqual(on.hints, ['gate on', '54k libres']);
+  assert.equal(tile(home({ usage: usage(70000) }), 'context').bar.tone, 'running');
+  assert.equal(tile(home({ usage: usage(69000) }), 'context').bar.tone, 'ok');
+  assert.equal(tile(home({ usage: usage(90000) }), 'context').bar.tone, 'error');
+  const off = tile(home({ snap: snap({ config: { gate: { enabled: false }, filter: false } }), usage: usage(46000) }), 'context');
   assert.equal(off.bar.limit, 1000000);
-  assert.equal(off.note, 'gate off');
-  assert.equal(rowOf(home({}), 'Contexto').value, 'desconocido');
-  const fb = rowOf(buildPanel({ snap: null, usage: usage(1500), fallback: { gate: { enabled: true, contextTokens: 5000 } } }), 'Contexto');
+  assert.deepEqual(off.hints, ['gate off']);
+  assert.equal(tile(home({}), 'context').value, 'desconocido');
+  const fb = tile(buildPanel({ snap: null, usage: usage(1500), fallback: { gate: { enabled: true, contextTokens: 5000 } } }), 'context');
   assert.equal(fb.bar.limit, 5000);
 });
 
-test('Session row: cost and model', () => {
-  assert.equal(rowOf(home({ usage: usage(1) }), 'Sesión').value, '$1.23 · sonnet');
-  assert.equal(rowOf(home({}), 'Sesión').value, 'desconocido');
+test('Cost tile: session cost with the model as hint', () => {
+  const c = tile(home({ usage: usage(1) }), 'cost');
+  assert.deepEqual([c.value, c.hints], ['$1.23', ['sonnet']]);
+  assert.equal(tile(home({}), 'cost').value, 'desconocido');
 });
 
-test('Handoff row: none, fresh, stale', () => {
-  assert.equal(rowOf(home({}), 'Handoff').value, 'ninguno');
-  const fresh = rowOf(home({ snap: snap({ handoff: { updated: NOW - 12 * 60000 }, verdicts: { 1: pass(NOW - 30 * 60000) } }) }), 'Handoff');
-  assert.deepEqual([fresh.value, fresh.tone], ['hace 12 min', 'info']);
-  const stale = rowOf(home({ snap: snap({ handoff: { updated: NOW - 12 * 60000 }, verdicts: { 1: pass(NOW - 5 * 60000) } }) }), 'Handoff');
-  assert.deepEqual([stale.value, stale.tone], ['hace 12 min · desactualizado', 'error']);
+test('Cache tile: unknown until a cache is passed, then live', () => {
+  const unknown = tile(home({}), 'cache');
+  assert.deepEqual([unknown.known, unknown.value], [false, 'desconocido']);
+  const live = tile(home({ cache: { hitPct: 87.4, ttlLeftMs: 120000, ttlMs: 300000, coldCostUsd: 0.42 } }), 'cache');
+  assert.equal(live.known, true);
+  assert.equal(live.value, '87%');
+  assert.deepEqual(live.bar, { used: 87.4, limit: 100, tone: 'ok' });
+  assert.ok(live.hints.includes('en frío: $0.42'));
 });
 
-test('plan-done: hidden with no plan or when owned; filter label by state', () => {
-  const ids = (v) => v.sections[0].actions.map((a) => a.id);
-  assert.ok(ids(home({})).includes('plan-done'));
-  assert.ok(!ids(home({ snap: snap({ hash: null, batches: [] }) })).includes('plan-done'));
-  assert.ok(ids(home({ snap: snap({ hash: null, batches: [], handoff: { updated: 1 } }) })).includes('plan-done'));
-  assert.ok(!ids(home({ owned: true })).includes('plan-done'));
-  const label = (v) => v.sections[0].actions.find((a) => a.id === 'filter').label;
+test('Handoff in the hero: none, fresh, stale', () => {
+  assert.deepEqual(block(home({}), 'hero').handoff, { value: 'ninguno', tone: 'dim' });
+  const fresh = block(home({ snap: snap({ handoff: { updated: NOW - 12 * 60000 }, verdicts: { 1: pass(NOW - 30 * 60000) } }) }), 'hero');
+  assert.deepEqual(fresh.handoff, { value: 'hace 12 min', tone: 'info' });
+  assert.ok(fresh.meta.endsWith('handoff hace 12 min'));
+  const stale = block(home({ snap: snap({ handoff: { updated: NOW - 12 * 60000 }, verdicts: { 1: pass(NOW - 5 * 60000) } }) }), 'hero');
+  assert.deepEqual(stale.handoff, { value: 'hace 12 min · desactualizado', tone: 'error' });
+});
+
+test('Ahora: one line per agent in flight, the rest as next, empty when idle', () => {
+  const idle = block(home({}), 'now');
+  assert.deepEqual(idle.agents, []);
+  assert.equal(idle.next, 'después: lotes 1–2, la suite y la review');
+  const s = snap({ batches: [1, 2, 3, 4].map((n) => ({ n, depends: [], title: `B${n}` })), launched: { 1: NOW - 30000 }, verdicts: {} });
+  const v = buildPanel({ snap: s, now: NOW, inFlight: { a1: { role: 'implementer', batch: 1 } } });
+  const now = block(v, 'now');
+  assert.deepEqual(now.agents, [{ role: 'implementer', batch: 1, sinceMs: 30000 }]);
+  assert.equal(now.next, 'después: lotes 2–4, la suite y la review');
+  assert.equal(v.animated, true);
+  assert.ok(panelText(v).some((l) => l.includes('implementer') && l.includes('lote 1')));
+  assert.equal(buildPanel({ snap: s, now: NOW, inFlight: [] }).animated, false);
+});
+
+test('header: repo, branch, progress per batch', () => {
+  const s = snap({ projectDir: 'C:\\work\\my-repo\\', branch: 'feature/x', verdicts: { 1: pass() }, launched: { 1: 5, 2: 20 } });
+  assert.deepEqual([buildPanel({ snap: s, now: NOW }).header.repo, buildPanel({ snap: s, now: NOW }).header.branch], ['my-repo', 'feature/x']);
+  assert.equal(buildPanel({ snap: snap({ projectDir: '/home/u/repo' }), now: NOW }).header.repo, 'repo');
+  assert.deepEqual(buildPanel({ snap: s, now: NOW }).header.progress, ['done', 'running']);
+  assert.deepEqual(buildPanel({ snap: null, now: NOW }).header.progress, []);
+});
+
+test('plan-done lives on the Plan tab: hidden with no plan or when owned; filter label by state', () => {
+  assert.ok(actionIds(plan({})).includes('plan-done'));
+  assert.ok(!actionIds(home({})).includes('plan-done'));
+  assert.ok(!actionIds(plan({ snap: snap({ hash: null, batches: [] }) })).includes('plan-done'));
+  assert.ok(actionIds(plan({ snap: snap({ hash: null, batches: [], handoff: { updated: 1 } }) })).includes('plan-done'));
+  assert.ok(!actionIds(plan({ owned: true })).includes('plan-done'));
+  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'filter').label;
   assert.equal(label(home({})), 'Filter ○ off');
   assert.equal(label(home({ snap: snap({ config: { filter: true } }) })), 'Filter ● on');
 });
 
 test('filter label: a plain Filter until a snapshot supplies config.filter', () => {
-  const label = (v) => v.sections[0].actions.find((a) => a.id === 'filter').label;
+  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'filter').label;
   assert.equal(label(buildPanel({ snap: null, now: NOW })), 'Filter');
   assert.equal(label(home({ snap: snap({ config: { gate: { enabled: false } } }) })), 'Filter');
   assert.equal(label(home({ snap: snap({ config: { filter: false } }) })), 'Filter ○ off');
@@ -114,15 +163,17 @@ test('filter label: a plain Filter until a snapshot supplies config.filter', () 
   assert.deepEqual(launcherOf('filter').args, ['on']);
 });
 
-test('needs: every launcher need is a known check; the Home filter reads it', () => {
+test('needs: every launcher need is a known check; the tab filters read it', () => {
   for (const l of LAUNCHER) if (l.needs) assert.equal(typeof NEEDS[l.needs], 'function', l.id);
   const done = launcherOf('plan-done');
+  assert.equal(done.tab, 'plan');
+  assert.equal(launcherOf('trend').tab, 'stats');
   assert.equal(launcherAvailable(done, { snap: snap() }), true);
   assert.equal(launcherAvailable(done, { snap: snap(), owned: true }), false);
   assert.equal(launcherAvailable(done, { snap: null }), false);
   assert.equal(launcherAvailable(done, { snap: snap({ hash: null, handoff: { updated: 1 } }) }), true);
   assert.equal(launcherAvailable(launcherOf('stats'), { snap: null, owned: true }), true);
-  const ids = buildPanel({ snap: snap(), owned: true, now: NOW }).sections[0].actions.map((a) => a.id);
+  const ids = actionIds(buildPanel({ snap: snap(), owned: true, now: NOW }));
   assert.deepEqual(ids, LAUNCHER.filter((l) => l.tab === 'home' && !l.needs).map((l) => l.id));
 });
 
@@ -133,20 +184,126 @@ test('launcherOf and isPanelAction', () => {
   const done = launcherOf('plan-done');
   assert.ok(done.confirm && done.needs === 'plan' && done.after === 'refresh');
   assert.equal(launcherOf('nope'), null);
-  for (const id of ['refresh', 'dismiss', 'tab:plan', 'confirm-yes', 'confirm-no', 'stats', 'trend']) assert.equal(isPanelAction(id), true);
-  assert.equal(isPanelAction('Retry'), false);
+  for (const id of ['refresh', 'dismiss', 'tab:plan', 'confirm-yes', 'confirm-no', 'stats', 'trend', 'batch:2', 'pick:R1', 'fix-picked']) {
+    assert.equal(isPanelAction(id), true, id);
+  }
+  for (const id of ['Retry', 'batch:x', 'pick:', 'batch']) assert.equal(isPanelAction(id), false, id);
 });
 
 test('Plan tab: batches with titles and states, suite and review rows', () => {
-  const v = buildPanel({ snap: snap({ verdicts: { 1: pass(), 2: fail() }, launched: { 1: 5, 2: 6 }, continued: [2] }), owned: true, ui: { tab: 'plan' } });
-  const sec = v.sections[0];
-  assert.deepEqual(sec.batches.map((b) => [b.n, b.title, b.state]), [[1, 'First', 'done'], [2, 'Second', 'red']]);
-  assert.equal(sec.batches[1].note, 'failed (continued anyway)');
-  assert.equal(sec.rows[0].value, 'pending');
-  const run = buildPanel({ snap: snap({ launched: { 1: 5 } }), owned: true, ui: { tab: 'plan' } });
-  assert.equal(run.sections[0].batches[0].state, 'running');
-  assert.equal(run.sections[0].batches[1].state, 'pending');
-  assert.equal(buildPanel({ snap: snap({ hash: null, batches: [] }), ui: { tab: 'plan' } }).sections[0].rows[0].value, 'sin plan');
+  const v = plan({ snap: snap({ verdicts: { 1: pass(), 2: fail() }, launched: { 1: 5, 2: 6 }, continued: [2] }), owned: true });
+  const batches = block(v, 'batches').items;
+  assert.deepEqual(batches.map((b) => [b.n, b.title, b.state]), [[1, 'First', 'done'], [2, 'Second', 'red']]);
+  assert.equal(batches[1].note, 'failed (continued anyway)');
+  assert.equal(block(v, 'suite').rows[0].value, 'pendiente');
+  const run = plan({ snap: snap({ launched: { 1: 5 } }), owned: true });
+  assert.equal(block(run, 'batches').items[0].state, 'running');
+  assert.equal(block(run, 'batches').items[1].state, 'pending');
+  const empty = plan({ snap: snap({ hash: null, batches: [] }) });
+  assert.deepEqual(empty.blocks[0], { type: 'note', text: 'Sin plan en esta rama', tone: 'dim' });
+});
+
+test('Plan tab: goal, files, accept, verdict, open by default on the running batch', () => {
+  const s = snap({
+    goal: 'Ship the thing',
+    batches: [
+      { n: 1, depends: [], title: 'First', files: ['a.mjs', 'b.mjs'], accept: { kind: 'command', command: 'node --test a' } },
+      { n: 2, depends: [1], title: 'Second', files: [], accept: { kind: 'manual', note: 'mirar el panel' } },
+    ],
+    verdicts: { 1: pass(5000) }, launched: { 1: 1000, 2: NOW - 9000 },
+  });
+  const v = plan({ snap: s, owned: true });
+  assert.equal(block(v, 'goal').text, 'Ship the thing');
+  const [b1, b2] = block(v, 'batches').items;
+  assert.deepEqual([b1.open, b2.open], [false, true]);
+  assert.equal(b1.durationMs, 4000);
+  assert.equal(b1.accept, 'node --test a');
+  assert.deepEqual(b1.files, ['a.mjs', 'b.mjs']);
+  assert.equal(b1.verdict.text, '✔ verificado por nxy');
+  assert.equal(b2.accept, 'manual — mirar el panel');
+  assert.equal(b2.verdict.text, 'implementer trabajando');
+  // ui.expanded wins over the default
+  const ex = block(plan({ snap: s, owned: true, ui: { tab: 'plan', expanded: 1 } }), 'batches').items;
+  assert.deepEqual(ex.map((b) => b.open), [true, false]);
+  // -1 = all closed, even the running batch
+  const none = block(plan({ snap: s, owned: true, ui: { tab: 'plan', expanded: -1 } }), 'batches').items;
+  assert.deepEqual(none.map((b) => b.open), [false, false]);
+  // red shows the verdict error, pending waits
+  const red = block(plan({ snap: snap({ verdicts: { 1: fail() }, launched: { 1: 5 } }), owned: true }), 'batches').items;
+  assert.deepEqual([red[0].verdict.text, red[0].verdict.tone], ['boom', 'error']);
+  assert.equal(red[1].verdict.text, 'espera al lote anterior');
+  assert.ok(panelText(v).some((l) => l.includes('accept: manual — mirar el panel')));
+});
+
+test('Plan tab: finding loc shows just the file when line is null, 0 or missing', () => {
+  const reviewDetail = { id: 'rv1', ts: 1, chosen: [], findings: [
+    { id: 'R1', file: 'a.mjs', line: null, title: 'x' },
+    { id: 'R2', file: 'b.mjs', line: 0, title: 'y' },
+    { id: 'R3', file: 'c.mjs', title: 'z' },
+    { id: 'R4', file: 'd.mjs', line: 7, title: 'w' },
+  ] };
+  const cp = block(plan({ snap: snap({ review: { id: 'rv1' }, reviewDetail }) }), 'checkpoint');
+  assert.deepEqual(cp.findings.map((f) => f.loc), ['a.mjs', 'b.mjs', 'c.mjs', 'd.mjs:7']);
+});
+
+test('Plan tab: checkpoint 2 with picked findings and the Arreglar button', () => {
+  const reviewDetail = { id: 'rv1', ts: 1, chosen: [], findings: [
+    { id: 'R1', severity: 'high', lens: 'logic', file: 'a.mjs', line: 3, title: 'Bug', cause: 'why' },
+    { id: 'R2', severity: 'low', lens: 'style', file: 'b.mjs', line: null, title: 'Nit', cause: 'because' },
+  ] };
+  const s = snap({ review: { id: 'rv1' }, reviewDetail });
+  const none = block(plan({ snap: s }), 'checkpoint');
+  assert.equal(none.picked, 0);
+  assert.equal(none.fix, null);
+  assert.equal(none.findings[0].loc, 'a.mjs:3');
+  assert.equal(none.findings[1].loc, 'b.mjs');
+  const one = block(plan({ snap: s, ui: { tab: 'plan', picked: ['R2'] } }), 'checkpoint');
+  assert.deepEqual(one.findings.map((f) => f.picked), [false, true]);
+  assert.deepEqual(one.fix, { id: 'fix-picked', label: 'Arreglar 1', hotkey: 'z' });
+  assert.equal(block(plan({ snap: s, owned: true, ui: { tab: 'plan', picked: ['R1'] } }), 'checkpoint').fix, null);
+  assert.equal(block(plan({ snap: snap({ reviewDetail: null }) }), 'checkpoint'), undefined);
+  assert.ok(actionIds(plan({ snap: s })).includes('plan-done'));
+});
+
+test('Agents, Stats and Config skeletons build with and without a snapshot', () => {
+  for (const tab of ['agents', 'stats', 'config']) {
+    for (const sn of [null, snap()]) {
+      const v = buildPanel({ snap: sn, now: NOW, ui: { tab }, usage: usage(1) });
+      assert.ok(v.blocks.length > 0, tab);
+      assert.ok(panelText(v).length > 2, tab);
+    }
+  }
+  const ag = buildPanel({ snap: snap({ launched: { 2: NOW - 5000 } }), now: NOW, ui: { tab: 'agents' }, inFlight: { x: { role: 'implementer', batch: 2 } } });
+  assert.deepEqual(block(ag, 'agents').agents, [{ role: 'implementer', batch: 2, sinceMs: 5000 }]);
+  assert.ok(ag.blocks.some((b) => b.type === 'note' && b.text.includes('fase 3')));
+  const st = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'stats' }, usage: usage(1) });
+  assert.deepEqual(block(st, 'kv').rows.map((r) => r.value), ['$1.23', 'sonnet']);
+  assert.deepEqual(actionIds(st), ['trend']);
+  const cf = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'config' } });
+  assert.deepEqual(block(cf, 'kv').rows.map((r) => r.label), ['Gate', 'Orquestador', 'Pausa entre lotes', 'Panel', 'Filtro']);
+  assert.equal(block(cf, 'kv').rows[0].value, 'on · umbral 100k');
+  assert.ok(cf.blocks.some((b) => b.type === 'note' && b.text.includes('fase 4')));
+});
+
+test('layoutOf: widths at 28/40/60/120, the column never passes 78', () => {
+  for (const cols of [0, 28, 40, 60, 120, 400]) {
+    const l = layoutOf(cols);
+    assert.ok(l.CW <= 78 && l.CW >= 1, `${cols}`);
+    assert.ok(l.tileW * l.tilesPerRow + (l.tilesPerRow - 1) <= l.CW);
+  }
+  assert.deepEqual([layoutOf(28).W, layoutOf(28).pad, layoutOf(28).CW], [28, 1, 26]);
+  assert.deepEqual([layoutOf(40).narrow, layoutOf(40).stacked, layoutOf(40).tilesPerRow], [true, true, 1]);
+  assert.deepEqual([layoutOf(60).wide, layoutOf(60).stacked, layoutOf(60).tilesPerRow], [false, false, 2]);
+  assert.deepEqual([layoutOf(120).CW, layoutOf(120).wide, layoutOf(120).tilesPerRow], [78, true, 3]);
+});
+
+test('lifecycleLayout: track while every span fits the longest label, then wrap without cutting', () => {
+  const steps = lifecycle(snap());
+  assert.equal(lifecycleLayout(steps, 78).mode, 'track');
+  const narrow = lifecycleLayout(steps, 30);
+  assert.equal(narrow.mode, 'wrap');
+  assert.deepEqual(narrow.lines.flat(), steps);
+  assert.equal(lifecycleLayout([], 60).mode, 'wrap');
 });
 
 test('asks: red, pause, confirm', () => {
@@ -159,8 +316,10 @@ test('asks: red, pause, confirm', () => {
   const confirm = home({ ui: { confirm: 'plan-done' } });
   assert.deepEqual(confirm.ask.buttons.map((b) => [b.id, b.hotkey]), [['confirm-yes', 'y'], ['confirm-no', 'n']]);
   assert.equal(home({}).ask, null);
-  // An ask shows on both tabs.
-  assert.ok(buildPanel({ snap: snap(), owned: true, ask: { type: 'ask', kind: 'pause', batches: [2] }, ui: { tab: 'plan' } }).ask);
+  // An ask shows on every tab.
+  for (const tab of ['plan', 'agents', 'stats', 'config']) {
+    assert.ok(buildPanel({ snap: snap(), owned: true, ask: { type: 'ask', kind: 'pause', batches: [2] }, ui: { tab } }).ask, tab);
+  }
 });
 
 test('output: clipped lines, running placeholder, dismiss key', () => {
@@ -171,15 +330,21 @@ test('output: clipped lines, running placeholder, dismiss key', () => {
   assert.equal(clipOutput(Array.from({ length: 40 }, (_, i) => `l${i}`).join('\n')).length, 31);
 });
 
-test('hotkeys are unique inside each built view', () => {
+test('hotkeys are unique inside each built view, on the five tabs', () => {
   const asks = [null, { type: 'ask', kind: 'red', batch: 1 }, { type: 'ask', kind: 'pause', batches: [2] }];
-  for (const tab of ['home', 'plan']) for (const ask of asks) for (const output of [null, { label: 'x', text: 'y' }]) {
+  const review = { id: 'rv', findings: [{ id: 'R1', severity: 'high', file: 'a', line: 1, title: 't', cause: 'c' }] };
+  for (const tab of TABS.map((t) => t.id)) for (const ask of asks) for (const output of [null, { label: 'x', text: 'y' }]) {
     for (const confirm of [null, 'plan-done']) {
-      const keys = hotkeys(buildPanel({ snap: snap(), owned: !!ask, ask, ui: { tab, confirm }, output }));
+      const keys = hotkeys(buildPanel({
+        snap: snap({ review: { id: 'rv' }, reviewDetail: review }), owned: !!ask, ask, ui: { tab, confirm, picked: ['R1'] }, output,
+      }));
       assert.equal(new Set(keys).size, keys.length, `${tab} ${JSON.stringify(ask)} ${keys}`);
       assert.ok(keys.every((k) => /^[a-z0-9]$/.test(k)));
     }
   }
+  // the fix button shows only when the plan is not owned: check it directly
+  const keys = hotkeys(buildPanel({ snap: snap({ review: { id: 'rv' }, reviewDetail: review }), ui: { tab: 'plan', picked: ['R1'] } }));
+  assert.ok(keys.includes('z') && new Set(keys).size === keys.length);
 });
 
 test('barText, kFmt, fitSteps, panelText', () => {
@@ -197,7 +362,12 @@ test('barText, kFmt, fitSteps, panelText', () => {
   const text = panelText(home({ usage: usage(46000), output: { label: 'Stats', text: 'hello' } }));
   assert.ok(Array.isArray(text));
   const joined = text.join('\n');
-  for (const s of ['[Home]', 'nxy ● ready', 'Contexto: 46k / 100k', 'gate on', '[e] Terminar plan', 'hello']) assert.ok(joined.includes(s), s);
+  for (const s of ['[Inicio]', 'nxy ● ready', 'Plan: abc12345 · aprobado', 'Contexto: 46k / 100k', 'gate on', 'Cache: desconocido', 'nada corriendo', 'hello']) {
+    assert.ok(joined.includes(s), s);
+  }
+  assert.ok(panelText(plan({})).join('\n').includes('[e] Terminar plan'));
+  assert.ok(panelText(buildPanel({ snap: null, now: NOW })).includes('Plan: sin leer'));
+  assert.ok(panelText(home({ snap: snap({ hash: null, batches: [] }) })).includes('Plan: ninguno'));
 });
 
 test('panel.mjs stays pure: no node: imports, only orchestrator and batch-status', () => {

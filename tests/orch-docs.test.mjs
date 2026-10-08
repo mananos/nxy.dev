@@ -23,6 +23,12 @@ test('README documents the panel, its command and how to turn it off', () => {
   assert.ok(readme.includes('claude -p "/nxy-panel"'));
 });
 
+test('README names the five panel tabs and the fix button', () => {
+  const readme = read('README.md');
+  for (const tab of ['Inicio', 'Plan', 'Agentes', 'Stats', 'Config']) assert.ok(readme.includes(`**${tab}**`), tab);
+  assert.ok(readme.includes('Arreglar'));
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);

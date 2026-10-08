@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { ROOT, sandbox } from './sandbox.mjs';
 import { recordBatch } from '../hosts/claude-code/verify-state.mjs';
 import { projectSlug } from '../hosts/claude-code/paths.mjs';
+import { nxyRuntimeDir } from '../core/paths.mjs';
 import { orchDir } from '../hosts/claude-code/orch-state.mjs';
 
 const ORCH = join(ROOT, 'hosts', 'claude-code', 'entries', 'orch.mjs');
@@ -36,9 +37,44 @@ test('an approved plan is approved and fresh, with its batches', () => {
   assert.equal(s.approved, true);
   assert.equal(s.fresh, true);
   assert.equal(s.branch, 'feature/x');
-  assert.deepEqual(s.batches.map((b) => [b.n, b.depends, b.accept]), [[1, [], 'command'], [2, [1], 'command']]);
+  assert.deepEqual(s.batches.map((b) => [b.n, b.depends, b.accept.kind]), [[1, [], 'command'], [2, [1], 'command']]);
+  assert.equal(s.goal, 'a small change');
+  assert.deepEqual(s.batches.map((b) => b.files), [['src/a.mjs'], ['src/b.mjs']]);
+  assert.equal(s.batches[0].accept.command, 'node --test tests/a.test.mjs');
+  assert.equal(s.reviewDetail, null);
   assert.ok(s.runtimeDir.includes('.nxy') || s.runtimeDir.length > 0);
   assert.deepEqual(s.verdicts, {});
+});
+
+test('the snapshot carries the review in full, and no plan means no goal or review', () => {
+  const sb = sandbox(PLAN);
+  const dir = nxyRuntimeDir(sb.repo);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'review.json'), JSON.stringify({
+    planHash: sb.hash, id: 'r1abc', ts: Date.now() + 1000,
+    findings: [{ id: 'R1', severity: 'high', lens: 'bugs', file: 'src/a.mjs', line: 7, title: 't', cause: 'change' }],
+  }));
+  writeFileSync(join(dir, 'review.jsonl'), `${JSON.stringify({ kind: 'chosen', id: 'r1abc', finding: 'R1' })}\n`);
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.equal(s.reviewDetail.id, 'r1abc');
+  assert.deepEqual(s.reviewDetail.findings, [{ id: 'R1', severity: 'high', lens: 'bugs', file: 'src/a.mjs', line: 7, title: 't', cause: 'change' }]);
+  assert.deepEqual(s.reviewDetail.chosen, ['R1']);
+  const none = sandbox('');
+  const n = run(none, ['snapshot', '--cwd', none.repo]);
+  assert.equal(n.goal, '');
+  assert.equal(n.reviewDetail, null);
+});
+
+test('a review finding without a line keeps line null', () => {
+  const sb = sandbox(PLAN);
+  const dir = nxyRuntimeDir(sb.repo);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'review.json'), JSON.stringify({
+    planHash: sb.hash, id: 'r2', ts: Date.now() + 1000,
+    findings: [{ id: 'R1', severity: 'low', lens: 'bugs', file: 'src/a.mjs', title: 't', cause: 'change' }],
+  }));
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.equal(s.reviewDetail.findings[0].line, null);
 });
 
 test('a recorded verdict makes the plan not fresh', () => {

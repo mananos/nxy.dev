@@ -187,6 +187,37 @@ export function readReview(cwd, hash, sinceTs) {
   }
 }
 
+/**
+ * The last review of this plan in full (for the panel's checkpoint): findings (capped at 40) and the
+ * ids already chosen. Null when there is no review of this plan.
+ * @param {string} cwd @param {string} hash
+ */
+export async function readReviewDetail(cwd, hash) {
+  try {
+    const r = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
+    if (!r || r.planHash !== hash || !Array.isArray(r.findings)) return null;
+    const { readJsonl } = await import('../../core/jsonl.mjs');
+    const chosen = readJsonl(join(nxyRuntimeDir(cwd), 'review.jsonl'))
+      .filter((x) => x && x.kind === 'chosen' && x.id === r.id).map((x) => x.finding);
+    return {
+      id: String(r.id ?? ''),
+      ts: typeof r.ts === 'number' ? r.ts : 0,
+      findings: r.findings.slice(0, 40).map((f) => ({
+        id: String(f.id ?? ''),
+        severity: String(f.severity ?? ''),
+        lens: String(f.lens ?? ''),
+        file: String(f.file ?? ''),
+        line: Number.isFinite(Number(f.line)) && Number(f.line) > 0 && f.line !== null && f.line !== '' ? Number(f.line) : null,
+        title: String(f.title ?? ''),
+        cause: String(f.cause ?? ''),
+      })),
+      chosen: [...new Set(chosen.map(String))],
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Plans nobody verified anything for in 30 days. @param {string} cwd @param {string} keep */
 function pruneOldPlans(cwd, keep) {
   const now = Date.now();
