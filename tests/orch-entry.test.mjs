@@ -8,6 +8,7 @@ import { ROOT, sandbox } from './sandbox.mjs';
 import { recordBatch } from '../hosts/claude-code/verify-state.mjs';
 import { projectSlug } from '../hosts/claude-code/paths.mjs';
 import { nxyRuntimeDir } from '../core/paths.mjs';
+import { APPROVE, approvalQuestion } from '../core/plan.mjs';
 import { orchDir } from '../hosts/claude-code/orch-state.mjs';
 
 const ORCH = join(ROOT, 'hosts', 'claude-code', 'entries', 'orch.mjs');
@@ -114,6 +115,74 @@ test('--session resolves the transcript under the projects dir', () => {
   // a session with no transcript there: not approved (a fresh sandbox, the approval cache is per project)
   const other = sandbox(PLAN);
   assert.equal(run(other, ['snapshot', '--cwd', other.repo, '--session', 'sess-1', '--projects-dir', projects]).approved, false);
+});
+
+/** A session under the sandbox's projects dir with timestamps: 3 calls, the approval between the 1st and the 2nd. */
+function timedSession(sb, id = 'sess-t') {
+  const projects = join(sb.dir, 'projects');
+  const folder = join(projects, projectSlug(sb.repo));
+  mkdirSync(folder, { recursive: true });
+  const q = approvalQuestion(sb.hash);
+  const at = (s) => new Date(Date.UTC(2026, 0, 1, 10, 0, s)).toISOString();
+  const call = (n, s, extra = {}) => ({
+    type: 'assistant', timestamp: at(s), requestId: `req-${n}`,
+    message: { id: `msg_${n}`, model: 'claude-sonnet-4-5', usage: { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 1000, ...extra } },
+  });
+  const lines = [
+    call(1, 0, { cache_creation_input_tokens: 500, cache_creation: { ephemeral_5m_input_tokens: 500, ephemeral_1h_input_tokens: 0 } }),
+    { type: 'assistant', timestamp: at(10), message: { content: [{ type: 'tool_use', id: 'q0', name: 'AskUserQuestion', input: { questions: [{ question: q }] } }] } },
+    { type: 'user', timestamp: at(20), message: { content: [{ type: 'tool_result', tool_use_id: 'q0', content: 'ok' }] }, toolUseResult: { answers: { [q]: APPROVE } } },
+    call(2, 30),
+    call(3, 40, { cache_creation_input_tokens: 700, cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 700 } }),
+  ];
+  writeFileSync(join(folder, `${id}.jsonl`), lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  return { projects, approvedAt: Date.parse(at(20)), firstCall: Date.parse(at(30)) };
+}
+
+test('the snapshot carries the price table and the cache TTL of the session', () => {
+  const sb = sandbox(PLAN);
+  const t = timedSession(sb);
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--session', 'sess-t', '--projects-dir', t.projects]);
+  assert.equal(s.cacheTtl, '1h');
+  assert.equal(typeof s.prices, 'object');
+  assert.ok(Object.keys(s.prices).length > 0);
+  const none = sandbox('');
+  const n = run(none, ['snapshot', '--cwd', none.repo]);
+  assert.equal(n.cacheTtl, null);
+  assert.ok(Object.keys(n.prices).length > 0, 'prices also without a plan');
+});
+
+test('summary: the approval splits the session in two', () => {
+  const sb = sandbox(PLAN);
+  const t = timedSession(sb);
+  const s = run(sb, ['summary', '--hash', sb.hash, '--session', 'sess-t', '--projects-dir', t.projects, '--cwd', sb.repo]);
+  assert.equal(s.ok, true);
+  assert.equal(s.sinceKind, 'approval');
+  assert.equal(s.approvedAt, t.approvedAt);
+  assert.equal(s.session.usage.calls, 3);
+  assert.equal(s.feature.usage.calls, 2);
+  assert.equal(s.feature.firstTs, t.approvedAt, 'the feature starts at the approval line');
+  assert.equal(s.session.firstTs < s.feature.firstTs, true);
+  assert.equal(s.cacheTtl, '1h');
+  assert.equal(typeof s.feature.cacheBreaks.count, 'number');
+});
+
+test('summary: without the approval it falls back to --fallback-since, then to the whole session', () => {
+  const sb = sandbox(PLAN);
+  const t = timedSession(sb);
+  const args = ['summary', '--hash', 'ffffff', '--session', 'sess-t', '--projects-dir', t.projects, '--cwd', sb.repo];
+  const fb = run(sb, [...args, '--fallback-since', String(t.firstCall + 5_000)]);
+  assert.equal(fb.sinceKind, 'first-batch');
+  assert.equal(fb.approvedAt, null);
+  assert.equal(fb.feature.usage.calls, 1);
+  const whole = run(sb, args);
+  assert.equal(whole.sinceKind, 'session');
+  assert.equal(whole.feature.usage.calls, 3);
+});
+
+test('summary: an unknown session is {ok:false}', () => {
+  const sb = sandbox(PLAN);
+  assert.equal(run(sb, ['summary', '--hash', sb.hash, '--session', 'nope', '--cwd', sb.repo]).ok, false);
 });
 
 test('release removes the marker', () => {

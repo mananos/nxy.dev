@@ -403,8 +403,8 @@ test('launcher buttons run the entry with --cwd and show the output in the panel
   assert.equal(d.panel().output, null);
 
   w.failRun = true;
-  await d.press('trend');
-  assert.ok(d.panel().output.lines.some((l) => l.includes('Trend failed: boom')));
+  await d.press('gate-once');
+  assert.ok(d.panel().output.lines.some((l) => l.includes('Gate once failed: boom')));
 });
 
 test('a slow launcher does not delay the orchestrator, and a second press is ignored', async () => {
@@ -415,19 +415,19 @@ test('a slow launcher does not delay the orchestrator, and a second press is ign
   const held = new Promise((r) => { release = () => r(undefined); });
   const inner = w.$.process.run;
   w.$.process.run = async (argv) => {
-    if (argv.some((a) => a.endsWith('trend.mjs'))) { w.runs.push(argv); await held; return { stdout: 'trend done', stderr: '' }; }
+    if (argv.some((a) => a.endsWith('gate.mjs'))) { w.runs.push(argv); await held; return { stdout: 'gate done', stderr: '' }; }
     return inner(argv);
   };
-  const p = d.press('trend');
+  const p = d.press('gate-once');
   assert.equal(d.panel().output.running, true);
-  const again = d.press('trend');
+  const again = d.press('gate-once');
   await d.step('ask');
-  assert.equal(w.spawns.length, 1, 'the plan moved on while Trend runs');
+  assert.equal(w.spawns.length, 1, 'the plan moved on while Gate runs');
   release();
   await p;
   await again;
-  assert.equal(w.runs.filter((a) => a.some((x) => x.endsWith('trend.mjs'))).length, 1);
-  assert.deepEqual(d.panel().output.lines, ['trend done']);
+  assert.equal(w.runs.filter((a) => a.some((x) => x.endsWith('gate.mjs'))).length, 1);
+  assert.deepEqual(d.panel().output.lines, ['gate done']);
 });
 
 test('plan-done asks first; no before yes, one run plus a refresh after, cancel runs nothing', async () => {
@@ -488,8 +488,8 @@ function hold(w, entry) {
 test('a launcher dismissed while it runs leaves no output when it ends', async () => {
   const w = world();
   const d = w.driver();
-  const release = hold(w, 'trend');
-  const p = d.press('trend');
+  const release = hold(w, 'gate');
+  const p = d.press('gate-once');
   assert.equal(d.panel().output.running, true);
   await d.press('dismiss');
   assert.equal(d.panel().output, null);
@@ -501,18 +501,18 @@ test('a launcher dismissed while it runs leaves no output when it ends', async (
 test('a second launcher started while the first runs keeps its own output', async () => {
   const w = world();
   const d = w.driver();
-  const release = hold(w, 'trend');
-  w.out = 'stats line';
-  const first = d.press('trend');
-  const second = d.press('stats');
-  assert.equal(d.panel().output.title, 'Stats');
+  const release = hold(w, 'gate');
+  w.out = 'handoff line';
+  const first = d.press('gate-once');
+  const second = d.press('handoff');
+  assert.equal(d.panel().output.title, 'Handoff');
   assert.equal(d.panel().output.running, true);
   release();
   await first;
-  assert.equal(d.panel().output.title, 'Stats', 'the first run does not write over the second');
+  assert.equal(d.panel().output.title, 'Handoff', 'the first run does not write over the second');
   await second;
-  assert.equal(d.panel().output.title, 'Stats');
-  assert.deepEqual(d.panel().output.lines, ['stats line']);
+  assert.equal(d.panel().output.title, 'Handoff');
+  assert.deepEqual(d.panel().output.lines, ['handoff line']);
 });
 
 test('the filter toggle runs filter on|off, re-reads the snapshot and flips the label', async () => {
@@ -579,6 +579,178 @@ test('with a plan taken over view() is the orchestrator snapshot, and Refresh on
   await d.press('refresh');
   assert.equal(w.spawns.length, before);
   assert.ok(d.view());
+});
+
+const TURN = { input_tokens: 10, cache_read_input_tokens: 90, cache_creation_input_tokens: 0 };
+
+test('noteTurn: only the main thread counts, and the cache shows hit, tokens and age', () => {
+  const w = world();
+  const d = w.driver();
+  d.setUsage({ tokens: 100, percent: 1, model: 'claude-sonnet-4-6' });
+  d.noteTurn({ usage: TURN, agentId: 'sub1', now: 1000 });
+  assert.equal(d.cachePlan(1000), null, 'a subagent answer sets nothing');
+  d.noteTurn({ usage: TURN, now: 5000, costUsd: 1 });
+  d.noteTurn({ usage: TURN, now: 6000, costUsd: 1.25 });
+  assert.equal(d.cachePlan(6000).expireInMs, 5 * 60_000);
+});
+
+test('the observed TTL beats settings and the inferred one', () => {
+  const w = world();
+  const d = w.driver();
+  d.setTtl('1h', 'settings');
+  d.setTtl('5m', 'observed');
+  d.setTtl('1h', 'settings');
+  d.noteTurn({ usage: TURN, now: 0 });
+  d.noteTurnStart(19 * 60_000);
+  d.noteTurn({ usage: TURN, now: 20 * 60_000 }); // survived a 19 min pause, but the TTL is observed
+  assert.equal(d.cachePlan(20 * 60_000).expireInMs, 5 * 60_000);
+
+  const d2 = w.driver();
+  d2.noteTurn({ usage: TURN, now: 0 });
+  d2.noteTurnStart(19 * 60_000);
+  d2.noteTurn({ usage: TURN, now: 20 * 60_000 });
+  assert.equal(d2.cachePlan(20 * 60_000).expireInMs, 60 * 60_000, 'with no observed TTL the pause lifts it to 1 h');
+  d2.setTtl('5m', 'settings');
+  assert.equal(d2.cachePlan(20 * 60_000).expireInMs, 60 * 60_000, 'settings never lowers an inferred 1 h');
+
+  const d3 = w.driver();
+  d3.setTtl('1h', 'settings');
+  assert.equal(d3.cachePlan(0), null);
+  d3.noteTurn({ usage: TURN, now: 0 });
+  assert.equal(d3.cachePlan(0).expireInMs, 60 * 60_000, 'settings beats the default');
+});
+
+test('a long turn with no idle gap is not a pause; an idle gap is', () => {
+  const w = world();
+  const d = w.driver();
+  d.noteTurn({ usage: TURN, now: 0 });
+  d.noteTurnStart(30_000); // started right after the last answer, ran 20 min
+  d.noteTurn({ usage: TURN, now: 20 * 60_000 });
+  assert.equal(d.cachePlan(20 * 60_000).expireInMs, 5 * 60_000);
+  d.noteTurn({ usage: TURN, now: 40 * 60_000 }); // no known start: nothing inferred
+  assert.equal(d.cachePlan(40 * 60_000).expireInMs, 5 * 60_000);
+  d.noteTurnStart(30 * 60_000 + 30_000 + 20 * 60_000); // 10 min idle after the 40 min answer
+  d.noteTurn({ usage: TURN, now: 71 * 60_000 });
+  assert.equal(d.cachePlan(71 * 60_000).expireInMs, 60 * 60_000);
+});
+
+test('start(): the snapshot TTL is observed, so a later settings value cannot override it', async () => {
+  const w = world();
+  w.plan.cacheTtl = '1h';
+  const d = w.driver();
+  await d.start();
+  d.setTtl('5m', 'settings');
+  d.noteTurn({ usage: TURN, now: 0 });
+  assert.equal(d.cachePlan(0).expireInMs, 60 * 60_000);
+});
+
+test('cacheNotice: warn near the end, expire after it, nothing after a newer turn', () => {
+  const w = world();
+  const d = w.driver();
+  d.setUsage({ tokens: 100, percent: 1, model: 'claude-sonnet-4-6' });
+  w.plan.prices = { 'claude-sonnet-4-6': { input: 3, output: 15, cache_read: 0.3, cache_write_5m: 3.75, cache_write_1h: 6 } };
+  d.noteTurn({ usage: { input_tokens: 0, cache_read_input_tokens: 1_000_000, cache_creation_input_tokens: 0 }, now: 0 });
+  assert.equal(d.cacheNotice('warn', 60_000), null, 'not yet');
+  assert.equal(d.cacheNotice('expire', 60_000), null);
+  assert.match(d.cacheNotice('warn', 4 * 60_000 + 1000), /vence en 1 min/);
+  assert.match(d.cacheNotice('expire', 5 * 60_000 + 1), /venció/);
+  d.noteTurn({ usage: TURN, now: 5 * 60_000 + 2 });
+  assert.equal(d.cacheNotice('expire', 5 * 60_000 + 3), null, 'a newer turn renewed it');
+  assert.deepEqual(d.drainNotices(), []);
+});
+
+test('a model switch leaves the new model cold with the event cost', () => {
+  const w = world();
+  const d = w.driver();
+  d.noteTurn({ usage: TURN, now: Date.now() });
+  d.noteModelSwitch({ toModel: 'claude-opus-4-8', tokens: 386000, usd: 3.86, ttl: '1h' });
+  assert.equal(d.cachePlan(Date.now()).expireInMs, 0);
+  assert.match(d.cacheNotice('expire') ?? '', /386k/);
+  assert.match(d.cacheNotice('expire') ?? '', /\$3\.86/);
+});
+
+/** Routes stats/trend/summary entries to scripted JSON. */
+function routed(w) {
+  const inner = w.$.process.run;
+  w.json = { stats: { usage: { calls: 3 }, cacheTtl: '1h' }, trend: { periods: [{ period: '2026-10-01', usd: 1, totalTokens: 10 }] } };
+  w.$.process.run = async (argv) => {
+    const e = ['stats', 'trend'].find((x) => argv.some((a) => a.endsWith(`${x}.mjs`)));
+    if (e) { w.runs.push(argv); return { stdout: JSON.stringify(w.json[e]), stderr: '' }; }
+    return inner(argv);
+  };
+  const count = (name) => w.runs.filter((a) => a.some((x) => x.endsWith(`${name}.mjs`))).length;
+  return count;
+}
+
+test('Stats tab loads once; metric runs no node, a new range does, the same one does not; r reloads', async () => {
+  const w = world();
+  const count = routed(w);
+  const d = w.driver();
+  await d.start();
+  await d.press('tab:stats');
+  assert.equal(count('stats'), 1);
+  assert.equal(count('trend'), 1);
+  const s = w.runs.find((a) => a.some((x) => x.endsWith('stats.mjs')));
+  assert.deepEqual(s.slice(-5), ['--session', 's1', '--json', '--cwd', '/proj']);
+  const t = w.runs.find((a) => a.some((x) => x.endsWith('trend.mjs')));
+  assert.deepEqual(t.slice(-7), ['--since', '7d', '--by', 'day', '--json', '--cwd', '/proj']);
+  assert.equal(d.panel().blocks.some((b) => b.type === 'chart'), true);
+
+  await d.press('tab:home');
+  await d.press('tab:stats');
+  await d.press('metric:tok');
+  assert.equal(count('stats'), 1);
+  assert.equal(count('trend'), 1);
+  await d.press('range:30d');
+  assert.equal(count('trend'), 2);
+  await d.press('range:7d');
+  assert.equal(count('trend'), 2, 'cached combination');
+  await d.press('here');
+  assert.ok(w.runs.at(-1).includes('--here'));
+  await d.press('refresh');
+  assert.equal(count('stats'), 2);
+  assert.equal(count('trend'), 4);
+});
+
+test('stats errors and empty answers become states, not exceptions', async () => {
+  const w = world();
+  routed(w);
+  w.json.stats = { usage: { calls: 0 } };
+  const d = w.driver();
+  await d.start();
+  await d.press('tab:stats');
+  assert.equal(JSON.stringify(d.panel().blocks).includes('Sin datos'), true);
+  const inner = w.$.process.run;
+  w.$.process.run = async (argv) => { if (argv.some((a) => a.endsWith('trend.mjs'))) throw new Error('boom'); return inner(argv); };
+  await d.press('by:week');
+  assert.ok(JSON.stringify(d.panel().blocks).includes('boom'));
+});
+
+test('a closed plan runs summary once and the notice is drained once; summary-hide hides it', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  assert.equal(w.plan.approved, true);
+  w.plan.hash = null;
+  w.out = JSON.stringify({ ok: true, feature: { usage: { calls: 1 } }, session: { usage: { calls: 2 } }, approvedAt: 5, sinceKind: 'approval', cacheTtl: '5m' });
+  await d.press('refresh');
+  await d.press('refresh');
+  const runs = w.runs.filter((a) => a.includes('summary'));
+  assert.equal(runs.length, 1);
+  assert.deepEqual(runs[0].slice(runs[0].indexOf('summary'), runs[0].indexOf('summary') + 3), ['summary', '--hash', HASH]);
+  assert.equal(d.drainNotices().length, 1);
+  assert.deepEqual(d.drainNotices(), []);
+  await d.press('tab:stats');
+  assert.ok(d.panel().blocks.some((b) => b.type === 'summary'));
+  await d.press('summary-hide');
+  assert.ok(!d.panel().blocks.some((b) => b.type === 'summary'));
+});
+
+test('status() carries no nxy prefix and no warning sign', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.step();
+  assert.doesNotMatch(d.status() ?? '', /nxy|⚠/);
 });
 
 test('mod files have no node: import and no dynamic import', () => {

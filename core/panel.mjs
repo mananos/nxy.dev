@@ -8,13 +8,16 @@
  * Adding a tab = one entry in TABS plus one builder in BUILDERS (it returns `{blocks}`). Adding a
  * button = one entry in LAUNCHER (with its own `tab`).
  *
- * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs and batch-status.mjs only.
+ * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs, batch-status.mjs and statsview.mjs only.
  */
 import {
   effective, suiteDone, suiteIsRed, stateOf, nextActions,
   PAUSE_CONTINUE, PAUSE_ADJUST, PAUSE_STOP,
 } from './orchestrator.mjs';
 import { RETRY, CONTINUE, STOP, isRed, isDone } from './batch-status.mjs';
+import {
+  sessionFigures, roleBars, modelBars, whatIf1h, windowRows, segmentsOf, trendChart, featureSummary, METRICS, money,
+} from './statsview.mjs';
 
 /**
  * Clip a launcher's output for the pane: at most `maxLines` lines, long lines cut at 160 columns.
@@ -75,11 +78,14 @@ export const LAUNCHER = [
     id: 'filter', tab: 'home', label: (ctx) => (typeof ctx?.filter !== 'boolean' ? 'Filter' : ctx.filter ? 'Filter ● on' : 'Filter ○ off'),
     hotkey: 'f', script: 'filter', args: (ctx) => (ctx?.filter === true ? ['off'] : ['on']), after: 'refresh',
   },
-  { id: 'stats', tab: 'home', label: 'Stats', hotkey: 's', script: 'stats', args: [] },
-  { id: 'trend', tab: 'stats', label: 'Trend', hotkey: 't', script: 'trend', args: [] },
 ];
 
-const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked'];
+const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked', 'here', 'summary-hide'];
+
+/** The trend selectors: metric ids come from METRICS. */
+export const TREND_RANGES = ['7d', '30d'];
+export const TREND_BYS = ['day', 'week', 'model'];
+const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false };
 
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
@@ -104,7 +110,8 @@ export const filterCtx = (snap) => (typeof snap?.config?.filter === 'boolean' ? 
 
 /** @param {string} id */
 export const isPanelAction = (id) => PANEL_IDS.includes(id) || id.startsWith('tab:') || /^batch:\d+$/.test(id)
-  || /^pick:\S+$/.test(id) || LAUNCHER.some((l) => l.id === id);
+  || /^pick:\S+$/.test(id) || LAUNCHER.some((l) => l.id === id)
+  || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
 // ---- layout (pure: the renderer asks it for widths) ----
 
@@ -291,12 +298,20 @@ function costTile(usage) {
   };
 }
 
-/** The cache card: unknown until phase 2 feeds `cache`. @param {any} cache */
+/** The cache card: unknown without `cache`; cold (❄) once the TTL ran out. @param {any} cache */
 function cacheTile(cache) {
   if (!cache) return { id: 'cache', label: 'Cache', known: false, value: 'desconocido', tone: /** @type {Tone} */ ('dim'), bar: null, hints: /** @type {string[]} */ ([]) };
   const hint = [];
-  if (typeof cache.ttlLeftMs === 'number') hint.push(cache.ttlLeftMs > 0 ? `vence en ${durText(cache.ttlLeftMs)}` : 'fría');
-  if (typeof cache.coldCostUsd === 'number') hint.push(`en frío: $${cache.coldCostUsd.toFixed(2)}`);
+  const cold = typeof cache.ttlLeftMs === 'number' && cache.ttlLeftMs <= 0;
+  if (cold) {
+    if (typeof cache.coldCostUsd === 'number') {
+      const toks = typeof cache.coldTokens === 'number' ? ` ${kFmt(cache.coldTokens)}` : '';
+      hint.push(`el próximo mensaje reescribe${toks} ≈ $${cache.coldCostUsd.toFixed(2)}${cache.estimated ? '*' : ''}`);
+    }
+    return { id: 'cache', label: 'Cache', known: true, value: '❄ fría', tone: /** @type {Tone} */ ('running'), bar: null, hints: hint };
+  }
+  if (typeof cache.ttlLeftMs === 'number') hint.push(`vence en ${durText(cache.ttlLeftMs)}`);
+  if (typeof cache.coldCostUsd === 'number') hint.push(`en frío: $${cache.coldCostUsd.toFixed(2)}${cache.estimated ? '*' : ''}`);
   const pct = Math.max(0, Math.min(100, Number(cache.hitPct) || 0));
   return {
     id: 'cache', label: 'Cache', known: true, value: `${Math.round(pct)}%`, tone: /** @type {Tone} */ (cache.ttlLeftMs > 0 ? 'ok' : 'running'),
@@ -367,9 +382,13 @@ function homeBlocks(c) {
     if (!snap.review) bits.push('la review');
     if (bits.length) now_.next = `después: ${bits.length > 1 ? `${bits.slice(0, -1).join(', ')} y ${bits[bits.length - 1]}` : bits[0]}`;
   }
+  const seg = segmentsOf({
+    model: c.live?.model, effort: c.live?.effort, usage, turnUsd: c.live?.turnUsd, cache, limits: usage?.limits, now,
+  });
   return [
     hero,
     { type: 'tiles', tiles: [contextTile(usage, gate), costTile(usage), cacheTile(cache)] },
+    ...(seg.items.length ? [{ type: 'segments', items: seg.items }] : []),
     now_,
     ...actionsBlock('home', { snap, owned }),
   ];
@@ -390,7 +409,7 @@ function planBlocks(c) {
     const s = eff[String(b.n)]?.status;
     const state = states[i].state;
     const verdict = snap.verdicts?.[String(b.n)];
-    const launched = snap.launched?.[String(b.n)];
+    const launched = verdict?.launched ?? snap.launched?.[String(b.n)];
     const note = state === 'red' ? `${s === 'not-run' ? 'accept not run' : 'failed'}${continued.includes(b.n) ? ' (continued anyway)' : ''}` : undefined;
     const durationMs = state !== 'pending' && typeof launched === 'number' && typeof verdict?.ts === 'number' && state !== 'running'
       ? Math.max(0, verdict.ts - launched) : state === 'running' && typeof launched === 'number' ? Math.max(0, now - launched) : null;
@@ -446,16 +465,55 @@ function agentsBlocks(c) {
 
 /** @param {any} c */
 function statsBlocks(c) {
-  const { usage } = c;
-  const cost = costTile(usage);
-  return [
-    { type: 'kv', rows: [
-      { label: 'Costo de la sesión', value: cost.value, tone: cost.tone },
-      { label: 'Modelo', value: usage?.model ? String(usage.model) : 'desconocido', tone: usage?.model ? 'info' : 'dim' },
-    ] },
-    { type: 'note', text: 'Stats y Tendencia dibujadas: llega en la fase 2', tone: 'dim' },
-    ...actionsBlock('stats', c),
-  ];
+  const { usage, stats, trend, summary, now, ui } = c;
+  /** @type {any[]} */
+  const blocks = [];
+  if (summary) blocks.push({ type: 'summary', ...featureSummary(summary), hide: { id: 'summary-hide', label: 'Ocultar' } });
+  const d = stats?.state === 'ok' ? stats.data : null;
+  if (d) {
+    const figs = sessionFigures(d);
+    if (figs.length) blocks.push({ type: 'figures', title: 'Esta sesión', items: figs });
+    const roles = roleBars(d);
+    if (roles.rows.length) blocks.push({ type: 'bars', title: 'Costo por rol', ...roles });
+    const models = modelBars(d);
+    if (models.rows.length) blocks.push({ type: 'bars', title: 'Por modelo', ...models });
+    const w = whatIf1h(d.ttlWhatIf, d.cacheBreaks);
+    if (w) {
+      const items = [{ id: 'whatif', label: 'con cache 1 h', value: w.text, tone: /** @type {Tone} */ (w.worth ? 'ok' : 'dim') }];
+      if (w.avoidableUsd > 0) items.push({ id: 'avoidable', label: 'evitable', value: money(w.avoidableUsd), tone: 'dim' });
+      blocks.push({ type: 'figures', title: 'Si la cache durara 1 h', items });
+    }
+  } else if (!stats || stats.state === 'empty') {
+    blocks.push({ type: 'note', text: 'Sin datos de esta sesión todavía', tone: 'dim' });
+  }
+  const wins = windowRows(usage?.limits, now);
+  if (wins.length) blocks.push({ type: 'windows', rows: wins });
+  else blocks.push({ type: 'note', text: 'Ventanas 5h/7d: sin suscripción, no hay datos', tone: 'dim' });
+  // Trend: the selectors always show; the chart follows the state.
+  const sel = { ...DEFAULT_TREND_SEL, ...(ui?.trendSel ?? {}) };
+  const opt = (/** @type {string} */ id, /** @type {string} */ label, /** @type {boolean} */ active) => ({ id, label, active });
+  blocks.push({
+    type: 'selectors', title: 'Tendencia',
+    groups: [
+      { id: 'metric', options: Object.values(METRICS).map((m) => ({ ...opt(`metric:${m.id}`, m.label, sel.metric === m.id), color: m.color })) },
+      { id: 'range', options: TREND_RANGES.map((r) => opt(`range:${r}`, r === '7d' ? '7 días' : '30 días', sel.range === r)) },
+      { id: 'by', options: TREND_BYS.map((b) => opt(`by:${b}`, b === 'day' ? 'por día' : b === 'week' ? 'por semana' : 'por modelo', sel.by === b)) },
+      { id: 'here', options: [opt('here', 'sólo este repo', !!sel.here)] },
+    ],
+  });
+  if (trend?.state === 'ok' && trend.data) {
+    blocks.push({ type: 'chart', chart: trendChart(trend.data, sel.metric, layoutOf(c.bodyColumns ?? 78).CW) });
+  } else if (trend?.state === 'error') blocks.push({ type: 'note', text: `Tendencia: ${trend.error ?? 'no se pudo cargar'}`, tone: 'error' });
+  else if (trend?.state === 'empty') blocks.push({ type: 'note', text: 'Tendencia: sin datos en este rango', tone: 'dim' });
+  else if (trend?.state === 'loading') blocks.push({ type: 'note', text: 'Tendencia: cargando…', tone: 'running' });
+  // status line
+  const st = stats?.state;
+  const status = st === 'loading' ? { text: 'cargando…', tone: 'running' }
+    : st === 'error' ? { text: `error: ${stats.error ?? 'no se pudo leer'}`, tone: 'error' }
+      : st === 'ok' && typeof stats.at === 'number' ? { text: `actualizado hace ${durText(now - stats.at)} · r actualiza`, tone: 'dim' }
+        : { text: 'r actualiza', tone: 'dim' };
+  blocks.push({ type: 'note', ...status });
+  return blocks;
 }
 
 /** @param {any} c */
@@ -523,10 +581,18 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  *   usage?: {tokens: number, percent?: number, window?: number | null, costUsd?: number | null, model?: string | null} | null,
  *   now?: number, fallback?: {gate?: {enabled?: boolean, contextTokens?: number}},
  *   inFlight?: Record<string, {role: string, batch?: number}> | {role: string, batch?: number}[],
- *   cache?: {hitPct: number, ttlLeftMs: number, ttlMs: number, coldCostUsd: number} | null,
+ *   cache?: {hitPct: number, ttlLeftMs: number, ttlMs: number, coldCostUsd: number, coldTokens?: number, estimated?: boolean} | null,
+ *   stats?: {state: string, data?: any, at?: number, error?: string} | null,
+ *   trend?: {state: string, data?: any, at?: number, error?: string} | null,
+ *   summary?: any, live?: {model?: string | null, effort?: string | null, turnUsd?: number | null} | null,
+ *   bodyColumns?: number,
  * }} o `owned`: the orchestrator runs the plan in `snap` (the pill and the lotes count follow it).
+ * `ui.trendSel` = {metric, range, by, here}; `summary` = featureSummary's input.
  */
-export function buildPanel({ snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {}, inFlight, cache = null }) {
+export function buildPanel({
+  snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {}, inFlight, cache = null,
+  stats = null, trend = null, summary = null, live = null, bodyColumns = 78,
+}) {
   const tab = TABS.some((t) => t.id === ui.tab) ? /** @type {string} */ (ui.tab) : 'home';
   const gate = snap?.config?.gate ?? fallback.gate;
   const ownedSnap = owned && snap?.hash ? snap : null;
@@ -549,7 +615,8 @@ export function buildPanel({ snap, ask = null, owned = false, ui = {}, output = 
       : null,
     keys: [{ id: 'refresh', hotkey: 'r' }],
     animated: running.length > 0,
-    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache }).blocks,
+    clockTicks: tab === 'home' && typeof cache?.ttlLeftMs === 'number' && cache.ttlLeftMs > 0,
+    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache, stats, trend, summary, live, bodyColumns }).blocks,
   };
 }
 
@@ -615,6 +682,35 @@ export function panelText(view) {
         break;
       case 'note':
         out.push(b.text);
+        break;
+      case 'segments':
+        out.push(b.items.map((i) => `${i.label} ${i.value}`).join(' · '));
+        break;
+      case 'figures':
+        out.push(b.title);
+        for (const i of b.items) out.push(`  ${i.label}: ${i.value}`);
+        break;
+      case 'bars':
+        out.push(b.title);
+        for (const r of b.rows) out.push(`  ${r.label.padEnd(b.labelWidth)} ${barText(r.ratio, 1, 10)} ${r.text}`);
+        break;
+      case 'windows':
+        for (const r of b.rows) out.push(`${r.label}: ${barText(r.ratio, 1, 10)} ${Math.round(r.percentUsed)}%${r.resetsInMs != null ? ` · resetea en ${durText(r.resetsInMs)}` : ''}`);
+        break;
+      case 'selectors':
+        out.push(b.title);
+        for (const g of b.groups) out.push(`  ${g.options.map((o) => (o.active ? `[${o.label}]` : o.label)).join(' ')}`);
+        break;
+      case 'chart': {
+        const ch = b.chart;
+        out.push(`${ch.label}${ch.note ? ` (${ch.note})` : ''}`);
+        if (ch.kind === 'rows') for (const r of ch.rows) out.push(`  ${r.label.padEnd(ch.labelWidth)} ${barText(r.ratio, 1, 10)} ${r.text}`);
+        else out.push(`  ${ch.columns.map((x) => `${x.label} ${x.text}`).join(' | ')}`);
+        break;
+      }
+      case 'summary':
+        out.push(`Feature: ${money(b.costUsd)}${b.pct != null ? ` (${b.pct}% de la sesión)` : ''}${b.tokens ? ` · ${b.tokens}` : ''}`);
+        for (const x of b.batches) out.push(`  lote ${x.n}: ${x.text}`);
         break;
       default:
     }

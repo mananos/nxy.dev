@@ -15,8 +15,14 @@ import {
   wantsSnapshot, statusText,
 } from '../../../core/orchestrator.mjs';
 import { TABS, buildPanel, launcherOf, launcherAvailable, filterCtx, isPanelAction } from '../../../core/panel.mjs';
+import { cacheOf, coldCost, expiryPlan, hitOf, pickTtl, ttlMsOf } from '../../../core/cache.mjs';
+import { money, tok } from '../../../core/statsview.mjs';
 
 const CONTINUE_ANYWAY = CONTINUE;
+const MAX_TRENDS = 12;
+/** A warn timer may fire a little late; past this the cache is no longer "about to expire". */
+const WARN_WINDOW_MS = 65_000;
+const isTtl = (t) => t === '5m' || t === '1h';
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function newNonce() {
@@ -64,6 +70,8 @@ export function createDriver($, opts) {
     tab: 'home', /** @type {string|null} */ confirm: null,
     /** @type {number|undefined} the open batch of the Plan tab */ expanded: undefined,
     /** @type {Set<string>} findings ticked in checkpoint 2 */ picked: new Set(),
+    /** @type {{metric: string, range: string, by: string, here: boolean}} the Stats tab's trend selection */
+    trendSel: { metric: 'usd', range: '7d', by: 'day', here: false },
   };
   /** @type {string|null} the review the ticks belong to */
   let pickedFor = null;
@@ -72,6 +80,28 @@ export function createDriver($, opts) {
     const id = snap?.ok && snap.reviewDetail ? String(snap.reviewDetail.id ?? '') : null;
     if (id !== pickedFor) { pickedFor = id; ui.picked.clear(); }
   }
+  /**
+   * The main thread's cache as the module saw it: when its last answer came, how much of the input
+   * it served, how big the context was, and the TTL with where it came from.
+   * @type {{lastTs: number|null, hitPct: number|null, tokens: number|null, ttl: '5m'|'1h', ttlSource: 'default'|'settings'|'inferred'|'observed',
+   *   turnUsd: number|null, lastCost: number|null, effort: string|null, cold: {usd: number, tokens: number|null}|null}}
+   */
+  const cache = { lastTs: null, hitPct: null, tokens: null, ttl: '5m', ttlSource: 'default', turnUsd: null, lastCost: null, effort: null, cold: null };
+  /** @type {{observed: any, settings: any, inferred: boolean}} what `pickTtl` is fed */
+  const ttlIn = { observed: null, settings: null, inferred: false };
+  /** @type {number|null} when the current turn began */
+  let turnStart = null;
+  /** @type {string[]} toasts waiting for the module ("resumen listo") */
+  let notices = [];
+  /** @type {any} the closed feature's summary input, or null */
+  let summary = null;
+  /** @type {{[n: string]: number}|null} the last owned plan's launch times (st is nulled when it closes) */
+  let launchedMemo = null;
+  let columns = 78;
+  /** @type {{state: string, data?: any, at?: number, error?: string}|null} */
+  let stats = null;
+  /** @type {Map<string, {state: string, data?: any, at?: number, error?: string}>} */
+  const trends = new Map();
   /** @type {string|null} the plan hash the Plan tab was already shown for */
   let lastOwnedHash = null;
   /** @type {Promise<any>} the launcher's own lane, independent of `chain` */
@@ -93,9 +123,195 @@ export function createDriver($, opts) {
     if (sessionId) args.push('--session', sessionId);
     const res = await runNode(args);
     const out = JSON.parse(String(res?.stdout ?? '').trim().split('\n').pop() || '{}');
+    const prev = snap;
     snap = out;
     if (out && out.ok && typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
+    if (out?.ok) setTtl(out.cacheTtl, 'observed');
+    // An approved plan that no longer has a hash was closed (Terminar plan, or `handoff done` in the chat).
+    if (prev?.ok && prev.hash && prev.approved && out?.ok && !out.hash) await runSummary(prev);
     return out;
+  }
+
+  /** Runs `orch.mjs summary` once for a plan that just closed and keeps its result for the Stats tab. */
+  async function runSummary(prev) {
+    if (summaryFor === prev.hash) return;
+    summaryFor = prev.hash;
+    try {
+      const launched = { ...(prev.launched ?? {}), ...(launchedMemo ?? {}), ...(st?.launched ?? {}) };
+      const times = [...Object.values(launched), ...Object.values(prev.verdicts ?? {}).map((v) => /** @type {any} */ (v)?.launched)]
+        .filter((t) => Number.isFinite(t));
+      const args = ['summary', '--hash', prev.hash];
+      if (sessionId) args.push('--session', sessionId);
+      if (times.length) args.push('--fallback-since', String(Math.min(...times)));
+      const res = await runNode(args);
+      const out = JSON.parse(String(res?.stdout ?? '').trim().split('\n').pop() || '{}');
+      if (!out?.ok) return;
+      setTtl(out.cacheTtl, 'observed');
+      summary = { feature: out.feature, session: out.session, approvedAt: out.approvedAt, sinceKind: out.sinceKind, snap: { ...prev, launched } };
+      notices.push('Resumen del feature listo: abrí la pestaña Stats');
+    } catch { /* the summary is a nicety */ }
+  }
+  /** @type {string|null} the plan hash a summary was already asked for */
+  let summaryFor = null;
+
+  /**
+   * Sets the TTL. An observed one (read from the transcript, or from a model-switch event) is never
+   * overwritten by `settings`; anything else only fills in while nothing was observed.
+   * @param {any} ttl @param {'observed'|'settings'} source
+   */
+  function setTtl(ttl, source) {
+    if (!isTtl(ttl)) return;
+    if (source === 'observed') ttlIn.observed = ttl; else ttlIn.settings = ttl;
+    applyTtl(null);
+  }
+
+  /** The one precedence rule lives in `pickTtl`; the driver only feeds it what it has seen. */
+  function applyTtl(infer) {
+    const r = pickTtl({ observed: ttlIn.observed, settings: ttlIn.settings, infer });
+    if (r.source === 'inferred') ttlIn.inferred = true;
+    else if (ttlIn.inferred && r.source !== 'observed' && r.ttl === '5m') { cache.ttl = '1h'; cache.ttlSource = 'inferred'; return; }
+    cache.ttl = r.ttl;
+    cache.ttlSource = r.source;
+  }
+
+  /** The user's prompt reached the model: the start of a turn, where the idle pause before it ends. */
+  function noteTurnStart(now = Date.now()) { turnStart = now; }
+
+  /**
+   * One answer of the MAIN thread (an `agentId` means a subagent: ignored). Sets when it came, the
+   * hit, the context size and the turn's cost (delta of the session cost); without an observed TTL,
+   * a cache that outlived a pause longer than 5 min lifts the TTL to 1 h.
+   * @param {{usage?: any, agentId?: string|null, now?: number, costUsd?: number|null}} a
+   */
+  function noteTurn({ usage: u, agentId, now = Date.now(), costUsd = null } = {}) {
+    if (agentId || !u) return;
+    const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+    const read = n(u.cache_read_input_tokens);
+    const tokens = n(u.input_tokens) + read + n(u.cache_creation_input_tokens);
+    // The pause is the idle time before the turn began; with no known start, a long turn could
+    // pass as a pause, so nothing is inferred.
+    if (cache.lastTs != null && turnStart != null && turnStart >= cache.lastTs) {
+      applyTtl({ gapMs: turnStart - cache.lastTs, readTokens: read, prevTokens: cache.tokens ?? 0 });
+    }
+    turnStart = null;
+    cache.lastTs = now;
+    cache.hitPct = hitOf(u);
+    cache.tokens = tokens;
+    cache.cold = null;
+    if (typeof costUsd === 'number' && Number.isFinite(costUsd)) {
+      cache.turnUsd = cache.lastCost != null ? Math.max(0, costUsd - cache.lastCost) : null;
+      cache.lastCost = costUsd;
+    }
+  }
+
+  /** @param {string|null|undefined} level */
+  const noteEffort = (level) => { if (typeof level === 'string' && level) cache.effort = level; };
+
+  /**
+   * A model switch: the new model starts with a cold cache, and the event carries the exact cost of
+   * rewriting it.
+   * @param {{toModel?: string|null, tokens?: number|null, usd?: number|null, ttl?: string|null}} a
+   */
+  function noteModelSwitch({ toModel, tokens, usd, ttl } = {}) {
+    setTtl(ttl, 'observed');
+    cache.lastTs = 0;
+    cache.hitPct = null;
+    if (Number.isFinite(tokens)) cache.tokens = /** @type {number} */ (tokens);
+    cache.cold = typeof usd === 'number' && Number.isFinite(usd)
+      ? { usd, tokens: Number.isFinite(tokens) ? /** @type {number} */ (tokens) : null } : null;
+    if (toModel && usage) usage = { ...usage, model: toModel };
+  }
+
+  /** The cost of rewriting the context cold, from the snapshot's price table. */
+  function coldNow() {
+    if (cache.cold) return { usd: cache.cold.usd, estimated: false };
+    const model = usage?.model;
+    if (!model || !snap?.prices || cache.tokens == null) return null;
+    return coldCost({ tokens: cache.tokens, model, ttl: cache.ttl, prices: snap.prices });
+  }
+
+  /**
+   * When to warn and when the cache expires, from the last main-thread answer. Null with no answer yet.
+   * @param {number} [now]
+   */
+  function cachePlan(now = Date.now()) {
+    const ttlMs = ttlMsOf(cache.ttl);
+    if (cache.lastTs == null || ttlMs == null) return null;
+    return expiryPlan({ lastTs: cache.lastTs, ttlMs, now, coldUsd: coldNow()?.usd ?? null });
+  }
+
+  /**
+   * The toast text for a cache timer that fired, or null when it no longer applies (a newer turn
+   * renewed the cache, or the cost rounds to nothing).
+   * @param {'warn'|'expire'} kind @param {number} [now]
+   */
+  function cacheNotice(kind, now = Date.now()) {
+    const plan = cachePlan(now);
+    if (!plan || plan.silent) return null;
+    const cost = coldNow();
+    const rewrite = cost && cache.tokens != null
+      ? `el próximo mensaje reescribe ${tok(cache.tokens)} ≈ ${money(cost.usd)}${cost.estimated ? '*' : ''}` : 'el próximo mensaje reescribe el contexto';
+    if (kind === 'warn') {
+      if (plan.expireInMs <= 0 || plan.expireInMs > WARN_WINDOW_MS) return null;
+      return `La cache vence en 1 min: ${rewrite}`;
+    }
+    if (plan.expireInMs > 0) return null;
+    return `La cache venció: ${rewrite}`;
+  }
+
+  /** The pending toasts ("resumen listo"), handed over once. Cache toasts come from `cacheNotice`. */
+  function drainNotices() {
+    const out = notices;
+    notices = [];
+    return out;
+  }
+
+  /** Work on the launcher's own lane. @template T @param {() => Promise<T>} fn */
+  function lane(fn) {
+    const run = launchChain.then(fn);
+    launchChain = run.catch(() => {});
+    return run;
+  }
+
+  /** Runs a stats/trend entry and parses its whole stdout. */
+  async function runJson(script, args) {
+    try {
+      const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', `${$.plugin.root}/hosts/claude-code/entries/${script}.mjs`, ...args, '--json', '--cwd', cwd]);
+      const text = String(res?.stdout ?? '').trim();
+      let data;
+      try { data = JSON.parse(text); } catch { return { state: 'empty', at: Date.now(), error: text.split('\n')[0] || undefined }; }
+      return { state: 'ok', data, at: Date.now() };
+    } catch (err) {
+      return { state: 'error', at: Date.now(), error: String(/** @type {any} */ (err)?.message ?? err) };
+    }
+  }
+
+  function loadStats() {
+    stats = { state: 'loading', data: stats?.data, at: stats?.at };
+    return lane(async () => {
+      const r = await runJson('stats', sessionId ? ['--session', sessionId] : []);
+      if (r.state === 'ok' && !(r.data?.usage?.calls > 0)) r.state = 'empty';
+      stats = r;
+      if (r.state === 'ok') setTtl(r.data?.cacheTtl, 'observed');
+    });
+  }
+
+  const trendKey = (sel) => `${sel.range}|${sel.by}|${sel.here ? 'here' : 'all'}`;
+
+  /** Loads the trend of the selection unless that combination is cached (or loading). @param {boolean} [force] */
+  function loadTrend(sel = ui.trendSel, force = false) {
+    const key = trendKey(sel);
+    const have = trends.get(key);
+    if (have && !force && have.state !== 'error') return Promise.resolve();
+    if (!have) while (trends.size >= MAX_TRENDS) trends.delete(/** @type {string} */ (trends.keys().next().value));
+    trends.set(key, { state: 'loading', data: have?.data, at: have?.at });
+    const args = ['--since', sel.range, '--by', sel.by];
+    if (sel.here) args.push('--here');
+    return lane(async () => {
+      const r = await runJson('trend', args);
+      if (r.state === 'ok' && !(r.data?.periods?.length || r.data?.models?.length)) r.state = 'empty';
+      trends.set(key, r);
+    });
   }
 
   async function loadState(hash) {
@@ -356,8 +572,17 @@ export function createDriver($, opts) {
       if (action.startsWith('tab:')) {
         const id = action.slice(4);
         if (TABS.some((t) => t.id === id)) ui.tab = id;
+        // First time on Stats: load it (later visits show what is cached; `r` reloads).
+        if (id === 'stats' && !stats) return Promise.all([loadStats(), loadTrend()]).then(() => {});
         return Promise.resolve();
       }
+      if (action.startsWith('metric:')) { ui.trendSel = { ...ui.trendSel, metric: action.slice(7) }; return Promise.resolve(); }
+      if (action.startsWith('range:') || action.startsWith('by:') || action === 'here') {
+        ui.trendSel = action === 'here' ? { ...ui.trendSel, here: !ui.trendSel.here }
+          : action.startsWith('range:') ? { ...ui.trendSel, range: action.slice(6) } : { ...ui.trendSel, by: action.slice(3) };
+        return loadTrend();
+      }
+      if (action === 'summary-hide') { summary = null; return Promise.resolve(); }
       if (action.startsWith('batch:')) {
         const n = Number(action.slice(6));
         if (Number.isInteger(n) && n > 0) {
@@ -384,7 +609,11 @@ export function createDriver($, opts) {
         Promise.resolve($.prompt.submit({ text })).catch(() => {});
         return Promise.resolve();
       }
-      if (action === 'refresh') return queue(refresh);
+      if (action === 'refresh') {
+        if (ui.tab !== 'stats') return queue(refresh);
+        trends.clear();
+        return Promise.all([queue(refresh), loadStats(), loadTrend()]).then(() => {});
+      }
       if (action === 'dismiss') { output = null; return Promise.resolve(); }
       if (action === 'confirm-no') { ui.confirm = null; return Promise.resolve(); }
       if (action === 'confirm-yes') {
@@ -444,7 +673,15 @@ export function createDriver($, opts) {
       }
       : { ...snap, launched: st?.launched ?? snap.launched, inFlight: st?.inFlight ?? {} };
     const uiView = { ...ui, picked: [...ui.picked], expanded: ui.expanded };
-    return buildPanel({ snap: s, ask: st?.ask ?? null, owned, ui: uiView, output, usage, cache: null, now: Date.now(), fallback: { gate: cfg.gate } });
+    const now = Date.now();
+    const co = cacheOf({ lastTs: cache.lastTs, ttl: cache.ttl, hitPct: cache.hitPct, tokens: cache.tokens, model: usage?.model, prices: snap?.prices, now });
+    const cacheView = co && { ...co, coldTokens: co.coldTokens ?? undefined };
+    if (cacheView && cache.cold) { cacheView.coldCostUsd = cache.cold.usd; cacheView.estimated = false; if (cache.cold.tokens != null) cacheView.coldTokens = cache.cold.tokens; }
+    return buildPanel({
+      snap: s, ask: st?.ask ?? null, owned, ui: uiView, output, usage, cache: cacheView, now, fallback: { gate: cfg.gate },
+      stats, trend: trends.get(trendKey(ui.trendSel)) ?? null, summary,
+      live: { model: usage?.model ?? null, effort: cache.effort, turnUsd: cache.turnUsd }, bodyColumns: columns,
+    });
   }
 
   /** Reads the snapshot in the same node that clears the session start. Never throws: a failure leaves no snapshot. */
@@ -458,6 +695,7 @@ export function createDriver($, opts) {
         if (out && out.ok) {
           snap = out;
           if (typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
+          setTtl(out.cacheTtl, 'observed');
         } else snap = null;
       } catch { snap = null; }
     });
@@ -495,7 +733,7 @@ export function createDriver($, opts) {
       }
       if (e.after === 'refresh') {
         await queue(async () => {
-          if (id === 'plan-done') { if (snap?.hash) finished = snap.hash; st = null; }
+          if (id === 'plan-done') { if (snap?.hash) finished = snap.hash; if (st?.launched) launchedMemo = st.launched; st = null; }
           try { await refresh(); } catch { /* the next sync retries */ }
         });
       }
@@ -504,5 +742,10 @@ export function createDriver($, opts) {
     return run;
   }
 
-  return { step, start, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
+  /** The panel body's width in cells (`e.props.bodyColumns`); the module sets it before each `panel()`. */
+  const setColumns = (n) => { if (Number.isFinite(n) && n > 0) columns = Math.floor(n); };
+
+  return {
+    noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
+    step, start, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

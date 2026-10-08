@@ -13,7 +13,7 @@ import { loadConfig } from '../../../core/config.mjs';
 import { clip, estimatedNote, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, table } from '../../../core/format.mjs';
 import { readJsonl } from '../../../core/jsonl.mjs';
 import { nxyRuntimeDir } from '../../../core/paths.mjs';
-import { formatBreaks, formatTtlWhatIf, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
+import { formatBreaks, formatTtlWhatIf, lastCacheTtl, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
 import { ledgerUnavailableReason, readLedgerRows, rtkHistoryDbPath, savedPct, sessionSavings } from '../../../core/filter/ledger.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
@@ -59,7 +59,7 @@ const shape = {
 };
 
 if (opts.json) {
-  console.log(JSON.stringify({ ...s, shape, filter, rtkSavings }, null, 2));
+  console.log(JSON.stringify({ ...s, shape, filter, rtkSavings, cacheTtl: lastCacheTtl(ref.path) }, null, 2));
   process.exit(0);
 }
 

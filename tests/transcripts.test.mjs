@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
-import { breakCause, formatBreaks, listSessions, newIncrementalState, parseSession, readIncremental, resolveSession, summarizeBreaks } from '../hosts/claude-code/transcripts.mjs';
+import { breakCause, formatBreaks, lastCacheTtl, listSessions, newIncrementalState, parseSession, readIncremental, resolveSession, summarizeBreaks } from '../hosts/claude-code/transcripts.mjs';
 import { costFor, emptyUsage, estimateBasis, familyOf, isSyntheticModel, priceFor, versionOf, isZeroUsage, normalizeModel, toUsage } from '../core/pricing.mjs';
 
 const close = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
@@ -98,6 +98,30 @@ test('pricing: cache-aware costFor', () => {
   assert.equal(costFor('claude-future-9', u), null, 'unknown model → null, never a guess');
   const legacy = toUsage({ input_tokens: 0, cache_creation_input_tokens: 500, output_tokens: 0 });
   assert.equal(legacy.cacheWrite5m, 500, 'no TTL breakdown → assume 5m');
+});
+
+test('lastCacheTtl: the last cache write of the main thread decides; sidechains and tail cuts are ignored', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-ttl-'));
+  const write = (name, lines) => {
+    const p = join(dir, name);
+    writeFileSync(p, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+    return p;
+  };
+  const w = (m5, h1, extra = {}) => ({ type: 'assistant', ...extra, message: { usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: m5 + h1, cache_creation: { ephemeral_5m_input_tokens: m5, ephemeral_1h_input_tokens: h1 } } } });
+  const read = { type: 'assistant', message: { usage: { cache_read_input_tokens: 5000, output_tokens: 1 } } };
+  assert.equal(lastCacheTtl(write('a.jsonl', [w(100, 0), read])), '5m');
+  assert.equal(lastCacheTtl(write('b.jsonl', [w(0, 100), read])), '1h');
+  assert.equal(lastCacheTtl(write('c.jsonl', [w(0, 100), w(100, 0), read])), '5m', 'mixed: the last write wins');
+  assert.equal(lastCacheTtl(write('d.jsonl', [w(100, 0), w(0, 100), read])), '1h', 'mixed: the last write wins');
+  assert.equal(lastCacheTtl(write('e.jsonl', [read, { type: 'user', message: { content: 'hi' } }])), null, 'no writes');
+  assert.equal(lastCacheTtl(write('f.jsonl', [w(100, 0), w(0, 100, { isSidechain: true })])), '5m', 'a subagent does not decide');
+  assert.equal(lastCacheTtl(join(dir, 'missing.jsonl')), null);
+  assert.equal(lastCacheTtl(null), null);
+  // Only the tail is read, and its partial first line is dropped: the old write is out of reach.
+  const filler = { type: 'user', message: { content: 'x'.repeat(400) } };
+  const far = write('g.jsonl', [w(0, 100), filler, filler, filler, read]);
+  assert.equal(lastCacheTtl(far, { tailBytes: 1500 }), null);
+  assert.equal(lastCacheTtl(far), '1h');
 });
 
 test('listSessions / resolveSession', () => {

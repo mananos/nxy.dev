@@ -86,6 +86,25 @@ test('register.tsx: one tick timer at module level, cancelled before a new one; 
   assert.match(src, /<Button plain label=\{f\.picked[^>]*onPress=\{press\(`pick:\$\{f\.id\}`\)\}/);
 });
 
+test('register.tsx: cache events with their own catch, two module-level timers, no turn.step, no clock in the render', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  for (const ev of ['prompt.submit', 'classic.Stop', 'classic.PreModelSwitch', 'classic.PostModelSwitch']) {
+    const at = src.indexOf(`on('${ev}'`);
+    assert.ok(at >= 0, ev);
+    const body = src.slice(at).match(/^[\s\S]*?\n {2}\}\)([^\n]*)/)?.[0] ?? '';
+    assert.match(body, /return next\(e\)/, ev);
+    assert.match(body, /\}\)\.catch\(\(\$, e, next\) => next\(e\)\)$/, ev);
+  }
+  assert.doesNotMatch(src, /turn\.step/);
+  assert.match(src, /^let cacheTimers\b/m);
+  assert.match(src, /function scheduleCache[\s\S]*?\$\.clock\.after\(/);
+  const handler = src.match(/on\('ui\.render'[\s\S]*?\n {2}\}\)\n/)?.[0] ?? '';
+  assert.doesNotMatch(handler, /clock\.after|scheduleCache/);
+  assert.doesNotMatch(src.slice(src.indexOf('function draw(')), /clock\.after|scheduleCache/);
+  assert.doesNotMatch(src, /truncate/);
+  assert.doesNotMatch(src, /from\s+'node:/);
+});
+
 const hasClaude = spawnSync('claude', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
 test('every <Button in register.tsx has an onPress (the engine skips the render otherwise)', () => {
   const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');

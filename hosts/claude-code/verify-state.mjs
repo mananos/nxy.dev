@@ -28,7 +28,7 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
 
 /**
- * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}>, sentBack: string[]}} VerifyState
+ * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number, launched?: number}>, sentBack: string[]}} VerifyState
  */
 
 /**
@@ -67,7 +67,7 @@ export function readVerify(cwd, branch, hash) {
  * Records one batch's verdict in its own file, replaced atomically (write aside, then rename), so a
  * parallel batch never overwrites it and a reader never sees half a file.
  * @param {string} cwd @param {string|null} branch @param {string} hash @param {number|string} n
- * @param {{status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}} verdict
+ * @param {{status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number, launched?: number}} verdict
  */
 export function recordBatch(cwd, branch, hash, n, verdict) {
   try {

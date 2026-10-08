@@ -2,13 +2,14 @@ import type { Register, Timer } from 'claude-code'
 
 import { COMPOSE_SECTION, readModConfig } from '../../../core/orchestrator.mjs'
 import { durText, layoutOf, lifecycleLayout, panelText } from '../../../core/panel.mjs'
-import { PALETTE as C, gaugeCells, progressCells } from '../../../core/raster.mjs'
+import { PALETTE as C, mix, gaugeCells, progressCells } from '../../../core/raster.mjs'
+import { COLUMN_WIDTH, money } from '../../../core/statsview.mjs'
 import { createDriver } from './driver.mjs'
 
 const PANE = 'nxy'
 const SPIN = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 // A view tone as a palette colour; `info` is the plain text colour.
-const TONE: Record<string, string> = { ok: C.green, running: C.blue, error: C.red, dim: C.muted, info: C.text }
+const TONE: Record<string, string> = { ok: C.green, running: C.blue, error: C.red, bad: C.red, warn: C.amber, dim: C.muted, info: C.text }
 const toneColor = (tone?: string) => TONE[tone ?? 'info'] ?? C.text
 
 /**
@@ -63,8 +64,38 @@ async function usageOf($: any) {
     try { costUsd = Number.isFinite(u.cost?.usd) ? u.cost.usd : null } catch { /* optional */ }
     let model: string | null = null
     try { model = (await $.session.model()) || null } catch { /* optional */ }
-    return { tokens, percent, window: Number.isFinite(window) ? window : null, costUsd, model }
+    let limits: { kind: string; percentUsed: number; resetsAt: string }[] = []
+    try {
+      limits = (u.rateLimits ?? []).map((l: any) => ({ kind: l.kind, percentUsed: l.percentUsed, resetsAt: l.resetsAt }))
+    } catch { /* optional */ }
+    return { tokens, percent, window: Number.isFinite(window) ? window : null, costUsd, model, limits }
   } catch { return null }
+}
+// The two cache timers (warn at TTL-60 s, expire at the TTL): replaced on every main-thread answer.
+let cacheTimers: Timer[] = []
+function cancelCacheTimers() {
+  const ts = cacheTimers
+  cacheTimers = []
+  for (const t of ts) { try { t.cancel() } catch { /* already fired */ } }
+}
+// Armed from turn.complete only: no polling, nothing starts from a render.
+function scheduleCache($: any) {
+  cancelCacheTimers()
+  try {
+    const plan = driver?.cachePlan()
+    if (!plan || plan.silent) return
+    const arm = (ms: number, kind: 'warn' | 'expire') => {
+      cacheTimers.push($.clock.after(Math.max(0, ms), async () => {
+        try {
+          const text = driver?.cacheNotice(kind)
+          if (text) await $.ui.toast(text, { timeoutMs: 8000 })
+          await sync($)
+        } catch { /* optional */ }
+      }))
+    }
+    if (plan.warnInMs != null && plan.warnInMs > 0) arm(plan.warnInMs, 'warn')
+    if (plan.expireInMs > 0) arm(plan.expireInMs, 'expire')
+  } catch { /* optional */ }
 }
 async function readConfig($: any) {
   const read = async (path: string | null) => {
@@ -93,12 +124,16 @@ function stopTick() {
 }
 function startTick($: any) {
   stopTick() // never two ticks: a restart replaces the one running
+  let beat = 0
   const timer: Timer = $.clock.every(250, async () => {
     try {
       const up = (await $.ui.panes()).some((p: any) => p.id === PANE)
       if (!up) { if (tickTimer === timer) stopTick(); else timer.cancel(); return }
-      if (!driver?.panel()?.animated) return
-      frame++
+      const view = driver?.panel()
+      beat++
+      // The cache countdown on Home moves once a second: one tick in four.
+      if (!view?.animated && !(view?.clockTicks && beat % 4 === 0)) return
+      if (view?.animated) frame++
       await $.ui.invalidate('ui.render')
     } catch { /* optional */ }
   })
@@ -133,6 +168,10 @@ async function sync($: any) {
   }
   try { await $.ui.invalidate('ui.render') } catch { /* optional */ }
   await showStatus($)
+  // Pending toasts ("resumen listo"), shown once.
+  try {
+    for (const text of driver.drainNotices()) await $.ui.toast(text, { timeoutMs: 8000 })
+  } catch { /* optional */ }
 }
 async function ensure($: any) {
   if (!driver) driver = createDriver(api($), { cwd: await $.session.cwd(), sessionId: await $.session.id(), headless })
@@ -159,6 +198,10 @@ export const register: Register = on => {
       driver = createDriver(api($), { cwd: e.cwd, sessionId: await $.session.id(), headless })
       await driver.start()
       driver.setConfig(await readConfig($))
+      try {
+        const s: any = await $.settings.read()
+        driver.setTtl(s?.promptCacheTtl, 'settings')
+      } catch { /* optional */ }
       driver.setUsage(await usageOf($))
       await showStatus($)
       if (!headless && driver.panelSetting() === 'auto') {
@@ -204,14 +247,55 @@ export const register: Register = on => {
     try {
       const d = await ensure($)
       if (e.agentId) await d.onAgentDone(e.agentId, e.answer)
-      else await d.step('turn')
+      else {
+        const u = await usageOf($)
+        d.setUsage(u)
+        d.noteTurn({ usage: e.usage, agentId: e.agentId, now: Date.now(), costUsd: u?.costUsd ?? null })
+        scheduleCache($)
+        await d.step('turn')
+      }
       await sync($)
     } catch (err) { await fail($, 'turn.complete', err) }
     return ran
   })
 
+  // The user's prompt marks the turn start (needed to infer the cache TTL). Never changes the prompt.
+  on('prompt.submit', async ($, e, next) => {
+    try { driver?.noteTurnStart(Date.now()) } catch { /* optional */ }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The turn's effort, once per turn (the classic hook payload carries it).
+  on('classic.Stop', async ($, e, next) => {
+    try { driver?.noteEffort(e.effort?.level) } catch { /* optional */ }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('classic.PreModelSwitch', async ($, e, next) => {
+    try {
+      const usd = e.estimated_cache_write_usd
+      if (e.prompt_cache_warm && Number.isFinite(usd) && usd >= 0.01) {
+        await $.ui.toast(`Cambiar a ${e.to_model} reescribe la cache: ≈ $${usd.toFixed(2)}`, { timeoutMs: 8000 })
+      }
+    } catch { /* optional */ }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('classic.PostModelSwitch', async ($, e, next) => {
+    try {
+      // A resume or an automatic change without a warm cache lost nothing: leave the cache state alone.
+      if (!((e.source === 'resume' || e.source === 'auto') && !e.prompt_cache_warm)) {
+        driver?.noteModelSwitch({ toModel: e.to_model, tokens: e.context_tokens, usd: e.estimated_cache_write_usd, ttl: e.cache_ttl })
+        scheduleCache($)
+        await sync($)
+      }
+    } catch { /* optional */ }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     try {
+      driver?.setColumns(e.props?.bodyColumns)
       return draw($, e, driver?.panel() ?? null)
     } catch (err) {
       const { Text } = $.ui.resolve(e) as any
@@ -283,7 +367,25 @@ function draw($: any, e: any, v: any) {
       <Text color={toneColor(p.tone)} wrap="wrap">{p.value}</Text>
     </Box>
   )
-  const AgentLine = (p: { a: any; i: number }) => (
+  // Horizontal bars: label (never cut), a gauge, the amount.
+  const BarRows = (p: { rows: any[]; labelWidth: number; color?: string }) => {
+    const gw = Math.max(4, Math.min(24, CW - p.labelWidth - 16))
+    return (
+      <Box flexDirection="column">
+        {p.rows.map((r: any, i: number) => {
+          const col = p.color ?? r.color ?? C.cyan
+          return (
+            <Box key={`br${i}`} flexDirection="row" columnGap={1}>
+              <Box width={p.labelWidth + 1}><Text color={C.text}>{r.label}</Text></Box>
+              <Raster key={`bg${i}`} columns={gw} rows={1} cells={gaugeCells(gw, r.ratio, [col, col])} />
+              <Text color={C.muted}>{r.text}</Text>
+            </Box>
+          )
+        })}
+      </Box>
+    )
+  }
+  const AgentLine =(p: { a: any; i: number }) => (
     <Text key={`ag${p.i}`} wrap="wrap">
       <Text color={C.blue}>{`${spin(p.i * 5)} `}</Text>
       <Text color={C.text}>{p.a.role}</Text>
@@ -487,6 +589,107 @@ function draw($: any, e: any, v: any) {
         return (
           <Box key={`b${bi}`} flexDirection="column" marginTop={1}>
             {b.rows.map((r: any) => <Setting key={r.label} label={r.label} value={String(r.value ?? '')} tone={r.tone} />)}
+          </Box>
+        )
+      case 'segments':
+        return (
+          <Box key={`b${bi}`} flexDirection="row" flexWrap="wrap" marginTop={1} columnGap={3}>
+            {b.items.map((s: any) => (
+              <Text key={s.id}><Text color={C.muted}>{`${s.label} `}</Text><Text color={toneColor(s.tone)}>{s.value}</Text></Text>
+            ))}
+          </Box>
+        )
+      case 'figures':
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title={b.title} color={C.cyan} />
+            <Box flexDirection="row" flexWrap="wrap" columnGap={3}>
+              {b.items.map((s: any) => (
+                <Text key={s.id}><Text color={C.muted}>{`${s.label} `}</Text><Text color={toneColor(s.tone)}>{s.value}</Text></Text>
+              ))}
+            </Box>
+          </Box>
+        )
+      case 'bars':
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title={b.title} color={C.cyan} />
+            <BarRows rows={b.rows} labelWidth={b.labelWidth} />
+          </Box>
+        )
+      case 'windows':
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title="Ventanas" color={C.cyan} />
+            {b.rows.map((w: any) => {
+              const gw = Math.max(4, Math.min(30, CW - 28))
+              const col = toneColor(w.tone)
+              return (
+                <Box key={`w${w.kind}`} flexDirection="row" columnGap={1}>
+                  <Box width={6}><Text color={C.muted}>{w.label}</Text></Box>
+                  <Raster key={`wg-${w.kind}`} columns={gw} rows={1} cells={gaugeCells(gw, w.ratio, [col, col])} />
+                  <Text color={toneColor(w.tone)}>{`${Math.round(w.percentUsed)}%`}</Text>
+                  <Text color={C.muted}>{w.resetsInMs != null ? `· reinicia en ${durText(w.resetsInMs)}` : ''}</Text>
+                </Box>
+              )
+            })}
+          </Box>
+        )
+      case 'selectors':
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title={b.title} color={C.violet} />
+            <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+              {b.groups.flatMap((g: any) => g.options.map((o: any) => (
+                <Keycap key={o.id} id={o.id} label={o.label} bg={o.active ? (o.color ?? C.violet) : C.keycap} />
+              )))}
+            </Box>
+          </Box>
+        )
+      case 'chart': {
+        const ch = b.chart
+        const dimColor = '#' + mix([C.faint, ch.color], 0.6).toString(16).padStart(6, '0')
+        const total = [ch.totalUsd != null ? `total ${money(ch.totalUsd)}` : '', ch.avoidableUsd ? `evitable ${money(ch.avoidableUsd)}` : '', ch.kind === 'rows' ? '' : ch.note ?? ''].filter(Boolean).join(' · ')
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Text color={C.muted} wrap="wrap">{ch.hint}</Text>
+            {total ? <Text color={C.muted} wrap="wrap">{total}</Text> : null}
+            {ch.kind === 'rows' ? (
+              <Box flexDirection="column">
+                {ch.note ? <Text color={C.muted} wrap="wrap">{ch.note}</Text> : null}
+                <BarRows rows={ch.rows} labelWidth={ch.labelWidth} color={ch.color} />
+              </Box>
+            ) : (
+              <Box flexDirection="row" marginTop={1}>
+                {ch.columns.map((c: any, ci: number) => (
+                  <Box key={`c${ci}`} flexDirection="column" width={COLUMN_WIDTH} alignItems="center">
+                    <Text color={c.last ? ch.color : C.muted} bold={c.last}>{c.text}</Text>
+                    {c.bars.map((cell: string, ri: number) => <Text key={`r${ri}`} color={c.last ? ch.color : dimColor}>{cell.repeat(Math.max(1, COLUMN_WIDTH - 2))}</Text>)}
+                    <Text color={c.last ? ch.color : C.muted}>{c.label}</Text>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )
+      }
+      case 'summary':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" borderStyle="round" borderColor={C.green} paddingX={1} marginTop={1}>
+            <Text bold color={C.green}>Resumen del feature</Text>
+            <Text color={C.text} wrap="wrap">
+              {`${b.costUsd != null ? money(b.costUsd) : '—'}${b.pct != null ? ` · ${b.pct}% de la sesión` : ''}${b.tokens ? ` · ${b.tokens}` : ''}`}
+            </Text>
+            <Box flexDirection="row" flexWrap="wrap" columnGap={3}>
+              {b.figures.map((s: any) => (
+                <Text key={s.id}><Text color={C.muted}>{`${s.label} `}</Text><Text color={toneColor(s.tone)}>{s.value}</Text></Text>
+              ))}
+            </Box>
+            {b.roles.rows.length ? <BarRows rows={b.roles.rows} labelWidth={b.roles.labelWidth} /> : null}
+            {b.batches.map((x: any) => (
+              <Text key={`sb${x.n}`}><Text color={C.muted}>{`lote ${x.n}  `}</Text><Text color={C.text}>{x.text}</Text></Text>
+            ))}
+            <Box flexDirection="row" marginTop={1}><Keycap id={b.hide.id} label={b.hide.label} /></Box>
           </Box>
         )
       case 'note':

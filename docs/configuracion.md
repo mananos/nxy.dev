@@ -148,7 +148,7 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 
 ### `ui`
 
-`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La pestaña Config (5) muestra estos valores de sólo lectura; editarlos desde el panel llega en la fase 4, hoy se edita `.nxy/config.json`.
+`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) muestra estos valores de sólo lectura; editarlos desde el panel llega en la fase 4, hoy se edita `.nxy/config.json`.
 
 El botón **Filter** del panel escribe `modules.filter` en el `.nxy/config.json` del repo (el que se commitea), igual que `/nxy:filter on|off`.
 

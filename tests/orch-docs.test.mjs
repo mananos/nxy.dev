@@ -29,6 +29,14 @@ test('README names the five panel tabs and the fix button', () => {
   assert.ok(readme.includes('Arreglar'));
 });
 
+test('README documents Stats, the Cache card, the cold mark and the feature summary', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('**Stats**'));
+  assert.ok(readme.includes('**Cache**'));
+  assert.ok(readme.includes('❄'));
+  assert.match(readme, /resumen/i);
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);
