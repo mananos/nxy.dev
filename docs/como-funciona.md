@@ -208,6 +208,15 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 - **Docs.** Sólo se ofrecen documentos para usuarios: `.md` en la raíz, `README*`, y lo que esté bajo `docs/`, `doc/`, `documentation/` o `wiki/` (o `docs.paths` si lo configurás); `agents/`, `skills/`, `commands/`, `lenses/` y carpetas con punto no cuentan. Se muestran los 3 con más menciones y "+N más". Si alguno de esos `.md` nombra un archivo o una clase que el plan cambió (lo busca nxy con `rg`, sin tokens), el checkpoint 2 suma **Update docs / Leave docs**. El **documenter** (Sonnet, effort low) edita sólo esos `.md` en la misma rama. Si tu CI publica una carpeta a una wiki (Wiki.js, Azure DevOps), nxy la detecta.
 - `/nxy:review status` muestra por lente, en 30 días: hallazgos del cambio, elegidos para arreglar, preexistentes y escapes.
 
+## El panel (con Mods)
+
+- **Qué ves al abrir la sesión.** Con `ui.panel: "auto"` el panel `nxy` se abre solo y **ya lleno**: el Mod corre `orch.mjs release --snapshot`, el mismo proceso de node que ya liberaba la marca del orquestador, y ese proceso devuelve también el estado (plan, lotes con su título, veredictos, handoff y la config de `gate` y `filter`). No hay un segundo arranque de node ni nada que apretar para que aparezcan los datos. Con `"off"` no se abre solo; `/nxy-panel` lo abre igual.
+- **Pestañas.** `1` **Home**: Plan (hash y estado), Ciclo (plan › aprobado › lotes › tester › review › cierre), Handoff (hace cuánto se escribió; `desactualizado` si hay un veredicto más nuevo: actualizalo antes de cortar), Contexto (una barra contra el umbral del gate, o contra la ventana si el gate está apagado; cambia de color al 70 % y al 90 %) y Sesión (costo y modelo). `2` **Plan**: cada lote por su título con ✔/●/✘/○, la suite completa y la review. Un lote en rojo o una pausa entre tandas aparecen como pregunta con sus botones.
+- **Botones de Home.** Cada uno corre un comando de nxy y muestra su salida en un recuadro (`d` lo cierra): **Gate once** (`g`, deja pasar una edición aunque el gate la rechace: plan, umbral de contexto o falta de handoff), **Handoff** (`h`, lo muestra), **Terminar plan** (`e`, pide `y`/`n`; archiva el handoff y cierra el plan; sólo aparece si hay plan o handoff y el orquestador no está corriendo), **Filter ● on / ○ off** (`f`; dice sólo **Filter** hasta que el panel leyó la config; prende o apaga el filtro escribiendo `modules.filter` en el `.nxy/config.json` del repo, el que se commitea), **Stats** (`s`) y **Trend** (`t`). `r` vuelve a leer el estado.
+- **No frena al orquestador.** Los comandos de los botones corren en su propio carril: un Trend lento no demora el despacho del lote siguiente.
+- **Debajo del prompt.** Una entrada de estado: `● ready`, `▶ batch N/M`, `▶ tester`, `▶ review`, `⏸ paused after batch N` o `✘ batch N needs you`. Claude Code le antepone el nombre del plugin, por eso la ves como `⚠ nxy: ● ready`.
+- **Por dentro.** `core/panel.mjs` arma la vista con datos puros (pestañas, filas, botones); el Mod (`hosts/claude-code/mod/`) sólo la dibuja, y sin pantalla interactiva `/nxy-panel` imprime la misma vista como texto.
+
 ## Los hooks
 
 | Evento | Qué hace | Tokens |
@@ -234,10 +243,12 @@ core/                    # nada acá sabe qué es Claude Code
   index/ scout/          # índice de símbolos, búsqueda sin modelo, codegraph
   memory/                # store SQLite, ámbitos, recall, grafo, handoff, intercambio, convenciones
   gate, plan, verify, review, diff, docs
+  orchestrator, panel    # la máquina de estados del plan y la vista del panel (puras)
 hosts/claude-code/       # todo lo específico de Claude Code
   transcripts.mjs        # ~/.claude/projects/*.jsonl -> Call[]
   hooks/                 # un archivo por evento
   entries/               # los scripts detrás de cada /nxy:<comando>
+  mod/                   # el Mod: dibuja el panel y despacha los agentes del orquestador
   statusline, permissions, settings, roles, *-state (estado en .nxy/local/)
 agents/ commands/ skills/ hooks/ lenses/ .claude-plugin/   # en la raíz porque Claude Code los busca ahí
 ```

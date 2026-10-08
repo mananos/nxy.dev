@@ -43,6 +43,19 @@ test('register.tsx wires the status entry, /nxy-panel and the idle-free turn ste
   assert.doesNotMatch(src, /from\s+'node:/);
 });
 
+test('register.tsx draws the console: resolved elements, width, hotkeys, no Close, status order, start()', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.match(src, /\$\.ui\.resolve/);
+  assert.match(src, /props\??\.bodyColumns/);
+  assert.doesNotMatch(src, /\be\.bodyColumns/);
+  assert.match(src, /borderStyle/);
+  assert.match(src, /hotkey=/);
+  assert.doesNotMatch(src, /PANEL_CLOSE/);
+  assert.doesNotMatch(src, /label="Close"|'Close'/);
+  assert.match(src, /async function showStatus[\s\S]*?await \$\.ui\.status\([\s\S]*?lastStatus = text/);
+  assert.match(src, /on\('session\.start'[\s\S]*?driver\.start\(\)/);
+});
+
 const hasClaude = spawnSync('claude', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
 test('every <Button in register.tsx has an onPress (the engine skips the render otherwise)', () => {
   const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');

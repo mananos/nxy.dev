@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDriver } from '../hosts/claude-code/mod/driver.mjs';
 import { ticketOf, MARKER_TTL_MS } from '../core/orchestrator.mjs';
+import { panelText } from '../core/panel.mjs';
 
 const RT = '/rt/nxy'; // a made-up runtime dir: the fake fs never touches the disk
 const HASH = 'abc12345';
@@ -37,7 +38,7 @@ function world(over = {}) {
       run: async (argv) => {
         w.runs.push(argv);
         if (w.failRun) throw new Error('boom');
-        return { exitCode: 0, stdout: argv.includes('snapshot') ? JSON.stringify(w.plan) : (w.out ?? '{}'), stderr: '' };
+        return { exitCode: 0, stdout: argv.includes('snapshot') || argv.includes('--snapshot') ? JSON.stringify(w.plan) : (w.out ?? '{}'), stderr: '' };
       },
     },
     agent: {
@@ -113,7 +114,7 @@ test('a red batch asks; Retry re-spawns with the failure', async () => {
   w.verdict(1, 'fail', { error: 'two tests broke' });
   await d.onAgentDone(w.agentOf('implementer', 1), 'x');
   assert.equal(w.spawns.length, 1);
-  assert.deepEqual(d.view().buttons, ['Retry', 'Continue anyway', 'Stop']);
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['Retry', 'Continue anyway', 'Stop']);
   await d.press('Retry');
   assert.equal(w.spawns.length, 2);
   assert.match(w.spawns[1].prompt, /^Batch 1 — one/);
@@ -139,7 +140,7 @@ test('pauseAfterBatch waits for Continue', async () => {
   w.verdict(1, 'pass');
   await d.onAgentDone(w.agentOf('implementer', 1), 'x');
   assert.equal(w.spawns.length, 1);
-  assert.deepEqual(d.view().buttons, ['Continue', 'Adjust', 'Stop']);
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['Continue', 'Adjust', 'Stop']);
   await d.press('Continue');
   assert.equal(w.spawns.length, 3);
   assert.deepEqual(w.state().acked, [1]);
@@ -167,7 +168,7 @@ test('a verdict that never lands is treated as not-run', async () => {
   await d.step();
   await d.onAgentDone(w.agentOf('implementer', 1), 'x');
   assert.equal(w.spawns.length, 1);
-  assert.deepEqual(d.view().buttons, ['Retry', 'Continue anyway', 'Stop']);
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['Retry', 'Continue anyway', 'Stop']);
 });
 
 test('headless: a red batch hands back with the afterBatch text instead of asking', async () => {
@@ -219,7 +220,7 @@ test('a refused spawn records the batch as not run', async () => {
   const d = w.driver();
   await d.step();
   assert.equal(w.spawns.length, 0);
-  assert.deepEqual(d.view().buttons, ['Retry', 'Continue anyway', 'Stop']);
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['Retry', 'Continue anyway', 'Stop']);
 });
 
 test('idle: turns and agent turns without an AskUserQuestion run no node and write nothing', async () => {
@@ -254,24 +255,27 @@ test("step('ask') snapshots and takes over; later turns move on; a late approval
 test('status(): ready, running, paused, ready after the hand-back', async () => {
   const w = world({ config: { pauseAfterBatch: true, orchestrator: 'auto' } });
   const d = w.driver();
-  assert.equal(d.status(), 'nxy ● ready');
+  assert.equal(d.status(), '● ready');
   await d.step();
-  assert.equal(d.status(), 'nxy ▶ batch 1/3');
+  assert.equal(d.status(), '▶ batch 1/3');
   w.verdict(1, 'pass');
   await d.onAgentDone(w.agentOf('implementer', 1), 'x');
-  assert.match(d.status(), /^nxy ⏸ /);
+  assert.match(d.status(), /^⏸ /);
   await d.press('Stop');
-  assert.equal(d.status(), 'nxy ● ready');
+  assert.equal(d.status(), '● ready');
 });
+
+const text = (d) => panelText(d.panel());
+const tabOf = (d) => d.panel().tabs.find((t) => t.active).id;
 
 test('panel() before any snapshot uses setConfig and setUsage and runs no node', () => {
   const w = world();
   const d = w.driver();
   d.setConfig({ panel: 'off', gate: { enabled: true, contextTokens: 100000 } });
   d.setUsage({ tokens: 46000, percent: 46 });
-  const text = d.panel().rows.map((r) => r.text);
-  assert.ok(text.some((t) => t.startsWith('plan: not read yet')));
-  assert.ok(text.some((t) => t.startsWith('gate: threshold 100000') && t.includes('46k')));
+  const t = text(d);
+  assert.ok(t.some((l) => l.startsWith('Plan: sin leer')));
+  assert.ok(t.some((l) => l.startsWith('Contexto: 46k / 100k')));
   assert.equal(w.runs.length, 0);
   assert.equal(d.panelSetting(), 'off');
 });
@@ -281,45 +285,223 @@ test('openPanel reads the plan: none, then a plan; panelSetting follows the snap
   const dn = none.driver();
   dn.setConfig({ panel: 'off' });
   await dn.openPanel();
-  assert.ok(dn.panel().rows.some((r) => r.text === 'plan: none'));
+  assert.ok(text(dn).includes('Plan: ninguno'));
   assert.equal(dn.panelSetting(), 'off', 'the snapshot has no ui.panel: the fallback stays');
 
   const w = world({ config: { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' } } });
   const d = w.driver();
   d.setConfig({ panel: 'off' });
   await d.openPanel();
-  assert.ok(d.panel().rows.some((r) => r.text.startsWith(`plan: ${HASH}`)));
+  assert.ok(text(d).some((l) => l.startsWith(`Plan: ${HASH}`)));
   assert.equal(d.panelSetting(), 'auto');
+});
+
+test('start(): one node run fills the panel; a plain release runs no snapshot; a failure leaves it empty', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  assert.equal(w.runs.length, 1);
+  assert.ok(w.runs[0].includes('release') && w.runs[0].includes('--snapshot'));
+  assert.deepEqual(w.runs[0].slice(w.runs[0].indexOf('--session'), w.runs[0].indexOf('--session') + 2), ['--session', 's1']);
+  assert.ok(text(d).some((l) => l.startsWith(`Plan: ${HASH}`)));
+  assert.equal(w.spawns.length, 0, 'start() never takes a plan over');
+
+  const p = world();
+  await p.driver().release();
+  assert.ok(p.runs.length === 1 && !p.runs[0].includes('--snapshot'));
+
+  const bad = world();
+  bad.failRun = true;
+  const b = bad.driver();
+  await b.start();
+  assert.ok(text(b).some((l) => l.startsWith('Plan: sin leer')));
+});
+
+test('a tab press runs no node and changes the tab', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  const before = w.runs.length;
+  assert.equal(tabOf(d), 'home');
+  await d.press('tab:plan');
+  assert.equal(tabOf(d), 'plan');
+  assert.equal(w.runs.length, before);
 });
 
 test('launcher buttons run the entry with --cwd and show the output in the panel only', async () => {
   const w = world();
   const d = w.driver();
-  w.out = 'stats line one';
-  await d.press('Stats');
+  w.out = 'gate line one';
+  await d.press('gate-once');
   assert.equal(w.runs.length, 1);
-  assert.match(w.runs[0].find((a) => a.endsWith('stats.mjs')), /entries[\\/]stats\.mjs$|entries\/stats\.mjs$/);
-  assert.deepEqual(w.runs[0].slice(-2), ['--cwd', '/proj']);
-  assert.ok(d.panel().rows.some((r) => r.text === 'stats line one'));
+  assert.match(w.runs[0].find((a) => a.endsWith('gate.mjs')), /entries[\\/]gate\.mjs$|entries\/gate\.mjs$/);
+  assert.deepEqual(w.runs[0].slice(-3), ['once', '--cwd', '/proj']);
+  assert.deepEqual(d.panel().output.lines, ['gate line one']);
+  assert.equal(d.panel().output.title, 'Gate once');
   assert.equal(w.appended.length, 0);
   assert.equal(w.submitted.length, 0);
 
-  await d.press('Filter on');
-  assert.deepEqual(w.runs[1].slice(-3), ['on', '--cwd', '/proj']);
-  assert.ok(w.runs[1].at(-4).endsWith('filter.mjs'));
+  w.out = 'the handoff';
+  await d.press('handoff');
+  assert.deepEqual(w.runs[1].slice(-4), ['handoff', 'show', '--cwd', '/proj']);
+  assert.deepEqual(d.panel().output.lines, ['the handoff']);
+
+  await d.press('dismiss');
+  assert.equal(d.panel().output, null);
 
   w.failRun = true;
-  await d.press('Trend');
-  assert.ok(d.panel().rows.some((r) => r.text.includes('Trend failed: boom')));
+  await d.press('trend');
+  assert.ok(d.panel().output.lines.some((l) => l.includes('Trend failed: boom')));
 });
 
-test('with a plan taken over view() is still the pane view, and Refresh only refreshes', async () => {
+test('a slow launcher does not delay the orchestrator, and a second press is ignored', async () => {
+  const w = world();
+  const d = w.driver();
+  /** @type {() => void} */
+  let release = () => {};
+  const held = new Promise((r) => { release = () => r(undefined); });
+  const inner = w.$.process.run;
+  w.$.process.run = async (argv) => {
+    if (argv.some((a) => a.endsWith('trend.mjs'))) { w.runs.push(argv); await held; return { stdout: 'trend done', stderr: '' }; }
+    return inner(argv);
+  };
+  const p = d.press('trend');
+  assert.equal(d.panel().output.running, true);
+  const again = d.press('trend');
+  await d.step('ask');
+  assert.equal(w.spawns.length, 1, 'the plan moved on while Trend runs');
+  release();
+  await p;
+  await again;
+  assert.equal(w.runs.filter((a) => a.some((x) => x.endsWith('trend.mjs'))).length, 1);
+  assert.deepEqual(d.panel().output.lines, ['trend done']);
+});
+
+test('plan-done asks first; no before yes, one run plus a refresh after, cancel runs nothing', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  const before = w.runs.length;
+  await d.press('plan-done');
+  assert.equal(w.runs.length, before, 'nothing runs before yes');
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['confirm-yes', 'confirm-no']);
+  await d.press('confirm-no');
+  assert.equal(d.panel().ask, null);
+  assert.equal(w.runs.length, before);
+
+  await d.press('plan-done');
+  await d.press('confirm-yes');
+  assert.equal(d.panel().ask, null);
+  const added = w.runs.slice(before);
+  assert.equal(added.length, 2);
+  assert.deepEqual(added[0].slice(-4), ['handoff', 'done', '--cwd', '/proj']);
+  assert.ok(added[1].includes('snapshot'));
+  await d.step('ask');
+  assert.equal(w.spawns.length, 0, 'the closed plan is not taken over again');
+});
+
+test('a plan taken over while Terminar plan waits for yes: the ask closes and yes runs nothing', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  await d.press('plan-done');
+  assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['confirm-yes', 'confirm-no']);
+  await d.step('ask');
+  assert.equal(w.spawns.length, 1, 'the orchestrator took the plan over');
+  assert.equal(d.panel().ask, null, 'the pending yes/no is gone');
+  const before = w.runs.length;
+  await d.press('confirm-yes');
+  await d.press('plan-done');
+  await d.press('confirm-yes');
+  assert.equal(w.runs.length, before, 'no handoff done while the plan is owned');
+  assert.ok(!w.runs.some((a) => a.includes('done')));
+  assert.equal(d.panel().ask, null);
+  assert.ok(d.view(), "the plan is still the orchestrator's");
+});
+
+/** Holds the given entry's process until `release()`; other runs go through. */
+function hold(w, entry) {
+  /** @type {() => void} */
+  let release = () => {};
+  const held = new Promise((r) => { release = () => r(undefined); });
+  const inner = w.$.process.run;
+  w.$.process.run = async (argv) => {
+    if (argv.some((a) => a.endsWith(`${entry}.mjs`))) { w.runs.push(argv); await held; return { stdout: `${entry} done`, stderr: '' }; }
+    return inner(argv);
+  };
+  return () => release();
+}
+
+test('a launcher dismissed while it runs leaves no output when it ends', async () => {
+  const w = world();
+  const d = w.driver();
+  const release = hold(w, 'trend');
+  const p = d.press('trend');
+  assert.equal(d.panel().output.running, true);
+  await d.press('dismiss');
+  assert.equal(d.panel().output, null);
+  release();
+  await p;
+  assert.equal(d.panel().output, null);
+});
+
+test('a second launcher started while the first runs keeps its own output', async () => {
+  const w = world();
+  const d = w.driver();
+  const release = hold(w, 'trend');
+  w.out = 'stats line';
+  const first = d.press('trend');
+  const second = d.press('stats');
+  assert.equal(d.panel().output.title, 'Stats');
+  assert.equal(d.panel().output.running, true);
+  release();
+  await first;
+  assert.equal(d.panel().output.title, 'Stats', 'the first run does not write over the second');
+  await second;
+  assert.equal(d.panel().output.title, 'Stats');
+  assert.deepEqual(d.panel().output.lines, ['stats line']);
+});
+
+test('the filter toggle runs filter on|off, re-reads the snapshot and flips the label', async () => {
+  const w = world();
+  w.plan.config = { ...w.plan.config, filter: false };
+  const d = w.driver();
+  await d.start();
+  assert.ok(text(d).some((l) => l.includes('Filter ○ off')));
+  w.plan.config = { ...w.plan.config, filter: true };
+  const before = w.runs.length;
+  await d.press('filter');
+  const added = w.runs.slice(before);
+  assert.deepEqual(added[0].slice(-3), ['on', '--cwd', '/proj']);
+  assert.ok(added[0].some((a) => a.endsWith('filter.mjs')));
+  assert.ok(added[1].includes('snapshot'));
+  assert.ok(text(d).some((l) => l.includes('Filter ● on')));
+  w.plan.config = { ...w.plan.config, filter: false };
+  await d.press('filter');
+  assert.deepEqual(w.runs.at(-2).slice(-3), ['off', '--cwd', '/proj']);
+});
+
+test('the Plan tab opens when a plan is taken over, then the tab is the user\'s choice', async () => {
+  const w = world();
+  const d = w.driver();
+  await d.start();
+  assert.equal(tabOf(d), 'home');
+  await d.step('ask');
+  assert.equal(tabOf(d), 'plan');
+  await d.press('tab:home');
+  assert.equal(tabOf(d), 'home');
+  w.verdict(1, 'pass');
+  await d.step('turn');
+  assert.equal(tabOf(d), 'home', 'not flipped again for the same plan');
+});
+
+test('with a plan taken over view() is the orchestrator snapshot, and Refresh only refreshes', async () => {
   const w = world();
   const d = w.driver();
   await d.step();
   assert.ok(d.view());
   const before = w.spawns.length;
-  await d.press('Refresh');
+  await d.press('refresh');
   assert.equal(w.spawns.length, before);
   assert.ok(d.view());
 });

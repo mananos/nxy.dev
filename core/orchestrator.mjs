@@ -46,9 +46,9 @@ export const PAUSE_STOP = 'Stop';
  */
 
 /** A suite record is final only when SubagentStop wrote `done`; `running` is written at dispatch. */
-const suiteDone = (/** @type {NonNullable<Snap['suite']>} */ s) => s.status === 'done';
+export const suiteDone = (/** @type {NonNullable<Snap['suite']>} */ s) => s.status === 'done';
 /** A finished suite is red when it lists red items (empty is green). */
-const suiteIsRed = (/** @type {NonNullable<Snap['suite']>} */ s) => Array.isArray(s.red) && s.red.length > 0;
+export const suiteIsRed = (/** @type {NonNullable<Snap['suite']>} */ s) => Array.isArray(s.red) && s.red.length > 0;
 
 /**
  * Per batch: what the orchestrator treats it as. A verdict older than the launch is the previous
@@ -56,7 +56,7 @@ const suiteIsRed = (/** @type {NonNullable<Snap['suite']>} */ s) => Array.isArra
  * @param {Snap} snap
  * @returns {Record<string, {status: Status}>}
  */
-function effective(snap) {
+export function effective(snap) {
   /** @type {Record<string, {status: Status}>} */
   const out = {};
   for (const { n } of snap.batches) {
@@ -230,46 +230,6 @@ export function denyMessage(hash, releaseCmd) {
   ].join('\n');
 }
 
-/**
- * What the `nxy` pane draws: one row per line, and the buttons of the open ask.
- * @param {Snap & {phase?: string}} snap
- * @param {Action | null} [ask] the open `ask` action, if any
- * @returns {{rows: {text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[], buttons: string[]}}
- */
-export function paneView(snap, ask = null) {
-  const eff = effective(snap);
-  const total = snap.batches.length;
-  const doneCount = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
-  const current = Math.min(total, doneCount + 1);
-  /** @type {{text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[]} */
-  const rows = [{ text: `nxy plan ${snap.hash} — batch ${current} of ${total}`, tone: 'info' }];
-  for (const { n } of snap.batches) {
-    const s = eff[String(n)]?.status;
-    if (!s) rows.push({ text: `  batch ${n}: waiting`, tone: 'dim' });
-    else if (s === 'running') rows.push({ text: `  batch ${n}: running…`, tone: 'running' });
-    else if (isRed(s)) rows.push({ text: `  batch ${n}: ✘ ${s === 'not-run' ? 'accept not run' : 'failed'}${(snap.continued ?? []).includes(n) ? ' (continued anyway)' : ''}`, tone: 'error' });
-    else rows.push({ text: `  batch ${n}: ✔`, tone: 'ok' });
-  }
-  const step = snap.review ? 'review done'
-    : snap.reviewLaunched ? 'review running…'
-    : snap.suite && suiteDone(snap.suite) ? (suiteIsRed(snap.suite) ? 'full suite ✘' : 'full suite ✔')
-    : snap.suite || snap.suiteLaunched ? 'full suite running…'
-    : null;
-  if (step) rows.push({ text: `  ${step}`, tone: step.includes('✘') ? 'error' : step.includes('running') ? 'running' : 'ok' });
-  /** @type {string[]} */
-  let buttons = [];
-  if (ask && ask.type === 'ask') {
-    if (ask.kind === 'red') {
-      rows.push({ text: `Batch ${ask.batch} did not pass — how to continue?`, tone: 'error' });
-      buttons = [RETRY, CONTINUE, STOP];
-    } else {
-      rows.push({ text: `Next: batch${ask.batches.length === 1 ? '' : 'es'} ${ask.batches.join(', ')} — continue?`, tone: 'info' });
-      buttons = [PAUSE_CONTINUE, PAUSE_ADJUST, PAUSE_STOP];
-    }
-  }
-  return { rows, buttons };
-}
-
 // ---- always-on panel (1.1.0): when node may run, the status line, the launcher and the idle view ----
 
 /**
@@ -289,7 +249,17 @@ export function wantsSnapshot({ trigger, asked = false, owned = false }) {
  * @param {Action | null} [ask] the open `ask` action, if any
  */
 export function statusText(snap, ask = null) {
-  const ready = 'nxy ● ready';
+  const s = stateOf(snap, ask);
+  return `${s.glyph} ${s.text}`;
+}
+
+/**
+ * The state pill: glyph, text and tone (the engine prefixes the plugin name on the status line).
+ * @param {Snap | null} snap @param {Action | null} [ask]
+ * @returns {{glyph: string, text: string, tone: 'ok' | 'running' | 'error' | 'info'}}
+ */
+export function stateOf(snap, ask = null) {
+  const ready = { glyph: '●', text: 'ready', tone: /** @type {'ok'} */ ('ok') };
   if (!snap) return ready;
   const { phase, actions } = nextActions(snap);
   const eff = effective(snap);
@@ -297,100 +267,15 @@ export function statusText(snap, ask = null) {
   const doneCount = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
   const open = ask && ask.type === 'ask' ? ask : actions.find((a) => a.type === 'ask') ?? null;
   if (open && open.type === 'ask') {
-    if (open.kind === 'red') return `nxy ✘ batch ${open.batch} needs you`;
+    if (open.kind === 'red') return { glyph: '✘', text: `batch ${open.batch} needs you`, tone: 'error' };
     const fin = finishedBatches(snap);
-    return `nxy ⏸ paused after batch ${fin.length ? Math.max(...fin) : doneCount}`;
+    return { glyph: '⏸', text: `paused after batch ${fin.length ? Math.max(...fin) : doneCount}`, tone: 'info' };
   }
   if (actions.some((a) => a.type === 'handback')) return ready;
-  if (phase === 'batches') return `nxy ▶ batch ${Math.min(total, doneCount + 1)}/${total}`;
-  if (phase === 'suite') return 'nxy ▶ tester';
-  if (phase === 'review') return 'nxy ▶ review';
+  if (phase === 'batches') return { glyph: '▶', text: `batch ${Math.min(total, doneCount + 1)}/${total}`, tone: 'running' };
+  if (phase === 'suite') return { glyph: '▶', text: 'tester', tone: 'running' };
+  if (phase === 'review') return { glyph: '▶', text: 'review', tone: 'running' };
   return ready;
-}
-
-export const PANEL_REFRESH = 'Refresh';
-export const PANEL_CLOSE = 'Close';
-
-/** Quick actions of the panel: a button label -> an nxy entry script and its arguments. */
-export const LAUNCHER = [
-  { label: 'Stats', script: 'stats', args: [] },
-  { label: 'Trend', script: 'trend', args: [] },
-  { label: 'Filter status', script: 'filter', args: ['status'] },
-  { label: 'Filter on', script: 'filter', args: ['on'] },
-  { label: 'Filter off', script: 'filter', args: ['off'] },
-  { label: 'Handoff', script: 'mem', args: ['handoff', 'show'] },
-];
-
-/** @param {string} label @returns {{script: string, args: string[]} | null} */
-export function launcherOf(label) {
-  const e = LAUNCHER.find((l) => l.label === label);
-  return e ? { script: e.script, args: [...e.args] } : null;
-}
-
-/** @param {string} label */
-export const isPanelAction = (label) => label === PANEL_REFRESH || label === PANEL_CLOSE || LAUNCHER.some((l) => l.label === label);
-
-/** @param {number} ms */
-function agoText(ms) {
-  const min = Math.max(0, Math.floor(ms / 60000));
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
-  const h = Math.floor(min / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.floor(h / 24)} days ago`;
-}
-
-/**
- * Clip a launcher's output for the pane: at most `maxLines` lines, long lines cut at 160 columns.
- * @param {string} text @param {number} [maxLines]
- */
-function clipOutput(text, maxLines = 30) {
-  const lines = String(text ?? '').replace(/\s+$/, '').split(/\r?\n/).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l));
-  if (lines.length <= maxLines) return lines;
-  return [...lines.slice(0, maxLines), `… (${lines.length - maxLines} more lines)`];
-}
-
-/**
- * What the pane draws when no plan is taken over.
- * @param {{
- *   snap: (Snap & {approved?: boolean, handoff?: {updated: number} | null, config?: {gate?: {enabled?: boolean, contextTokens?: number}, orchestrator?: string}}) | null,
- *   usage?: {tokens: number, percent: number} | null, now?: number,
- *   output?: {label: string, text: string} | null,
- *   fallback?: {gate?: {enabled?: boolean, contextTokens?: number}},
- * }} o
- * @returns {{rows: {text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[], buttons: string[]}}
- */
-export function panelView({ snap, usage = null, now = Date.now(), output = null, fallback = {} }) {
-  /** @type {{text: string, tone: 'ok' | 'error' | 'running' | 'info' | 'dim'}[]} */
-  const rows = [];
-  const gate = snap?.config?.gate ?? fallback.gate;
-  if (!snap) {
-    rows.push({ text: 'plan: not read yet — press Refresh', tone: 'dim' });
-    rows.push({ text: 'handoff: not read yet', tone: 'dim' });
-  } else {
-    if (!snap.hash) rows.push({ text: 'plan: none', tone: 'dim' });
-    else {
-      const eff = effective(snap);
-      const total = snap.batches.length;
-      const doneCount = snap.batches.filter(({ n }) => isDone(eff[String(n)]?.status)).length;
-      rows.push({ text: `plan: ${snap.hash} · batch ${Math.min(total, doneCount + 1)} of ${total} · ${snap.approved ? 'approved' : 'not approved yet'}`, tone: 'info' });
-    }
-    const upd = snap.handoff?.updated;
-    rows.push(typeof upd === 'number'
-      ? { text: `handoff: updated ${agoText(now - upd)}`, tone: 'info' }
-      : { text: 'handoff: none', tone: 'dim' });
-  }
-  if (!gate?.enabled) rows.push({ text: 'gate: off', tone: 'dim' });
-  else {
-    const ctx = usage ? `context now ${Math.round(usage.tokens / 1000)}k (${Math.round(usage.percent)}%)` : 'context now unknown';
-    rows.push({ text: `gate: threshold ${gate.contextTokens ?? 0} · ${ctx}`, tone: 'info' });
-  }
-  if (snap?.config?.orchestrator === 'off') rows.push({ text: 'orchestrator: off', tone: 'dim' });
-  if (output) {
-    rows.push({ text: `— ${output.label}`, tone: 'dim' });
-    for (const text of clipOutput(output.text, 30)) rows.push({ text, tone: 'info' });
-  }
-  return { rows, buttons: [PANEL_REFRESH, ...LAUNCHER.map((l) => l.label), PANEL_CLOSE] };
 }
 
 /** @param {unknown} v */

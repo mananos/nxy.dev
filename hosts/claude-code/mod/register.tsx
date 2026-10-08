@@ -1,9 +1,12 @@
 import type { Register } from 'claude-code'
 
-import { COMPOSE_SECTION, PANEL_CLOSE, readModConfig } from '../../../core/orchestrator.mjs'
+import { COMPOSE_SECTION, readModConfig } from '../../../core/orchestrator.mjs'
+import { barText, fitSteps, kFmt, panelText } from '../../../core/panel.mjs'
 import { createDriver } from './driver.mjs'
 
 const PANE = 'nxy'
+// A view tone as a theme key; `info` keeps the default text color.
+const TONE: Record<string, string | undefined> = { ok: 'success', running: 'warning', error: 'error', dim: 'subtle', info: undefined }
 
 /**
  * nxy's Mod: the orchestrator's wiring. The logic is in driver.mjs (testable without Claude Code);
@@ -34,22 +37,28 @@ async function fail($: any, where: string, err: unknown) {
   try { await driver?.release() } catch { /* best-effort */ }
 }
 // The status entry under the prompt; only sent when the text changed. Fail-open.
+// The text has no leading `nxy`: the engine prefixes the plugin's name itself. Seen live on
+// 2026-10-07, when `nxy ● ready` was drawn as `⚠ nxy: nxy ● ready`.
 async function showStatus($: any) {
   try {
     if (!driver) return
     const text = driver.status()
     if (text === lastStatus) return
-    lastStatus = text
     await $.ui.status(text)
+    lastStatus = text // only once it was sent: a throw above keeps the old value, so the next sync retries
   } catch { /* optional */ }
 }
 async function usageOf($: any) {
   try {
     const u = await $.session.usage()
-    const { tokens, percent } = u.context ?? {}
-    // both are absent before the first response of the session
+    const { tokens, percent, window } = u.context ?? {}
+    // tokens and percent are absent before the first response of the session
     if (!Number.isFinite(tokens) || !Number.isFinite(percent)) return null
-    return { tokens, percent }
+    let costUsd: number | null = null
+    try { costUsd = Number.isFinite(u.cost?.usd) ? u.cost.usd : null } catch { /* optional */ }
+    let model: string | null = null
+    try { model = (await $.session.model()) || null } catch { /* optional */ }
+    return { tokens, percent, window: Number.isFinite(window) ? window : null, costUsd, model }
   } catch { return null }
 }
 async function readConfig($: any) {
@@ -102,15 +111,12 @@ async function ensure($: any) {
 async function onPress($: any, element: string): Promise<void> {
   try {
     if (!driver) return
-    if (element === PANEL_CLOSE) {
-      userPanel = false
-      autoPanel = false
-      await $.ui.close({ id: PANE })
-    } else {
-      driver.setUsage(await usageOf($))
-      await driver.press(element)
-      await sync($)
-    }
+    driver.setUsage(await usageOf($))
+    // A launcher runs on its own lane: draw its running box first, then wait for the output.
+    const pressed = driver.press(element)
+    await sync($)
+    await pressed
+    await sync($)
   } catch (err) { await fail($, 'ui.press', err) }
 }
 
@@ -119,7 +125,7 @@ export const register: Register = on => {
     try {
       headless = !e.isInteractive
       driver = createDriver(api($), { cwd: e.cwd, sessionId: await $.session.id(), headless })
-      await driver.release()
+      await driver.start()
       driver.setConfig(await readConfig($))
       driver.setUsage(await usageOf($))
       await showStatus($)
@@ -139,13 +145,13 @@ export const register: Register = on => {
     d.setUsage(await usageOf($))
     await d.openPanel()
     // Not interactive (-p): the engine places every pane, so print the rows as text instead.
-    if (headless) return { text: d.panel().rows.map((r: any) => r.text).join('\n') }
+    if (headless) return { text: panelText(d.panel()).join('\n') }
     userPanel = true
     const opened = await $.ui.open({ id: PANE, title: 'nxy' })
     await showStatus($)
     try { await $.ui.invalidate('ui.render') } catch { /* optional */ }
     if (opened?.isPlaced) return { text: 'nxy panel opened' }
-    return { text: d.panel().rows.map((r: any) => r.text).join('\n') }
+    return { text: panelText(d.panel()).join('\n') }
   }).catch(($, e, next) => next(e))
 
   // The registration's own `.catch`: if this hook throws, the call goes on as without the Mod.
@@ -171,17 +177,102 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
-    const v = driver?.view() ?? driver?.panel() ?? null
+    const v = driver?.panel() ?? null
     if (!v) return <Text dimColor>nxy: nothing running.</Text>
-    const color = (tone: string) => (tone === 'ok' ? 'green' : tone === 'error' ? 'red' : undefined)
+    const cols: number = Number.isFinite(e.props?.bodyColumns) ? e.props.bodyColumns : 60
+    const compact = cols < 40
+    const color = (tone?: string) => TONE[tone ?? 'info']
+    const glyphOf = (state: string) => (state === 'done' ? '✔' : state === 'running' || state === 'current' ? '●' : state === 'red' ? '✘' : '○')
+    const stepGlyph = (state: string) => (state === 'done' ? '✔' : state === 'current' ? '◉' : state === 'red' ? '✘' : '○')
+    const stepColor = (state: string) => (state === 'done' ? 'success' : state === 'red' ? 'error' : state === 'pending' ? 'subtle' : undefined)
+    const btn = (b: any) => <Button key={b.id} plain label={b.label} hotkey={b.hotkey} onPress={() => onPress($, b.id)} />
+
+    const row = (r: any, i: number) => {
+      const value = r.bar ? (
+        <Box flexDirection="column">
+          <Box flexDirection="row" gap={1}>
+            <Text color={color(r.bar.tone)}>{barText(r.bar.used, r.bar.limit, compact ? 6 : 10)}</Text>
+            <Text>{`${kFmt(r.bar.used)} / ${kFmt(r.bar.limit)}`}</Text>
+          </Box>
+          {r.note ? <Text dimColor>{r.note}</Text> : null}
+        </Box>
+      ) : r.steps ? (
+        <Box flexDirection="column">
+          {fitSteps(r.steps, Math.max(10, cols - (compact ? 0 : 12))).map((line: any[], li: number) => (
+            <Box key={`l${li}`} flexDirection="row">
+              {line.map((s: any, si: number) => (
+                <Text key={`s${si}`} color={stepColor(s.state)} bold={s.state === 'current'} dimColor={s.state === 'pending'}>
+                  {`${si ? ' › ' : ''}${stepGlyph(s.state)} ${s.label}`}
+                </Text>
+              ))}
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box flexDirection="column">
+          <Text color={color(r.tone)}>{String(r.value ?? '')}</Text>
+          {r.note ? <Text dimColor>{r.note}</Text> : null}
+        </Box>
+      )
+      return compact ? (
+        <Box key={`r${i}`} flexDirection="column">
+          <Text dimColor>{r.label}</Text>
+          {value}
+        </Box>
+      ) : (
+        <Box key={`r${i}`} flexDirection="row" gap={1}>
+          <Box width={11}><Text dimColor>{r.label}</Text></Box>
+          {value}
+        </Box>
+      )
+    }
+
     return (
       <Box flexDirection="column">
-        {v.rows.map((r: any) => (
-          <Text color={color(r.tone)} dimColor={r.tone === 'dim'}>{r.text}</Text>
+        <Box flexDirection="row" gap={2}>
+          {v.tabs.map((t: any) => (
+            <Button key={`tab:${t.id}`} plain label={t.label} hotkey={t.hotkey} dimColor={!t.active} onPress={() => onPress($, `tab:${t.id}`)} />
+          ))}
+        </Box>
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text bold>{v.header.title}</Text>
+          <Text color={color(v.header.pill?.tone)}>{`${v.header.pill?.glyph ?? ''} ${v.header.pill?.text ?? ''}`.trim()}</Text>
+        </Box>
+        <Text dimColor>{'─'.repeat(Math.max(1, cols))}</Text>
+        {v.ask ? (
+          <Box flexDirection="column" borderStyle="round" borderColor={v.ask.tone === 'error' ? 'error' : 'warning'} paddingX={1}>
+            <Text>{v.ask.question}</Text>
+            <Box flexDirection="row" flexWrap="wrap" gap={2}>{v.ask.buttons.map(btn)}</Box>
+          </Box>
+        ) : null}
+        {v.sections.map((s: any, si: number) => (
+          <Box key={`sec${si}`} flexDirection="column" marginTop={si ? 1 : 0}>
+            {s.title ? <Text bold>{s.title}</Text> : null}
+            {(s.rows ?? []).map(row)}
+            {(s.batches ?? []).map((b: any) => (
+              <Box key={`b${b.n}`} flexDirection="row" gap={1}>
+                <Text color={b.state === 'done' ? 'success' : b.state === 'red' ? 'error' : b.state === 'running' ? 'warning' : 'subtle'}>{glyphOf(b.state)}</Text>
+                <Text dimColor={b.state === 'pending'}>{`${b.n}. ${b.title}`}</Text>
+                {b.note ? <Text dimColor>{b.note}</Text> : null}
+              </Box>
+            ))}
+            {s.actions?.length ? <Box flexDirection="row" flexWrap="wrap" gap={2} marginTop={1}>{s.actions.map(btn)}</Box> : null}
+          </Box>
         ))}
-        {v.buttons.map((b: string, i: number) => (
-          <Button key={b} label={b} hotkey={String(i + 1)} onPress={() => onPress($, b)} />
-        ))}
+        {v.output ? (
+          <Box flexDirection="column" borderStyle="round" paddingX={1} marginTop={1}>
+            <Box flexDirection="row" justifyContent="space-between">
+              <Text bold>{v.output.title}</Text>
+              <Button key="dismiss" plain label="x" hotkey={v.output.dismiss?.hotkey ?? 'd'} onPress={() => onPress($, 'dismiss')} />
+            </Box>
+            {v.output.lines.map((line: string, li: number) => (
+              <Text key={`o${li}`} dimColor={!!v.output.running}>{line}</Text>
+            ))}
+          </Box>
+        ) : null}
+        <Box flexDirection="row" marginTop={1}>
+          <Button key="refresh" plain dimColor label="refrescar" hotkey="r" onPress={() => onPress($, 'refresh')} />
+        </Box>
       </Box>
     )
   })

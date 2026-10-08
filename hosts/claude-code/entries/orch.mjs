@@ -8,6 +8,8 @@
  *   orch.mjs snapshot --cwd <dir> [--session <id> | --transcript <path>] [--projects-dir <dir>]
  *                                 one JSON line: the plan, its batches, verdicts, suite, review, config
  *   orch.mjs release --cwd <dir>  removes the orchestrator's marker, tickets and state (a stuck marker)
+ *   orch.mjs release --snapshot --cwd <dir> [--session <id>]
+ *                                 the same release, then the snapshot's JSON line instead of {"ok":true}
  *
  * Fail-open: any error prints {"ok":false}.
  */
@@ -21,6 +23,12 @@ import { isApproved } from '../plan-approval.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import { readReview, readSuite, readVerify } from '../verify-state.mjs';
 import { clearOrch } from '../orch-state.mjs';
+
+/** A batch title without its "Batch N — " prefix (the raw title when it does not match). */
+function titleOf(raw) {
+  const t = String(raw ?? '');
+  return t.replace(/^#*\s*Batch\s+\d+\s*[—–-]\s*/i, '') || t;
+}
 
 async function snapshot(cwd, opts) {
   const cfg = loadConfig(cwd);
@@ -37,6 +45,7 @@ async function snapshot(cwd, opts) {
       orchestrator: cfg.flow?.orchestrator === 'off' ? 'off' : 'auto',
       ui: { panel: cfg.ui?.panel === 'off' ? 'off' : 'auto' },
       gate: { enabled: cfg.gate?.enabled === true, contextTokens: cfg.gate?.contextTokens ?? 0 },
+      filter: cfg.modules?.filter === true,
     },
     handoff: known.handoff ? { updated: known.handoff.updated } : null,
   };
@@ -69,7 +78,7 @@ async function snapshot(cwd, opts) {
     approved,
     fresh,
     questions,
-    batches: parseBatches(plan).map((b) => ({ n: b.n, depends: b.depends, text: b.text, accept: b.accept.kind })),
+    batches: parseBatches(plan).map((b) => ({ n: b.n, title: titleOf(b.title), depends: b.depends, text: b.text, accept: b.accept.kind })),
     verdicts,
     suite: suite ? { status: suite.status, red: suite.red || [] } : null,
     review,
@@ -83,7 +92,7 @@ try {
   const action = (positional[0] || 'snapshot').toLowerCase();
   if (action === 'release') {
     clearOrch(cwd);
-    console.log(JSON.stringify({ ok: true }));
+    console.log(JSON.stringify(opts.snapshot ? await snapshot(cwd, opts) : { ok: true }));
   } else {
     console.log(JSON.stringify(await snapshot(cwd, opts)));
   }

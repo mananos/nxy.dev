@@ -16,7 +16,9 @@ test('README documents the panel, its command and how to turn it off', () => {
   const readme = read('README.md');
   assert.ok(readme.includes('/nxy-panel'));
   assert.ok(readme.includes('"plan":"always"'));
-  assert.ok(readme.includes('nxy ● ready'));
+  assert.ok(readme.includes('● ready'));
+  assert.ok(readme.includes('Terminar plan'));
+  assert.ok(readme.includes('Gate once'));
   assert.ok(readme.includes('"panel": "off"'));
   assert.ok(readme.includes('claude -p "/nxy-panel"'));
 });

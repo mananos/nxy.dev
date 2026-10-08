@@ -90,10 +90,39 @@ test('release removes the marker', () => {
   assert.equal(existsSync(marker), false);
 });
 
+test('release --snapshot returns the snapshot with titles and the filter state; plain release stays {ok:true}', () => {
+  const sb = sandbox(PLAN);
+  const s = run(sb, ['release', '--snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.equal(s.ok, true);
+  assert.equal(s.hash, sb.hash);
+  assert.deepEqual(s.batches.map((b) => b.title), ['first', 'second']);
+  assert.equal(typeof s.config.filter, 'boolean');
+  assert.deepEqual(run(sb, ['release', '--cwd', sb.repo]), { ok: true });
+});
+
+test('batch titles: a hyphen separator is stripped, a title with no Batch N prefix is kept raw', () => {
+  const plan = [
+    '## Plan',
+    'Goal: titles',
+    '### Batch 1 — first',
+    '- `src/a.mjs` — do a',
+    'Accept: `node --test tests/a.test.mjs`',
+    '### Wire it up',
+    '- `src/b.mjs` — do b',
+    'Accept: `node --test tests/b.test.mjs`',
+    '### Batch 3 - foo',
+    '- `src/c.mjs` — do c',
+    'Accept: `node --test tests/c.test.mjs`',
+  ].join('\n');
+  const sb = sandbox(plan);
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.deepEqual(s.batches.map((b) => [b.n, b.title]), [[1, 'first'], [2, 'Wire it up'], [3, 'foo']]);
+});
+
 test('the default config has the orchestrator on and no pause', () => {
   const sb = sandbox(PLAN);
   const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
-  assert.deepEqual(s.config, { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' }, gate: { enabled: true, contextTokens: 100000 } });
+  assert.deepEqual(s.config, { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' }, gate: { enabled: true, contextTokens: 100000 }, filter: true });
 });
 
 test('ui.panel off from the project config, and the handoff age', () => {

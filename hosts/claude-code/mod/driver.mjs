@@ -11,9 +11,10 @@
 import {
   ORCH_DIR, MARKER_FILE, TICKET_DIR, PAUSE_CONTINUE, PAUSE_ADJUST, PAUSE_STOP,
   RETRY, CONTINUE, STOP, finishedBatches,
-  nextActions, batchPrompt, testerPrompt, reviewerPrompt, ticketDescription, handbackText, paneView,
-  wantsSnapshot, statusText, panelView, launcherOf, isPanelAction, PANEL_REFRESH,
+  nextActions, batchPrompt, testerPrompt, reviewerPrompt, ticketDescription, handbackText,
+  wantsSnapshot, statusText,
 } from '../../../core/orchestrator.mjs';
+import { TABS, buildPanel, launcherOf, launcherAvailable, filterCtx, isPanelAction } from '../../../core/panel.mjs';
 
 const CONTINUE_ANYWAY = CONTINUE;
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -51,8 +52,20 @@ export function createDriver($, opts) {
   let finished = null;
 
   /** @type {any} */ let cfg = {};
-  /** @type {{tokens: number, percent: number}|null} */ let usage = null;
-  /** @type {{label: string, text: string}|null} */ let output = null;
+  /** @type {{tokens: number, percent: number, window?: number|null, costUsd?: number|null, model?: string|null}|null} */ let usage = null;
+  /**
+   * The launcher's output box. `id` and `token` name the run that wrote it: a run that ends only
+   * writes over its own placeholder (not over a dismiss, nor over a later launcher's box).
+   * @type {{id: string, token: number, label: string, text: string, running?: boolean}|null}
+   */
+  let output = null;
+  let runToken = 0;
+  const ui = { tab: 'home', /** @type {string|null} */ confirm: null };
+  /** @type {string|null} the plan hash the Plan tab was already shown for */
+  let lastOwnedHash = null;
+  /** @type {Promise<any>} the launcher's own lane, independent of `chain` */
+  let launchChain = Promise.resolve();
+  const launching = new Set();
   let asked = false;
   const isOwned = () => !!st && st.ours === true && !st.done;
 
@@ -247,6 +260,8 @@ export function createDriver($, opts) {
     if (!ours) {
       if (!(s.approved && s.fresh)) return;
       st = freshState(s.hash);
+      // A yes/no asked before the take-over (Terminar plan) no longer applies.
+      if (ui.confirm && !allowed(ui.confirm)) ui.confirm = null;
     }
     const view = build();
     st.phase = nextActions(view).phase;
@@ -322,11 +337,26 @@ export function createDriver($, opts) {
     });
   }
 
-  /** The user pressed a button of the pane. */
+  /** The user pressed a button of the pane. Returns a promise that settles when its work is done. */
   function press(action) {
     if (isPanelAction(action)) {
-      if (action === PANEL_REFRESH) return queue(refresh);
-      return queue(() => runLauncher(action));
+      if (action.startsWith('tab:')) {
+        const id = action.slice(4);
+        if (TABS.some((t) => t.id === id)) ui.tab = id;
+        return Promise.resolve();
+      }
+      if (action === 'refresh') return queue(refresh);
+      if (action === 'dismiss') { output = null; return Promise.resolve(); }
+      if (action === 'confirm-no') { ui.confirm = null; return Promise.resolve(); }
+      if (action === 'confirm-yes') {
+        const id = ui.confirm;
+        ui.confirm = null;
+        return id ? runLauncher(id) : Promise.resolve();
+      }
+      const e = launcherOf(action, launchCtx());
+      if (!e || !allowed(action)) return Promise.resolve();
+      if (e.confirm) { ui.confirm = action; return Promise.resolve(); }
+      return runLauncher(action);
     }
     return queue(async () => {
       if (!st || st.done || !st.ask || !snap?.ok) return;
@@ -351,10 +381,10 @@ export function createDriver($, opts) {
     });
   }
 
-  /** What the pane draws, or null when the orchestrator has nothing to show. */
+  /** The plan the orchestrator owns right now (its snapshot), or null. */
   function view() {
     if (!snap?.ok || !st || !st.ours || st.done) return null;
-    return paneView(build(), st.ask);
+    return build();
   }
 
   /** The status line under the prompt, from the cached snapshot (no node). */
@@ -362,27 +392,72 @@ export function createDriver($, opts) {
     return statusText(isOwned() && snap?.ok ? build() : null, st?.ask ?? null);
   }
 
-  /** The panel without a taken-over plan, from what the Mod already has. */
+  /** The panel's view: the plan the orchestrator owns (with the snapshot's extras), or the idle snapshot. */
   function panel() {
-    return panelView({ snap: snap?.ok ? snap : null, usage, now: Date.now(), output, fallback: { gate: cfg.gate } });
+    const ok = !!snap?.ok;
+    const owned = ok && isOwned();
+    const s = !ok ? null : owned ? { ...build(), approved: snap.approved, handoff: snap.handoff, config: snap.config } : snap;
+    // The first time an owned plan appears the panel shows the Plan tab; afterwards the tab is the user's.
+    if (owned && snap.hash && snap.hash !== lastOwnedHash) { lastOwnedHash = snap.hash; ui.tab = 'plan'; }
+    return buildPanel({ snap: s, ask: st?.ask ?? null, owned, ui, output, usage, now: Date.now(), fallback: { gate: cfg.gate } });
+  }
+
+  /** Reads the snapshot in the same node that clears the session start. Never throws: a failure leaves no snapshot. */
+  function start() {
+    return queue(async () => {
+      try {
+        const args = ['release', '--snapshot'];
+        if (sessionId) args.push('--session', sessionId);
+        const res = await runNode(args);
+        const out = JSON.parse(String(res?.stdout ?? '').trim().split('\n').pop() || '{}');
+        if (out && out.ok) {
+          snap = out;
+          if (typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
+        } else snap = null;
+      } catch { snap = null; }
+    });
   }
 
   const setConfig = (c) => { cfg = c && typeof c === 'object' ? c : {}; };
   const panelSetting = () => snap?.config?.ui?.panel ?? cfg.panel ?? 'auto';
   const setUsage = (u) => { usage = u ?? null; };
+  const launchCtx = () => filterCtx(snap?.ok ? snap : null);
 
-  async function runLauncher(label) {
-    const l = launcherOf(label);
-    if (!l) return;
-    const script = `${$.plugin.root}/hosts/claude-code/entries/${l.script}.mjs`;
-    try {
-      const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...l.args, '--cwd', cwd]);
-      const text = `${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd();
-      output = { label, text };
-    } catch (err) {
-      output = { label, text: `nxy: ${label} failed: ${/** @type {any} */ (err)?.message ?? err}` };
-    }
+  /** The entry's `needs` holds for the plan as the driver sees it now (an owned plan fails `plan`). */
+  function allowed(id) {
+    const e = launcherOf(id);
+    return !!e && launcherAvailable(e, { snap: snap?.ok ? snap : null, owned: isOwned() });
   }
 
-  return { step, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
+  /** Runs a launcher entry on its own lane: a slow Trend never holds the orchestrator's queue. */
+  function runLauncher(id) {
+    const e = launcherOf(id, launchCtx());
+    if (!e || launching.has(id) || !allowed(id)) return Promise.resolve();
+    launching.add(id);
+    const token = ++runToken;
+    output = { id, token, label: e.label, text: '...', running: true };
+    /** Writes the run's output only over its own placeholder. @param {string} text */
+    const finish = (text) => {
+      if (output && output.id === id && output.token === token && output.running) output = { id, token, label: e.label, text };
+    };
+    const run = launchChain.then(async () => {
+      try {
+        const script = `${$.plugin.root}/hosts/claude-code/entries/${e.script}.mjs`;
+        const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd]);
+        finish(`${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
+      } catch (err) {
+        finish(`nxy: ${e.label} failed: ${/** @type {any} */ (err)?.message ?? err}`);
+      }
+      if (e.after === 'refresh') {
+        await queue(async () => {
+          if (id === 'plan-done') { if (snap?.hash) finished = snap.hash; st = null; }
+          try { await refresh(); } catch { /* the next sync retries */ }
+        });
+      }
+    }).finally(() => { launching.delete(id); });
+    launchChain = run.catch(() => {});
+    return run;
+  }
+
+  return { step, start, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   nextActions, batchPrompt, testerPrompt, reviewerPrompt, ticketDescription, ticketOf,
-  handbackText, denyMessage, paneView, COMPOSE_SECTION, MARKER_TTL_MS, ORCH_DIR, MARKER_FILE, TICKET_DIR,
+  handbackText, denyMessage, COMPOSE_SECTION, MARKER_TTL_MS, ORCH_DIR, MARKER_FILE, TICKET_DIR,
 } from '../core/orchestrator.mjs';
 import { afterBatch, reviewInstruction } from '../core/verify.mjs';
 import * as status from '../core/batch-status.mjs';
@@ -126,11 +126,6 @@ test('constants, texts and pane view', () => {
   assert.ok(ORCH_DIR && MARKER_FILE && TICKET_DIR);
   assert.ok(COMPOSE_SECTION.length > 0);
   assert.match(denyMessage('h', 'node x release'), /node x release/);
-  const s = snap({ verdicts: { 1: fail() }, launched: { 1: 5 } });
-  const v = paneView(s, nextActions(s).actions[0]);
-  assert.deepEqual(v.buttons, ['Retry', 'Continue anyway', 'Stop']);
-  assert.ok(v.rows.some((r) => r.tone === 'error'));
-  assert.deepEqual(paneView(snap(), null).buttons, []);
 });
 
 test('verify.mjs still re-exports the shared names', () => {
@@ -150,7 +145,7 @@ test('the module-side sources stay free of node: imports, dynamic import and pro
 
 // ---- always-on panel ----
 import {
-  wantsSnapshot, statusText, panelView, readModConfig, launcherOf, isPanelAction, LAUNCHER,
+  wantsSnapshot, statusText, stateOf, readModConfig,
 } from '../core/orchestrator.mjs';
 
 test('wantsSnapshot: the one table of when node may run', () => {
@@ -166,54 +161,28 @@ test('wantsSnapshot: the one table of when node may run', () => {
 });
 
 test('statusText: ready, batch N/M, tester, review, pause, red', () => {
-  assert.equal(statusText(null), 'nxy ● ready');
-  assert.equal(statusText(snap({ launched: { 1: 5 } })), 'nxy ▶ batch 1/2');
-  assert.equal(statusText(snap({ verdicts: { 1: pass() }, launched: { 1: 5 } })), 'nxy ▶ batch 2/2');
+  assert.equal(statusText(null), '● ready');
+  assert.equal(statusText(snap({ launched: { 1: 5 } })), '▶ batch 1/2');
+  assert.equal(statusText(snap({ verdicts: { 1: pass() }, launched: { 1: 5 } })), '▶ batch 2/2');
   const allPass = { verdicts: { 1: pass(), 2: pass() }, launched: { 1: 5, 2: 5 } };
-  assert.equal(statusText(snap(allPass)), 'nxy ▶ tester');
-  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] } })), 'nxy ▶ review');
-  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] }, review: { id: 'r' } })), 'nxy ● ready');
-  assert.equal(statusText(snap({ stopped: true })), 'nxy ● ready');
+  assert.equal(statusText(snap(allPass)), '▶ tester');
+  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] } })), '▶ review');
+  assert.equal(statusText(snap({ ...allPass, suite: { status: 'done', red: [] }, review: { id: 'r' } })), '● ready');
+  assert.equal(statusText(snap({ stopped: true })), '● ready');
   const paused = snap({ pauseAfterBatch: true, verdicts: { 1: pass() }, launched: { 1: 5 } });
-  assert.equal(statusText(paused), 'nxy ⏸ paused after batch 1');
-  assert.equal(statusText(paused, { type: 'ask', kind: 'pause', batches: [2] }), 'nxy ⏸ paused after batch 1');
+  assert.equal(statusText(paused), '⏸ paused after batch 1');
+  assert.equal(statusText(paused, { type: 'ask', kind: 'pause', batches: [2] }), '⏸ paused after batch 1');
   const red = snap({ verdicts: { 1: fail() }, launched: { 1: 5 } });
-  assert.equal(statusText(red), 'nxy ✘ batch 1 needs you');
-  assert.equal(statusText(red, { type: 'ask', kind: 'red', batch: 1 }), 'nxy ✘ batch 1 needs you');
+  assert.equal(statusText(red), '✘ batch 1 needs you');
+  assert.equal(statusText(red, { type: 'ask', kind: 'red', batch: 1 }), '✘ batch 1 needs you');
 });
 
-test('launcher: labels map to entries; unknown is null', () => {
-  assert.deepEqual(launcherOf('Filter on'), { script: 'filter', args: ['on'] });
-  assert.deepEqual(launcherOf('Handoff'), { script: 'mem', args: ['handoff', 'show'] });
-  assert.equal(launcherOf('Nope'), null);
-  assert.equal(isPanelAction('Refresh'), true);
-  assert.equal(isPanelAction('Close'), true);
-  assert.equal(isPanelAction('Trend'), true);
-  assert.equal(isPanelAction('Retry'), false);
-  assert.equal(LAUNCHER.length, 6);
-});
-
-test('panelView: plan, handoff, gate, orchestrator, output', () => {
-  const now = 10_000_000;
-  const cfg = { gate: { enabled: true, contextTokens: 100000 } };
-  const none = panelView({ snap: /** @type {any} */ ({ hash: null, batches: [], config: cfg, handoff: null }), usage: { tokens: 46000, percent: 46 }, now });
-  assert.deepEqual(none.rows.map((r) => r.text), ['plan: none', 'handoff: none', 'gate: threshold 100000 · context now 46k (46%)']);
-  assert.deepEqual(none.buttons, ['Refresh', ...LAUNCHER.map((l) => l.label), 'Close']);
-  const withPlan = panelView({ snap: { ...snap({ verdicts: { 1: pass() }, launched: { 1: 5 } }), approved: true, handoff: { updated: now - 12 * 60000 }, config: { gate: { enabled: false }, orchestrator: 'off' } }, now });
-  assert.deepEqual(withPlan.rows.map((r) => r.text), ['plan: abc12345 · batch 2 of 2 · approved', 'handoff: updated 12 min ago', 'gate: off', 'orchestrator: off']);
-  const notApproved = panelView({ snap: { ...snap(), approved: false, config: cfg }, usage: null, now });
-  assert.match(notApproved.rows[0].text, /not approved yet$/);
-  assert.equal(notApproved.rows.at(-1)?.text, 'gate: threshold 100000 · context now unknown');
-  const long = Array.from({ length: 40 }, (_, i) => (i === 0 ? 'x'.repeat(300) : `l${i}`)).join('\n');
-  const out = panelView({ snap: null, output: { label: 'Stats', text: long } });
-  const texts = out.rows.map((r) => r.text);
-  assert.equal(texts.at(-1), '… (10 more lines)');
-  assert.ok(texts.every((t) => t.length <= 160));
-});
-
-test('panelView with snap null shows what the Mod already has', () => {
-  const v = panelView({ snap: null, fallback: { gate: { enabled: true, contextTokens: 5000 } }, usage: { tokens: 1500, percent: 30 } });
-  assert.deepEqual(v.rows.map((r) => r.text), ['plan: not read yet — press Refresh', 'handoff: not read yet', 'gate: threshold 5000 · context now 2k (30%)']);
+test('stateOf: glyph, text and tone', () => {
+  assert.deepEqual(stateOf(null), { glyph: '●', text: 'ready', tone: 'ok' });
+  assert.deepEqual(stateOf(snap({ launched: { 1: 5 } })), { glyph: '▶', text: 'batch 1/2', tone: 'running' });
+  assert.equal(stateOf(snap({ verdicts: { 1: fail() }, launched: { 1: 5 } })).tone, 'error');
+  assert.equal(stateOf(snap({ pauseAfterBatch: true, verdicts: { 1: pass() }, launched: { 1: 5 } })).tone, 'info');
+  assert.equal(stateOf(snap({ verdicts: { 1: pass(), 2: pass() }, launched: { 1: 5, 2: 5 } })).text, 'tester');
 });
 
 test('readModConfig: defaults, user, project, broken text, ui.panel off', () => {
