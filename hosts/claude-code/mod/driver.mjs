@@ -17,6 +17,13 @@ import {
 import { TABS, buildPanel, launcherOf, launcherAvailable, filterCtx, isPanelAction } from '../../../core/panel.mjs';
 import { cacheOf, coldCost, expiryPlan, hitOf, pickTtl, ttlMsOf } from '../../../core/cache.mjs';
 import { money, tok } from '../../../core/statsview.mjs';
+import {
+  createBook, bookSpawn, bookTool, bookTurn, bookList, bookTrail, bookSent, bookRoles,
+  agentRows, agentDetail, bookLive, needsTrail, needsConfirm, statusView,
+} from '../../../core/agentview.mjs';
+
+/** The `session.messages` fallback asks about one agent at most this often. */
+const TRAIL_EVERY_MS = 2000;
 
 const CONTINUE_ANYWAY = CONTINUE;
 const MAX_TRENDS = 12;
@@ -72,7 +79,17 @@ export function createDriver($, opts) {
     /** @type {Set<string>} findings ticked in checkpoint 2 */ picked: new Set(),
     /** @type {{metric: string, range: string, by: string, here: boolean}} the Stats tab's trend selection */
     trendSel: { metric: 'usd', range: '7d', by: 'day', here: false },
+    /** @type {string|null} the agent the Agents tab shows in detail */ agent: null,
+    agentsAll: false,
+    /** @type {{agentId: string, text: string, batch: number|null}|null} a message waiting for the user's yes */
+    pendingSend: null,
   };
+  const book = createBook();
+  /** @type {string|null} the agent the main thread's task list is looking at */
+  let viewAgentId = null;
+  /** @type {Map<string, number>} when `session.messages` last answered for an agent */
+  const trailAt = new Map();
+  let syncing = false;
   /** @type {string|null} the review the ticks belong to */
   let pickedFor = null;
   /** Ticks belong to one review: another review clears them. */
@@ -127,6 +144,7 @@ export function createDriver($, opts) {
     snap = out;
     if (out && out.ok && typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
     if (out?.ok) setTtl(out.cacheTtl, 'observed');
+    if (out?.ok && out.roles) bookRoles(book, out.roles);
     // An approved plan that no longer has a hash was closed (Terminar plan, or `handoff done` in the chat).
     if (prev?.ok && prev.hash && prev.approved && out?.ok && !out.hash) await runSummary(prev);
     return out;
@@ -373,7 +391,80 @@ export function createDriver($, opts) {
       subagentType: `nxy:${role}`,
       description: ticketDescription(nonce, label),
     });
+    // The engine skips the hook that launched an agent, so the driver notes its own spawns.
+    if (res?.agentId) bookSpawn(book, { id: res.agentId, type: `nxy:${role}`, description: label, prompt, model: res.model, spawnedBy: 'nxy' });
     return res ?? {};
+  }
+
+  // ── agents tab ──────────────────────────────────────────────────────────
+
+  /** @param {{id: string, type?: string, description?: string, prompt?: string, model?: string, parentId?: string, spawnedBy?: string, at?: number}} a */
+  const noteSpawn = (a) => bookSpawn(book, a);
+  /** @param {string} agentId @param {{tool: string, input?: any, at?: number}} a */
+  const noteTool = (agentId, a) => bookTool(book, agentId, a);
+  /** A subagent's turn ended (`turn.complete` with an `agentId`). @param {any} e */
+  function noteAgentTurn(e) {
+    if (!e?.agentId) return;
+    bookTurn(book, { agentId: e.agentId, usage: e.usage, answer: e.answer ?? e.text, reason: e.reason, at: e.at }, { prices: snap?.prices, ttl: cache.ttl });
+  }
+  const setViewAgent = (id) => { viewAgentId = typeof id === 'string' && id ? id : null; };
+
+  /** Is any agent (the orchestrator's or another) working? Decides whether the panel animates and polls. */
+  function agentsLive() {
+    if (st?.inFlight && Object.keys(st.inFlight).length && isOwned()) return true;
+    return bookLive(book);
+  }
+
+  /**
+   * `$.agent.list()` into the book; then, for the live agents nobody saw a tool call from (the
+   * orchestrator's, the selected one, the one being watched), the `session.messages` fallback.
+   * Never throws.
+   */
+  async function syncAgents() {
+    if (syncing) return;
+    syncing = true;
+    try {
+      const now = Date.now();
+      try { bookList(book, await $.agent?.list?.(), now); } catch { /* the list is a nicety */ }
+      const ids = new Set([...Object.keys(st?.inFlight ?? {}), ui.agent, viewAgentId].filter(Boolean));
+      for (const id of /** @type {Set<string>} */ (ids)) {
+        if (!book.agents.get(id)?.confirmed || !needsTrail(book, id, now)) continue;
+        if (now - (trailAt.get(id) ?? 0) < TRAIL_EVERY_MS) continue;
+        trailAt.set(id, now);
+        try { bookTrail(book, id, await $.session?.messages?.({ agentId: id }), now); } catch { /* {deny} or a failure: degraded, not broken */ }
+      }
+      // The throttle map only keeps agents still in the book and still working.
+      for (const id of [...trailAt.keys()]) {
+        const e = book.agents.get(id);
+        if (!e || !statusView(e.status, e.reason).live) trailAt.delete(id);
+      }
+    } finally { syncing = false; }
+  }
+
+  /** Sends a message to an agent; an ended one resumes. @param {string} id @param {string} text */
+  async function sendTo(id, text) {
+    const at = Date.now();
+    try {
+      const r = await $.session.send({ to: { agentId: id }, text });
+      const delivered = !!r && r.isDelivered !== false && !r.deny;
+      bookSent(book, id, { text, at, delivered, reason: delivered ? undefined : String(r?.reason ?? r?.deny ?? 'sin respuesta') });
+    } catch (err) {
+      bookSent(book, id, { text, at, delivered: false, reason: String(/** @type {any} */ (err)?.message ?? err) });
+    }
+  }
+
+  /** The composer's text for the selected agent. An orchestrator's implementer waits for a yes. @param {string} text */
+  async function submitMessage(text) {
+    const id = ui.agent;
+    const t = String(text ?? '').trim();
+    if (!id || !t) return;
+    const flight = st?.inFlight?.[id];
+    if (needsConfirm(book.agents.get(id), { owned: isOwned(), inFlight: st?.inFlight })) {
+      ui.pendingSend = { agentId: id, text: t, batch: flight?.batch ?? null };
+      ui.confirm = null; // one question open at a time
+      return;
+    }
+    await sendTo(id, t);
   }
 
   async function handback(reason, ctx) {
@@ -615,8 +706,21 @@ export function createDriver($, opts) {
         return Promise.all([queue(refresh), loadStats(), loadTrend()]).then(() => {});
       }
       if (action === 'dismiss') { output = null; return Promise.resolve(); }
-      if (action === 'confirm-no') { ui.confirm = null; return Promise.resolve(); }
+      if (action.startsWith('agent:')) {
+        const next = action.slice(6);
+        if (next !== ui.agent) ui.pendingSend = null;
+        ui.agent = next;
+        return syncAgents();
+      }
+      if (action === 'agent-back') { ui.agent = null; ui.pendingSend = null; return Promise.resolve(); }
+      if (action === 'agents-all') { ui.agentsAll = !ui.agentsAll; return Promise.resolve(); }
+      if (action === 'confirm-no') { ui.confirm = null; ui.pendingSend = null; return Promise.resolve(); }
       if (action === 'confirm-yes') {
+        if (ui.pendingSend) {
+          const p = ui.pendingSend;
+          ui.pendingSend = null;
+          return sendTo(p.agentId, p.text);
+        }
         const id = ui.confirm;
         ui.confirm = null;
         return id ? runLauncher(id) : Promise.resolve();
@@ -677,7 +781,10 @@ export function createDriver($, opts) {
     const co = cacheOf({ lastTs: cache.lastTs, ttl: cache.ttl, hitPct: cache.hitPct, tokens: cache.tokens, model: usage?.model, prices: snap?.prices, now });
     const cacheView = co && { ...co, coldTokens: co.coldTokens ?? undefined };
     if (cacheView && cache.cold) { cacheView.coldCostUsd = cache.cold.usd; cacheView.estimated = false; if (cache.cold.tokens != null) cacheView.coldTokens = cache.cold.tokens; }
+    const inFlight = st?.inFlight ?? {};
+    const actx = { now, inFlight, snap: s, owned };
     return buildPanel({
+      agents: agentRows(book, actx), agentDetail: ui.agent ? agentDetail(book, ui.agent, actx) : null, viewAgentId,
       snap: s, ask: st?.ask ?? null, owned, ui: uiView, output, usage, cache: cacheView, now, fallback: { gate: cfg.gate },
       stats, trend: trends.get(trendKey(ui.trendSel)) ?? null, summary,
       live: { model: usage?.model ?? null, effort: cache.effort, turnUsd: cache.turnUsd }, bodyColumns: columns,
@@ -696,6 +803,7 @@ export function createDriver($, opts) {
           snap = out;
           if (typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
           setTtl(out.cacheTtl, 'observed');
+          bookRoles(book, out.roles);
         } else snap = null;
       } catch { snap = null; }
     });
@@ -746,6 +854,7 @@ export function createDriver($, opts) {
   const setColumns = (n) => { if (Number.isFinite(n) && n > 0) columns = Math.floor(n); };
 
   return {
+    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo,
     noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
     step, start, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

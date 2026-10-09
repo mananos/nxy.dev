@@ -110,7 +110,7 @@ export const filterCtx = (snap) => (typeof snap?.config?.filter === 'boolean' ? 
 
 /** @param {string} id */
 export const isPanelAction = (id) => PANEL_IDS.includes(id) || id.startsWith('tab:') || /^batch:\d+$/.test(id)
-  || /^pick:\S+$/.test(id) || LAUNCHER.some((l) => l.id === id)
+  || /^pick:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
   || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
 // ---- layout (pure: the renderer asks it for widths) ----
@@ -242,11 +242,31 @@ export function lifecycle(snap) {
 /** @param {any} inFlight @returns {{role: string, batch?: number}[]} */
 const agentsOf = (inFlight) => (Array.isArray(inFlight) ? inFlight : Object.values(inFlight ?? {})).filter(Boolean);
 
-/** Running-agent rows with time since their batch launched. @param {any} snap @param {{role: string, batch?: number}[]} agents @param {number} now */
-const agentRows = (snap, agents, now) => agents.map((a) => ({
-  role: a.role, batch: a.batch ?? null,
-  sinceMs: a.batch != null && typeof snap?.launched?.[String(a.batch)] === 'number' ? Math.max(0, now - snap.launched[String(a.batch)]) : null,
-}));
+/**
+ * Agent rows in the shape `agentview.agentRows` builds. Without the driver's rows (`c.agents`), the
+ * orchestrator's in-flight agents stand in, with the time since their batch launched.
+ * @param {any} c
+ * @returns {any[]}
+ */
+function rowsOf(c) {
+  if (Array.isArray(c.agents)) return c.agents;
+  const { snap, now } = c;
+  return agentsOf(c.inFlight ?? snap?.inFlight).map((a, i) => {
+    const t = a.batch != null ? snap?.launched?.[String(a.batch)] : null;
+    const elapsedMs = typeof t === 'number' ? Math.max(0, now - t) : null;
+    return {
+      id: `flight-${i}`, role: a.role, nxy: true, label: a.role, batch: a.batch ?? null, state: 'corriendo', tone: 'running', live: true,
+      model: '', effort: '', modelEffort: '', activity: elapsedMs != null ? `trabajando… ${Math.round(elapsedMs / 1000)}s` : 'trabajando…',
+      elapsedMs, costText: '', tokensText: '',
+    };
+  });
+}
+
+/** One text line for an agent row. @param {any} a */
+const rowText = (a) => [
+  `${a.live ? '●' : a.tone === 'error' ? '✘' : a.tone === 'dim' ? '■' : '✔'} ${a.role}${a.batch != null ? ` · lote ${a.batch}` : ''}`,
+  a.modelEffort, a.state, a.elapsedMs != null ? durText(a.elapsedMs) : '', a.costText, a.activity,
+].filter(Boolean).join(' · ');
 
 /** Batch state by number. @param {any} snap @returns {{n: number, state: 'done' | 'running' | 'red' | 'pending', status?: string}[]} */
 function batchStates(snap) {
@@ -371,7 +391,7 @@ function homeBlocks(c) {
     }
   }
   /** @type {any} */
-  const now_ = { type: 'now', agents: agentRows(snap, inFlight, now), next: '' };
+  const now_ = { type: 'now', agents: rowsOf(c).filter((a) => a.live), next: '' };
   if (snap?.hash) {
     const running = new Set(inFlight.map((a) => a.batch).filter((n) => n != null));
     const states = batchStates(snap);
@@ -455,12 +475,33 @@ function planBlocks(c) {
 
 /** @param {any} c */
 function agentsBlocks(c) {
-  const { snap, now } = c;
-  const list = agentRows(snap, agentsOf(c.inFlight ?? snap?.inFlight), now);
-  return [
-    { type: 'agents', agents: list },
-    { type: 'note', text: 'lista completa, tiempo y mensajes: llega en la fase 3', tone: 'dim' },
-  ];
+  const { ui } = c;
+  const rows = rowsOf(c);
+  const d = ui.agent && c.agentDetail ? c.agentDetail : null;
+  if (d) {
+    return [{
+      type: 'agent', id: ui.agent, card: d.card, prompt: d.prompt ? clipOutput(d.prompt, 12) : [], tools: d.tools,
+      result: d.result ? clipOutput(d.result, 20) : [], error: d.error ? clipOutput(d.error, 12) : [], batch: d.batch,
+      sent: d.sent.map((/** @type {any} */ s) => ({ text: s.text, state: s.state === 'no entregado' && s.reason ? `no entregado: ${s.reason}` : s.state })),
+      canSend: d.canSend, confirm: d.confirm,
+      composer: { key: `${ui.agent}:${d.sentCount ?? d.sent.length}`, placeholder: 'mensaje para este agente', submitLabel: 'enviar', value: '' },
+      back: { id: 'agent-back', label: 'Volver', hotkey: 'b' },
+    }];
+  }
+  /** @type {any[]} */
+  const blocks = [];
+  const watched = c.viewAgentId ? rows.find((a) => a.id === c.viewAgentId) : null;
+  if (watched) blocks.push({ type: 'watching', card: watched, open: { id: `agent:${watched.id}`, label: 'Ver' } });
+  const running = rows.filter((a) => a.live).length;
+  const failed = rows.filter((a) => !a.live && a.tone === 'error').length;
+  const stopped = rows.filter((a) => !a.live && a.tone === 'dim').length;
+  const shown = ui.agentsAll ? rows : rows.slice(0, 10);
+  blocks.push({
+    type: 'agents', agents: shown, counts: { running, done: rows.length - running - failed - stopped, failed, stopped },
+    more: shown.length < rows.length ? { id: 'agents-all', label: `Ver todos (+${rows.length - shown.length})` }
+      : ui.agentsAll && rows.length > 10 ? { id: 'agents-all', label: 'Ver menos' } : null,
+  });
+  return blocks;
 }
 
 /** @param {any} c */
@@ -549,10 +590,15 @@ export const BUILDERS = {
 // ---- the view ----
 
 /**
- * @param {any} snap @param {any} ask @param {{tab?: string, confirm?: string | null}} ui
+ * @param {any} snap @param {any} ask @param {{tab?: string, confirm?: string | null, pendingSend?: {agentId: string, text: string, batch?: number | null} | null}} ui
  * @returns {null | {tone: 'error' | 'info', question: string, buttons: {id: string, label: string, hotkey: string}[]}}
  */
 function askOf(snap, ask, ui) {
+  if (ui.pendingSend) {
+    const n = ui.pendingSend.batch;
+    return { tone: 'info', question: `Hablarle al implementer${n != null ? ` del lote ${n}` : ''} puede romper el lote. ¿Mandar igual?`, buttons: [
+      { id: 'confirm-yes', label: 'Yes', hotkey: 'y' }, { id: 'confirm-no', label: 'No', hotkey: 'n' }] };
+  }
   if (ui.confirm) {
     const e = launcherOf(ui.confirm);
     if (e?.confirm) {
@@ -576,7 +622,9 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
 /**
  * @param {{
  *   snap: any, ask?: any, owned?: boolean,
- *   ui?: {tab?: string, confirm?: string | null, expanded?: number | null, picked?: string[]},
+ *   ui?: {tab?: string, confirm?: string | null, expanded?: number | null, picked?: string[], agent?: string | null, agentsAll?: boolean,
+ *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null},
+ *   agents?: any[] | null, agentDetail?: any, viewAgentId?: string | null,
  *   output?: {label: string, text: string, running?: boolean} | null,
  *   usage?: {tokens: number, percent?: number, window?: number | null, costUsd?: number | null, model?: string | null} | null,
  *   now?: number, fallback?: {gate?: {enabled?: boolean, contextTokens?: number}},
@@ -591,7 +639,7 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  */
 export function buildPanel({
   snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {}, inFlight, cache = null,
-  stats = null, trend = null, summary = null, live = null, bodyColumns = 78,
+  stats = null, trend = null, summary = null, live = null, bodyColumns = 78, agents = null, agentDetail = null, viewAgentId = null,
 }) {
   const tab = TABS.some((t) => t.id === ui.tab) ? /** @type {string} */ (ui.tab) : 'home';
   const gate = snap?.config?.gate ?? fallback.gate;
@@ -614,9 +662,9 @@ export function buildPanel({
       }
       : null,
     keys: [{ id: 'refresh', hotkey: 'r' }],
-    animated: running.length > 0,
+    animated: running.length > 0 || (Array.isArray(agents) && agents.some((a) => a.live)),
     clockTicks: tab === 'home' && typeof cache?.ttlLeftMs === 'number' && cache.ttlLeftMs > 0,
-    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache, stats, trend, summary, live, bodyColumns }).blocks,
+    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache, stats, trend, summary, live, bodyColumns, agents, agentDetail, viewAgentId }).blocks,
   };
 }
 
@@ -647,7 +695,7 @@ export function panelText(view) {
       case 'now':
         out.push('Ahora');
         if (!b.agents.length) out.push('  nada corriendo');
-        for (const a of b.agents) out.push(`  ● ${a.role}${a.batch != null ? ` · lote ${a.batch}` : ''}${a.sinceMs != null ? ` · ${durText(a.sinceMs)}` : ''}`);
+        for (const a of b.agents) out.push(`  ${rowText(a)}`);
         if (b.next) out.push(`  ${b.next}`);
         break;
       case 'actions':
@@ -674,8 +722,23 @@ export function panelText(view) {
         if (b.fix) out.push(`[${b.fix.hotkey}] ${b.fix.label}`);
         break;
       case 'agents':
-        if (!b.agents.length) out.push('Agentes: ninguno corriendo');
-        for (const a of b.agents) out.push(`● ${a.role}${a.batch != null ? ` · lote ${a.batch}` : ''}${a.sinceMs != null ? ` · ${durText(a.sinceMs)}` : ''}`);
+        if (!b.agents.length) out.push('Agentes: ninguno');
+        else out.push(`Agentes: ${b.counts.running} corriendo · ${b.counts.done} terminaron · ${b.counts.failed} fallaron${b.counts.stopped ? ` · ${b.counts.stopped} detenidos` : ''}`);
+        for (const a of b.agents) out.push(rowText(a));
+        if (b.more) out.push(b.more.label);
+        break;
+      case 'watching':
+        out.push(`Mirando: ${rowText(b.card)}`);
+        break;
+      case 'agent':
+        out.push(`Agente: ${rowText(b.card)}`);
+        if (b.batch != null) out.push(`  lote ${b.batch} del plan`);
+        for (const l of b.prompt) out.push(`  > ${l}`);
+        for (const t of b.tools) out.push(`  ${t.label} · hace ${t.ago}s`);
+        for (const l of b.result) out.push(`  ${l}`);
+        for (const l of b.error) out.push(`  ✘ ${l}`);
+        for (const s of b.sent) out.push(`  ✉ ${s.text} (${s.state})`);
+        out.push(`[${b.back.hotkey}] ${b.back.label}`);
         break;
       case 'kv':
         for (const r of b.rows) out.push(`${r.label}: ${r.value}`);

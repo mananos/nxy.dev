@@ -139,6 +139,13 @@ function timedSession(sb, id = 'sess-t') {
   return { projects, approvedAt: Date.parse(at(20)), firstCall: Date.parse(at(30)) };
 }
 
+test('the snapshot carries the model and effort of the 7 nxy roles', () => {
+  const sb = sandbox(PLAN);
+  const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
+  assert.deepEqual(Object.keys(s.roles).sort(), ['documenter', 'implementer', 'librarian', 'planner', 'reviewer', 'scout', 'tester']);
+  assert.deepEqual(s.roles.implementer, { model: 'sonnet', effort: 'medium' });
+});
+
 test('the snapshot carries the price table and the cache TTL of the session', () => {
   const sb = sandbox(PLAN);
   const t = timedSession(sb);

@@ -25,8 +25,12 @@ const api = ($: any) => ({
     write: (path: string, data: string) => $.fs.write(path, data),
   },
   process: { run: (argv: string[]) => $.process.run(argv) },
-  agent: { spawn: (args: any) => $.agent.spawn(args) },
-  session: { append: (args: any) => $.session.append(args) },
+  agent: { spawn: (args: any) => $.agent.spawn(args), list: () => $.agent.list() },
+  session: {
+    append: (args: any) => $.session.append(args),
+    send: (args: any) => $.session.send(args),
+    messages: (args: any) => $.session.messages(args),
+  },
   prompt: { submit: (args: any) => $.prompt.submit(args) },
 })
 
@@ -131,6 +135,8 @@ function startTick($: any) {
       if (!up) { if (tickTimer === timer) stopTick(); else timer.cancel(); return }
       const view = driver?.panel()
       beat++
+      // The agent list is polled here only (every 2 s), and only while some agent runs.
+      if (beat % 8 === 0 && driver?.agentsLive()) await driver.syncAgents()
       // The cache countdown on Home moves once a second: one tick in four.
       if (!view?.animated && !(view?.clockTicks && beat % 4 === 0)) return
       if (view?.animated) frame++
@@ -191,6 +197,17 @@ async function onPress($: any, element: string): Promise<void> {
   } catch (err) { await fail($, 'ui.press', err) }
 }
 
+// The message field's Enter: the driver sends it (or asks first for an orchestrator's implementer).
+async function onSend($: any, text: string): Promise<void> {
+  try {
+    if (!driver) return
+    const sent = driver.submitMessage(text)
+    await sync($)
+    await sent
+    await sync($)
+  } catch (err) { await fail($, 'ui.input', err) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
@@ -242,10 +259,37 @@ export const register: Register = on => {
     return ran
   }).catch(($, e, next) => next(e))
 
+  // A subagent that nxy did not start: the book learns its id and model once the engine has started it.
+  on('agent.spawn', async ($, e, next) => {
+    const out = await next(e)
+    try {
+      const id = (out as any)?.agentId
+      const own = /^nxy-orch:/.test(String((e as any).description ?? ''))
+      if (id && driver && !own) {
+        driver.noteSpawn({
+          id, type: (e as any).subagentType, description: (e as any).description, prompt: (e as any).prompt,
+          model: (out as any).model, spawnedBy: 'other', at: Date.now(),
+        })
+      }
+    } catch { /* optional */ }
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // Only observes: it never steps nor spawns, so the engine does not skip it for the driver's agents.
+  on('tool.call', { agentId: /./ }, async ($, e, next) => {
+    try {
+      // The event is flat: the tool's arguments sit beside the reserved keys.
+      const { tool, tool_use_id: _id, consent: _c, agentId, ...args } = e as any
+      driver?.noteTool(agentId, { tool, input: args, at: Date.now() })
+    } catch { /* optional */ }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
     try {
       const d = await ensure($)
+      if (e.agentId) d.noteAgentTurn(e)
       if (e.agentId) await d.onAgentDone(e.agentId, e.answer)
       else {
         const u = await usageOf($)
@@ -296,6 +340,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     try {
       driver?.setColumns(e.props?.bodyColumns)
+      driver?.setViewAgent(e.props?.view?.agentId)
       return draw($, e, driver?.panel() ?? null)
     } catch (err) {
       const { Text } = $.ui.resolve(e) as any
@@ -319,7 +364,7 @@ export const register: Register = on => {
 
 // The pane: a centred column of at most 78 cells. Labels wrap, they are never cut.
 function draw($: any, e: any, v: any) {
-  const { Box, Text, Button, Raster } = $.ui.resolve(e) as any
+  const { Box, Text, Button, Raster, Input } = $.ui.resolve(e) as any
   if (!v) return <Text color={C.muted}>nxy: nothing running.</Text>
   const L = layoutOf(Number.isFinite(e.props?.bodyColumns) ? e.props.bodyColumns : 48)
   const { W, CW, narrow, stacked, tileW } = L
@@ -388,10 +433,15 @@ function draw($: any, e: any, v: any) {
   const AgentLine =(p: { a: any; i: number }) => (
     <Text key={`ag${p.i}`} wrap="wrap">
       <Text color={C.blue}>{`${spin(p.i * 5)} `}</Text>
-      <Text color={C.text}>{p.a.role}</Text>
-      <Text color={C.muted}>{`${p.a.batch != null ? ` · lote ${p.a.batch}` : ''}${p.a.sinceMs != null ? ` · ${durText(p.a.sinceMs)}` : ''}`}</Text>
+      <Text color={p.a.nxy ? C.green : C.muted}>{p.a.role}</Text>
+      <Text color={C.muted}>{`${p.a.batch != null ? ` · lote ${p.a.batch}` : ''}${p.a.elapsedMs != null ? ` · ${durText(p.a.elapsedMs)}` : ''}`}</Text>
+      {p.a.activity ? <Text color={C.muted}>{` · ${p.a.activity}`}</Text> : null}
     </Text>
   )
+
+  // nxy roles in green, agents Claude Code started on its own in grey.
+  const roleColor = (a: any) => (a?.nxy ? C.green : C.muted)
+  const doneGlyph = (a: any) => (a?.tone === 'error' ? '✘' : a?.tone === 'dim' ? '■' : '✔')
 
   // ---- header: pill, repo · branch, state; below it the progress strip ----
   const hd = v.header
@@ -578,13 +628,83 @@ function draw($: any, e: any, v: any) {
             {b.fix ? <Box flexDirection="row" columnGap={1}><Keycap id={b.fix.id} label={b.fix.label} hotkey={b.fix.hotkey} /></Box> : null}
           </Box>
         )
-      case 'agents':
+      case 'agents': {
+        const c = b.counts ?? { running: 0, done: 0, failed: 0 }
         return (
           <Box key={`b${bi}`} flexDirection="column">
-            <Heading title="Agentes" color={C.green} right={`${b.agents.length} corriendo`} />
-            {b.agents.length ? b.agents.map((a: any, i: number) => <AgentLine key={`a${i}`} a={a} i={i} />) : <Text color={C.muted}>ninguno corriendo</Text>}
+            <Heading title="Agentes" color={C.green} right={`${c.running} corriendo · ${c.done} terminaron · ${c.failed} fallaron${c.stopped ? ` · ${c.stopped} detenidos` : ''}`} />
+            {b.agents.length ? b.agents.map((a: any, i: number) => (
+              <Box key={`ar${a.id}`} flexDirection="column">
+                <Box flexDirection="row" columnGap={1}>
+                  <Text color={a.live ? C.blue : toneColor(a.tone)}>{a.live ? spin(i * 5) : doneGlyph(a)}</Text>
+                  <Text color={roleColor(a)}>{a.role ?? ''}</Text>
+                  <Button plain label={a.label} key={`agent:${a.id}`} onPress={press(`agent:${a.id}`)} />
+                  <Text color={C.muted}>{a.modelEffort ?? ''}</Text>
+                  <Box flexGrow={1} justifyContent="flex-end"><Text color={C.muted}>{[a.elapsedMs != null ? durText(a.elapsedMs) : '', a.costText].filter(Boolean).join(' · ')}</Text></Box>
+                </Box>
+                {a.activity ? <Box paddingLeft={2}><Text color={C.muted} wrap="wrap">{a.activity}</Text></Box> : null}
+              </Box>
+            )) : <Text color={C.muted}>ningún agente en esta sesión</Text>}
+            {b.more ? <Box flexDirection="row"><Button plain label={b.more.label} key={b.more.id} onPress={press(b.more.id)} /></Box> : null}
           </Box>
         )
+      }
+      case 'watching':
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title="Mirando" color={C.cyan} />
+            <Box flexDirection="row" columnGap={1}>
+              <Text color={b.card.live ? C.blue : toneColor(b.card.tone)}>{b.card.live ? spin() : doneGlyph(b.card)}</Text>
+              <Text color={roleColor(b.card)}>{b.card.role ?? ''}</Text>
+              <Text color={C.text}>{b.card.label}</Text>
+              <Text color={C.muted}>{b.card.modelEffort ?? ''}</Text>
+            </Box>
+            {b.card.activity ? <Text color={C.muted} wrap="wrap">{b.card.activity}</Text> : null}
+            <Box flexDirection="row"><Button plain label={b.open.label} key={b.open.id} onPress={press(b.open.id)} /></Box>
+          </Box>
+        )
+      case 'agent': {
+        const card = b.card ?? {}
+        const lines = (title: string, ls: string[], color: string) => (ls?.length ? (
+          <Box flexDirection="column" marginTop={1}>
+            <Text color={C.muted}>{title}</Text>
+            {ls.map((line: string, li: number) => <Text key={`${title}${li}`} color={color} wrap="wrap">{line}</Text>)}
+          </Box>
+        ) : null)
+        return (
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title={card.label ?? 'Agente'} color={C.green} right={[card.modelEffort, card.elapsedMs != null ? durText(card.elapsedMs) : '', card.costText].filter(Boolean).join(' · ')} />
+            <Text wrap="wrap">
+              <Text color={roleColor(card)} bold>{card.role ?? ''}</Text>
+              <Text color={card.live ? C.blue : toneColor(card.tone)}>{`${card.role ? ' · ' : ''}${card.live ? `${spin()} ` : ''}${card.state ?? ''}${b.batch != null ? ` · lote ${b.batch}` : ''}`}</Text>
+            </Text>
+            {card.activity ? <Text color={C.muted} wrap="wrap">{card.activity}</Text> : null}
+            {lines('Prompt', b.prompt, C.muted)}
+            {b.tools?.length ? (
+              <Box flexDirection="column" marginTop={1}>
+                <Text color={C.muted}>Herramientas</Text>
+                {b.tools.map((t: any, ti: number) => <Text key={`t${ti}`} color={C.cyan} wrap="wrap">{`· ${t.label}${t.ago ? `  ${t.ago}` : ''}`}</Text>)}
+              </Box>
+            ) : null}
+            {lines('Resultado', b.result, C.text)}
+            {lines('Error', b.error, C.red)}
+            {b.sent?.length ? (
+              <Box flexDirection="column" marginTop={1}>
+                <Text color={C.muted}>Mensajes enviados</Text>
+                {b.sent.map((s: any, si: number) => (
+                  <Text key={`s${si}`} wrap="wrap"><Text color={C.text}>{s.text}</Text><Text color={s.state === 'recibido' ? C.green : s.state === 'en cola' ? C.amber : C.red}>{`  ${s.state}`}</Text></Text>
+                ))}
+              </Box>
+            ) : null}
+            {b.canSend && b.composer ? (
+              <Box marginTop={1}>
+                <Input key={b.composer.key} value="" placeholder={b.composer.placeholder} submitLabel={b.composer.submitLabel} onSubmit={(text: string) => { void onSend($, text) }} />
+              </Box>
+            ) : null}
+            <Box flexDirection="row" marginTop={1}><Keycap id={b.back.id} label={b.back.label} hotkey={b.back.hotkey} /></Box>
+          </Box>
+        )
+      }
       case 'kv':
         return (
           <Box key={`b${bi}`} flexDirection="column" marginTop={1}>

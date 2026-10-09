@@ -105,6 +105,38 @@ test('register.tsx: cache events with their own catch, two module-level timers, 
   assert.doesNotMatch(src, /from\s+'node:/);
 });
 
+test('register.tsx: agent hooks (spawn, observer tool.call, turn) with their catch; the poll only in startTick; the composer is keyed', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.equal((src.match(/on\('tool\.call'/g) ?? []).length, 2);
+  const obs = src.match(/on\('tool\.call', \{ agentId: [^\n]*\n[\s\S]*?\n {2}\}\)([^\n]*)/)?.[0] ?? '';
+  assert.ok(obs.length > 0);
+  assert.match(obs, /return next\(e\)/);
+  assert.match(obs, /\}\)\.catch\(\(\$, e, next\) => next\(e\)\)$/);
+  assert.doesNotMatch(obs, /step\(|spawn/);
+  assert.deepEqual(obs.match(/driver\??\.\w+/g), ['driver?.noteTool']);
+  const spawn = src.match(/on\('agent\.spawn'[\s\S]*?\n {2}\}\)([^\n]*)/)?.[0] ?? '';
+  assert.match(spawn, /await next\(e\)/);
+  assert.match(spawn, /nxy-orch:[\s\S]*?!own/);
+  assert.match(obs, /\.\.\.args/);
+  assert.match(obs, /input: args/);
+  assert.match(src, /roleColor\(a\)\}>\{a\.role/);
+  assert.match(src, /a\?\.tone === 'dim' \? '■'/);
+  assert.match(spawn, /\}\)\.catch\(\(\$, e, next\) => next\(e\)\)$/);
+  assert.match(src, /d\.noteAgentTurn\(e\)[\s\S]*?d\.onAgentDone/);
+  assert.doesNotMatch(src, /turn\.step/);
+  assert.match(src, /view\?\.agentId/);
+  assert.match(src, /<Input\b[^\n]*key=\{[^}]*composer[^}]*\}[^\n]*value=""[^\n]*onSubmit=/);
+  assert.equal((src.match(/syncAgents\(\)/g) ?? []).length, 1);
+  assert.match(src.slice(src.indexOf('function startTick'), src.indexOf('async function openPane')), /syncAgents\(\)/);
+});
+
+test('toolLabel reads the flat tool.call shape once the reserved keys are stripped', async () => {
+  const { toolLabel } = await import('../core/agentview.mjs');
+  const e = { tool: 'Edit', tool_use_id: 'tu1', agentId: 'a1', file_path: 'core/panel.mjs', old_string: 'x' };
+  const { tool, tool_use_id: _i, consent: _c, agentId: _a, ...args } = e;
+  assert.equal(toolLabel(tool, args), 'Edit core/panel.mjs');
+});
+
 const hasClaude = spawnSync('claude', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
 test('every <Button in register.tsx has an onPress (the engine skips the render otherwise)', () => {
   const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');

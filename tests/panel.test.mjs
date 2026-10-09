@@ -29,6 +29,7 @@ const hotkeys = (v) => [
   ...v.tabs.map((t) => t.hotkey), ...v.keys.map((k) => k.hotkey),
   ...v.blocks.filter((b) => b.type === 'actions').flatMap((b) => b.actions.map((a) => a.hotkey)),
   ...v.blocks.filter((b) => b.type === 'checkpoint' && b.fix).map((b) => b.fix.hotkey),
+  ...v.blocks.filter((b) => b.type === 'agent').map((b) => b.back.hotkey),
   ...(v.ask?.buttons ?? []).map((b) => b.hotkey), ...(v.output ? [v.output.dismiss.hotkey] : []),
 ];
 
@@ -126,7 +127,8 @@ test('Ahora: one line per agent in flight, the rest as next, empty when idle', (
   const s = snap({ batches: [1, 2, 3, 4].map((n) => ({ n, depends: [], title: `B${n}` })), launched: { 1: NOW - 30000 }, verdicts: {} });
   const v = buildPanel({ snap: s, now: NOW, inFlight: { a1: { role: 'implementer', batch: 1 } } });
   const now = block(v, 'now');
-  assert.deepEqual(now.agents, [{ role: 'implementer', batch: 1, sinceMs: 30000 }]);
+  assert.equal(now.agents.length, 1);
+  assert.deepEqual([now.agents[0].role, now.agents[0].batch, now.agents[0].elapsedMs, now.agents[0].live], ['implementer', 1, 30000, true]);
   assert.equal(now.next, 'después: lotes 2–4, la suite y la review');
   assert.equal(v.animated, true);
   assert.ok(panelText(v).some((l) => l.includes('implementer') && l.includes('lote 1')));
@@ -359,8 +361,8 @@ test('Agents, Stats and Config skeletons build with and without a snapshot', () 
     }
   }
   const ag = buildPanel({ snap: snap({ launched: { 2: NOW - 5000 } }), now: NOW, ui: { tab: 'agents' }, inFlight: { x: { role: 'implementer', batch: 2 } } });
-  assert.deepEqual(block(ag, 'agents').agents, [{ role: 'implementer', batch: 2, sinceMs: 5000 }]);
-  assert.ok(ag.blocks.some((b) => b.type === 'note' && b.text.includes('fase 3')));
+  assert.deepEqual(block(ag, 'agents').agents.map((a) => [a.role, a.batch, a.elapsedMs]), [['implementer', 2, 5000]]);
+  assert.ok(!ag.blocks.some((b) => b.type === 'note' && b.text.includes('fase 3')));
   const st = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'stats' }, usage: usage(1) });
   assert.deepEqual(actionIds(st), []);
   assert.ok(block(st, 'selectors'));
@@ -368,6 +370,82 @@ test('Agents, Stats and Config skeletons build with and without a snapshot', () 
   assert.deepEqual(block(cf, 'kv').rows.map((r) => r.label), ['Gate', 'Orquestador', 'Pausa entre lotes', 'Panel', 'Filtro']);
   assert.equal(block(cf, 'kv').rows[0].value, 'on · umbral 100k');
   assert.ok(cf.blocks.some((b) => b.type === 'note' && b.text.includes('fase 4')));
+});
+
+const row = (id, over = {}) => ({
+  id, role: 'implementer', nxy: true, label: `tarea ${id}`, batch: null, state: 'corriendo', tone: 'running', live: true,
+  model: 'sonnet', effort: 'medium', modelEffort: 'sonnet · medium', activity: 'Edit core/panel.mjs · hace 2s',
+  elapsedMs: 12000, costText: '…', tokensText: '', ...over,
+});
+const detail = (over = {}) => ({
+  card: row('a1'), prompt: 'haz esto', tools: [{ label: 'Edit x', ago: 3 }], result: '', error: '', batch: 2,
+  sent: [{ text: 'hola', state: 'en cola', reason: '' }, { text: 'chau', state: 'no entregado', reason: 'sin sesión' }],
+  canSend: true, confirm: false, ...over,
+});
+
+test('Agentes: lista con cuenta, tope de 10 y Ver todos', () => {
+  const rows = [row('a1'), row('a2', { live: false, tone: 'ok', state: 'terminó' }), row('a3', { live: false, tone: 'error', state: 'falló' })];
+  const v = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents' }, agents: rows });
+  const b = block(v, 'agents');
+  assert.deepEqual(b.counts, { running: 1, done: 1, failed: 1, stopped: 0 });
+  assert.equal(b.more, null);
+  assert.equal(v.animated, true);
+  assert.ok(panelText(v).some((l) => l.includes('implementer') && l.includes('sonnet · medium')));
+  const many = Array.from({ length: 13 }, (_, i) => row(`m${i}`, { live: false, tone: 'ok' }));
+  const big = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents' }, agents: many });
+  assert.equal(block(big, 'agents').agents.length, 10);
+  assert.deepEqual(block(big, 'agents').more, { id: 'agents-all', label: 'Ver todos (+3)' });
+  assert.equal(big.animated, false);
+  const all = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agentsAll: true }, agents: many });
+  assert.equal(block(all, 'agents').agents.length, 13);
+  assert.deepEqual(block(all, 'agents').more, { id: 'agents-all', label: 'Ver menos' });
+  const few = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agentsAll: true }, agents: many.slice(0, 4) });
+  assert.equal(block(few, 'agents').more, null);
+});
+
+test('Agentes: la key del composer sigue cambiando pasados 5 envíos', () => {
+  const key = (n) => block(buildPanel({
+    snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1' }, agents: [row('a1')],
+    agentDetail: detail({ sentCount: n, sent: detail().sent }),
+  }), 'agent').composer.key;
+  assert.equal(key(5), 'a1:5');
+  assert.notEqual(key(6), key(5));
+});
+
+test('Agentes: detalle, composer con key nueva tras cada envío, volver con b', () => {
+  const v = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1' }, agents: [row('a1')], agentDetail: detail() });
+  const d = block(v, 'agent');
+  assert.equal(block(v, 'agents'), undefined);
+  assert.deepEqual(d.composer, { key: 'a1:2', placeholder: 'mensaje para este agente', submitLabel: 'enviar', value: '' });
+  assert.deepEqual(d.back, { id: 'agent-back', label: 'Volver', hotkey: 'b' });
+  assert.deepEqual(d.sent.map((s) => s.state), ['en cola', 'no entregado: sin sesión']);
+  const more = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1' }, agentDetail: detail({ sent: [] }) });
+  assert.equal(block(more, 'agent').composer.key, 'a1:0');
+  const txt = panelText(v);
+  assert.ok(txt.some((l) => l.includes('haz esto')) && txt.some((l) => l.includes('Edit x')) && txt.some((l) => l.includes('no entregado: sin sesión')));
+  const err = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1' }, agentDetail: detail({ error: 'boom' }) });
+  assert.deepEqual(block(err, 'agent').error, ['boom']);
+  // an unknown selection falls back to the list
+  assert.ok(block(buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'zz' }, agents: [row('a1')] }), 'agents'));
+});
+
+test('Agentes: watching, Ahora con el libro, isPanelAction', () => {
+  const v = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents' }, agents: [row('a1'), row('a2')], viewAgentId: 'a2' });
+  const w = block(v, 'watching');
+  assert.equal(w.card.id, 'a2');
+  assert.equal(w.open.id, 'agent:a2');
+  assert.ok(isPanelAction(w.open.id) && isPanelAction('agent-back') && isPanelAction('agents-all'));
+  assert.ok(!isPanelAction('agent:') && !isPanelAction('agent-x'));
+  assert.equal(block(buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents' }, agents: [row('a1')], viewAgentId: 'nope' }), 'watching'), undefined);
+  const hv = buildPanel({ snap: snap(), now: NOW, agents: [row('a1'), row('a2', { live: false, tone: 'ok' })] });
+  assert.deepEqual(block(hv, 'now').agents.map((a) => a.id), ['a1']);
+  assert.equal(block(hv, 'now').agents[0].activity, 'Edit core/panel.mjs · hace 2s');
+});
+
+test('Agentes: confirmación al hablarle al implementer del orquestador', () => {
+  const v = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1', pendingSend: { agentId: 'a1', text: 'hola', batch: 2 } }, agentDetail: detail() });
+  assert.equal(v.ask.question, 'Hablarle al implementer del lote 2 puede romper el lote. ¿Mandar igual?');
+  assert.deepEqual(v.ask.buttons.map((b) => [b.id, b.hotkey]), [['confirm-yes', 'y'], ['confirm-no', 'n']]);
 });
 
 test('layoutOf: widths at 28/40/60/120, the column never passes 78', () => {
@@ -421,7 +499,8 @@ test('hotkeys are unique inside each built view, on the five tabs', () => {
   for (const tab of TABS.map((t) => t.id)) for (const ask of asks) for (const output of [null, { label: 'x', text: 'y' }]) {
     for (const confirm of [null, 'plan-done']) {
       const keys = hotkeys(buildPanel({
-        snap: snap({ review: { id: 'rv' }, reviewDetail: review }), owned: !!ask, ask, ui: { tab, confirm, picked: ['R1'] }, output,
+        snap: snap({ review: { id: 'rv' }, reviewDetail: review }), owned: !!ask, ask, ui: { tab, confirm, picked: ['R1'], agent: 'a1' }, output,
+        agentDetail: detail(),
       }));
       assert.equal(new Set(keys).size, keys.length, `${tab} ${JSON.stringify(ask)} ${keys}`);
       assert.ok(keys.every((k) => /^[a-z0-9]$/.test(k)));

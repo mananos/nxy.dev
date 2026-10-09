@@ -37,6 +37,15 @@ test('README documents Stats, the Cache card, the cold mark and the feature summ
   assert.match(readme, /resumen/i);
 });
 
+test('README documents the agent list, the message field and the implementer confirmation', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('**Agentes.**'));
+  assert.match(readme, /Ver todos/);
+  assert.match(readme, /mandarle un mensaje/);
+  assert.ok(readme.includes('¿Mandar igual?'));
+  assert.ok(readme.includes('no entregado'));
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);
