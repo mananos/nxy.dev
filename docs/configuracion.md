@@ -182,6 +182,10 @@ Los botones **Filter** (Inicio y Config) escriben `modules.filter` donde diga «
 | `mode` | `assisted` (default): una línea por handoff al abrir sesión y punteros por mensaje. `manual`: nada automático, la memoria aparece sólo cuando la pedís. `proactive`: el handoff entero en cada sesión de esa rama |
 | `handoff.required` | `false` deja de exigir el handoff cuando la sesión pasa el umbral del gate (sigue disponible a mano) |
 
+### Features (worktrees)
+
+No hay clave nueva: la carpeta de los worktrees (`../<repo>.worktrees/`), el prefijo de rama (`feature/`) y la rama base preseleccionada no se configuran.
+
 ### Lentes de review
 
 Cada `.md` en `<repo>/.nxy/lenses/` suma una lente propia del repo. Con el mismo nombre que una de nxy la reemplaza, y con `enabled: false` en el frontmatter la apaga. `/nxy:review escape "<regla>" --as lens` agrega reglas a `.nxy/lenses/repo.md`. Las lentes de nxy están en [`lenses/`](../lenses).

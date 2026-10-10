@@ -175,3 +175,21 @@ test('claude plugin validate accepts the plugin', { skip: !hasClaude && 'claude 
   const r = spawnSync('claude', ['plugin', 'validate', root], { shell: true, encoding: 'utf8' });
   assert.equal(r.status, 0, `${r.stdout}\n${r.stderr}`);
 });
+
+test('register.tsx draws the Features worktrees block and wires the Select picks', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  const start = src.indexOf("case 'worktrees':");
+  assert.ok(start > 0, "case 'worktrees': exists");
+  const block = src.slice(start, src.indexOf("case 'rows':", start));
+  assert.match(block, /inputOf\(b\.input\)/);
+  for (const b of block.match(/<Button\b[^>]*?\/>/gs) ?? []) assert.match(b, /onPress=/, b);
+  const selects = block.match(/<Select\b[\s\S]*?\/>/g) ?? [];
+  assert.ok(selects.length > 0);
+  for (const s of selects) { assert.match(s, /key=/); assert.match(s, /options=/); assert.match(s, /onSelect=/); }
+  const pick = src.slice(src.indexOf('async function onPick'), src.indexOf('export const register'));
+  assert.match(pick, /driver\.pickBase\(/);
+  assert.match(pick, /driver\.pickBranch\(/);
+  assert.doesNotMatch(block, /truncate/);
+  assert.doesNotMatch(block, /clock/);
+  assert.doesNotMatch(block, /\b(const|let|var)\s+h\b|\(h\)|\bh\s*=>/);
+});

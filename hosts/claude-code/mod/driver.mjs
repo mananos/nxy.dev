@@ -16,6 +16,7 @@ import {
 } from '../../../core/orchestrator.mjs';
 import { TABS, buildPanel, launcherOf, launcherAvailable, configCtx, isPanelAction } from '../../../core/panel.mjs';
 import { nextValue } from '../../../core/configedit.mjs';
+import { parseIssue, featureNames, openCommand } from '../../../core/featuresview.mjs';
 import { cacheOf, coldCost, expiryPlan, hitOf, pickTtl, ttlMsOf } from '../../../core/cache.mjs';
 import { money, tok } from '../../../core/statsview.mjs';
 import {
@@ -91,12 +92,17 @@ export function createDriver($, opts) {
       handoff: { state: 'loading', data: null, error: '' },
       locate: { question: '', state: 'empty', data: null, error: '', key: 0 },
     },
+    /** @type {any} the Features tab: the worktree list (features.mjs list) and the "new" steps */
+    features: {
+      state: 'idle', data: null, error: '', at: 0, mode: '', step: '', issue: '', name: '', base: '', branch: '', key: 0, target: '', force: false,
+    },
     /** @type {any} the Agentes launcher (scout/librarian) */
     launch: { kind: 'scout', agentId: null, question: '', key: 0, result: '', error: '' },
   };
   /** @type {Set<string>} input fields with a run in flight */
   const inputBusy = new Set();
   let memStarted = false;
+  let featStarted = false;
   const book = createBook();
   /** @type {string|null} the agent the main thread's task list is looking at */
   let viewAgentId = null;
@@ -602,8 +608,147 @@ export function createDriver($, opts) {
     return !!e && statusView(e.status, e.reason).live;
   };
 
-  /** Text from an input of the panel. Empty text is ignored; one run per field. @param {string} field @param {string} text */
+  // ── features tab ────────────────────────────────────────────────────────
+
+  /** One `features.mjs list` on the launcher lane. Never throws. */
+  function loadFeatures() {
+    const f = ui.features;
+    f.state = 'loading';
+    f.error = '';
+    return lane(async () => {
+      const r = await runJson('features', ['list']);
+      f.at = r.at ?? Date.now();
+      if (r.state === 'ok' && r.data && r.data.ok !== false) { f.data = r.data; f.state = 'ok'; f.error = ''; }
+      else { f.state = 'error'; f.error = r.state === 'ok' ? String(r.data?.reason ?? 'error') : String(r.error ?? 'error'); }
+    });
+  }
+
+  /** Back to the initial state of the "new" steps (nothing runs, git is not touched). */
+  function resetFeatures() {
+    const f = ui.features;
+    f.mode = ''; f.step = ''; f.issue = ''; f.name = ''; f.base = ''; f.branch = ''; f.error = '';
+    f.key += 1;
+    if (ui.confirm === 'feat-new') ui.confirm = null;
+  }
+
+  const sameDir = (/** @type {string} */ a, /** @type {string} */ b) => String(a).replace(/\\/g, '/').toLowerCase() === String(b).replace(/\\/g, '/').toLowerCase();
+
+  /** Opens the yes/no of `feat-new` once the choice is complete. */
+  function askNew() {
+    if (allowed('feat-new')) ui.confirm = /** @type {any} */ ('feat-new');
+  }
+
+  /** The base chosen in the Select (step base). Anything outside `data.bases` is ignored. @param {string} value */
+  function pickBase(value) {
+    const f = ui.features;
+    const v = String(value ?? '');
+    if (f.mode !== 'new' || f.step !== 'base' || !v || !f.data) return;
+    if (!Array.isArray(f.data.bases) || !f.data.bases.includes(v)) return;
+    const names = featureNames({ issue: f.issue, name: f.name, base: v }, f.data.main ?? '');
+    if (!names.ok) { f.error = names.error; return; }
+    f.error = '';
+    f.base = v;
+    f.branch = '';
+    askNew();
+  }
+
+  /** The existing branch chosen in the Select. A busy or unknown branch is ignored. @param {string} value */
+  function pickBranch(value) {
+    const f = ui.features;
+    const v = String(value ?? '');
+    if (f.mode !== 'existing' || !v || !f.data) return;
+    if (!Array.isArray(f.data.branches?.free) || !f.data.branches.free.includes(v)) return;
+    const names = featureNames({ branch: v }, f.data.main ?? '');
+    if (!names.ok) { f.error = names.error; return; }
+    if ((f.data.worktrees ?? []).some((/** @type {any} */ w) => sameDir(w.path, names.path))) { f.error = `ya hay un worktree en ${names.path}`; return; }
+    f.error = '';
+    f.name = ''; f.base = ''; f.issue = '';
+    f.branch = v;
+    askNew();
+  }
+
+  /** The two text steps of "Rama nueva". @param {string} field @param {string} text */
+  function submitFeature(field, text) {
+    const f = ui.features;
+    if (f.mode !== 'new' || !f.data) return;
+    const t = String(text ?? '').trim();
+    if (field === 'feature-issue' && f.step === 'issue') {
+      const p = parseIssue(t);
+      if (!p.ok) { f.error = p.error; return; }
+      f.issue = p.issue; f.step = 'name'; f.error = ''; f.key += 1;
+    } else if (field === 'feature-name' && f.step === 'name') {
+      if (!t) return;
+      const names = featureNames({ issue: f.issue, name: t, base: '-' }, f.data.main ?? '');
+      if (!names.ok) { f.error = names.error; return; }
+      if ((f.data.worktrees ?? []).some((/** @type {any} */ w) => sameDir(w.path, names.path))) { f.error = `ya hay un worktree en ${names.path}`; return; }
+      f.name = t; f.step = 'base'; f.error = ''; f.key += 1;
+    }
+  }
+
+  /** The Features buttons. Returns a promise that settles when the work is done. @param {string} action */
+  function pressFeature(action) {
+    const f = ui.features;
+    if (action === 'feat:mode:cancel') { resetFeatures(); return Promise.resolve(); }
+    if (action === 'feat:mode:new' || action === 'feat:mode:existing') {
+      resetFeatures();
+      f.mode = action === 'feat:mode:new' ? 'new' : 'existing';
+      if (f.mode === 'new') f.step = 'issue';
+      return f.data ? Promise.resolve() : loadFeatures();
+    }
+    const m = /^feat:(open|pause|close):(\d+)$/.exec(action);
+    if (!m) return Promise.resolve();
+    const row = f.data?.worktrees?.[Number(m[2])];
+    if (!row || typeof row.path !== 'string') return Promise.resolve();
+    if (m[1] === 'open') {
+      if (row.current) return Promise.resolve();
+      const shell = f.data?.shell === 'powershell' ? 'powershell' : 'posix';
+      const other = shell === 'powershell' ? 'posix' : 'powershell';
+      const text = openCommand(row.path, shell);
+      const token = ++runToken;
+      output = { id: 'feat-open', token, label: 'Abrir', text: '...', running: true };
+      return Promise.resolve().then(async () => {
+        let r;
+        try { r = await $.ui.copy({ text }); } catch (err) { r = { isCopied: false, reason: String(/** @type {any} */ (err)?.message ?? err) }; }
+        const head = r?.isCopied ? 'Copiado. Pegalo en una terminal nueva:' : `No se pudo copiar${r?.reason ? ` (${r.reason})` : ''}. Pegalo a mano en una terminal nueva:`;
+        if (output && output.id === 'feat-open' && output.token === token) {
+          output = { id: 'feat-open', token, label: 'Abrir', text: `${head}\n${text}\nEn ${other === 'powershell' ? 'PowerShell' : 'bash'}:\n${openCommand(row.path, other)}` };
+        }
+      });
+    }
+    if (m[1] === 'pause') { f.target = row.path; return runLauncher('feat-pause'); }
+    // close: the main one and this session's are never closed; fresh numbers first, then the question.
+    if (row.main || row.current || row.running) return Promise.resolve();
+    const path = row.path;
+    f.target = path; f.force = false;
+    return loadFeatures().then(() => {
+      const fresh = (f.data?.worktrees ?? []).find((/** @type {any} */ w) => w.path === path);
+      if (!fresh || fresh.main || fresh.current || fresh.running) { f.target = ''; return; }
+      f.force = fresh.dirty == null || fresh.dirty > 0; // unknown state counts as dirty
+      if (allowed('feat-close')) ui.confirm = /** @type {any} */ ('feat-close');
+    });
+  }
+
+  /** The launcher's output for the features script: the entry's JSON as text. @param {string} id @param {string} raw */
+  function featuresText(id, raw) {
+    let d;
+    try { d = JSON.parse(String(raw).trim().split('\n').pop() || ''); } catch { return raw; }
+    if (!d || typeof d !== 'object') return raw;
+    if (d.ok === false) return `No se pudo: ${d.reason ?? 'error'}`;
+    if (id === 'feat-new') return `Creado.\n${d.command ?? ''}\nPara abrirlo, usá Abrir en su fila.`;
+    if (id === 'feat-close') return 'Worktree cerrado. La rama sigue en la lista de ramas libres.';
+    if (id === 'feat-pause') {
+      const parts = [d.paused ? `Pausado${d.branch ? ` (${d.branch})` : ''}.` : 'Reanudado.'];
+      if (d.paused && d.handoff) parts.push(`Handoff existente:\n${d.handoff}${d.truncated ? '\n…' : ''}`);
+      if (d.paused && d.advice) parts.push(d.advice);
+      return parts.join('\n');
+    }
+    return raw;
+  }
+
+  /** Text from an input of the panel. Empty text is ignored (except the issue step); one run per field. @param {string} field @param {string} text */
   async function submitInput(field, text) {
+    const key = String(field).split(':')[0];
+    if (key === 'feature-issue' || key === 'feature-name') { submitFeature(key, text); return; }
     const t = String(text ?? '').trim();
     if (!t || inputBusy.has(field)) return;
     if (field === 'launch' && launchLive()) return;
@@ -881,8 +1026,10 @@ export function createDriver($, opts) {
           return Promise.all(jobs).then(() => {});
         }
         if (id === 'memory' && !memStarted) { memStarted = true; return Promise.all([loadMem('recent'), loadMem('handoff')]).then(() => {}); }
+        if (id === 'features' && !featStarted) { featStarted = true; return loadFeatures(); }
         return Promise.resolve();
       }
+      if (action.startsWith('feat:')) return pressFeature(action);
       if (action.startsWith('mem:')) {
         // From Agentes (librarian result) too: go to the Memoria tab so the detail is visible.
         ui.tab = 'memory';
@@ -938,6 +1085,7 @@ export function createDriver($, opts) {
         return Promise.resolve();
       }
       if (action === 'refresh') {
+        if (ui.tab === 'features') { featStarted = true; return loadFeatures(); }
         if (ui.tab === 'memory') {
           memStarted = true;
           // With a memory open, reload it (and keep it open) instead of the list.
@@ -1059,7 +1207,13 @@ export function createDriver($, opts) {
   const setConfig = (c) => { cfg = c && typeof c === 'object' ? c : {}; };
   const panelSetting = () => snap?.config?.ui?.panel ?? cfg.panel ?? 'auto';
   const setUsage = (u) => { usage = u ?? null; };
-  const launchCtx = () => configCtx(snap?.ok ? snap : null, settingsView, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null);
+  const launchCtx = () => {
+    const f = ui.features;
+    return {
+      ...configCtx(snap?.ok ? snap : null, settingsView, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null),
+      features: { name: f.name, issue: f.issue, base: f.base, branch: f.branch, main: f.data?.main ?? '', shell: f.data?.shell, target: f.target, force: f.force, rows: f.data?.worktrees ?? [] },
+    };
+  };
 
   /** The entry's `needs` holds for the plan as the driver sees it now (an owned plan fails `plan`). */
   function allowed(id) {
@@ -1084,7 +1238,7 @@ export function createDriver($, opts) {
       try {
         const script = `${$.plugin.root}/hosts/claude-code/entries/${e.script}.mjs`;
         const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd]);
-        finish(`${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
+        finish(e.script === 'features' && res?.exitCode === 0 ? featuresText(id, String(res?.stdout ?? '')) : `${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
         ranOk = res?.exitCode === 0;
         // settings.json changed: show it now (the next session.start reads the real value).
         if (e.after === 'settings' && res?.exitCode === 0 && settingsView) {
@@ -1105,14 +1259,22 @@ export function createDriver($, opts) {
     }).finally(() => { launching.delete(id); });
     launchChain = run.catch(() => {});
     // A tool was installed or reinstalled: ask for the tools again so the row changes by itself (one node, queued after the run on the same lane).
-    return run.then(() => (e.after === 'tools' && ranOk ? loadTools() : undefined));
+    return run.then(() => {
+      if (e.after === 'features') {
+        // Only a successful Nuevo clears the form; Pausar and Cerrar leave a half-filled one alone.
+        if (id === 'feat-new' && ranOk) resetFeatures();
+        ui.features.target = ''; ui.features.force = false;
+        return loadFeatures();
+      }
+      return e.after === 'tools' && ranOk ? loadTools() : undefined;
+    });
   }
 
   /** The panel body's width in cells (`e.props.bodyColumns`); the module sets it before each `panel()`. */
   const setColumns = (n) => { if (Number.isFinite(n) && n > 0) columns = Math.floor(n); };
 
   return {
-    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo, submitInput,
+    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo, submitInput, pickBase, pickBranch,
     noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
     step, start, onAgentDone, press, view, status, panel, setConfig, setSettings, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

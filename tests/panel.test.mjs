@@ -34,13 +34,13 @@ const hotkeys = (v) => [
   ...(v.ask?.buttons ?? []).map((b) => b.hotkey), ...(v.output ? [v.output.dismiss.hotkey] : []),
 ];
 
-test('TABS: six tabs, a builder each, active tab', () => {
-  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory']);
-  assert.deepEqual(TABS.map((t) => t.hotkey), ['1', '2', '3', '4', '5', '6']);
+test('TABS: seven tabs, a builder each, active tab', () => {
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory', 'features']);
+  assert.deepEqual(TABS.map((t) => t.hotkey), ['1', '2', '3', '4', '5', '6', '7']);
   assert.equal(TABS[0].label, 'Inicio');
   for (const t of TABS) assert.equal(typeof BUILDERS[t.id], 'function');
-  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false, false, false, false, false]);
-  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true, false, false, false, false]);
+  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false, false, false, false, false, false]);
+  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true, false, false, false, false, false]);
   assert.equal(home({ ui: { tab: 'nope' } }).tabs[0].active, true);
   assert.equal(home({}).sections, undefined);
 });
@@ -385,7 +385,7 @@ const rowsOf = (v, title) => v.blocks.find((b) => b.type === 'rows' && b.title =
 const allCells = (v) => v.blocks.filter((b) => b.type === 'rows').flatMap((b) => b.rows.flatMap((r) => r.cells));
 
 test('Config tab: sections in order, scope defaults to user, with and without snapshot', () => {
-  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory']);
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory', 'features']);
   const v = cfgView();
   assert.deepEqual(v.blocks.filter((b) => b.type === 'rows').map((b) => b.title),
     ['Roles', 'Flujo', 'Gate', 'Cache', 'Interfaz', 'Statusline', 'Herramientas', 'nxy']);
@@ -660,18 +660,18 @@ test('barText, kFmt, fitSteps, panelText', () => {
   assert.ok(panelText(home({ snap: snap({ hash: null, batches: [] }) })).includes('Plan: ninguno'));
 });
 
-test('panel.mjs stays pure: no node: imports, only orchestrator, batch-status, statsview, configedit and memview', () => {
+test('panel.mjs stays pure: no node: imports, only orchestrator, batch-status, statsview, configedit, memview and featuresview', () => {
   const src = readFileSync(fileURLToPath(new URL('../core/panel.mjs', import.meta.url)), 'utf8');
   assert.ok(!/from\s+['"]node:/.test(src));
   const imports = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './configedit.mjs', './memview.mjs', './orchestrator.mjs', './statsview.mjs']);
+  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './configedit.mjs', './featuresview.mjs', './memview.mjs', './orchestrator.mjs', './statsview.mjs']);
 });
 
 const mem = (over = {}) => buildPanel({ snap: snap(), now: NOW, ui: { tab: 'memory', mem: over } });
 const launchView = (launch, agents = []) => buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', launch }, agents });
 
 test('Memoria: sixth tab, keys 1-5 unchanged, isPanelAction for the new ids', () => {
-  assert.deepEqual(TABS.at(-1), { id: 'memory', label: 'Memoria', hotkey: '6' });
+  assert.deepEqual(TABS.at(-2), { id: 'memory', label: 'Memoria', hotkey: '6' });
   assert.deepEqual(TABS.slice(0, 5).map((t) => t.hotkey), ['1', '2', '3', '4', '5']);
   for (const id of ['mem:abc-1', 'mem-back', 'mem-handoff', 'mem-recent', 'launch:scout', 'launch:librarian', 'launch-ask', 'tab:memory']) {
     assert.ok(isPanelAction(id), id);

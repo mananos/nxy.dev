@@ -17,7 +17,7 @@
  * Adding a tab = one entry in TABS plus one builder in BUILDERS (it returns `{blocks}`). Adding a
  * button = one entry in LAUNCHER (with its own `tab`).
  *
- * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs, batch-status.mjs, statsview.mjs, configedit.mjs and memview.mjs only.
+ * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs, batch-status.mjs, statsview.mjs, configedit.mjs, memview.mjs and featuresview.mjs only.
  */
 import {
   effective, suiteDone, suiteIsRed, stateOf, nextActions,
@@ -29,6 +29,7 @@ import {
 } from './statsview.mjs';
 import { isField, ROLES } from './configedit.mjs';
 import { clipOutput, parseHits, parseMemIds, memResultRows, memDetailLines, hitRows } from './memview.mjs';
+import { featureNames, rowView, newQuestion, closeQuestion } from './featuresview.mjs';
 
 // A launcher's output is clipped for the pane by memview's clipOutput (at most N lines, long lines cut at 160 columns).
 export { clipOutput };
@@ -42,6 +43,7 @@ export const TABS = [
   { id: 'stats', label: 'Stats', hotkey: '4' },
   { id: 'config', label: 'Config', hotkey: '5' },
   { id: 'memory', label: 'Memoria', hotkey: '6' },
+  { id: 'features', label: 'Features', hotkey: '7' },
 ];
 
 /** The hotkey of the checkpoint's "Arreglar N" button: not a/c/x/y/n/e/r/d, not a launcher's, not a tab digit. */
@@ -60,10 +62,11 @@ export const NEEDS = {
 /**
  * True when the entry's `needs` (if any) holds for this state: the buttons and the driver's
  * presses both ask this.
- * @param {{needs?: keyof typeof NEEDS, tool?: string}} entry @param {{snap: any, owned?: boolean, ctx?: any}} state
+ * @param {{needs?: keyof typeof NEEDS, tool?: string, needsCtx?: (ctx: any) => boolean}} entry @param {{snap: any, owned?: boolean, ctx?: any}} state
  */
 export const launcherAvailable = (entry, { snap, owned = false, ctx = null }) =>
   (!entry.needs || NEEDS[entry.needs]({ snap, owned }))
+  && (!entry.needsCtx || entry.needsCtx(ctx))
   // An entry with a tool is only available once its install plan is loaded: the command is shown before anything runs.
   && (!entry.tool || Array.isArray(ctx?.tools?.[entry.tool]?.plan?.display));
 
@@ -72,8 +75,8 @@ export const launcherAvailable = (entry, { snap, owned = false, ctx = null }) =>
  * `after: 'refresh'` re-reads the snapshot once the process ends; `needs` names a NEEDS check: the
  * button is hidden, and its press ignored, while the check fails; `confirm` asks yes/no first.
  * @type {{id: string, tab: string, label: string | ((ctx: any) => string), hotkey: string, script: string,
- *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings' | 'tools', needs?: keyof typeof NEEDS, tool?: string,
- *   confirm?: string | ((ctx: any) => string)}[]}
+ *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string,
+ *   needsCtx?: (ctx: any) => boolean, confirm?: string | ((ctx: any) => string)}[]}
  */
 export const LAUNCHER = [
   { id: 'gate-once', tab: 'home', label: 'Gate once', hotkey: 'g', script: 'gate', args: ['once'] },
@@ -109,7 +112,40 @@ export const LAUNCHER = [
       return `${plan?.action === 'reinstall' ? 'Reinstalar' : 'Instalar'} ${tool} con: ${lines.join(' · ')} ¿Correr?`;
     },
   })),
+  // Features tab: ctx.features = {name, issue, base, branch, main, target, force, rows}; the buttons are drawn by featuresBlocks (no hotkey).
+  {
+    id: 'feat-new', tab: 'features', label: 'Crear', hotkey: '', script: 'features', after: 'features',
+    needsCtx: (ctx) => !!(ctx?.features?.name && ctx.features.base) || !!ctx?.features?.branch,
+    args: (ctx) => {
+      const f = ctx?.features ?? {};
+      return f.branch ? ['new', '--branch', f.branch]
+        : ['new', '--name', f.name, ...(f.issue ? ['--issue', f.issue] : []), '--base', f.base];
+    },
+    confirm: (ctx) => {
+      const f = ctx?.features ?? {};
+      const names = featureNames(f.branch ? { branch: f.branch } : { issue: f.issue ?? '', name: f.name ?? '', base: f.base ?? '' }, f.main ?? '');
+      return newQuestion(names, f.branch ? null : f.base, f.shell);
+    },
+  },
+  {
+    id: 'feat-pause', tab: 'features', hotkey: '', script: 'features', after: 'features',
+    needsCtx: (ctx) => !!ctx?.features?.target,
+    label: (ctx) => (featRow(ctx)?.pausedAt ? 'Reanudar' : 'Pausar'),
+    args: (ctx) => [featRow(ctx)?.pausedAt ? 'resume' : 'pause', '--path', ctx?.features?.target ?? ''],
+  },
+  {
+    id: 'feat-close', tab: 'features', label: 'Cerrar', hotkey: '', script: 'features', after: 'features',
+    needsCtx: (ctx) => !!ctx?.features?.target,
+    args: (ctx) => ['close', '--path', ctx?.features?.target ?? '', ...(ctx?.features?.force ? ['--force'] : [])],
+    confirm: (ctx) => closeQuestion(featRow(ctx) ?? { path: ctx?.features?.target ?? '', branch: null, dirty: ctx?.features?.force ? 1 : 0 }, ctx?.features?.shell),
+  },
 ];
+
+/** The row of `ctx.features.target` in `ctx.features.rows`. @param {any} ctx */
+function featRow(ctx) {
+  const f = ctx?.features;
+  return Array.isArray(f?.rows) ? f.rows.find((/** @type {any} */ r) => r.path === f.target) ?? null : null;
+}
 
 /** The Home filter button is a config action (it honours «Guardar en»), not a launcher script. */
 const FILTER_ACTION_ID = 'cfg:modules.filter:toggle';
@@ -125,13 +161,13 @@ const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false }
 
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
- * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string, tools?: Record<string, any>}} [ctx]
- * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools', needs?: keyof typeof NEEDS, tool?: string, confirm?: string} | null}
+ * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string, tools?: Record<string, any>, features?: any}} [ctx]
+ * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string, confirm?: string} | null}
  */
 export function launcherOf(id, ctx = {}) {
   const e = LAUNCHER.find((l) => l.id === id);
   if (!e) return null;
-  const { confirm, ...rest } = e;
+  const { confirm, needsCtx, ...rest } = e;
   return {
     ...rest,
     label: typeof e.label === 'function' ? e.label(ctx) : e.label,
@@ -177,6 +213,7 @@ function isCfgAction(id) {
 /** @param {string} id */
 export const isPanelAction =(id) => PANEL_IDS.includes(id) || /^scope:(user|repo)$/.test(id) || isCfgAction(id) ||
   id.startsWith('tab:') || /^batch:\d+$/.test(id)
+  || /^feat:(open|pause|close):\d+$/.test(id) || /^feat:mode:(new|existing|cancel)$/.test(id)
   || /^pick:\S+$/.test(id) || /^mem:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
   || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
@@ -869,6 +906,91 @@ function configBlocks(c) {
   return blocks;
 }
 
+/**
+ * Features tab: the worktrees of the repo and the "new" steps.
+ * `ui.features` = {state, data, error, at, mode, step, issue, name, base, key, target, force, note}; `data` = features.mjs list.
+ * Block `worktrees` = {title, state, message, rows: [{id, index, name, branch, tags, lines, buttons: [{id, label, disabled?, reason?}]}],
+ * modes: button[], input?, select?, busy: string[], info: string[], cancel?, note}. No button has a hotkey (focus ring).
+ * @param {any} c
+ */
+function featuresBlocks(c) {
+  const f = c.ui?.features ?? {};
+  const data = f.data && f.data.ok !== false ? f.data : null;
+  const now = typeof c.now === 'number' ? c.now : Date.now();
+  const key = (/** @type {string} */ field) => `${field}:${f.key ?? 0}`;
+  /** @type {string} */
+  let state = 'ok';
+  let message = '';
+  if (f.state === 'loading' && !data) { state = 'loading'; message = 'Leyendo los worktrees…'; }
+  else if (f.state === 'error' || (f.data && f.data.ok === false)) {
+    state = 'error';
+    message = `No se pudieron leer los worktrees: ${f.error ?? f.data?.reason ?? 'error desconocido'}`;
+  } else if (!data) { state = 'loading'; message = 'Leyendo los worktrees…'; }
+  const rows = (data?.worktrees ?? []).map((/** @type {any} */ wt, /** @type {number} */ i) => {
+    const v = rowView(wt, { now });
+    const block = wt.main ? 'el principal no se cierra' : wt.current ? 'es la sesión actual' : wt.running ? 'tiene un plan corriendo' : '';
+    return {
+      id: wt.path, index: i, ...v,
+      buttons: [
+        { id: `feat:open:${i}`, label: 'Abrir', ...(wt.current ? { disabled: true, reason: 'ya estás acá' } : {}) },
+        { id: `feat:pause:${i}`, label: wt.pausedAt ? 'Reanudar' : 'Pausar' },
+        { id: `feat:close:${i}`, label: 'Cerrar', ...(block ? { disabled: true, reason: block } : {}) },
+      ],
+    };
+  });
+  /** @type {any[]} */
+  const modes = [];
+  /** @type {any} */
+  let input = null;
+  /** @type {any} */
+  let select = null;
+  /** @type {string[]} */
+  const busy = [];
+  /** @type {string[]} */
+  const info = [];
+  if (data) {
+    if (!f.mode) {
+      modes.push({ id: 'feat:mode:new', label: 'Rama nueva' }, { id: 'feat:mode:existing', label: 'Rama existente' });
+    } else {
+      modes.push({ id: 'feat:mode:cancel', label: 'Cancelar' });
+      if (f.mode === 'new') {
+        if (f.step === 'name') {
+          input = { field: 'feature-name', key: key('feature-name'), placeholder: 'nombre del feature', submitLabel: 'seguir', value: '' };
+        } else if (f.step === 'base') {
+          const names = featureNames({ issue: f.issue ?? '', name: f.name ?? '', base: '-' }, data.main ?? '');
+          info.push(`rama ${names.branch} — falta elegir de qué rama sale`);
+          const bases = Array.isArray(data.bases) ? data.bases : [];
+          if (!bases.length) info.push('no hay ramas locales');
+          else {
+            select = {
+              pick: 'base', key: key('feature-base'), label: 'sale de', value: data.defaultBranch ?? bases[0],
+              options: bases.map((/** @type {string} */ b) => ({ value: b, label: b === (data.defaultBranch ?? bases[0]) ? `${b} (principal)` : b })),
+            };
+          }
+        } else {
+          input = { field: 'feature-issue', key: key('feature-issue'), placeholder: 'n.º de issue, Enter vacío = sin issue', submitLabel: 'seguir', value: '' };
+        }
+      } else {
+        const free = data.branches?.free ?? [];
+        for (const b of data.branches?.busy ?? []) busy.push(`rama ${b.name} — abierta en ${b.path}, no se puede elegir`);
+        if (!free.length) info.push('no hay ramas libres');
+        else {
+          select = {
+            pick: 'branch', key: key('feature-branch'), label: 'rama', value: '',
+            options: [{ value: '', label: 'elegí una rama…' }, ...free.map((/** @type {string} */ b) => ({ value: b, label: b }))],
+          };
+        }
+      }
+    }
+  }
+  const err = typeof f.error === 'string' && f.error && state === 'ok' ? f.error : '';
+  return [{
+    type: 'worktrees', title: 'Worktrees', state, message, rows, modes, input, select, busy, info, error: err,
+    note: typeof f.note === 'string' && f.note ? f.note
+      : 'Una sesión de Claude por worktree. Abrir copia el comando; nxy nunca commitea ni pushea.',
+  }];
+}
+
 /** One entry per tab id; each returns the tab's `{blocks}`. */
 export const BUILDERS = {
   home: (/** @type {any} */ c) => ({ blocks: homeBlocks(c) }),
@@ -877,6 +999,7 @@ export const BUILDERS = {
   stats: (/** @type {any} */ c) => ({ blocks: statsBlocks(c) }),
   config: (/** @type {any} */ c) => ({ blocks: configBlocks(c) }),
   memory: (/** @type {any} */ c) => ({ blocks: memoryBlocks(c) }),
+  features: (/** @type {any} */ c) => ({ blocks: featuresBlocks(c) }),
 };
 
 // ---- the view ----
@@ -915,7 +1038,7 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  * @param {{
  *   snap: any, ask?: any, owned?: boolean,
  *   ui?: {tab?: string, scope?: 'user' | 'repo', confirm?: string | null, expanded?: number | null, picked?: string[], agent?: string | null, agentsAll?: boolean,
- *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null, mem?: any,
+ *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null, mem?: any, features?: any,
  *     launch?: {kind?: string, agentId?: string | null, question?: string, key?: number | string, result?: string, error?: string} | null},
  *   agents?: any[] | null, agentDetail?: any, viewAgentId?: string | null,
  *   output?: {label: string, text: string, running?: boolean} | null,
@@ -949,7 +1072,14 @@ export function buildPanel({
       title: 'nxy', pill: stateOf(ownedSnap, ask),
       repo: lastSegment(snap?.projectDir), branch: typeof snap?.branch === 'string' ? snap.branch : '', progress,
     },
-    ask: askOf(ownedSnap, ask, ui, configCtx(snap, settings, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null)),
+    ask: askOf(ownedSnap, ask, ui, {
+      ...configCtx(snap, settings, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null),
+      features: {
+        name: ui.features?.name ?? '', issue: ui.features?.issue ?? '', base: ui.features?.base ?? '', branch: ui.features?.branch ?? '',
+        main: ui.features?.data?.main ?? '', target: ui.features?.target ?? '', force: !!ui.features?.force, rows: ui.features?.data?.worktrees ?? [],
+        shell: ui.features?.data?.shell ?? null,
+      },
+    }),
     output: output
       ? {
         title: output.label, lines: output.running ? [output.text] : clipOutput(output.text, 30),
@@ -1107,6 +1237,27 @@ export function panelText(view) {
         for (const l of b.raw) out.push(`  ${l}`);
         if (b.error) out.push(`  ✘ ${b.error}`);
         if (b.open) out.push(`  [${b.open.label}]`);
+        break;
+      case 'worktrees':
+        out.push(b.title);
+        if (b.message) out.push(`  ${b.message}`);
+        for (const r of b.rows) {
+          out.push(`  ${r.name} (${r.branch})${r.tags.length ? ` · ${r.tags.join(' · ')}` : ''}`);
+          for (const l of r.lines) out.push(`    ${l}`);
+          out.push(`    ${r.buttons.map((x) => `[${x.label}]${x.disabled ? ` (${x.reason})` : ''}`).join(' ')}`);
+        }
+        if (b.modes.length) out.push(`  ${b.modes.map((x) => `[${x.label}]`).join(' ')}`);
+        if (b.input) out.push(`  ${b.input.placeholder} [${b.input.submitLabel}]`);
+        for (const l of b.info) out.push(`  ${l}`);
+        if (b.select) {
+          const vals = b.select.options.filter((/** @type {any} */ o) => o.value !== '');
+          out.push(b.select.pick === 'base'
+            ? `  ${b.select.label}: ${b.select.options.find((/** @type {any} */ o) => o.value === b.select.value)?.label ?? b.select.value} · elegí una de: ${vals.map((/** @type {any} */ o) => o.value).join(', ')}`
+            : `  ${b.select.label}: elegí una de: ${vals.map((/** @type {any} */ o) => o.value).join(', ')}`);
+        }
+        for (const l of b.busy) out.push(`  ${l}`);
+        if (b.error) out.push(`  ✘ ${b.error}`);
+        out.push(`  ${b.note}`);
         break;
       default:
     }

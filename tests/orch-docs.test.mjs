@@ -23,9 +23,9 @@ test('README documents the panel, its command and how to turn it off', () => {
   assert.ok(readme.includes('claude -p "/nxy-panel"'));
 });
 
-test('README names the five panel tabs and the fix button', () => {
+test('README names the seven panel tabs and the fix button', () => {
   const readme = read('README.md');
-  for (const tab of ['Inicio', 'Plan', 'Agentes', 'Stats', 'Config']) assert.ok(readme.includes(`**${tab}**`), tab);
+  for (const tab of ['Inicio', 'Plan', 'Agentes', 'Stats', 'Config', 'Memoria', 'Features'])assert.ok(readme.includes(`**${tab}**`), tab);
   assert.ok(readme.includes('Arreglar'));
 });
 

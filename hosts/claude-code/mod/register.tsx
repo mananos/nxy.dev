@@ -220,6 +220,17 @@ async function onInput($: any, field: string, text: string): Promise<void> {
   } catch (err) { await fail($, 'ui.input', err) }
 }
 
+// A Features Select pick (base branch / existing branch): the driver validates it against the last list.
+async function onPick($: any, pick: string, value: string): Promise<void> {
+  try {
+    if (!driver) return
+    const run = pick === 'base' ? driver.pickBase(value) : driver.pickBranch(value)
+    await sync($)
+    await run
+    await sync($)
+  } catch (err) { await fail($, 'ui.input', err) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
@@ -376,7 +387,7 @@ export const register: Register = on => {
 
 // The pane: a centred column of at most 78 cells. Labels wrap, they are never cut.
 function draw($: any, e: any, v: any) {
-  const { Box, Text, Button, Raster, Input } = $.ui.resolve(e) as any
+  const { Box, Text, Button, Raster, Input, Select } = $.ui.resolve(e) as any
   if (!v) return <Text color={C.muted}>nxy: nothing running.</Text>
   const L = layoutOf(Number.isFinite(e.props?.bodyColumns) ? e.props.bodyColumns : 48)
   const { W, CW, narrow, stacked, tileW } = L
@@ -797,6 +808,42 @@ function draw($: any, e: any, v: any) {
             ))}
             {b.raw.map((line: string, li: number) => <Text key={`lw${li}`} color={C.text} wrap="wrap">{line}</Text>)}
             {b.open ? <Box flexDirection="row"><Button plain label={b.open.label} key={b.open.id} onPress={press(b.open.id)} /></Box> : null}
+          </Box>
+        )
+      case 'worktrees':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title={b.title} color={C.cyan} />
+            {b.message ? <Text color={b.state === 'error' ? C.red : C.muted} wrap="wrap">{b.message}</Text> : null}
+            {b.modes.length ? (
+              <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+                {b.modes.map((m: any) => <Button key={m.id} plain label={m.label} onPress={press(m.id)} />)}
+              </Box>
+            ) : null}
+            {inputOf(b.input)}
+            {b.select ? (
+              <Select key={b.select.key} label={b.select.label} options={b.select.options} value={b.select.value}
+                onSelect={(v: string) => { void onPick($, b.select.pick, v) }} />
+            ) : null}
+            {b.info.map((t: string, ii: number) => <Text key={`wi${ii}`} color={C.muted} wrap="wrap">{t}</Text>)}
+            {b.busy.map((t: string, ii: number) => <Text key={`wb${ii}`} color={C.muted} dimColor wrap="wrap">{t}</Text>)}
+            {b.error ? <Text color={C.red} wrap="wrap">{b.error}</Text> : null}
+            {b.rows.map((r: any) => (
+              <Box key={`wt:${r.id}`} flexDirection="column" marginTop={1}>
+                <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+                  <Text color={C.text} bold wrap="wrap">{r.name}</Text>
+                  <Text color={C.cyan} wrap="wrap">{r.branch}</Text>
+                  {r.tags.map((t: string, ti: number) => <Text key={`t${ti}`} color={C.violet} wrap="wrap">{`[${t}]`}</Text>)}
+                </Box>
+                {r.lines.map((t: string, li: number) => <Text key={`l${li}`} color={C.muted} wrap="wrap">{t}</Text>)}
+                <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+                  {r.buttons.map((x: any) => (x.disabled
+                    ? <Text key={x.id} color={C.muted} dimColor wrap="wrap">{`${x.label} (${x.reason})`}</Text>
+                    : <Button key={x.id} plain label={x.label} onPress={press(x.id)} />))}
+                </Box>
+              </Box>
+            ))}
+            {b.note ? <Text color={C.muted} wrap="wrap">{b.note}</Text> : null}
           </Box>
         )
       case 'rows':
