@@ -11,6 +11,14 @@ const manifest = JSON.parse(readFileSync(join(hooksDir, 'hooks.json'), 'utf8'));
 
 const commands = () => Object.values(manifest.hooks).flat().flatMap((g) => g.hooks).map((h) => h.command);
 
+test('register.tsx: Raster keys are unique per BarRows instance (a repeated key blanks the pane)', () => {
+  const src = readFileSync(join(root, 'hosts', 'claude-code', 'mod', 'register.tsx'), 'utf8');
+  assert.match(src, /key=\{`bg-\$\{p\.id\}-\$\{i\}`\}/);
+  const uses = src.match(/<BarRows\b[^>]*\/>/g) ?? [];
+  assert.ok(uses.length >= 2, 'BarRows is drawn at least twice');
+  for (const u of uses) assert.match(u, /\bid=/, `BarRows without id: ${u}`);
+});
+
 test('hooks.json names one module beside it that re-exports register', () => {
   assert.equal(manifest.modules.length, 1);
   const file = resolve(hooksDir, manifest.modules[0]);

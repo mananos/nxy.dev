@@ -428,8 +428,9 @@ function draw($: any, e: any, v: any) {
       </Box>
     )
   }
-  // Horizontal bars: label (never cut), a gauge, the amount.
-  const BarRows = (p: { rows: any[]; labelWidth: number; color?: string }) => {
+  // Horizontal bars: label (never cut), a gauge, the amount. `id` keeps the Raster keys unique in the
+  // tree: Stats draws several BarRows, and repeated keys made the engine refuse the whole pane (blank).
+  const BarRows = (p: { id: string; rows: any[]; labelWidth: number; color?: string }) => {
     const gw = Math.max(4, Math.min(24, CW - p.labelWidth - 16))
     return (
       <Box flexDirection="column">
@@ -438,7 +439,7 @@ function draw($: any, e: any, v: any) {
           return (
             <Box key={`br${i}`} flexDirection="row" columnGap={1}>
               <Box width={p.labelWidth + 1}><Text color={C.text}>{r.label}</Text></Box>
-              <Raster key={`bg${i}`} columns={gw} rows={1} cells={gaugeCells(gw, r.ratio, [col, col])} />
+              <Raster key={`bg-${p.id}-${i}`} columns={gw} rows={1} cells={gaugeCells(gw, r.ratio, [col, col])} />
               <Text color={C.muted}>{r.text}</Text>
             </Box>
           )
@@ -906,7 +907,7 @@ function draw($: any, e: any, v: any) {
         return (
           <Box key={`b${bi}`} flexDirection="column">
             <Heading title={b.title} color={C.cyan} />
-            <BarRows rows={b.rows} labelWidth={b.labelWidth} />
+            <BarRows id={`b${bi}`} rows={b.rows}labelWidth={b.labelWidth} />
           </Box>
         )
       case 'windows':
@@ -949,7 +950,7 @@ function draw($: any, e: any, v: any) {
             {ch.kind === 'rows' ? (
               <Box flexDirection="column">
                 {ch.note ? <Text color={C.muted} wrap="wrap">{ch.note}</Text> : null}
-                <BarRows rows={ch.rows} labelWidth={ch.labelWidth} color={ch.color} />
+                <BarRows id={`chart${bi}`} rows={ch.rows}labelWidth={ch.labelWidth} color={ch.color} />
               </Box>
             ) : (
               <Box flexDirection="row" marginTop={1}>
@@ -977,7 +978,7 @@ function draw($: any, e: any, v: any) {
                 <Text key={s.id}><Text color={C.muted}>{`${s.label} `}</Text><Text color={toneColor(s.tone)}>{s.value}</Text></Text>
               ))}
             </Box>
-            {b.roles.rows.length ? <BarRows rows={b.roles.rows} labelWidth={b.roles.labelWidth} /> : null}
+            {b.roles.rows.length ? <BarRows id="summary" rows={b.roles.rows}labelWidth={b.roles.labelWidth} /> : null}
             {b.batches.map((x: any) => (
               <Text key={`sb${x.n}`}><Text color={C.muted}>{`lote ${x.n}  `}</Text><Text color={C.text}>{x.text}</Text></Text>
             ))}
