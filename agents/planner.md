@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Turns a non-trivial task into a plan at class/method level — batches, files with path:line, and an acceptance command per batch — and saves it for the user's approval. Use it before writing code when a task touches several files, needs a design choice, or spans repos; not for a one-line fix. After it returns, follow the "Next (main thread):" instruction it gives you — either questions for the user (then dispatch the planner again with the answers) or the approval question: nxy will not let code be written until the user approves.
-model: sonnet
+model: opus
 effort: high
 tools: Bash, Read, Grep, Glob
 color: purple

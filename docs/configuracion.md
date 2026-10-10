@@ -57,7 +57,7 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
   "gate": { "enabled": true, "contextTokens": 100000, "escapeMinutes": 5 },
   "roles": {
     "scout":       { "model": "haiku",  "provider": "claude" },
-    "planner":     { "model": "sonnet", "provider": "claude" },
+    "planner":     { "model": "opus",   "provider": "claude" },
     "implementer": { "model": "sonnet", "provider": "claude" },
     "tester":      { "model": "haiku",  "provider": "claude" },
     "reviewer":    { "model": "sonnet", "provider": "claude" },
@@ -144,7 +144,7 @@ El gate nunca frena a un subagente, nunca frena si no hay implementer disponible
 
 ### `roles`
 
-Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "opus", "effort": "high" }` hace que el planner de ese repo corra en Opus con effort alto.
+Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "sonnet", "effort": "medium" }` hace que el planner de ese repo corra en Sonnet con effort medio (más barato que el default, Opus high).
 
 | Clave | Valores |
 | --- | --- |

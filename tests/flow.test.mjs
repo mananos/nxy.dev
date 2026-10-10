@@ -156,14 +156,14 @@ test('flow.plan "always": a second file without a plan goes to the planner', () 
 });
 
 test('the role table\'s model reaches the dispatch', () => {
-  const s = sandbox({ roles: { planner: { model: 'opus' }, scout: { model: 'haiku' }, reviewer: { model: 'gpt-9' } } });
+  const s = sandbox({ roles: { planner: { model: 'sonnet' }, scout: { model: 'haiku' }, reviewer: { model: 'gpt-9' } } });
   const planner = s.dispatch('plan this', 'nxy:planner');
-  assert.equal(planner?.updatedInput?.model, 'opus');
+  assert.equal(planner?.updatedInput?.model, 'sonnet');
   assert.equal(planner?.updatedInput?.prompt, 'plan this', 'the rest of the dispatch is untouched');
   assert.equal(s.dispatch('find x', 'nxy:scout'), null, 'same as the agent\'s own: nothing to change');
   assert.equal(s.dispatch('review', 'nxy:reviewer'), null, 'not a model alias: left alone');
   assert.equal(s.dispatch('x', 'Explore'), null, 'not an nxy agent');
-  const withModel = s.out(s.hook('pretooluse-agent.mjs', { tool_name: 'Agent', transcript_path: s.main(), tool_input: { subagent_type: 'nxy:planner', prompt: 'x', model: 'sonnet' } }));
+  const withModel = s.out(s.hook('pretooluse-agent.mjs', { tool_name: 'Agent', transcript_path: s.main(), tool_input: { subagent_type: 'nxy:planner', prompt: 'x', model: 'opus' } }));
   assert.equal(withModel, null, 'a model the main thread named wins');
 
   const impl = sandbox({ roles: { implementer: { model: 'haiku' } } });

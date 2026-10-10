@@ -151,7 +151,7 @@ Hasta 3 por mensaje, cada memoria una vez por sesión, las reemplazadas nunca. U
 
 ## El plan
 
-El **planner** (Sonnet, effort high) lee las convenciones del repo, busca con `locate.mjs`, se fija qué existe para reutilizar y guarda el plan con `mem handoff plan`, que valida la forma y rechaza prosa:
+El **planner** (Opus, effort high) lee las convenciones del repo, busca con `locate.mjs`, se fija qué existe para reutilizar y guarda el plan con `mem handoff plan`, que valida la forma y rechaza prosa:
 
 ```
 ## Plan

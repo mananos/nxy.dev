@@ -40,7 +40,7 @@
       "provider": "claude"
     },
     "planner": {
-      "model": "sonnet",
+      "model": "opus",
       "provider": "claude"
     },
     "implementer": {

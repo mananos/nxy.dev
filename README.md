@@ -141,7 +141,7 @@ Si no estás seguro, usá `/nxy:feature`: Claude arranca diciendo qué tamaño l
 /nxy:feature alta de clientes corporativos con validación de CUIT
 ```
 
-1. **Claude decide el tamaño** y, si es grande, despacha al *planner* (Sonnet, effort high), que busca en el repo, reutiliza lo que existe y arma un plan por lotes, cada uno con su comando de verificación (`Accept:`).
+1. **Claude decide el tamaño** y, si es grande, despacha al *planner* (Opus, effort high), que busca en el repo, reutiliza lo que existe y arma un plan por lotes, cada uno con su comando de verificación (`Accept:`).
 2. **Preguntas (a veces).** Si el plan depende de algo que sólo vos sabés ("¿endpoint nuevo o extender el existente?"), te lo pregunta con opciones (`Plan Q1`, `Plan Q2`…). La primera es la recomendada.
 3. **Aprobás el plan.** Claude te lo muestra y te pregunta **Approve** o **Change**. Hasta que elijas Approve no se escribe una línea de código. Si hubo preguntas, también te ofrece guardar tus respuestas como **convenciones del repo**, para que la próxima vez no pregunte.
 4. **Lotes verificados.** Un implementer por lote. Después de cada uno ves `nxy verify: batch 1 ✔` o `✘`. Con un ✘ elegís **Retry**, **Continue anyway** o **Stop**. Los lotes que no dependen entre sí (un repo de back y uno de front) corren en paralelo. Si un agente corre en segundo plano, al lanzarlo sólo ves "lanzado en segundo plano": el veredicto llega **cuando el agente termina**, no al lanzarlo, y hasta entonces nxy no deja despachar lo que depende de él. En segundo plano no hay vuelta atrás: si el lote no quedó probado ves un ✘ con el motivo y el paso siguiente. Si no es un ✘, no tenés que hacer nada: esperá el aviso.
@@ -394,7 +394,7 @@ Lo que se cambia más seguido:
 | Querés | Poné en `.nxy/config.json` |
 | --- | --- |
 | Plan obligatorio para todo cambio de más de un archivo | `{ "flow": { "plan": "always" } }` |
-| Que el planner de este repo use Opus | `{ "roles": { "planner": { "model": "opus" } } }` |
+| Que el planner de este repo use Sonnet (más barato) | `{ "roles": { "planner": { "model": "sonnet" } } }` |
 | Apagar el freno de escritura | `{ "gate": { "enabled": false } }` (o `/nxy:gate off`) |
 | Apagar el filtro | `{ "modules": { "filter": false } }` (o `/nxy:filter off`) |
 | Que nxy no inyecte nada de memoria solo | `{ "memory": { "mode": "manual" } }` |
@@ -408,7 +408,7 @@ Lo que se cambia más seguido:
 | Agente | Qué hace | Modelo | Effort |
 | --- | --- | --- | --- |
 | `scout` | Encuentra dónde está algo (`/nxy:locate`) | Haiku | low |
-| `planner` | Arma el plan por lotes | Sonnet | high |
+| `planner` | Arma el plan por lotes | Opus | high |
 | `implementer` | Escribe un cambio ya decidido y corre su test | Sonnet | medium |
 | `tester` | Corre la suite completa una vez al final del plan | Haiku | low |
 | `reviewer` | Revisa lo que cambió el plan | Sonnet | high |
@@ -456,7 +456,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.1.5` |
+| Versión actual | `1.1.6` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Publicado en `1.0.1`, probado en sesiones reales (Linux/WSL y Windows) durante las rc |
 | Después | CLI `nxy` (`doctor`, `stats`, `trend`, `mem`) para operarlo sin abrir Claude Code |
