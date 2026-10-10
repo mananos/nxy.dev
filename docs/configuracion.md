@@ -151,7 +151,7 @@ Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": {
 | `roles.<rol>.model` | `sonnet`, `opus`, `haiku`, `fable` |
 | `roles.<rol>.effort` | `low`, `medium`, `high` |
 
-Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)); si coincide con el del frontmatter no se emite nada.
+Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)). Los agentes de Haiku ya lo declaran: `scout` y `tester` en `low`, `librarian` en `medium`; `roles.<rol>.effort` lo pisa. Si coincide con el del frontmatter no se emite nada.
 - `provider` todavía no hace nada (hay un solo proveedor); está declarado para que sumar otro sea un cambio de config.
 - Borrar un rol lo apaga: sin `implementer` el gate no frena (no hay a quién delegar); sin `librarian` las memorias se guardan sin relacionarse; sin `documenter` nunca se ofrece actualizar docs.
 
@@ -167,7 +167,7 @@ Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude
 
 `"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) los edita desde el panel: guarda en tu usuario (`~/.nxy/config.json`) por defecto, o en el repo con el botón Repo; si el repo ya define la clave, avisa «el repo manda».
 
-Un scout o librarian lanzado desde el panel (Agentes, bloque «Preguntarle a un agente», o «Preguntarle al scout» en Memoria) toma el **modelo** de `roles.scout` / `roles.librarian`, pero no el **effort**: `agent.spawn` no lo acepta y rige el del agente. Cuando Claude los despacha, el hook aplica los dos.
+Un scout o librarian lanzado desde el panel (Agentes, bloque «Preguntarle a un agente», o «Preguntarle al scout» en Memoria) toma el **modelo** de `roles.scout` / `roles.librarian`, pero no el **effort**: `agent.spawn` no lo acepta y rige el del agente (`low` para el scout, `medium` para el librarian), aunque `roles.<rol>.effort` diga otra cosa. Cuando Claude los despacha, el hook aplica los dos.
 
 Los botones **Filter** (Inicio y Config) escriben `modules.filter` donde diga «Guardar en» (usuario por defecto). `/nxy:filter on|off` sigue igual que antes: escribe en el `.nxy/config.json` del repo.
 

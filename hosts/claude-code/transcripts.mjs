@@ -424,7 +424,7 @@ export function parseSession(ref, opts = {}) {
         agentType: agentType || null,
         cause: breakCause(call),
         ttl: call.usage.cacheWrite1h > 0 ? '1h' : '5m',
-        usd: costFor(call.model, written),
+        usd: costFor(call.model, written, { promptTokens: totalInput(call.usage) }),
       });
     }
   };
@@ -617,7 +617,8 @@ export function readIncremental(path, state, opts = {}) {
       } else if (usage.output > prevOut) {
         const delta = { ...emptyUsage(), output: usage.output - prevOut };
         addUsage(state.usage, delta);
-        usd = costFor(model, { ...delta, thinking: 0 });
+        // the delta carries no input: the tier belongs to the request's whole prompt
+        usd = costFor(model, { ...delta, thinking: 0 }, { promptTokens: totalInput(usage) });
       }
       if (usd !== null) {
         state.usd += usd;

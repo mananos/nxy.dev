@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
 import { breakCause, formatBreaks, lastCacheTtl, listSessions, newIncrementalState, parseSession, readIncremental, resolveSession, summarizeBreaks } from '../hosts/claude-code/transcripts.mjs';
-import { costFor, emptyUsage, estimateBasis, familyOf, isSyntheticModel, priceFor, versionOf, isZeroUsage, normalizeModel, toUsage } from '../core/pricing.mjs';
+import { costFor, emptyUsage, estimateBasis, familyOf, isSyntheticModel, priceFor, versionOf, isZeroUsage, normalizeModel, toUsage, loadPricing } from '../core/pricing.mjs';
 
 const close = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
 
@@ -98,6 +98,30 @@ test('pricing: cache-aware costFor', () => {
   assert.equal(costFor('claude-future-9', u), null, 'unknown model → null, never a guess');
   const legacy = toUsage({ input_tokens: 0, cache_creation_input_tokens: 500, output_tokens: 0 });
   assert.equal(legacy.cacheWrite5m, 500, 'no TTL breakdown → assume 5m');
+});
+
+test('pricing: Haiku 5.5 is priced by the prompt length of each request', () => {
+  const H = 'claude-haiku-5-5';
+  const lo = (n) => close(costFor(H, toUsage({ input_tokens: n, output_tokens: 1000 })) ?? -1, (n * 0.1 + 1000 * 0.5) / 1e6, `low tier at ${n}`);
+  lo(100_000);
+  close(costFor(H, toUsage({ input_tokens: 100_001, output_tokens: 1000 })) ?? -1, (100_001 * 0.5 + 1000 * 2.5) / 1e6, '100001 → high tier');
+  close(costFor(H, toUsage({ input_tokens: 50_000, cache_read_input_tokens: 60_000 })) ?? -1, (50_000 * 0.5 + 60_000 * 0.05) / 1e6, 'cache reads count toward the tier');
+  const w1h = toUsage({ cache_creation_input_tokens: 1000, cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 1000 } });
+  close(costFor(H, w1h) ?? -1, 1000 * 0.2 / 1e6, '1h write low');
+  close(costFor(H, w1h, { promptTokens: 200_000 }) ?? -1, 1000 * 1 / 1e6, 'promptTokens forces the high tier');
+  close(costFor('claude-haiku-4-5', toUsage({ input_tokens: 200_000 })) ?? -1, 0.2, 'haiku 4.5 is not tiered');
+  assert.equal(estimateBasis('claude-haiku-5-6'), H);
+  close(costFor('claude-haiku-5-6', toUsage({ input_tokens: 200_000 })) ?? -1, 0.1, 'unknown future haiku is tiered too');
+  close(costFor('claude-sonnet-5-5', toUsage({ cache_read_input_tokens: 1_000_000 })) ?? -1, 0.1, 'sonnet 5.5 cache read');
+});
+
+test('pricing.json: every `above` has a threshold and the same price keys as its base row', () => {
+  const keys = ['input', 'cache_write_5m', 'cache_write_1h', 'cache_read', 'output'];
+  for (const [id, m] of Object.entries(loadPricing().models)) {
+    if (!m.above) continue;
+    assert.ok(m.above.threshold > 0, id);
+    assert.deepEqual(Object.keys(m.above).filter((k) => k !== 'threshold').sort(), [...keys].sort(), id);
+  }
 });
 
 test('lastCacheTtl: the last cache write of the main thread decides; sidechains and tail cuts are ignored', () => {
@@ -301,4 +325,29 @@ test('cache breaks: attributed to idle, a slow subagent, a compaction, or other'
 
   assert.equal(breakCause({ gapMs: 4 * 60_000, after: 'subagent', usage: { ...emptyUsage(), cacheWrite5m: 1 } }), 'other',
     'a short subagent did not outlive the cache: waiting on it is not why it broke');
+});
+
+test('haiku 5.5 tiers: a cache break prices at the high tier, a streamed output delta too', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-tier-'));
+  const line = (id, req, usage) => ({
+    type: 'assistant', uuid: `a${id}`, timestamp: new Date(Date.parse('2026-09-01T10:00:00Z') + id * 1000).toISOString(), requestId: req,
+    message: { id: `msg_${id}`, model: 'claude-haiku-5-5', usage: { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, ...usage } },
+  });
+  const write5m = (n) => ({ cache_creation_input_tokens: n, cache_creation: { ephemeral_1h_input_tokens: 0, ephemeral_5m_input_tokens: n } });
+
+  // 60k written + 60k read = 120k prompt: the write is priced at 0.625, not 0.125
+  const p1 = join(dir, 'break.jsonl');
+  writeFileSync(p1, JSON.stringify(line(1, 'r1', { ...write5m(60_000), cache_read_input_tokens: 60_000 })) + '\n');
+  const s = parseSession({ sessionId: 'break', path: p1, project: 'p', agentsDir: join(dir, 'break', 'subagents'), mtimeMs: 0, size: 0 }, { cacheBreakThreshold: 50_000 });
+  assert.equal(s.cacheBreaks.length, 1);
+  close(s.cacheBreaks[0].usd ?? NaN, 60_000 * 0.625 / 1e6, 'break at the high tier');
+
+  // streamed request: same requestId, output grows; the delta carries no input but the tier is the prompt's
+  const p2 = join(dir, 'stream.jsonl');
+  writeFileSync(p2, [line(2, 'r2', { input_tokens: 120_000, output_tokens: 100 }), line(3, 'r2', { input_tokens: 120_000, output_tokens: 300 })].map((l) => JSON.stringify(l)).join('\n') + '\n');
+  const st = newIncrementalState();
+  readIncremental(p2, st);
+  assert.equal(st.calls, 1);
+  close(st.usd, costFor('claude-haiku-5-5', { ...emptyUsage(), input: 120_000, output: 300 }) ?? NaN, 'streamed total = single-line price of the final usage');
+  close(st.usd, 120_000 * 0.5 / 1e6 + 300 * 2.5 / 1e6, 'output at 2.50/MTok');
 });

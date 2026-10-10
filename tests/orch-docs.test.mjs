@@ -1,8 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
+// docs/roadmap-debate.md is ignored by git: it only exists in the local copy, not in CI.
+const readOptional = (rel) => (existsSync(new URL(`../${rel}`, import.meta.url)) ? read(rel) : null);
+
+test('README and como-funciona document Haiku 5.5 tiered pricing and the haiku roles effort', () => {
+  const readme = read('README.md');
+  assert.match(readme, /Haiku 5\.5 se cobra según el largo del prompt/);
+  assert.match(readme, /100\.000/);
+  assert.match(readme, /\| `scout` \|[^\n]*\| Haiku \| low \|/);
+  assert.match(readme, /\| `tester` \|[^\n]*\| Haiku \| low \|/);
+  assert.match(readme, /\| `librarian` \|[^\n]*\| Haiku \| medium \|/);
+  const how = read('docs/como-funciona.md');
+  assert.match(how, /`above`/);
+  assert.match(how, /`tierFor`/);
+});
 
 test('README documents the orchestrator config and its refusal message', () => {
   const readme = read('README.md');
@@ -60,7 +74,8 @@ test('README documents the Memoria tab and the roadmap marks 4b-1 done', () => {
   assert.ok(readme.includes('**Memoria.**'));
   assert.ok(readme.includes('`6`'));
   assert.ok(readme.includes('Preguntarle al scout'));
-  assert.match(read('docs/roadmap-debate.md'), /4b-1: Memoria[^\n]*hecha \(2026-10-09\)/);
+  const roadmap = readOptional('docs/roadmap-debate.md');
+  if (roadmap !== null) assert.match(roadmap, /4b-1: Memoria[^\n]*hecha \(2026-10-09\)/);
 });
 
 test('README documents /nxy:setup and the tool conflict, and the roadmap marks 4b-2 done', () => {
@@ -68,7 +83,8 @@ test('README documents /nxy:setup and the tool conflict, and the roadmap marks 4
   assert.ok(readme.includes('/nxy:setup'));
   assert.ok(readme.includes('choca: hook de rtk') && readme.includes('choca: servidor MCP de codegraph') && readme.includes('choca: hook en settings'));
   assert.ok(readme.includes('sudo -n'));
-  assert.match(read('docs/roadmap-debate.md'), /4b-2: \/nxy:setup, hecha \(2026-10-09\)/);
+  const roadmap = readOptional('docs/roadmap-debate.md');
+  if (roadmap !== null) assert.match(roadmap, /4b-2: \/nxy:setup, hecha \(2026-10-09\)/);
 });
 
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {

@@ -2,6 +2,7 @@
 name: tester
 description: Runs the full test suite of every repo a plan touched, once, after all its batches passed their own acceptance commands, and reports only what failed. Use it when nxy says "dispatch the nxy:tester subagent"; not per batch (each implementer already verifies its own) and not to fix anything.
 model: haiku
+effort: low
 tools: Bash, Read, Grep, Glob
 color: yellow
 ---

@@ -12,7 +12,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { modelIdFromName, parsePricingDoc, comparePricing } from '../scripts/pricing-check.mjs';
+import { modelIdFromName, tierOfName, parsePricingDoc, comparePricing } from '../scripts/pricing-check.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -72,6 +72,47 @@ test('comparePricing lists missing, changed and gone', () => {
   assert.ok(noFast.changed.some((l) => l.includes('fast: missing')));
 
   assert.deepEqual(comparePricing({ a: { ...p } }, { a: { ...p }, old: { ...p } }).gone, ['old']);
+});
+
+const LOW = '| Claude Haiku 5.5 (for prompts up to 100,000 tokens) | $0.10 / MTok | $0.125 / MTok | $0.20 / MTok | $0.01 / MTok | $0.50 / MTok |';
+const HIGH = '| Claude Haiku 5.5 (for prompts over 100,000 tokens) | $0.50 / MTok | $0.625 / MTok | $1 / MTok | $0.05 / MTok | $2.50 / MTok |';
+const tiered = (...rows) => page().replace('\n\n### Fast mode', `\n${rows.join('\n')}\n\n### Fast mode`);
+const HAIKU = {
+  input: 0.1, cache_write_5m: 0.125, cache_write_1h: 0.2, cache_read: 0.01, output: 0.5,
+  above: { threshold: 100000, input: 0.5, cache_write_5m: 0.625, cache_write_1h: 1, cache_read: 0.05, output: 2.5 },
+};
+
+test('tierOfName reads the parenthesis', () => {
+  assert.deepEqual(tierOfName('Claude Haiku 5.5 (for prompts up to 100,000 tokens)'), { threshold: 100000, tier: 'base' });
+  assert.deepEqual(tierOfName('Claude Haiku 5.5 (for prompts over 100,000 tokens)'), { threshold: 100000, tier: 'above' });
+  assert.equal(tierOfName('Claude Opus 5.5'), null);
+  assert.equal(modelIdFromName('Claude Haiku 5.5 (for prompts over 100,000 tokens)'), 'claude-haiku-5-5');
+});
+
+test('parsePricingDoc builds the above tier, in any row order', () => {
+  assert.deepEqual(parsePricingDoc(tiered(LOW, HIGH))['claude-haiku-5-5'], HAIKU);
+  assert.deepEqual(parsePricingDoc(tiered(HIGH, LOW)), parsePricingDoc(tiered(LOW, HIGH)));
+});
+
+test('parsePricingDoc throws on a tier without base row or an unreadable label', () => {
+  assert.throws(() => parsePricingDoc(tiered(HIGH)), /tier without base row/);
+  assert.throws(() => parsePricingDoc(tiered(LOW.replace('up to 100,000', 'between 1 and 2'))), /unreadable tier label/);
+  assert.throws(() => parsePricingDoc(tiered(LOW, HIGH.replace('over 100,000', 'over 90,000'))), /tier thresholds differ/);
+});
+
+test('comparePricing compares the above tier', () => {
+  const doc = parsePricingDoc(tiered(LOW, HIGH));
+  const same = { 'claude-haiku-5-5': structuredClone(HAIKU) };
+  const only = { 'claude-haiku-5-5': doc['claude-haiku-5-5'] };
+  assert.deepEqual(comparePricing(only, same), { missing: [], changed: [], gone: [] });
+
+  const changed = structuredClone(same);
+  changed['claude-haiku-5-5'].above.input = 0.6;
+  assert.deepEqual(comparePricing(only, changed).changed, ['claude-haiku-5-5.above.input: 0.6 → 0.5']);
+
+  const { above, ...base } = HAIKU;
+  assert.ok(comparePricing(only, { 'claude-haiku-5-5': base }).changed[0].includes('above: missing'));
+  assert.ok(comparePricing({ 'claude-haiku-5-5': base }, same).changed[0].includes('not on the page'));
 });
 
 test('CLI exits 2 and says "format changed" on a broken page', () => {

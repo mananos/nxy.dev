@@ -31,7 +31,19 @@ function setup() {
   const dir = realpathSync.native(mkdtempSync(join(tmpdir(), 'nxy-feat-')));
   const repo = join(dir, 'repo');
   mkdirSync(repo, { recursive: true });
-  const gitIn = (/** @type {string} */ cwd, /** @type {string[]} */ ...a) => execFileSync('git', a, { cwd, encoding: 'utf8' });
+  // On Windows a fresh object file in .git/objects can be briefly locked (AV/indexer): retry only that error.
+  // Any other failure, and the last transient one, throws at once.
+  const gitIn = (/** @type {string} */ cwd, /** @type {string[]} */ ...a) => {
+    for (let n = 1; ; n++) {
+      try {
+        return execFileSync('git', a, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) {
+        const err = /** @type {any} */ (e);
+        if (n >= 3 || !/Permission denied|unable to write/.test(String(err?.stderr || ''))) throw e;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      }
+    }
+  };
   const git = (/** @type {string[]} */ ...a) => gitIn(repo, ...a);
   git('init', '-q', '-b', 'main');
   git('config', 'user.name', 'nxy test');

@@ -2,17 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normalizeModel, familyOf, versionOf, priceIn } from './price-table.mjs';
+import { normalizeModel, familyOf, versionOf, priceIn, tierFor } from './price-table.mjs';
 
-/**
- * @typedef {object} ModelPrice
- * @property {number} input
- * @property {number} cache_write_5m
- * @property {number} cache_write_1h
- * @property {number} cache_read
- * @property {number} output
- * @property {{input: number, output: number}} [fast]
- */
+/** @typedef {import('./price-table.mjs').ModelPrice} ModelPrice */
 
 /**
  * Normalized token counts for one API call (all fields in tokens).
@@ -102,13 +94,17 @@ export function estimateBasis(model) {
  * Cache-aware cost in USD. Una llamada sin tokens cuesta 0 sea cual sea el modelo (no hay nada
  * que tarifar). Con tokens y modelo desconocido devuelve `null` — nunca un número inventado.
  * @param {string} model
+ * El tramo de precio (`above`) pertenece a UN request: `usage` debe ser el de una sola llamada.
+ * Si `usage` es parcial (ej. solo lo escrito), `opts.promptTokens` da el prompt entero del request.
  * @param {Usage} usage
+ * @param {{promptTokens?: number}} [opts]
  * @returns {number|null}
  */
-export function costFor(model, usage) {
+export function costFor(model, usage, opts) {
   if (isZeroUsage(usage)) return 0;
-  const price = priceFor(model)?.price;
-  if (!price) return null;
+  const base = priceFor(model)?.price;
+  if (!base) return null;
+  const price = tierFor(base, opts?.promptTokens ?? totalInput(usage));
   const fast = usage.speed === 'fast' && price.fast ? price.fast : null;
   const inputRate = fast ? fast.input : price.input;
   const outputRate = fast ? fast.output : price.output;

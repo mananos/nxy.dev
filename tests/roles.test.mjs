@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { roleEffort } from '../hosts/claude-code/roles.mjs';
+import { roleEffort, frontmatterEffort } from '../hosts/claude-code/roles.mjs';
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), '..', 'hosts', 'claude-code', 'hooks', 'pretooluse-agent.mjs');
 
@@ -16,6 +16,15 @@ test('roleEffort: configured effort that differs from the frontmatter', () => {
 
 test('roleEffort: equal to the frontmatter does not emit', () => {
   assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'high' } } }), null);
+});
+
+test('haiku roles declare effort in the frontmatter', () => {
+  assert.equal(frontmatterEffort('scout'), 'low');
+  assert.equal(frontmatterEffort('tester'), 'low');
+  assert.equal(frontmatterEffort('librarian'), 'medium');
+  assert.equal(roleEffort('nxy:scout', { roles: { scout: { effort: 'low' } } }), null);
+  assert.equal(roleEffort('nxy:scout', { roles: { scout: { effort: 'high' } } }), 'high');
+  assert.equal(roleEffort('nxy:librarian', { roles: { librarian: { effort: 'medium' } } }), null);
 });
 
 test('roleEffort: the dispatch own effort wins', () => {

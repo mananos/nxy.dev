@@ -1,8 +1,11 @@
 // @ts-nocheck — the view model is plain data; the tests poke into it freely
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { configView } from '../hosts/claude-code/config-view.mjs';
 import {
   TABS, LAUNCHER, BUILDERS, NEEDS, launcherOf, launcherAvailable, filterCtx, isPanelAction, buildPanel, panelText, barText, kFmt,
   fitSteps, lifecycle, clipOutput, layoutOf, lifecycleLayout,
@@ -405,6 +408,19 @@ test('Config tab: sections in order, scope defaults to user, with and without sn
     ['high', 'cfg:roles.implementer.effort:prev', 'cfg:roles.implementer.effort:next'],
   ]);
   assert.equal(roles.rows.find((x) => x.label === 'planner').cells[0].text, 'predeterminado');
+  // haiku roles declare effort in the frontmatter: shown as the value, not "predeterminado"
+  // built through config-view with no roles config (empty NXY_HOME and cwd), so the value is the frontmatter default
+  const tmp = mkdtempSync(join(tmpdir(), 'nxy-cfgview-'));
+  const prevHome = process.env.NXY_HOME;
+  process.env.NXY_HOME = tmp;
+  let real;
+  try { real = configView(tmp); } finally {
+    if (prevHome === undefined) delete process.env.NXY_HOME; else process.env.NXY_HOME = prevHome;
+    rmSync(tmp, { recursive: true, force: true });
+  }
+  const sc = rowsOf(cfgView({ snap: cfgSnap({ roles: real.roles, sources: {} }) }), 'Roles');
+  assert.equal(sc.rows.find((x) => x.label === 'scout').cells[1].text, 'low');
+  assert.equal(sc.rows.find((x) => x.label === 'librarian').cells[1].text, 'medium');
   // no snapshot: unknown, nothing writes
   const none = buildPanel({ snap: null, now: NOW, ui: { tab: 'config' } });
   assert.ok(allCells(none).every((c) => !c.prev && !c.press));

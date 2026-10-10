@@ -56,6 +56,13 @@ test('costOf: precio exacto, estimado y desconocido', () => {
   assert.equal(costOf(null, 'a', prices), null);
 });
 
+test('costOf: Haiku 5.5 usa la tarifa base aunque la suma pase de 100K (cota inferior)', () => {
+  const p = { 'claude-haiku-5-5': { input: 0.1, cache_write_5m: 0.125, cache_write_1h: 0.2, cache_read: 0.01, output: 0.5,
+    above: { threshold: 100000, input: 0.5, cache_write_5m: 0.625, cache_write_1h: 1, cache_read: 0.05, output: 2.5 } } };
+  const r = costOf({ model: 'claude-haiku-5-5', input_tokens: 50000, cache_read_input_tokens: 100000, cache_creation_input_tokens: 0, output_tokens: 1000 }, '', p, '5m');
+  assert.ok(Math.abs((r?.usd ?? 0) - (50000 * 0.1 + 100000 * 0.01 + 1000 * 0.5) / 1e6) < 1e-9);
+});
+
 test('libro: spawn, costo al terminar el turno, nxy y ajenos', () => {
   const b = createBook();
   bookRoles(b, { implementer: { model: 'sonnet', effort: 'medium' } });

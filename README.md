@@ -288,7 +288,9 @@ Una línea siempre visible que responde tres preguntas: **¿cuánto me cuesta lo
 
 El `~` quiere decir *equivalente en USD*: con suscripción no pagás por token, pero es lo que ese uso costaría con API key.
 
-Un `*` después de un monto (en la statusline, `/nxy:stats` y `/nxy:trend`) quiere decir que un modelo todavía no está en la tabla de precios de nxy y se calculó con la versión más cercana de la misma familia (por ejemplo, un futuro `claude-sonnet-5-6` con las tarifas de `claude-sonnet-5-5`); una línea de nota nombra el modelo y la base usada. Un `+?` quiere decir que el modelo es de una familia desconocida y no se pudo calcular. No tenés que hacer nada: el número se vuelve exacto cuando un release de nxy actualiza la tabla. Sonnet 5.5 ya tiene precio exacto.
+Un `*` después de un monto (en la statusline, `/nxy:stats` y `/nxy:trend`) quiere decir que un modelo todavía no está en la tabla de precios de nxy y se calculó con la versión más cercana de la misma familia (por ejemplo, un futuro `claude-sonnet-5-6` con las tarifas de `claude-sonnet-5-5`); una línea de nota nombra el modelo y la base usada. Un `+?` quiere decir que el modelo es de una familia desconocida y no se pudo calcular. No tenés que hacer nada: el número se vuelve exacto cuando un release de nxy actualiza la tabla. Sonnet 5.5 y Haiku 5.5 ya tienen precio exacto.
+
+**Haiku 5.5 se cobra según el largo del prompt de cada pedido.** Hasta 100.000 tokens: $0,10 de entrada y $0,50 de salida por millón; si el prompt pasa de 100.000: $0,50 y $2,50. La cache cuenta en el largo (entrada + escrituras + lecturas de cache de ese pedido). nxy lo calcula pedido por pedido, así que un scout o un tester con un prompt largo cuesta ~5x por token: si ves que sus montos suben, mantené cortas sus consignas. Las tarjetas de agentes del panel muestran un mínimo (cuentan el turno entero con la tarifa de hasta 100.000). La lectura de cache de Sonnet 5.5 cuesta $0,10 por millón. Costo para vos: ninguna lectura de archivo extra, una comparación por llamada.
 
 Los umbrales son en tokens y no en porcentaje porque lo que encarece cada paso es cuánto se reenvía, no qué fracción de la ventana ocupa. Colores, presets (`vivid`, `classic`, `powerline`) y layout (`line`, `two-line`) se cambian en la [configuración](docs/configuracion.md#statusline) y se ven al instante.
 
@@ -405,17 +407,17 @@ Lo que se cambia más seguido:
 
 | Agente | Qué hace | Modelo | Effort |
 | --- | --- | --- | --- |
-| `scout` | Encuentra dónde está algo (`/nxy:locate`) | Haiku | — |
+| `scout` | Encuentra dónde está algo (`/nxy:locate`) | Haiku | low |
 | `planner` | Arma el plan por lotes | Sonnet | high |
 | `implementer` | Escribe un cambio ya decidido y corre su test | Sonnet | medium |
-| `tester` | Corre la suite completa una vez al final del plan | Haiku | — |
+| `tester` | Corre la suite completa una vez al final del plan | Haiku | low |
 | `reviewer` | Revisa lo que cambió el plan | Sonnet | high |
 | `documenter` | Actualiza los `.md` que nombran lo cambiado | Sonnet | low |
-| `librarian` | Relaciona memorias y busca por significado | Haiku | — |
+| `librarian` | Relaciona memorias y busca por significado | Haiku | medium |
 
 **El modelo se cambia por config**, para vos (`~/.nxy/config.json`) o para un repo (`.nxy/config.json`): `{ "roles": { "reviewer": { "model": "opus" } } }`. Valores: `haiku`, `sonnet`, `opus`, `fable`. nxy lo aplica en cada despacho. Lo mismo vale para el effort: `{ "roles": { "reviewer": { "effort": "high" } } }` con `roles.<rol>.effort` (`low`, `medium`, `high`), también aplicado en cada despacho, con o sin el Mod; si coincide con el del agente, o el despacho ya trae uno, no se toca. Si tu sesión principal usa un modelo de esa familia (por ejemplo Sonnet 4.6 1M), el agente corre en ese mismo modelo.
 
-**El effort no se puede cambiar hoy.** Claude Code no permite elegirlo por despacho, así que vale el que trae cada agente en `agents/*.md`. Editar esos archivos funciona, pero se pisa al actualizar el plugin.
+**Sin config, vale el effort que trae cada agente en `agents/*.md`.** Haiku 5.5 acepta effort y los tres agentes haiku (scout, tester, librarian) ahora lo declaran. Scout y librarian lanzados con el botón de la pestaña Agentes usan el modelo de su rol pero el effort de su definición, porque la API de Mods no acepta effort al lanzar. Editar los `.md` del plugin funciona, pero se pisa al actualizar: usá `roles.<rol>.effort`.
 
 ### Dónde guarda nxy sus cosas
 
@@ -454,7 +456,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.0.3` |
+| Versión actual | `1.1.0` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Publicado en `1.0.1`, probado en sesiones reales (Linux/WSL y Windows) durante las rc |
 | Después | CLI `nxy` (`doctor`, `stats`, `trend`, `mem`) para operarlo sin abrir Claude Code |

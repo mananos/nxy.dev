@@ -9,7 +9,24 @@
  * @property {number} cache_read
  * @property {number} output
  * @property {{input: number, output: number}} [fast]
+ * @property {{threshold: number, input: number, cache_write_5m: number, cache_write_1h: number, cache_read: number, output: number}} [above]
+ *   tarifa de un request cuyo prompt (input + escrituras + lecturas de cache) supera `threshold`
  */
+
+/**
+ * Tarifa que corresponde a UN request según el largo de su prompt: `price` tal cual si no tiene
+ * `above` o el prompt es <= threshold; si lo supera, la fila base con los precios de `above`.
+ * @param {ModelPrice} price
+ * @param {number} promptTokens
+ * @returns {ModelPrice}
+ */
+export function tierFor(price, promptTokens) {
+  const a = price.above;
+  if (!a || !(promptTokens > a.threshold)) return price;
+  const { above, ...base } = price;
+  const { threshold, ...rates } = a;
+  return { ...base, ...rates };
+}
 
 /**
  * Reduce un id de modelo a la clave de la tabla de precios. Cubre las tres plataformas:

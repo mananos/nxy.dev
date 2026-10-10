@@ -1,6 +1,6 @@
 // @ts-check
 // Modelo puro de la cache de prompts (sin módulos de Node): vida restante, costo en frío, TTL y avisos.
-import { priceIn } from './price-table.mjs';
+import { priceIn, tierFor } from './price-table.mjs';
 
 /** @typedef {'5m'|'1h'} Ttl */
 
@@ -32,7 +32,8 @@ export function coldCost({ tokens, model, ttl, prices }) {
   if (!Number.isFinite(tokens) || tokens < 0 || !prices) return null;
   const hit = priceIn(prices, model);
   if (!hit) return null;
-  const rate = ttl === '1h' ? hit.price.cache_write_1h : hit.price.cache_write_5m;
+  const price = tierFor(hit.price, tokens); // tokens = el prompt entero que se reescribiría
+  const rate = ttl === '1h' ? price.cache_write_1h : price.cache_write_5m;
   return { usd: (tokens * rate) / 1_000_000, estimated: hit.estimated };
 }
 

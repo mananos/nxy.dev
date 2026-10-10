@@ -141,6 +141,9 @@ export function costOf(usage, model, prices, ttl) {
   if (!usage || !prices) return null;
   const hit = priceIn(prices, usage.model || model);
   if (!hit) return null;
+  // Tarifa base a propósito (sin tierFor): `usage` es el turno entero del agente y puede sumar
+  // varios requests; decidir el tramo con la suma cobraría de más. Es una cota inferior para un
+  // Haiku 5.5 con algún request de prompt > 100K.
   const p = hit.price;
   const w = ttl === '1h' ? p.cache_write_1h : p.cache_write_5m;
   const usd = (num(usage.input_tokens) * p.input + num(usage.cache_read_input_tokens) * p.cache_read

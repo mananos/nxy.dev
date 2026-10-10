@@ -26,6 +26,16 @@ test('coldCost: exact price, 1h rate, family estimate marked, unknown model null
   assert.equal(coldCost({ tokens: 10, model: 'gpt-x', ttl: '5m', prices }), null);
 });
 
+test('coldCost: Haiku 5.5 cambia de tarifa de escritura al pasar de 100K; Sonnet no', () => {
+  const p = { ...prices, 'claude-haiku-5-5': { input: 0.1, cache_write_5m: 0.125, cache_write_1h: 0.2, cache_read: 0.01, output: 0.5,
+    above: { threshold: 100000, input: 0.5, cache_write_5m: 0.625, cache_write_1h: 1, cache_read: 0.05, output: 2.5 } } };
+  assert.equal(coldCost({ tokens: 90_000, model: 'claude-haiku-5-5', ttl: '5m', prices: p })?.usd, 90_000 * 0.125 / 1e6);
+  assert.equal(coldCost({ tokens: 100_000, model: 'claude-haiku-5-5', ttl: '5m', prices: p })?.usd, 100_000 * 0.125 / 1e6);
+  assert.equal(coldCost({ tokens: 110_000, model: 'claude-haiku-5-5', ttl: '5m', prices: p })?.usd, 110_000 * 0.625 / 1e6);
+  assert.equal(coldCost({ tokens: 110_000, model: 'claude-haiku-5-5', ttl: '1h', prices: p })?.usd, 110_000 * 1 / 1e6);
+  assert.equal(coldCost({ tokens: 110_000, model: 'claude-sonnet-5', ttl: '5m', prices: p })?.usd, 110_000 * 4 / 1e6);
+});
+
 test('hitOf: read share of the whole input', () => {
   assert.equal(hitOf({ input_tokens: 10, cache_read_input_tokens: 80, cache_creation_input_tokens: 10 }), 80);
   assert.equal(hitOf({}), null);
