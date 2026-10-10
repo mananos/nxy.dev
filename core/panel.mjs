@@ -1007,7 +1007,7 @@ export const BUILDERS = {
 
 /**
  * @param {any} snap @param {any} ask @param {{tab?: string, confirm?: string | null, pendingSend?: {agentId: string, text: string, batch?: number | null} | null}} ui
- * @returns {null | {tone: 'error' | 'info', question: string, buttons: {id: string, label: string, hotkey: string}[]}}
+ * @returns {null | {tone: 'error' | 'info', at?: 'bottom', question: string, buttons: {id: string, label: string, hotkey: string}[]}}
  */
 function askOf(snap, ask, ui, ctx = {}) {
   if (ui.pendingSend) {
@@ -1018,7 +1018,9 @@ function askOf(snap, ask, ui, ctx = {}) {
   if (ui.confirm) {
     const e = launcherOf(ui.confirm, ctx);
     if (e?.confirm) {
-      return { tone: 'info', question: e.confirm, buttons: [
+      // `at: 'bottom'`: drawn next to the output box, near the button. Config's buttons sit at the end of a
+      // long tab: a question at the top was off-screen, so Actualizar seemed to do nothing (2026-10-10).
+      return { tone: 'info', at: 'bottom', question: e.confirm, buttons: [
         { id: 'confirm-yes', label: 'Yes', hotkey: 'y' }, { id: 'confirm-no', label: 'No', hotkey: 'n' }] };
     }
   }

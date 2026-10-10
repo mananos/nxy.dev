@@ -474,6 +474,10 @@ test('Config tab: launcher buttons follow settings; cache what-if and tools', ()
   assert.equal(cell(cfgView({ settings: { statusLine: { command: 'node "/h/.nxy/statusline.mjs"' } } }), 'statusline').text, 'Quitar');
   assert.equal(cell(cfgView({ settings: { statusLine: { command: 'other' } } }), 'statusline').text, 'Instalar');
   assert.equal(cell(cfgView(), 'update-nxy').text, 'Actualizar');
+  // Actualizar is the last row of a long tab: its yes/no is drawn at the bottom, next to it (top was off-screen).
+  const asked = cfgView({ ui: { tab: 'config', confirm: 'update-nxy' } }).ask;
+  assert.match(asked.question, /claude plugin update nxy@nxy-dev/);
+  assert.equal(asked.at, 'bottom');
   assert.deepEqual(['cache-ttl', 'statusline', 'update-nxy'].map((id) => launcherOf(id).hotkey), ['t', 'l', 'u']);
   assert.deepEqual(launcherOf('cache-ttl', { ttl1h: true }).args, ['cache-ttl', 'off']);
   assert.deepEqual(launcherOf('cache-ttl', { ttl1h: false }).args, ['cache-ttl', '1h']);
@@ -614,6 +618,7 @@ test('lifecycleLayout: track while every span fits the longest label, then wrap 
 test('asks: red, pause, confirm', () => {
   const red = buildPanel({ snap: snap({ verdicts: { 1: fail() }, launched: { 1: 5 } }), owned: true, ask: { type: 'ask', kind: 'red', batch: 1 } });
   assert.equal(red.ask.tone, 'error');
+  assert.equal(red.ask.at, undefined, "a plan's question stays at the top");
   assert.deepEqual(red.ask.buttons.map((b) => [b.id, b.hotkey]), [['Retry', 'a'], ['Continue anyway', 'c'], ['Stop', 'x']]);
   assert.deepEqual(red.header.pill, { glyph: '✘', text: 'batch 1 needs you', tone: 'error' });
   const pause = buildPanel({ snap: snap(), owned: true, ask: { type: 'ask', kind: 'pause', batches: [2] } });

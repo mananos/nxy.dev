@@ -992,18 +992,22 @@ function draw($: any, e: any, v: any) {
     }
   }
 
+  // A button's yes/no goes under the blocks (`at: 'bottom'`), where the button and its output are.
+  const askBox = v.ask ? (
+    <Box flexDirection="column" borderStyle="round" borderColor={v.ask.tone === 'error' ? C.red : C.amber} paddingX={1} marginTop={1}>
+      <Text color={C.text} wrap="wrap">{v.ask.question}</Text>
+      <Box flexDirection="row" flexWrap="wrap" columnGap={1}>{v.ask.buttons.map((b: any) => <Keycap key={b.id} id={b.id} label={b.label} hotkey={b.hotkey} />)}</Box>
+    </Box>
+  ) : null
+
   return (
     <Box flexDirection="column" width={W} alignItems="center" paddingTop={1}>
       <Box flexDirection="column" width={CW}>
         {header}
         {tabs}
-        {v.ask ? (
-          <Box flexDirection="column" borderStyle="round" borderColor={v.ask.tone === 'error' ? C.red : C.amber} paddingX={1} marginTop={1}>
-            <Text color={C.text} wrap="wrap">{v.ask.question}</Text>
-            <Box flexDirection="row" flexWrap="wrap" columnGap={1}>{v.ask.buttons.map((b: any) => <Keycap key={b.id} id={b.id} label={b.label} hotkey={b.hotkey} />)}</Box>
-          </Box>
-        ) : null}
+        {v.ask?.at !== 'bottom' ? askBox : null}
         {v.blocks.map(block)}
+        {v.ask?.at === 'bottom' ? askBox : null}
         {v.output ? (
           <Box flexDirection="column" borderStyle="round" borderColor={C.card} paddingX={1} marginTop={1}>
             <Box flexDirection="row" justifyContent="space-between">

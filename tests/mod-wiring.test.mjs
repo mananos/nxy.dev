@@ -92,6 +92,12 @@ test('register.tsx draws the Memoria and launch blocks and routes their inputs t
   assert.match(src, /onInput\(\$, inp\.field, text\)/);
   assert.match(src, /bodyColumns/);
   assert.match(src, /b\.askNote/);
+  // A launcher's yes/no (`at: 'bottom'`) is drawn after the blocks, any other question before them.
+  const body = src.slice(src.lastIndexOf('{tabs}'));
+  const at = (re) => { const i = body.search(re); assert.ok(i >= 0, String(re)); return i; };
+  assert.ok(at(/v\.ask\?\.at !== 'bottom' \? askBox/) < at(/v\.blocks\.map\(block\)/));
+  assert.ok(at(/v\.blocks\.map\(block\)/) < at(/v\.ask\?\.at === 'bottom' \? askBox/));
+  assert.ok(at(/v\.ask\?\.at === 'bottom' \? askBox/) < at(/v\.output \?/));
   // Every Button has its onPress on the same line.
   for (const line of src.split('\n').filter((l) => l.includes('<Button'))) assert.match(line, /onPress=/, line.trim());
   assert.doesNotMatch(src, /\b(?:const|let|var)\s+h\b/);
