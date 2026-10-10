@@ -11,29 +11,70 @@
  *    the repo map and says so. A silent degradation would be a wrong `path:line`, not a slow one.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 /** Install locations to try when codegraph is not on PATH (same rationale as rtk's). */
-export function knownCodegraphLocations(env = process.env) {
+export function knownCodegraphLocations(env = process.env, platform = process.platform) {
   const home = env.HOME || env.USERPROFILE || homedir();
   const out = [];
-  if (process.platform === 'win32') {
+  if (platform === 'win32') {
     const local = env.LOCALAPPDATA || join(home, 'AppData', 'Local');
+    // Official install.ps1: bundle in CODEGRAPH_INSTALL_DIR or %LOCALAPPDATA%\codegraph.
+    out.push(join(env.CODEGRAPH_INSTALL_DIR || join(local, 'codegraph'), 'current', 'bin', 'codegraph.cmd'));
     out.push(join(local, 'Microsoft', 'WinGet', 'Links', 'codegraph.exe'));
     out.push(join(home, '.local', 'bin', 'codegraph.exe'), join(home, '.cargo', 'bin', 'codegraph.exe'));
     out.push(join(home, 'AppData', 'Roaming', 'npm', 'codegraph.cmd'));
   } else {
+    // Official install.sh: symlink in CODEGRAPH_BIN_DIR (default ~/.local/bin), bundle in ~/.codegraph.
+    if (env.CODEGRAPH_BIN_DIR) out.push(join(env.CODEGRAPH_BIN_DIR, 'codegraph'));
     out.push('/usr/local/bin/codegraph', '/usr/bin/codegraph', '/opt/homebrew/bin/codegraph');
     out.push(join(home, '.local', 'bin', 'codegraph'), join(home, '.cargo', 'bin', 'codegraph'));
+    out.push(join(env.CODEGRAPH_INSTALL_DIR || join(home, '.codegraph'), 'current', 'bin', 'codegraph'));
   }
   return out;
 }
 
-function tryVersion(bin, env = process.env) {
+/**
+ * Turns a codegraph binary into something spawnSync can run without a shell.
+ *
+ * On Windows, Node cannot spawn a `.cmd`/`.bat` without `shell: true` (EINVAL), and we must not use
+ * a shell: `explore` passes the user's free text as an argument and cmd.exe would interpret
+ * `& | % ^ <>`. So we read the shim and run its node script directly.
+ *
+ * @param {string} bin
+ * @param {{platform?: NodeJS.Platform, env?: NodeJS.ProcessEnv}} [opts]
+ * @returns {{file: string, prefix: string[]}|null}
+ */
+export function resolveLauncher(bin, { platform = process.platform } = {}) {
+  if (platform !== 'win32' || !/\.(cmd|bat)$/i.test(bin)) return { file: bin, prefix: [] };
+  let text;
   try {
-    const r = spawnSync(bin, ['--version'], { encoding: 'utf8', timeout: 4000, env, windowsHide: true });
+    text = readFileSync(bin, 'utf8');
+  } catch {
+    return null;
+  }
+  const dir = dirname(bin);
+  // Quoted tokens rooted at the shim's own dir: `%~dp0` (official) or `%dp0%` (npm shims).
+  const rooted = (/** @type {RegExp} */ ext) => {
+    for (const m of text.matchAll(/"((?:%~dp0|%dp0%)[^"]*)"/gi)) {
+      if (!ext.test(m[1])) continue;
+      const rest = m[1].replace(/^(?:%~dp0|%dp0%)/i, '').replace(/^[\\/]+/, '').replace(/\\/g, '/');
+      return join(dir, rest);
+    }
+    return null;
+  };
+  const js = rooted(/\.js$/i);
+  if (!js || !existsSync(js)) return null;
+  const node = rooted(/node\.exe$/i);
+  return { file: node && existsSync(node) ? node : process.execPath, prefix: [js] };
+}
+
+/** @param {{file: string, prefix: string[]}} launcher */
+function tryVersion(launcher, env = process.env) {
+  try {
+    const r = spawnSync(launcher.file, [...launcher.prefix, '--version'], { encoding: 'utf8', timeout: 4000, env, windowsHide: true });
     if (r.status !== 0 || !r.stdout) return null;
     return r.stdout.trim().split('\n')[0];
   } catch {
@@ -41,21 +82,43 @@ function tryVersion(bin, env = process.env) {
   }
 }
 
+/** Windows: spawnSync('codegraph') does not resolve PATHEXT, so walk PATH for .exe then .cmd. */
+function findOnWindowsPath(env) {
+  for (const dir of String(env.PATH || env.Path || '').split(';')) {
+    if (!dir) continue;
+    for (const name of ['codegraph.exe', 'codegraph.cmd']) {
+      const full = join(dir, name);
+      if (existsSync(full)) return full;
+    }
+  }
+  return null;
+}
+
 /**
  * Finds codegraph on PATH or in a known install dir.
- * @returns {{path: string, version: string}|null}
+ * @returns {{path: string, version: string, launcher: {file: string, prefix: string[]}}|null}
  */
-export function findCodegraph(env = process.env) {
+export function findCodegraph(env = process.env, platform = process.platform) {
+  /** @param {string} bin */
+  const attempt = (bin) => {
+    const launcher = resolveLauncher(bin, { platform, env });
+    if (!launcher) return null;
+    const version = tryVersion(launcher, env);
+    return version === null ? null : { version, launcher };
+  };
   if (env.NXY_CODEGRAPH_PATH) {
-    const v = tryVersion(env.NXY_CODEGRAPH_PATH, env);
-    return v === null ? null : { path: env.NXY_CODEGRAPH_PATH, version: v };
+    const a = attempt(env.NXY_CODEGRAPH_PATH);
+    return a ? { path: env.NXY_CODEGRAPH_PATH, ...a } : null;
   }
-  const onPath = tryVersion('codegraph', env);
-  if (onPath !== null) return { path: 'codegraph', version: onPath };
-  for (const bin of knownCodegraphLocations(env)) {
+  const pathHit = platform === 'win32' ? findOnWindowsPath(env) : 'codegraph';
+  if (pathHit) {
+    const a = attempt(pathHit);
+    if (a) return { path: 'codegraph', ...a };
+  }
+  for (const bin of knownCodegraphLocations(env, platform)) {
     if (!existsSync(bin)) continue;
-    const v = tryVersion(bin, env);
-    if (v !== null) return { path: bin.replace(/\\/g, '/'), version: v };
+    const a = attempt(bin);
+    if (a) return { path: bin.replace(/\\/g, '/'), ...a };
   }
   return null;
 }
@@ -83,19 +146,21 @@ export function hasIndex(cwd, env = process.env) {
  *
  * @param {string} cwd
  * @param {string} question
- * @param {{bin?: string, maxChars?: number, timeoutMs?: number, env?: NodeJS.ProcessEnv}} [opts]
+ * @param {{bin?: string, maxChars?: number, timeoutMs?: number, env?: NodeJS.ProcessEnv, platform?: NodeJS.Platform}} [opts]
  */
 export function explore(cwd, question, opts = {}) {
   const env = opts.env || process.env;
+  const platform = opts.platform || process.platform;
   const maxChars = opts.maxChars ?? 24_000; // ~6k tokens: dense, but it dies with the scout
   const timeoutMs = opts.timeoutMs ?? 20_000;
-  const bin = opts.bin || findCodegraph(env)?.path;
-  if (!bin) return { ok: false, reason: 'not-installed', text: '', truncated: false, ms: 0 };
+  const launcher = opts.bin ? resolveLauncher(opts.bin, { platform, env }) : findCodegraph(env, platform)?.launcher;
+  if (!launcher) return { ok: false, reason: 'not-installed', text: '', truncated: false, ms: 0 };
   if (!hasIndex(cwd, env)) return { ok: false, reason: 'no-index', text: '', truncated: false, ms: 0 };
   const started = Date.now();
   let r;
   try {
-    r = spawnSync(bin, ['explore', question], { cwd, encoding: 'utf8', timeout: timeoutMs, env, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+    // No shell: the question is free text (see resolveLauncher).
+    r = spawnSync(launcher.file, [...launcher.prefix, 'explore', question], { cwd, encoding: 'utf8', timeout: timeoutMs, env, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
   } catch {
     return { ok: false, reason: 'spawn-failed', text: '', truncated: false, ms: Date.now() - started };
   }

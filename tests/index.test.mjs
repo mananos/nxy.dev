@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { extractSymbols, indexedExtensions, rulesFor } from '../core/index/languages.mjs';
 import { buildRepoMap, listSourceFiles, queryRepoMap, repoMapInfo } from '../core/index/repomap.mjs';
 import { queryTerms, searchWithoutModel } from '../core/scout/search.mjs';
-import { explore, findCodegraph } from '../core/scout/codegraph.mjs';
+import { explore, findCodegraph, knownCodegraphLocations, resolveLauncher } from '../core/scout/codegraph.mjs';
 
 /** A throwaway repo. NXY_HOME is irrelevant here: the index lives under the repo's own .nxy/local. */
 function repo() {
@@ -207,4 +207,70 @@ test('codegraph: absent or unindexed never throws, always names the reason', () 
   assert.equal(missing.ok, false, 'a bad binary is a declared failure, not an exception');
 
   assert.equal(findCodegraph({ PATH: '', Path: '', HOME: dir, USERPROFILE: dir, LOCALAPPDATA: dir }), null);
+});
+
+/** Fake official Windows bundle: <root>/current/{bin/codegraph.cmd, lib/dist/bin/codegraph.js}. */
+function fakeBundle(root) {
+  const js = join(root, 'current', 'lib', 'dist', 'bin', 'codegraph.js');
+  mkdirSync(join(root, 'current', 'lib', 'dist', 'bin'), { recursive: true });
+  mkdirSync(join(root, 'current', 'bin'), { recursive: true });
+  writeFileSync(js, "if (process.argv[2] === '--version') console.log('9.9.9'); else console.log(JSON.stringify(process.argv.slice(2)));\n");
+  const shim = join(root, 'current', 'bin', 'codegraph.cmd');
+  writeFileSync(shim, '@"%~dp0..\\node.exe" --liftoff-only --disable-warning=ExperimentalWarning "%~dp0..\\lib\\dist\\bin\\codegraph.js" %*\r\n');
+  return { js, shim };
+}
+
+test('codegraph: resolveLauncher reads the official .cmd shim and avoids a shell', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  const { js, shim } = fakeBundle(join(tmp, 'codegraph'));
+  const l = resolveLauncher(shim, { platform: 'win32' });
+  assert.equal(l?.file, process.execPath, 'node.exe absent next to the shim: falls back to the running node');
+  assert.equal(l?.prefix[0], js);
+  assert.deepEqual(resolveLauncher('/x/codegraph', { platform: 'linux' }), { file: '/x/codegraph', prefix: [] });
+  assert.equal(resolveLauncher(join(tmp, 'missing.cmd'), { platform: 'win32' }), null);
+});
+
+test('codegraph: findCodegraph finds the official Windows install without PATH', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  fakeBundle(join(tmp, 'codegraph'));
+  const base = { PATH: '', Path: '', HOME: tmp, USERPROFILE: tmp, LOCALAPPDATA: tmp };
+  assert.equal(findCodegraph(base, 'win32')?.version, '9.9.9');
+
+  const other = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  const elsewhere = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  fakeBundle(join(elsewhere, 'cg'));
+  const viaDir = findCodegraph({ ...base, LOCALAPPDATA: other, CODEGRAPH_INSTALL_DIR: join(elsewhere, 'cg') }, 'win32');
+  assert.equal(viaDir?.version, '9.9.9');
+});
+
+test('codegraph: a .cmd on PATH is found and an npm-style shim resolves', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  const bin = join(tmp, 'npm');
+  const js = join(bin, 'node_modules', 'codegraph', 'dist', 'codegraph.js');
+  mkdirSync(join(bin, 'node_modules', 'codegraph', 'dist'), { recursive: true });
+  writeFileSync(js, "console.log('9.9.9');\n");
+  writeFileSync(join(bin, 'codegraph.cmd'), '@ECHO off\r\nSET dp0=%~dp0\r\n"%_prog%"  "%dp0%\\node_modules\\codegraph\\dist\\codegraph.js" %*\r\n');
+  assert.equal(resolveLauncher(join(bin, 'codegraph.cmd'), { platform: 'win32' })?.prefix[0], js);
+  const found = findCodegraph({ PATH: bin, HOME: tmp, USERPROFILE: tmp, LOCALAPPDATA: tmp }, 'win32');
+  assert.equal(found?.path, 'codegraph', 'a PATH hit is still reported as bare "codegraph"');
+  assert.equal(found?.version, '9.9.9');
+});
+
+test('codegraph: explore passes shell metacharacters verbatim as one argument', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'nxy-cg-'));
+  const { shim } = fakeBundle(join(tmp, 'codegraph'));
+  const cwd = join(tmp, 'work');
+  mkdirSync(join(cwd, '.codegraph'), { recursive: true });
+  const q = 'a & echo pwned | %PATH% ^ <x>';
+  const res = explore(cwd, q, { bin: shim, platform: 'win32', env: { ...process.env, CODEGRAPH_DIR: '' } });
+  assert.equal(res.ok, true, res.reason);
+  assert.deepEqual(JSON.parse(res.text), ['explore', q]);
+});
+
+test('codegraph: knownCodegraphLocations covers the official unix installer', () => {
+  const env = { HOME: '/h', CODEGRAPH_INSTALL_DIR: '/opt/cg', CODEGRAPH_BIN_DIR: '/opt/bin' };
+  const locs = knownCodegraphLocations(env, 'linux').map((p) => p.replace(/\\/g, '/'));
+  assert.ok(locs.includes('/opt/cg/current/bin/codegraph'));
+  assert.ok(locs.includes('/opt/bin/codegraph'));
+  assert.ok(knownCodegraphLocations({ HOME: '/h' }, 'linux').map((p) => p.replace(/\\/g, '/')).includes('/h/.codegraph/current/bin/codegraph'));
 });
