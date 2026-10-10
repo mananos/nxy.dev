@@ -26,6 +26,7 @@ import { gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs'
 import { loadConfig } from '../../../core/config.mjs';
 import { batchFiles, extractPlan, parseBatches, parseGoal, parseQuestions, planHash } from '../../../core/plan.mjs';
 import { claudeProjectsDir, projectSlug } from '../paths.mjs';
+import { configView } from '../config-view.mjs';
 import { loadPricing } from '../../../core/pricing.mjs';
 import { findApprovalAt, isApproved } from '../plan-approval.mjs';
 import { lastCacheTtl, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
@@ -73,13 +74,7 @@ async function snapshot(cwd, opts) {
     runtimeDir: nxyRuntimeDir(cwd),
     projectDir: cwd,
     branch: branch || null,
-    config: {
-      pauseAfterBatch: cfg.flow?.pauseAfterBatch === true,
-      orchestrator: cfg.flow?.orchestrator === 'off' ? 'off' : 'auto',
-      ui: { panel: cfg.ui?.panel === 'off' ? 'off' : 'auto' },
-      gate: { enabled: cfg.gate?.enabled === true, contextTokens: cfg.gate?.contextTokens ?? 0 },
-      filter: cfg.modules?.filter === true,
-    },
+    config: configView(cwd),
     handoff: known.handoff ? { updated: known.handoff.updated } : null,
   };
   if (!plan) return { ...base, goal: '', reviewDetail: null, hash: null, approved: false, fresh: false, questions: 0, batches: [], verdicts: {}, suite: null, review: null, reviewNeeded: { needed: false, reason: '' } };

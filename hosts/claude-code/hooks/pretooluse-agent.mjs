@@ -46,7 +46,7 @@ import { findAnswer, isApproved } from '../plan-approval.mjs';
 import {
   progressFor, readSuite, readVerify, recordBatch, recordReviewLaunch, recordSuite, recordSuiteFix,
 } from '../verify-state.mjs';
-import { roleModel } from '../roles.mjs';
+import { roleEffort, roleModel } from '../roles.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
 const IMPLEMENTER = /(^|:)implementer$/;
@@ -93,7 +93,12 @@ try {
   const isAgentTool = input?.tool_name === 'Agent' || input?.tool_name === 'Task';
   const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : process.cwd()));
   // The role table's model (0.4.4), for any nxy agent; the implementer carries it in its own output below.
-  const model = isAgentTool && typeof agent === 'string' ? roleModel(agent, loadConfig(cwd), toolInput.model) : null;
+  const roleCfg = isAgentTool && typeof agent === 'string' ? loadConfig(cwd) : null;
+  const model = roleCfg ? roleModel(agent, roleCfg, toolInput.model) : null;
+  const effort = roleCfg ? roleEffort(agent, roleCfg, toolInput.effort) : null;
+  const roleName = typeof agent === 'string' ? agent.replace(/^nxy:/, '') : '';
+  const roleWhy = `nxy: roles.${roleName}.${[model && 'model', effort && 'effort'].filter(Boolean).join('/')}`;
+  const roleInput = { ...(model ? { model } : {}), ...(effort ? { effort } : {}) };
   // The tester starts the full suite; the reviewer must not start while it runs (its verdict arrives
   // when it ends, possibly in the background). Recorded here, from the dispatch itself.
   let denied = false;
@@ -136,8 +141,8 @@ try {
       }
     }
   }
-  if (!denied && isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && model) {
-    emit({ permissionDecision: 'allow', permissionDecisionReason: `nxy: roles.${agent.replace(/^nxy:/, '')}.model`, updatedInput: { ...toolInput, model } });
+  if (!denied && isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && (model || effort)) {
+    emit({ permissionDecision: 'allow', permissionDecisionReason: roleWhy, updatedInput: { ...toolInput, ...roleInput } });
   }
   if (isAgentTool && typeof agent === 'string' && IMPLEMENTER.test(agent)) {
     const cfg = loadConfig(cwd);
@@ -214,10 +219,10 @@ try {
       emit({
         permissionDecision: 'allow',
         permissionDecisionReason: 'nxy: task handoff attached to the implementer',
-        updatedInput: { ...toolInput, prompt: `${block}\n\n${prompt}`, ...(model ? { model } : {}) },
+        updatedInput: { ...toolInput, prompt: `${block}\n\n${prompt}`, ...(model ? { model } : {}), ...(effort ? { effort } : {}) },
       });
-    } else if (model) {
-      emit({ permissionDecision: 'allow', permissionDecisionReason: 'nxy: roles.implementer.model', updatedInput: { ...toolInput, model } });
+    } else if (model || effort) {
+      emit({ permissionDecision: 'allow', permissionDecisionReason: roleWhy, updatedInput: { ...toolInput, ...roleInput } });
     }
   }
 } catch (err) {

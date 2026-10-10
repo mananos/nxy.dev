@@ -515,23 +515,133 @@ test('a second launcher started while the first runs keeps its own output', asyn
   assert.deepEqual(d.panel().output.lines, ['handoff line']);
 });
 
-test('the filter toggle runs filter on|off, re-reads the snapshot and flips the label', async () => {
-  const w = world();
-  w.plan.config = { ...w.plan.config, filter: false };
+/** Answers `config.mjs set` like the entry: ok plus the config with the key applied. */
+function cfgWorld(over = {}) {
+  const w = world(over);
+  w.plan.config = { ...w.plan.config, filter: false, gate: { enabled: true, contextTokens: 100000 }, roles: { implementer: { model: null, effort: 'medium' } }, ui: { panel: 'auto' } };
+  const inner = w.$.process.run;
+  w.sets = [];
+  w.setReply = null;
+  w.$.process.run = async (argv) => {
+    if (!argv.some((a) => a.endsWith('config.mjs'))) return inner(argv);
+    w.runs.push(argv);
+    const act = argv[argv.findIndex((a) => a.endsWith('config.mjs')) + 1];
+    if (act === 'tools') return { exitCode: 0, stdout: JSON.stringify({ ok: true, version: '1.2.3', rtk: { found: true, path: '/bin/rtk', version: null }, rg: { found: false, path: null, version: null }, codegraph: { found: false, path: null, version: null } }), stderr: '' };
+    if (act === 'set') {
+      const key = argv[argv.indexOf('--key') + 1];
+      const value = JSON.parse(argv[argv.indexOf('--json') + 1]);
+      w.sets.push({ scope: argv[argv.indexOf('--scope') + 1], key, value });
+      if (w.setReply) return { exitCode: 1, stdout: JSON.stringify(w.setReply), stderr: '' };
+      const config = { ...w.plan.config };
+      if (key === 'modules.filter') config.filter = value;
+      if (key === 'gate.contextTokens') config.gate = { ...config.gate, contextTokens: value };
+      if (key === 'flow.orchestrator') config.orchestrator = value;
+      return { exitCode: 0, stdout: JSON.stringify({ ok: true, path: '/x', bytes: 10, config }), stderr: '' };
+    }
+    return { exitCode: 0, stdout: `${act} ok`, stderr: '' };
+  };
+  return w;
+}
+const nodes = (w, what) => w.runs.filter((a) => a.some((x) => x.endsWith(`${what}.mjs`)));
+
+test('cfg: runs exactly one config.mjs set, user by default and repo after scope:repo; the reply replaces the config', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.start();
+  const snaps = w.runs.filter((a) => a.includes('snapshot') || a.includes('--snapshot')).length;
+  await d.press('scope:repo');
+  assert.equal(nodes(w, 'config').length, 0, 'scope only changes the UI');
+  await d.press('scope:user');
+  await d.press('cfg:gate.contextTokens:next');
+  assert.deepEqual(w.sets, [{ scope: 'user', key: 'gate.contextTokens', value: 150000 }]);
+  await d.press('scope:repo');
+  await d.press('cfg:gate.contextTokens:prev');
+  assert.deepEqual(w.sets.at(-1), { scope: 'repo', key: 'gate.contextTokens', value: 100000 });
+  assert.equal(nodes(w, 'config').length, 2);
+  assert.equal(w.runs.filter((a) => a.includes('snapshot') || a.includes('--snapshot')).length, snaps, 'no extra snapshot');
+});
+
+test('the Home filter button (cfg:modules.filter:toggle) writes with the chosen scope', async () => {
+  const w = cfgWorld();
   const d = w.driver();
   await d.start();
   assert.ok(text(d).some((l) => l.includes('Filter ○ off')));
-  w.plan.config = { ...w.plan.config, filter: true };
-  const before = w.runs.length;
-  await d.press('filter');
-  const added = w.runs.slice(before);
-  assert.deepEqual(added[0].slice(-3), ['on', '--cwd', '/proj']);
-  assert.ok(added[0].some((a) => a.endsWith('filter.mjs')));
-  assert.ok(added[1].includes('snapshot'));
+  await d.press('scope:repo');
+  await d.press('cfg:modules.filter:toggle');
+  assert.deepEqual(w.sets, [{ scope: 'repo', key: 'modules.filter', value: true }]);
   assert.ok(text(d).some((l) => l.includes('Filter ● on')));
-  w.plan.config = { ...w.plan.config, filter: false };
-  await d.press('filter');
-  assert.deepEqual(w.runs.at(-2).slice(-3), ['off', '--cwd', '/proj']);
+  assert.equal(nodes(w, 'filter').length, 0);
+});
+
+test('a second press on the same field while its write is in flight is ignored', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.start();
+  const release = hold(w, 'config');
+  const a = d.press('cfg:gate.contextTokens:next');
+  const b = d.press('cfg:gate.contextTokens:next');
+  release();
+  await a; await b;
+  assert.equal(nodes(w, 'config').length, 1);
+});
+
+test('the orchestrator toggle is ignored while a plan is owned; a failed write shows cfgNote', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.step('ask');
+  assert.ok(d.view());
+  await d.press('cfg:flow.orchestrator:toggle');
+  assert.equal(nodes(w, 'config').length, 0);
+
+  const w2 = cfgWorld();
+  const d2 = w2.driver();
+  await d2.start();
+  w2.setReply = { ok: false, reason: 'config.json está roto; no se toca' };
+  await d2.press('tab:config');
+  await d2.press('cfg:gate.enabled:toggle');
+  assert.ok(text(d2).some((l) => l.includes('está roto')));
+});
+
+test('the first visit to Config runs tools once and stats once; r reloads tools', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.start();
+  const stats = () => w.runs.filter((a) => a.some((x) => x.endsWith('stats.mjs'))).length;
+  await d.press('tab:config');
+  await d.press('tab:home');
+  await d.press('tab:config');
+  assert.equal(nodes(w, 'config').filter((a) => a.includes('tools')).length, 1);
+  assert.equal(stats(), 1);
+  assert.ok(text(d).some((l) => l.includes('1.2.3')));
+  // the flat shape the real entry emits must reach the tools block
+  assert.ok(text(d).some((l) => l.includes('/bin/rtk')));
+  await d.press('refresh');
+  assert.equal(nodes(w, 'config').filter((a) => a.includes('tools')).length, 2);
+});
+
+test('update-nxy asks first; cache-ttl runs after yes and the Settings row reflects it; no node from noteTurn', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.start();
+  d.setSettings({ promptCacheTtl: undefined, statusLine: undefined });
+  await d.press('tab:config');
+  const before = nodes(w, 'config').length;
+  await d.press('update-nxy');
+  assert.equal(nodes(w, 'config').length, before, 'nothing runs before yes');
+  await d.press('confirm-no');
+  assert.equal(nodes(w, 'config').length, before);
+  await d.press('update-nxy');
+  await d.press('confirm-yes');
+  assert.deepEqual(nodes(w, 'config').at(-1).slice(-3), ['update', '--cwd', '/proj']);
+
+  await d.press('cache-ttl');
+  await d.press('confirm-yes');
+  assert.deepEqual(nodes(w, 'config').at(-1).slice(-4), ['cache-ttl', '1h', '--cwd', '/proj']);
+  assert.ok(text(d).some((l) => l.includes('Cache 1 h')));
+  assert.ok(text(d).some((l) => l.includes('● Cache 1 h') || l.includes('Settings') && l.includes('1 h')));
+  const n = w.runs.length;
+  d.noteTurn({ usage: TURN, now: 1000 });
+  assert.equal(w.runs.length, n);
 });
 
 test('the Plan tab opens when a plan is taken over, then the tab is the user\'s choice', async () => {

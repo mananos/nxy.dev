@@ -28,6 +28,7 @@ const actionIds = (v) => v.blocks.filter((b) => b.type === 'actions').flatMap((b
 const hotkeys = (v) => [
   ...v.tabs.map((t) => t.hotkey), ...v.keys.map((k) => k.hotkey),
   ...v.blocks.filter((b) => b.type === 'actions').flatMap((b) => b.actions.map((a) => a.hotkey)),
+  ...v.blocks.filter((b) => b.type === 'rows').flatMap((b) => b.rows.flatMap((r) => r.cells.filter((c) => c.hotkey).map((c) => c.hotkey))),
   ...v.blocks.filter((b) => b.type === 'checkpoint' && b.fix).map((b) => b.fix.hotkey),
   ...v.blocks.filter((b) => b.type === 'agent').map((b) => b.back.hotkey),
   ...(v.ask?.buttons ?? []).map((b) => b.hotkey), ...(v.output ? [v.output.dismiss.hotkey] : []),
@@ -149,20 +150,22 @@ test('plan-done lives on the Plan tab: hidden with no plan or when owned; filter
   assert.ok(!actionIds(plan({ snap: snap({ hash: null, batches: [] }) })).includes('plan-done'));
   assert.ok(actionIds(plan({ snap: snap({ hash: null, batches: [], handoff: { updated: 1 } }) })).includes('plan-done'));
   assert.ok(!actionIds(plan({ owned: true })).includes('plan-done'));
-  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'filter').label;
+  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'cfg:modules.filter:toggle').label;
   assert.equal(label(home({})), 'Filter ○ off');
   assert.equal(label(home({ snap: snap({ config: { filter: true } }) })), 'Filter ● on');
 });
 
 test('filter label: a plain Filter until a snapshot supplies config.filter', () => {
-  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'filter').label;
+  const label = (v) => v.blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'cfg:modules.filter:toggle').label;
   assert.equal(label(buildPanel({ snap: null, now: NOW })), 'Filter');
   assert.equal(label(home({ snap: snap({ config: { gate: { enabled: false } } }) })), 'Filter');
   assert.equal(label(home({ snap: snap({ config: { filter: false } }) })), 'Filter ○ off');
   assert.deepEqual(filterCtx(null), {});
   assert.deepEqual(filterCtx({ config: { filter: true } }), { filter: true });
-  assert.equal(launcherOf('filter').label, 'Filter');
-  assert.deepEqual(launcherOf('filter').args, ['on']);
+  // the Home Filter button is a config action (honours «Guardar en»), not a launcher script
+  assert.equal(launcherOf('filter'), null);
+  const f = home({}).blocks.find((b) => b.type === 'actions').actions.find((a) => a.id === 'cfg:modules.filter:toggle');
+  assert.equal(f.hotkey, 'f');
 });
 
 test('needs: every launcher need is a known check; the tab filters read it', () => {
@@ -177,12 +180,10 @@ test('needs: every launcher need is a known check; the tab filters read it', () 
   assert.equal(launcherAvailable(done, { snap: snap({ hash: null, handoff: { updated: 1 } }) }), true);
   assert.equal(launcherAvailable(launcherOf('gate-once'), { snap: null, owned: true }), true);
   const ids = actionIds(buildPanel({ snap: snap(), owned: true, now: NOW }));
-  assert.deepEqual(ids, LAUNCHER.filter((l) => l.tab === 'home' && !l.needs).map((l) => l.id));
+  assert.deepEqual(ids, [...LAUNCHER.filter((l) => l.tab === 'home' && !l.needs).map((l) => l.id), 'cfg:modules.filter:toggle']);
 });
 
 test('launcherOf and isPanelAction', () => {
-  assert.deepEqual(launcherOf('filter', { filter: true }).args, ['off']);
-  assert.deepEqual(launcherOf('filter', { filter: false }).args, ['on']);
   assert.deepEqual(launcherOf('gate-once'), { ...LAUNCHER[0], args: ['once'] });
   const done = launcherOf('plan-done');
   assert.ok(done.confirm && done.needs === 'plan' && done.after === 'refresh');
@@ -367,9 +368,133 @@ test('Agents, Stats and Config skeletons build with and without a snapshot', () 
   assert.deepEqual(actionIds(st), []);
   assert.ok(block(st, 'selectors'));
   const cf = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'config' } });
-  assert.deepEqual(block(cf, 'kv').rows.map((r) => r.label), ['Gate', 'Orquestador', 'Pausa entre lotes', 'Panel', 'Filtro']);
-  assert.equal(block(cf, 'kv').rows[0].value, 'on · umbral 100k');
-  assert.ok(cf.blocks.some((b) => b.type === 'note' && b.text.includes('fase 4')));
+  assert.ok(!cf.blocks.some((b) => b.type === 'kv' || (b.type === 'note' && b.text.includes('fase 4'))));
+});
+
+const cfgSnap = (over = {}) => snap({
+  config: {
+    gate: { enabled: true, contextTokens: 100000 }, filter: false, orchestrator: 'auto', pauseAfterBatch: false, ui: { panel: 'auto' },
+    roles: { implementer: { model: 'sonnet', effort: 'high' }, planner: { model: null, effort: null } },
+    scopes: { user: { path: 'u', exists: true, broken: false }, repo: { path: 'r', exists: true, broken: false } },
+    sources: { 'roles.implementer.model': 'repo', 'roles.implementer.effort': 'default', 'gate.enabled': 'user' },
+    ...over,
+  },
+});
+const cfgView = (o = {}) => buildPanel({ snap: cfgSnap(), now: NOW, ui: { tab: 'config' }, ...o });
+const rowsOf = (v, title) => v.blocks.find((b) => b.type === 'rows' && b.title === title);
+const allCells = (v) => v.blocks.filter((b) => b.type === 'rows').flatMap((b) => b.rows.flatMap((r) => r.cells));
+
+test('Config tab: sections in order, scope defaults to user, with and without snapshot', () => {
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config']);
+  const v = cfgView();
+  assert.deepEqual(v.blocks.filter((b) => b.type === 'rows').map((b) => b.title),
+    ['Roles', 'Flujo', 'Gate', 'Cache', 'Interfaz', 'Statusline', 'Herramientas', 'nxy']);
+  const sel = block(v, 'selectors');
+  assert.equal(sel.title, 'Guardar en');
+  assert.deepEqual(sel.groups[0].options.map((o) => [o.id, o.active]), [['scope:user', true], ['scope:repo', false]]);
+  assert.ok(v.blocks.some((b) => b.type === 'note' && b.text.startsWith('~/.nxy/config.json')));
+  const r = cfgView({ ui: { tab: 'config', scope: 'repo' } });
+  assert.ok(r.blocks.some((b) => b.type === 'note' && b.text.startsWith('.nxy/config.json')));
+  assert.equal(block(r, 'selectors').groups[0].options[1].active, true);
+  // roles: one row per role, a cycler on each cell
+  const roles = rowsOf(v, 'Roles');
+  assert.equal(roles.rows.length, 7);
+  const impl = roles.rows.find((x) => x.label === 'implementer');
+  assert.deepEqual(impl.cells.map((c) => [c.text, c.prev, c.next]), [
+    ['sonnet', 'cfg:roles.implementer.model:prev', 'cfg:roles.implementer.model:next'],
+    ['high', 'cfg:roles.implementer.effort:prev', 'cfg:roles.implementer.effort:next'],
+  ]);
+  assert.equal(roles.rows.find((x) => x.label === 'planner').cells[0].text, 'predeterminado');
+  // no snapshot: unknown, nothing writes
+  const none = buildPanel({ snap: null, now: NOW, ui: { tab: 'config' } });
+  assert.ok(allCells(none).every((c) => !c.prev && !c.press));
+  assert.ok(allCells(none).some((c) => c.text === 'desconocido' && c.tone === 'dim'));
+});
+
+test('NXY_FILTER forces the filter: hint on the Config row and next to the Home button', () => {
+  const env = { sources: { 'modules.filter': 'env' }, filter: true };
+  const cfgV = cfgView({ snap: cfgSnap(env) });
+  const row = rowsOf(cfgV, 'Interfaz').rows.find((x) => x.label === 'Filtro');
+  assert.deepEqual([row.hint.text, row.hint.tone], ['forzado por NXY_FILTER', 'warn']);
+  const home = buildPanel({ snap: cfgSnap(env), now: NOW, ui: { tab: 'home' } });
+  assert.ok(home.blocks.some((b) => b.type === 'note' && b.text.includes('forzado por NXY_FILTER') && b.tone === 'warn'));
+  const plain = buildPanel({ snap: cfgSnap(), now: NOW, ui: { tab: 'home' } });
+  assert.ok(!plain.blocks.some((b) => b.type === 'note' && b.text.includes('NXY_FILTER')));
+});
+
+test('Home filter note: «el repo manda» when saving to user and the repo defines it; env wins', () => {
+  const has = (snap, scope) => buildPanel({ snap, now: NOW, ui: { tab: 'home', scope } })
+    .blocks.some((b) => b.type === 'note' && b.text.includes('el repo manda') && b.tone === 'warn');
+  const repo = cfgSnap({ sources: { 'modules.filter': 'repo' } });
+  assert.equal(has(repo, undefined), true);
+  assert.equal(has(repo, 'user'), true);
+  assert.equal(has(repo, 'repo'), false);
+  assert.equal(has(cfgSnap({ sources: { 'modules.filter': 'env' } }), 'user'), false);
+});
+
+test('Config tab: «el repo manda» hint, labelWidth, orchestrator disabled while owned, broken file note', () => {
+  const hint = (v) => rowsOf(v, 'Roles').rows.filter((x) => x.hint).map((x) => [x.label, x.hint.text, x.hint.tone]);
+  assert.deepEqual(hint(cfgView()), [['implementer', 'el repo manda', 'warn']]);
+  assert.deepEqual(hint(cfgView({ ui: { tab: 'config', scope: 'repo' } })), []);
+  for (const b of cfgView().blocks.filter((x) => x.type === 'rows')) {
+    assert.ok(b.labelWidth >= Math.max(...b.rows.map((x) => x.label.length)) + 1, b.title);
+  }
+  const flow = rowsOf(cfgView(), 'Flujo').rows[0];
+  assert.equal(flow.cells[0].press, 'cfg:flow.orchestrator:toggle');
+  const owned = rowsOf(cfgView({ owned: true }), 'Flujo').rows[0];
+  assert.equal(owned.cells[0].press, undefined);
+  assert.equal(owned.cells[0].disabled, true);
+  assert.equal(owned.hint.text, 'corriendo un plan');
+  const broken = cfgView({ snap: cfgSnap({ scopes: { user: { path: 'u', exists: true, broken: true }, repo: { path: 'r', exists: false, broken: false } } }) });
+  assert.ok(broken.blocks.some((b) => b.type === 'note' && b.tone === 'error' && b.text.includes('roto')));
+  assert.ok(cfgView({ cfgNote: 'no se pudo' }).blocks.some((b) => b.type === 'note' && b.text === 'no se pudo' && b.tone === 'error'));
+});
+
+test('Config tab: launcher buttons follow settings; cache what-if and tools', () => {
+  const cell = (v, id) => allCells(v).find((c) => c.press === id);
+  assert.equal(cell(cfgView(), 'cache-ttl').text, 'Cache 1 h');
+  assert.equal(cell(cfgView({ settings: { promptCacheTtl: '1h' } }), 'cache-ttl').text, 'Cache 1 h ● on');
+  assert.equal(cell(cfgView({ settings: {} }), 'cache-ttl').text, 'Cache 1 h ○ off');
+  assert.equal(cell(cfgView({ settings: { statusLine: { command: 'node "/h/.nxy/statusline.mjs"' } } }), 'statusline').text, 'Quitar');
+  assert.equal(cell(cfgView({ settings: { statusLine: { command: 'other' } } }), 'statusline').text, 'Instalar');
+  assert.equal(cell(cfgView(), 'update-nxy').text, 'Actualizar');
+  assert.deepEqual(['cache-ttl', 'statusline', 'update-nxy'].map((id) => launcherOf(id).hotkey), ['t', 'l', 'u']);
+  assert.deepEqual(launcherOf('cache-ttl', { ttl1h: true }).args, ['cache-ttl', 'off']);
+  assert.deepEqual(launcherOf('cache-ttl', { ttl1h: false }).args, ['cache-ttl', '1h']);
+  assert.deepEqual(launcherOf('statusline', { statusline: 'nxy' }).args, ['statusline', 'remove']);
+  assert.deepEqual(launcherOf('statusline', { statusline: 'none' }).args, ['statusline', 'install']);
+  assert.deepEqual(launcherOf('update-nxy').args, ['update']);
+  for (const id of ['cache-ttl', 'statusline', 'update-nxy']) {
+    const e = launcherOf(id);
+    assert.equal(e.tab, 'config'); assert.equal(e.script, 'config'); assert.ok(e.confirm);
+  }
+  assert.ok(!actionIds(cfgView()).length);
+  const tools = rowsOf(cfgView({ cfgInfo: { version: '1.2.3', tools: { rtk: { found: true, path: '/x/rtk', version: '0.1' }, rg: { found: false } } } }), 'Herramientas');
+  assert.deepEqual(tools.rows.map((x) => x.cells[0].text), ['encontrada 0.1 · /x/rtk', 'no encontrada', 'no encontrada']);
+  assert.ok(allCells(cfgView({ cfgInfo: { version: '1.2.3', tools: {} } })).some((c) => c.text === '1.2.3'));
+  assert.ok(rowsOf(cfgView(), 'Cache').rows.every((x) => x.cells.every((c) => c.text)));
+  // A failed tools lookup is unknown, not "not found".
+  const failed = cfgView({ cfgInfo: { version: null, tools: {}, failed: true } });
+  const ft = rowsOf(failed, 'Herramientas');
+  assert.ok(ft.rows.every((x) => x.cells[0].tone === 'dim' && x.cells[0].text !== 'no encontrada'));
+  assert.ok(!allCells(failed).some((c) => c.text === 'no encontrada'));
+});
+
+test('cfg: and scope: actions; panelText of rows; hotkeys in Config', () => {
+  for (const id of ['scope:user', 'scope:repo', 'cfg:roles.tester.model:next', 'cfg:gate.contextTokens:prev', 'cfg:modules.filter:toggle']) {
+    assert.equal(isPanelAction(id), true, id);
+  }
+  for (const id of ['scope:team', 'cfg:nope:next', 'cfg:gate.enabled:sideways', 'cfg:roles.x.model:next', 'cfg::toggle', 'cfg:gate.enabled']) {
+    assert.equal(isPanelAction(id), false, id);
+  }
+  assert.ok(['cache-ttl', 'statusline', 'update-nxy'].every(isPanelAction));
+  const text = panelText(cfgView({ settings: { promptCacheTtl: '1h' } })).join('\n');
+  assert.ok(text.includes('‹ sonnet ›'));
+  assert.ok(text.includes('● on') || text.includes('Cache 1 h ● on'));
+  assert.ok(text.includes('(el repo manda)'));
+  const keys = hotkeys(cfgView({ settings: {} }));
+  assert.equal(new Set(keys).size, keys.length);
+  assert.ok(['t', 'l', 'u'].every((k) => keys.includes(k)));
 });
 
 const row = (id, over = {}) => ({
@@ -538,5 +663,5 @@ test('panel.mjs stays pure: no node: imports, only orchestrator, batch-status an
   const src = readFileSync(fileURLToPath(new URL('../core/panel.mjs', import.meta.url)), 'utf8');
   assert.ok(!/from\s+['"]node:/.test(src));
   const imports = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './orchestrator.mjs', './statsview.mjs']);
+  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './configedit.mjs', './orchestrator.mjs', './statsview.mjs']);
 });

@@ -130,6 +130,17 @@ test('register.tsx: agent hooks (spawn, observer tool.call, turn) with their cat
   assert.match(src.slice(src.indexOf('function startTick'), src.indexOf('async function openPane')), /syncAgents\(\)/);
 });
 
+test("register.tsx draws the Config rows, passes the whole settings object and starts no clock for them", () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  const draw = src.slice(src.indexOf('function draw('));
+  assert.match(draw, /case 'rows':[\s\S]*?b\.labelWidth[\s\S]*?x\.prev[\s\S]*?x\.press[\s\S]*?case 'segments'/);
+  assert.match(draw, /case 'rows':[\s\S]*?wrap="wrap"/);
+  assert.match(src, /settings:\s*\{\s*read:\s*\(\)\s*=>\s*\$\.settings\.read\(\)/);
+  assert.match(src, /on\('session\.start'[\s\S]*?driver\.setSettings\(s\)/);
+  const rows = draw.slice(draw.indexOf("case 'rows':"), draw.indexOf("case 'segments':"));
+  assert.doesNotMatch(rows, /clock|startTick/);
+});
+
 test('toolLabel reads the flat tool.call shape once the reserved keys are stripped', async () => {
   const { toolLabel } = await import('../core/agentview.mjs');
   const e = { tool: 'Edit', tool_use_id: 'tu1', agentId: 'a1', file_path: 'core/panel.mjs', old_string: 'x' };

@@ -4,7 +4,10 @@
  * only draws what `buildPanel` returns; the headless fallback prints `panelText` of the same view.
  *
  * A tab's body is a list of typed blocks (`view.blocks`): hero, tiles, now, actions, goal, batches,
- * suite, checkpoint, note, kv, agents. The renderer only draws blocks.
+ * suite, checkpoint, note, agents, selectors, rows. The renderer only draws blocks.
+ * `rows` = {title, right?, labelWidth, rows: [{label, cells: [{text, tone, prev?, next?, press?, on?, hotkey?, disabled?}], hint?: {text, tone}}]}:
+ * a cell with prev/next is a cycler (‹ ›), a cell with press is a button (`on` = ● / ○ state), a plain cell is text;
+ * the renderer gives every label `labelWidth` cells and never cuts it.
  * Adding a tab = one entry in TABS plus one builder in BUILDERS (it returns `{blocks}`). Adding a
  * button = one entry in LAUNCHER (with its own `tab`).
  *
@@ -18,6 +21,7 @@ import { RETRY, CONTINUE, STOP, isRed, isDone } from './batch-status.mjs';
 import {
   sessionFigures, roleBars, modelBars, whatIf1h, windowRows, segmentsOf, trendChart, featureSummary, METRICS, money,
 } from './statsview.mjs';
+import { isField, ROLES } from './configedit.mjs';
 
 /**
  * Clip a launcher's output for the pane: at most `maxLines` lines, long lines cut at 160 columns.
@@ -29,7 +33,7 @@ export function clipOutput(text, maxLines = 30) {
   return [...lines.slice(0, maxLines), `… (${lines.length - maxLines} more lines)`];
 }
 
-/** @typedef {'ok' | 'error' | 'running' | 'info' | 'dim'} Tone */
+/** @typedef {'ok' | 'error' | 'running' | 'info' | 'dim' | 'warn'} Tone */
 
 export const TABS = [
   { id: 'home', label: 'Inicio', hotkey: '1' },
@@ -64,7 +68,7 @@ export const launcherAvailable = (entry, { snap, owned = false }) => !entry.need
  * `after: 'refresh'` re-reads the snapshot once the process ends; `needs` names a NEEDS check: the
  * button is hidden, and its press ignored, while the check fails; `confirm` asks yes/no first.
  * @type {{id: string, tab: string, label: string | ((ctx: any) => string), hotkey: string, script: string,
- *   args: string[] | ((ctx: any) => string[]), after?: 'refresh', needs?: keyof typeof NEEDS, confirm?: string}[]}
+ *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings', needs?: keyof typeof NEEDS, confirm?: string}[]}
  */
 export const LAUNCHER = [
   { id: 'gate-once', tab: 'home', label: 'Gate once', hotkey: 'g', script: 'gate', args: ['once'] },
@@ -73,12 +77,28 @@ export const LAUNCHER = [
     id: 'plan-done', tab: 'plan', label: 'Terminar plan', hotkey: 'e', script: 'mem', args: ['handoff', 'done'],
     needs: 'plan', after: 'refresh', confirm: 'Terminar el plan y archivar el handoff?',
   },
+  // Config tab: the buttons that act outside nxy's config file (drawn inside the Config rows, not as an Actions block).
   {
-    // Unknown state (no snapshot yet): a plain 'Filter', never a guessed 'off'.
-    id: 'filter', tab: 'home', label: (ctx) => (typeof ctx?.filter !== 'boolean' ? 'Filter' : ctx.filter ? 'Filter ● on' : 'Filter ○ off'),
-    hotkey: 'f', script: 'filter', args: (ctx) => (ctx?.filter === true ? ['off'] : ['on']), after: 'refresh',
+    id: 'cache-ttl', tab: 'config', hotkey: 't', script: 'config', after: 'settings',
+    label: (ctx) => (typeof ctx?.ttl1h !== 'boolean' ? 'Cache 1 h' : ctx.ttl1h ? 'Cache 1 h ● on' : 'Cache 1 h ○ off'),
+    args: (ctx) => (ctx?.ttl1h === true ? ['cache-ttl', 'off'] : ['cache-ttl', '1h']),
+    confirm: 'Escribir promptCacheTtl en ~/.claude/settings.json (con backup)?',
+  },
+  {
+    id: 'statusline', tab: 'config', hotkey: 'l', script: 'config', after: 'settings',
+    label: (ctx) => (ctx?.statusline === 'nxy' ? 'Quitar' : 'Instalar'),
+    args: (ctx) => (ctx?.statusline === 'nxy' ? ['statusline', 'remove'] : ['statusline', 'install']),
+    confirm: 'Cambiar la statusline en ~/.claude/settings.json (con backup)?',
+  },
+  {
+    id: 'update-nxy', tab: 'config', label: 'Actualizar', hotkey: 'u', script: 'config', args: ['update'],
+    confirm: 'Actualizar nxy con claude plugin update nxy@nxy-dev? Después hay que reiniciar Claude Code.',
   },
 ];
+
+/** The Home filter button is a config action (it honours «Guardar en»), not a launcher script. */
+const FILTER_ACTION_ID = 'cfg:modules.filter:toggle';
+const ENV_FILTER_HINT = 'forzado por NXY_FILTER';
 
 const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked', 'here', 'summary-hide'];
 
@@ -89,8 +109,8 @@ const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false }
 
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
- * @param {string} id @param {{filter?: boolean}} [ctx]
- * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh', needs?: keyof typeof NEEDS, confirm?: string} | null}
+ * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string}} [ctx]
+ * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings', needs?: keyof typeof NEEDS, confirm?: string} | null}
  */
 export function launcherOf(id, ctx = {}) {
   const e = LAUNCHER.find((l) => l.id === id);
@@ -108,8 +128,35 @@ export function launcherOf(id, ctx = {}) {
  */
 export const filterCtx = (snap) => (typeof snap?.config?.filter === 'boolean' ? { filter: snap.config.filter } : {});
 
+/**
+ * The launcher context of the Config tab: the snapshot's filter plus what ~/.claude/settings.json says.
+ * `settings` = {promptCacheTtl, statusLine} as read (or already {ttl1h, statusline}); a field stays absent while unknown.
+ * @param {any} snap @param {any} [settings]
+ * @returns {{filter?: boolean, ttl1h?: boolean, statusline?: 'nxy' | 'other' | 'none'}}
+ */
+export function configCtx(snap, settings) {
+  const ctx = /** @type {any} */ ({ ...filterCtx(snap) });
+  if (settings && typeof settings === 'object') {
+    if (typeof settings.ttl1h === 'boolean') ctx.ttl1h = settings.ttl1h;
+    else ctx.ttl1h = settings.promptCacheTtl === '1h';
+    if (['nxy', 'other', 'none'].includes(settings.statusline)) ctx.statusline = settings.statusline;
+    else {
+      const cmd = settings.statusLine?.command;
+      ctx.statusline = typeof cmd === 'string' ? (/nxy.*statusline\.mjs|statusline\.mjs.*nxy/i.test(cmd) ? 'nxy' : 'other') : settings.statusLine ? 'other' : 'none';
+    }
+  }
+  return ctx;
+}
+
+/** `cfg:<fieldId>:next|prev|toggle`, only for a field configedit knows. @param {string} id */
+function isCfgAction(id) {
+  const m = /^cfg:([^:]+):(next|prev|toggle)$/.exec(id);
+  return !!m && isField(m[1]);
+}
+
 /** @param {string} id */
-export const isPanelAction = (id) => PANEL_IDS.includes(id) || id.startsWith('tab:') || /^batch:\d+$/.test(id)
+export const isPanelAction =(id) => PANEL_IDS.includes(id) || /^scope:(user|repo)$/.test(id) || isCfgAction(id) ||
+  id.startsWith('tab:') || /^batch:\d+$/.test(id)
   || /^pick:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
   || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
@@ -342,17 +389,27 @@ function cacheTile(cache) {
 /** The launcher buttons of a tab, resolved and filtered by `needs`. */
 function tabActions(tab, snap, owned) {
   const ctx = filterCtx(snap);
-  return LAUNCHER.filter((l) => l.tab === tab && launcherAvailable(l, { snap, owned }))
+  const actions = LAUNCHER.filter((l) => l.tab === tab && launcherAvailable(l, { snap, owned }))
     .map((l) => {
       const e = /** @type {NonNullable<ReturnType<typeof launcherOf>>} */ (launcherOf(l.id, ctx));
       return { id: e.id, label: e.label, hotkey: e.hotkey };
     });
+  if (tab === 'home') {
+    // Unknown state (no snapshot yet): a plain 'Filter', never a guessed 'off'.
+    actions.push({ id: FILTER_ACTION_ID, hotkey: 'f', label: typeof ctx.filter !== 'boolean' ? 'Filter' : ctx.filter ? 'Filter ● on' : 'Filter ○ off' });
+  }
+  return actions;
 }
 
 /** @param {string} tab @param {any} c */
 const actionsBlock = (tab, c) => {
   const actions = tabActions(tab, c.snap, c.owned);
-  return actions.length ? [{ type: 'actions', actions }] : [];
+  const f = c.snap?.config?.sources?.['modules.filter'];
+  // The Home button honours «Guardar en»: env always wins; the repo shadows a user-scoped write.
+  const userScope = c.ui?.scope !== 'repo';
+  const hint = tab === 'home' && f === 'env' ? [{ type: 'note', text: `Filter: ${ENV_FILTER_HINT}`, tone: 'warn' }]
+    : tab === 'home' && f === 'repo' && userScope ? [{ type: 'note', text: 'Filter: el repo manda', tone: 'warn' }] : [];
+  return actions.length ? [{ type: 'actions', actions }, ...hint] : [];
 };
 
 /** @param {any} c */
@@ -410,7 +467,7 @@ function homeBlocks(c) {
     { type: 'tiles', tiles: [contextTile(usage, gate), costTile(usage), cacheTile(cache)] },
     ...(seg.items.length ? [{ type: 'segments', items: seg.items }] : []),
     now_,
-    ...actionsBlock('home', { snap, owned }),
+    ...actionsBlock('home', { snap, owned, ui: c.ui }),
   ];
 }
 
@@ -560,22 +617,108 @@ function statsBlocks(c) {
 /** @param {any} c */
 function configBlocks(c) {
   const cfg = c.snap?.config;
-  const unknown = { value: 'desconocido', tone: /** @type {Tone} */ ('dim') };
-  const onOff = (/** @type {any} */ b) => (typeof b === 'boolean' ? { value: b ? 'on' : 'off', tone: /** @type {Tone} */ ('info') } : unknown);
+  const scope = c.ui?.scope === 'repo' ? 'repo' : 'user';
+  const ctx = configCtx(c.snap, c.settings);
+  const src = (/** @type {string} */ id) => cfg?.sources?.[id];
+  /** @type {{text: string, tone: Tone}} */
+  const unknown = { text: 'desconocido', tone: 'dim' };
+  const cell = (/** @type {string} */ text, /** @type {Tone} */ tone = 'info', /** @type {any} */ extra = {}) => ({ text, tone, ...extra });
+  const cycler = (/** @type {string} */ id, /** @type {string} */ text, /** @type {Tone} */ tone = 'info') =>
+    cell(text, tone, { prev: `cfg:${id}:prev`, next: `cfg:${id}:next` });
+  const toggler = (/** @type {string} */ id, /** @type {string} */ text, /** @type {boolean} */ on) =>
+    cell(text, 'info', { press: `cfg:${id}:toggle`, on });
+  const button = (/** @type {string} */ id) => {
+    const e = launcherOf(id, ctx);
+    return e ? cell(e.label, 'info', { press: e.id, hotkey: e.hotkey }) : unknown;
+  };
+  /** A row; the «el repo manda» hint shows when we save to the user file and the repo defines one of its fields. */
+  const row = (/** @type {string} */ label, /** @type {any[]} */ cells, /** @type {string[]} */ fields = [], /** @type {any} */ hint = null) => {
+    const forced = fields.some((f) => src(f) === 'env');
+    const shadowed = scope === 'user' && fields.some((f) => src(f) === 'repo');
+    return {
+      label, cells,
+      ...(forced ? { hint: { text: ENV_FILTER_HINT, tone: 'warn' } } : shadowed ? { hint: { text: 'el repo manda', tone: 'warn' } } : hint ? { hint } : {}),
+    };
+  };
+  const block = (/** @type {string} */ title, /** @type {any[]} */ rows, /** @type {string} */ right = '') => {
+    const labelWidth = Math.max(0, ...rows.map((r) => r.label.length)) + 1;
+    return { type: 'rows', title, ...(right ? { right } : {}), labelWidth, rows };
+  };
+  const optional = (/** @type {string} */ id, /** @type {any} */ v) => {
+    const set = typeof v === 'string' && v;
+    return cycler(id, set ? v : 'predeterminado', set && src(id) !== 'default' ? 'info' : 'dim');
+  };
+
+  /** @type {any[]} */
+  const blocks = [];
+  const opt = (/** @type {string} */ id, /** @type {string} */ label, /** @type {boolean} */ active) => ({ id, label, active });
+  blocks.push({
+    type: 'selectors', title: 'Guardar en',
+    groups: [{ id: 'scope', options: [opt('scope:user', 'Usuario', scope === 'user'), opt('scope:repo', 'Repo', scope === 'repo')] }],
+  });
+  const sc = cfg?.scopes?.[scope];
+  blocks.push({ type: 'note', text: scope === 'user' ? '~/.nxy/config.json · vale para todos tus repos' : '.nxy/config.json · se commitea con el repo', tone: 'dim' });
+  if (sc?.broken) blocks.push({ type: 'note', text: 'Ese archivo está roto: nxy no lo toca hasta que lo arregles', tone: 'error' });
+  if (c.cfgNote) {
+    const n = typeof c.cfgNote === 'string' ? { text: c.cfgNote, tone: 'error' } : c.cfgNote;
+    if (n.text) blocks.push({ type: 'note', text: n.text, tone: n.tone ?? 'error' });
+  }
+
   const g = cfg?.gate ?? c.gate;
-  const gate = g && typeof g.enabled === 'boolean'
-    ? { value: g.enabled ? `on · umbral ${g.contextTokens > 0 ? kFmt(g.contextTokens) : '—'}` : 'off', tone: /** @type {Tone} */ ('info') } : unknown;
-  const text = (/** @type {any} */ v) => (v == null ? unknown : { value: String(v), tone: /** @type {Tone} */ ('info') });
-  return [
-    { type: 'kv', rows: [
-      { label: 'Gate', ...gate },
-      { label: 'Orquestador', ...text(cfg?.orchestrator) },
-      { label: 'Pausa entre lotes', ...onOff(cfg?.pauseAfterBatch) },
-      { label: 'Panel', ...text(cfg?.ui?.panel) },
-      { label: 'Filtro', ...onOff(cfg?.filter) },
-    ] },
-    { type: 'note', text: 'cambiar desde acá: llega en la fase 4; hoy .nxy/config.json', tone: 'dim' },
+  const known = !!cfg;
+  blocks.push(block('Roles', ROLES.map((r) => {
+    const mid = `roles.${r}.model`;
+    const eid = `roles.${r}.effort`;
+    return row(r, known
+      ? [optional(mid, cfg.roles?.[r]?.model), optional(eid, cfg.roles?.[r]?.effort)]
+      : [cell(unknown.text, 'dim')], [mid, eid]);
+  })));
+  blocks.push(block('Flujo', [
+    row('Orquestador', typeof cfg?.orchestrator !== 'string' ? [cell(unknown.text, 'dim')]
+      : c.owned ? [cell(cfg.orchestrator, 'dim', { disabled: true })] : [toggler('flow.orchestrator', cfg.orchestrator, cfg.orchestrator !== 'off')],
+    ['flow.orchestrator'], c.owned ? { text: 'corriendo un plan', tone: 'dim' } : null),
+    row('Pausa entre lotes', typeof cfg?.pauseAfterBatch !== 'boolean' ? [cell(unknown.text, 'dim')]
+      : [toggler('flow.pauseAfterBatch', cfg.pauseAfterBatch ? 'on' : 'off', cfg.pauseAfterBatch)], ['flow.pauseAfterBatch']),
+  ]));
+  blocks.push(block('Gate', [
+    row('Gate', known && typeof g?.enabled === 'boolean' ? [toggler('gate.enabled', g.enabled ? 'on' : 'off', g.enabled)] : [cell(unknown.text, 'dim')], ['gate.enabled']),
+    row('Umbral', known && g ? [cycler('gate.contextTokens', g.contextTokens > 0 ? kFmt(g.contextTokens) : '—')] : [cell(unknown.text, 'dim')], ['gate.contextTokens']),
+  ]));
+
+  const d = c.stats?.state === 'ok' ? c.stats.data : null;
+  const w = d ? whatIf1h(d.ttlWhatIf, d.cacheBreaks) : null;
+  const cacheRows = [
+    row('TTL observado', [typeof c.cache?.ttlMs === 'number' && c.cache.ttlMs > 0
+      ? cell(`${durText(c.cache.ttlMs)}${c.cache.estimated ? ' (estimado)' : ''}`) : cell('sin datos', 'dim')]),
+    row('Settings', [typeof ctx.ttl1h !== 'boolean' ? cell(unknown.text, 'dim') : cell(ctx.ttl1h ? '1 h' : 'predeterminado', ctx.ttl1h ? 'info' : 'dim')]),
+    row('Con 1 h', [w ? cell(w.text, w.worth ? 'ok' : 'dim') : cell('sin datos de Stats', 'dim')]),
   ];
+  if (known) cacheRows.push(row('Cache 1 h', [button('cache-ttl')], [], { text: 'Claude Code la toma en la próxima sesión', tone: 'dim' }));
+  blocks.push(block('Cache', cacheRows));
+
+  blocks.push(block('Interfaz', [
+    row('Filtro', typeof cfg?.filter !== 'boolean' ? [cell(unknown.text, 'dim')] : [toggler('modules.filter', cfg.filter ? 'on' : 'off', cfg.filter)], ['modules.filter']),
+    row('Panel', typeof cfg?.ui?.panel !== 'string' ? [cell(unknown.text, 'dim')] : [toggler('ui.panel', cfg.ui.panel, cfg.ui.panel !== 'off')], ['ui.panel']),
+  ]));
+
+  const slText = ctx.statusline === 'nxy' ? 'nxy' : ctx.statusline === 'other' ? 'otra' : ctx.statusline === 'none' ? 'ninguna' : unknown.text;
+  blocks.push(block('Statusline', [
+    row('Estado', [cell(slText, ctx.statusline ? 'info' : 'dim'), ...(known && ctx.statusline ? [button('statusline')] : [])]),
+  ]));
+
+  const info = c.cfgInfo;
+  const toolRow = (/** @type {string} */ name) => {
+    const t = info?.tools?.[name];
+    if (!info) return row(name, [cell('cargando…', 'dim')]);
+    if (info.failed) return row(name, [cell(unknown.text, 'dim')]);
+    if (!t?.found) return row(name, [cell('no encontrada', 'dim')]);
+    return row(name, [cell(`encontrada${t.version ? ` ${t.version}` : ''}${t.path ? ` · ${t.path}` : ''}`, 'ok')]);
+  };
+  blocks.push(block('Herramientas', ['rtk', 'rg', 'codegraph'].map(toolRow)));
+  blocks.push(block('nxy', [
+    row('Versión', [info?.version ? cell(String(info.version)) : cell(info ? unknown.text : 'cargando…', 'dim'), ...(known ? [button('update-nxy')] : [])]),
+  ]));
+  return blocks;
 }
 
 /** One entry per tab id; each returns the tab's `{blocks}`. */
@@ -622,7 +765,7 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
 /**
  * @param {{
  *   snap: any, ask?: any, owned?: boolean,
- *   ui?: {tab?: string, confirm?: string | null, expanded?: number | null, picked?: string[], agent?: string | null, agentsAll?: boolean,
+ *   ui?: {tab?: string, scope?: 'user' | 'repo', confirm?: string | null, expanded?: number | null, picked?: string[], agent?: string | null, agentsAll?: boolean,
  *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null},
  *   agents?: any[] | null, agentDetail?: any, viewAgentId?: string | null,
  *   output?: {label: string, text: string, running?: boolean} | null,
@@ -633,13 +776,15 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  *   stats?: {state: string, data?: any, at?: number, error?: string} | null,
  *   trend?: {state: string, data?: any, at?: number, error?: string} | null,
  *   summary?: any, live?: {model?: string | null, effort?: string | null, turnUsd?: number | null} | null,
- *   bodyColumns?: number,
+ *   bodyColumns?: number, settings?: any, cfgInfo?: {version?: string | null, failed?: boolean, tools?: Record<string, {found?: boolean, path?: string | null, version?: string | null}>} | null,
+ *   cfgNote?: string | {text: string, tone?: string} | null,
  * }} o `owned`: the orchestrator runs the plan in `snap` (the pill and the lotes count follow it).
  * `ui.trendSel` = {metric, range, by, here}; `summary` = featureSummary's input.
  */
 export function buildPanel({
   snap, ask = null, owned = false, ui = {}, output = null, usage = null, now = Date.now(), fallback = {}, inFlight, cache = null,
   stats = null, trend = null, summary = null, live = null, bodyColumns = 78, agents = null, agentDetail = null, viewAgentId = null,
+  settings = null, cfgInfo = null, cfgNote = null,
 }) {
   const tab = TABS.some((t) => t.id === ui.tab) ? /** @type {string} */ (ui.tab) : 'home';
   const gate = snap?.config?.gate ?? fallback.gate;
@@ -664,7 +809,7 @@ export function buildPanel({
     keys: [{ id: 'refresh', hotkey: 'r' }],
     animated: running.length > 0 || (Array.isArray(agents) && agents.some((a) => a.live)),
     clockTicks: tab === 'home' && typeof cache?.ttlLeftMs === 'number' && cache.ttlLeftMs > 0,
-    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache, stats, trend, summary, live, bodyColumns, agents, agentDetail, viewAgentId }).blocks,
+    blocks: build({ snap, owned, usage, now, gate, ui, inFlight, cache, stats, trend, summary, live, bodyColumns, agents, agentDetail, viewAgentId, settings, cfgInfo, cfgNote }).blocks,
   };
 }
 
@@ -740,8 +885,12 @@ export function panelText(view) {
         for (const s of b.sent) out.push(`  ✉ ${s.text} (${s.state})`);
         out.push(`[${b.back.hotkey}] ${b.back.label}`);
         break;
-      case 'kv':
-        for (const r of b.rows) out.push(`${r.label}: ${r.value}`);
+      case 'rows':
+        out.push(b.title);
+        for (const r of b.rows) {
+          const cells = r.cells.map((x) => (x.prev ? `‹ ${x.text} ›` : x.press ? `${x.on === true ? '● ' : x.on === false ? '○ ' : ''}${x.text}${x.hotkey ? ` [${x.hotkey}]` : ''}` : x.text)).join('  ');
+          out.push(`  ${r.label.padEnd(b.labelWidth)}${cells}${r.hint ? `  (${r.hint.text})` : ''}`);
+        }
         break;
       case 'note':
         out.push(b.text);

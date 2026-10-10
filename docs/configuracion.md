@@ -132,9 +132,14 @@ El gate nunca frena a un subagente, nunca frena si no hay implementer disponible
 
 ### `roles`
 
-Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "opus" }` hace que el planner de ese repo corra en Opus. Valores: `sonnet`, `opus`, `haiku`, `fable`. Si Claude pide un modelo explícito para un despacho, gana el de Claude.
+Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "opus", "effort": "high" }` hace que el planner de ese repo corra en Opus con effort alto.
 
-- El **effort** no está en la config: Claude Code no permite cambiarlo por despacho, así que vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)).
+| Clave | Valores |
+| --- | --- |
+| `roles.<rol>.model` | `sonnet`, `opus`, `haiku`, `fable` |
+| `roles.<rol>.effort` | `low`, `medium`, `high` |
+
+Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)); si coincide con el del frontmatter no se emite nada.
 - `provider` todavía no hace nada (hay un solo proveedor); está declarado para que sumar otro sea un cambio de config.
 - Borrar un rol lo apaga: sin `implementer` el gate no frena (no hay a quién delegar); sin `librarian` las memorias se guardan sin relacionarse; sin `documenter` nunca se ofrece actualizar docs.
 
@@ -148,9 +153,9 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 
 ### `ui`
 
-`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) muestra estos valores de sólo lectura; editarlos desde el panel llega en la fase 4, hoy se edita `.nxy/config.json`.
+`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) los edita desde el panel: guarda en tu usuario (`~/.nxy/config.json`) por defecto, o en el repo con el botón Repo; si el repo ya define la clave, avisa «el repo manda».
 
-El botón **Filter** del panel escribe `modules.filter` en el `.nxy/config.json` del repo (el que se commitea), igual que `/nxy:filter on|off`.
+Los botones **Filter** (Inicio y Config) escriben `modules.filter` donde diga «Guardar en» (usuario por defecto). `/nxy:filter on|off` sigue igual que antes: escribe en el `.nxy/config.json` del repo.
 
 ### `docs`
 

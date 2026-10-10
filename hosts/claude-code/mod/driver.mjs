@@ -14,7 +14,8 @@ import {
   nextActions, batchPrompt, testerPrompt, reviewerPrompt, ticketDescription, handbackText,
   wantsSnapshot, statusText,
 } from '../../../core/orchestrator.mjs';
-import { TABS, buildPanel, launcherOf, launcherAvailable, filterCtx, isPanelAction } from '../../../core/panel.mjs';
+import { TABS, buildPanel, launcherOf, launcherAvailable, configCtx, isPanelAction } from '../../../core/panel.mjs';
+import { nextValue } from '../../../core/configedit.mjs';
 import { cacheOf, coldCost, expiryPlan, hitOf, pickTtl, ttlMsOf } from '../../../core/cache.mjs';
 import { money, tok } from '../../../core/statsview.mjs';
 import {
@@ -74,7 +75,7 @@ export function createDriver($, opts) {
   let output = null;
   let runToken = 0;
   const ui = {
-    tab: 'home', /** @type {string|null} */ confirm: null,
+    tab: 'home', /** @type {'user'|'repo'} where the Config tab saves */ scope: 'user', /** @type {string|null} */ confirm: null,
     /** @type {number|undefined} the open batch of the Plan tab */ expanded: undefined,
     /** @type {Set<string>} findings ticked in checkpoint 2 */ picked: new Set(),
     /** @type {{metric: string, range: string, by: string, here: boolean}} the Stats tab's trend selection */
@@ -124,6 +125,15 @@ export function createDriver($, opts) {
   /** @type {Promise<any>} the launcher's own lane, independent of `chain` */
   let launchChain = Promise.resolve();
   const launching = new Set();
+  /** @type {{ttl1h: boolean, statusline: string}|null} what ~/.claude/settings.json says (null while unknown) */
+  let settingsView = null;
+  /** @type {{version?: string|null, tools: any, failed?: boolean}|null} the Config tab's tools and installed version */
+  let cfgInfo = null;
+  /** @type {{text: string, tone: string}|null} why the last config write failed */
+  let cfgNote = null;
+  let toolsStarted = false;
+  /** @type {Set<string>} fields whose write has not come back yet */
+  const cfgBusy = new Set();
   let asked = false;
   const isOwned = () => !!st && st.ours === true && !st.done;
 
@@ -312,6 +322,75 @@ export function createDriver($, opts) {
       stats = r;
       if (r.state === 'ok') setTtl(r.data?.cacheTtl, 'observed');
     });
+  }
+
+  /** Runs a config.mjs action and parses the last line of its stdout (one JSON line). */
+  async function runConfig(args) {
+    const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', `${$.plugin.root}/hosts/claude-code/entries/config.mjs`, ...args, '--cwd', cwd]);
+    return JSON.parse(String(res?.stdout ?? '').trim().split('\n').pop() || '{}');
+  }
+
+  /** The installed version and the tools found, once per visit (`r` in Config reloads). */
+  function loadTools() {
+    toolsStarted = true;
+    return lane(async () => {
+      try {
+        const out = await runConfig(['tools']);
+        // The entry emits rtk/rg/codegraph at the top level next to version.
+        cfgInfo = out && out.ok !== false
+          ? { version: out.version ?? null, tools: out.tools ?? { rtk: out.rtk, rg: out.rg, codegraph: out.codegraph } }
+          : { version: null, tools: {}, failed: true };
+      } catch { cfgInfo = { version: null, tools: {}, failed: true }; }
+    });
+  }
+
+  /** The value a Config field has now, from the snapshot (what ‹ › cycles from). */
+  function configValue(fieldId) {
+    const c = snap?.config;
+    const m = /^roles\.([^.]+)\.(model|effort)$/.exec(fieldId);
+    if (m) return c?.roles?.[m[1]]?.[m[2]] ?? null;
+    switch (fieldId) {
+      case 'flow.orchestrator': return c?.orchestrator;
+      case 'flow.pauseAfterBatch': return c?.pauseAfterBatch;
+      case 'gate.enabled': return c?.gate?.enabled;
+      case 'gate.contextTokens': return c?.gate?.contextTokens;
+      case 'modules.filter': return c?.filter;
+      case 'ui.panel': return c?.ui?.panel;
+      default: return undefined;
+    }
+  }
+
+  /** `cfg:<field>:<dir>`: one `config.mjs set` on the launcher lane; a second press on the field waits for the first. */
+  function pressCfg(action) {
+    const m = /^cfg:([^:]+):(next|prev|toggle)$/.exec(action);
+    if (!m || !snap?.ok || !snap.config) return Promise.resolve();
+    const field = m[1];
+    if (field === 'flow.orchestrator' && isOwned()) return Promise.resolve();
+    if (cfgBusy.has(field)) return Promise.resolve();
+    const cur = configValue(field);
+    // sin valor guardado, lo que se ve (p. ej. el effort del frontmatter) es el «predeterminado»: no se cicla a un null que no cambia nada
+    const fallback = snap.config.sources?.[field] === 'default' ? cur : null;
+    const value = nextValue(field, cur, /** @type {'next'|'prev'|'toggle'} */ (m[2]), fallback);
+    const scope = ui.scope;
+    cfgBusy.add(field);
+    return lane(async () => {
+      try {
+        cfgNote = null;
+        const out = await runConfig(['set', '--scope', scope, '--key', field, '--json', JSON.stringify(value)]);
+        if (out?.ok && out.config) { if (snap) snap = { ...snap, config: out.config }; }
+        else cfgNote = { text: String(out?.reason ?? 'no se pudo guardar'), tone: 'error' };
+      } catch (err) {
+        cfgNote = { text: `no se pudo guardar: ${/** @type {any} */ (err)?.message ?? err}`, tone: 'error' };
+      } finally { cfgBusy.delete(field); }
+    });
+  }
+
+  /** `$.settings.read()` as the Config tab needs it (no node). Also feeds the TTL's `settings` source. */
+  function setSettings(s) {
+    if (!s || typeof s !== 'object') return;
+    setTtl(s.promptCacheTtl, 'settings');
+    const c = configCtx(null, s);
+    settingsView = { ttl1h: c.ttl1h === true, statusline: c.statusline ?? 'none' };
   }
 
   const trendKey = (sel) => `${sel.range}|${sel.by}|${sel.here ? 'here' : 'all'}`;
@@ -665,8 +744,17 @@ export function createDriver($, opts) {
         if (TABS.some((t) => t.id === id)) ui.tab = id;
         // First time on Stats: load it (later visits show what is cached; `r` reloads).
         if (id === 'stats' && !stats) return Promise.all([loadStats(), loadTrend()]).then(() => {});
+        // First time on Config: the tools and the version, and Stats for the 1 h what-if.
+        if (id === 'config') {
+          const jobs = [];
+          if (!toolsStarted) jobs.push(loadTools());
+          if (!stats) jobs.push(loadStats());
+          return Promise.all(jobs).then(() => {});
+        }
         return Promise.resolve();
       }
+      if (action === 'scope:user' || action === 'scope:repo') { ui.scope = action === 'scope:repo' ? 'repo' : 'user'; return Promise.resolve(); }
+      if (action.startsWith('cfg:')) return pressCfg(action);
       if (action.startsWith('metric:')) { ui.trendSel = { ...ui.trendSel, metric: action.slice(7) }; return Promise.resolve(); }
       if (action.startsWith('range:') || action.startsWith('by:') || action === 'here') {
         ui.trendSel = action === 'here' ? { ...ui.trendSel, here: !ui.trendSel.here }
@@ -701,6 +789,7 @@ export function createDriver($, opts) {
         return Promise.resolve();
       }
       if (action === 'refresh') {
+        if (ui.tab === 'config') return Promise.all([queue(refresh), loadTools()]).then(() => {});
         if (ui.tab !== 'stats') return queue(refresh);
         trends.clear();
         return Promise.all([queue(refresh), loadStats(), loadTrend()]).then(() => {});
@@ -776,7 +865,7 @@ export function createDriver($, opts) {
         inFlight: st?.inFlight ?? {},
       }
       : { ...snap, launched: st?.launched ?? snap.launched, inFlight: st?.inFlight ?? {} };
-    const uiView = { ...ui, picked: [...ui.picked], expanded: ui.expanded };
+    const uiView = { ...ui, scope: /** @type {'user'|'repo'} */ (ui.scope), picked: [...ui.picked], expanded: ui.expanded };
     const now = Date.now();
     const co = cacheOf({ lastTs: cache.lastTs, ttl: cache.ttl, hitPct: cache.hitPct, tokens: cache.tokens, model: usage?.model, prices: snap?.prices, now });
     const cacheView = co && { ...co, coldTokens: co.coldTokens ?? undefined };
@@ -787,6 +876,7 @@ export function createDriver($, opts) {
       agents: agentRows(book, actx), agentDetail: ui.agent ? agentDetail(book, ui.agent, actx) : null, viewAgentId,
       snap: s, ask: st?.ask ?? null, owned, ui: uiView, output, usage, cache: cacheView, now, fallback: { gate: cfg.gate },
       stats, trend: trends.get(trendKey(ui.trendSel)) ?? null, summary,
+      settings: settingsView, cfgInfo, cfgNote,
       live: { model: usage?.model ?? null, effort: cache.effort, turnUsd: cache.turnUsd }, bodyColumns: columns,
     });
   }
@@ -812,7 +902,7 @@ export function createDriver($, opts) {
   const setConfig = (c) => { cfg = c && typeof c === 'object' ? c : {}; };
   const panelSetting = () => snap?.config?.ui?.panel ?? cfg.panel ?? 'auto';
   const setUsage = (u) => { usage = u ?? null; };
-  const launchCtx = () => filterCtx(snap?.ok ? snap : null);
+  const launchCtx = () => configCtx(snap?.ok ? snap : null, settingsView);
 
   /** The entry's `needs` holds for the plan as the driver sees it now (an owned plan fails `plan`). */
   function allowed(id) {
@@ -836,6 +926,13 @@ export function createDriver($, opts) {
         const script = `${$.plugin.root}/hosts/claude-code/entries/${e.script}.mjs`;
         const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd]);
         finish(`${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
+        // settings.json changed: show it now (the next session.start reads the real value).
+        if (e.after === 'settings' && res?.exitCode === 0 && settingsView) {
+          if (id === 'cache-ttl') {
+            settingsView = { ...settingsView, ttl1h: e.args[1] === '1h' };
+            if (e.args[1] === '1h') setTtl('1h', 'settings');
+          } else if (id === 'statusline') settingsView = { ...settingsView, statusline: e.args[1] === 'install' ? 'nxy' : 'none' };
+        }
       } catch (err) {
         finish(`nxy: ${e.label} failed: ${/** @type {any} */ (err)?.message ?? err}`);
       }
@@ -856,5 +953,5 @@ export function createDriver($, opts) {
   return {
     noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo,
     noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
-    step, start, onAgentDone, press, view, status, panel, setConfig, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
+    step, start, onAgentDone, press, view, status, panel, setConfig, setSettings, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

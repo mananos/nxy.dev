@@ -234,7 +234,14 @@ test('batch titles: a hyphen separator is stripped, a title with no Batch N pref
 test('the default config has the orchestrator on and no pause', () => {
   const sb = sandbox(PLAN);
   const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
-  assert.deepEqual(s.config, { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' }, gate: { enabled: true, contextTokens: 100000 }, filter: true });
+  const { roles, scopes, sources, ...prev } = s.config;
+  assert.deepEqual(prev, { pauseAfterBatch: false, orchestrator: 'auto', ui: { panel: 'auto' }, gate: { enabled: true, contextTokens: 100000 }, filter: true });
+  assert.deepEqual(Object.keys(roles), ['planner', 'implementer', 'tester', 'reviewer', 'documenter', 'scout', 'librarian']);
+  assert.equal(typeof roles.implementer.effort, 'string');
+  assert.equal(scopes.user.exists, false);
+  assert.equal(scopes.repo.broken, false);
+  assert.equal(sources['ui.panel'], 'default');
+  assert.equal(typeof s.roles, 'object'); // the root-level roles (agents tab) are untouched
 });
 
 test('ui.panel off from the project config, and the handoff age', () => {

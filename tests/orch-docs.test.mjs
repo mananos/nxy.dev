@@ -46,6 +46,15 @@ test('README documents the agent list, the message field and the implementer con
   assert.ok(readme.includes('no entregado'));
 });
 
+test('README documents the editable Config tab, where it saves and the per-role effort', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('**Config.**'));
+  assert.ok(!readme.includes('esqueleto'));
+  assert.ok(readme.includes('Guardar en'));
+  assert.ok(readme.includes('el repo manda'));
+  assert.ok(readme.includes('roles.<rol>.effort'));
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);

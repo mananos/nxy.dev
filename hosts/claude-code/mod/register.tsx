@@ -32,6 +32,7 @@ const api = ($: any) => ({
     messages: (args: any) => $.session.messages(args),
   },
   prompt: { submit: (args: any) => $.prompt.submit(args) },
+  settings: { read: () => $.settings.read() },
 })
 
 let driver: any = null
@@ -217,7 +218,7 @@ export const register: Register = on => {
       driver.setConfig(await readConfig($))
       try {
         const s: any = await $.settings.read()
-        driver.setTtl(s?.promptCacheTtl, 'settings')
+        driver.setSettings(s)
       } catch { /* optional */ }
       driver.setUsage(await usageOf($))
       await showStatus($)
@@ -405,13 +406,6 @@ function draw($: any, e: any, v: any) {
       </Box>
     )
   }
-  // A read-only setting: label and value, stacked when narrow.
-  const Setting = (p: { label: string; value: string; tone?: string }) => (
-    <Box flexDirection={stacked ? 'column' : 'row'} columnGap={1}>
-      <Box width={stacked ? undefined : 20}><Text color={C.muted}>{p.label}</Text></Box>
-      <Text color={toneColor(p.tone)} wrap="wrap">{p.value}</Text>
-    </Box>
-  )
   // Horizontal bars: label (never cut), a gauge, the amount.
   const BarRows = (p: { rows: any[]; labelWidth: number; color?: string }) => {
     const gw = Math.max(4, Math.min(24, CW - p.labelWidth - 16))
@@ -705,10 +699,40 @@ function draw($: any, e: any, v: any) {
           </Box>
         )
       }
-      case 'kv':
+      case 'rows':
         return (
-          <Box key={`b${bi}`} flexDirection="column" marginTop={1}>
-            {b.rows.map((r: any) => <Setting key={r.label} label={r.label} value={String(r.value ?? '')} tone={r.tone} />)}
+          <Box key={`b${bi}`} flexDirection="column">
+            <Heading title={b.title} color={C.cyan} right={b.right} />
+            {b.rows.map((r: any, ri: number) => (
+              <Box key={`rw${ri}`} flexDirection="column">
+                <Box flexDirection={stacked ? 'column' : 'row'} columnGap={1}>
+                  <Box width={stacked ? undefined : b.labelWidth}><Text color={C.muted} wrap="wrap">{r.label}</Text></Box>
+                  <Box flexDirection="row" flexWrap="wrap" columnGap={2} flexShrink={1}>
+                    {r.cells.map((x: any, xi: number) => {
+                      if (x.prev) {
+                        return (
+                          <Box key={`c${xi}`} flexDirection="row" columnGap={1}>
+                            <Button plain label="‹" onPress={press(x.prev)} />
+                            <Text color={toneColor(x.tone)} wrap="wrap">{x.text}</Text>
+                            <Button plain label="›" onPress={press(x.next)} />
+                          </Box>
+                        )
+                      }
+                      if (x.press) {
+                        return (
+                          <Box key={`c${xi}`} flexDirection="row" columnGap={1}>
+                            {typeof x.on === 'boolean' ? <Text color={x.on ? C.green : C.muted}>{x.on ? '●' : '○'}</Text> : null}
+                            <Keycap id={x.press} label={x.text} hotkey={x.hotkey} />
+                          </Box>
+                        )
+                      }
+                      return <Text key={`c${xi}`} color={toneColor(x.tone)} wrap="wrap">{x.text}</Text>
+                    })}
+                  </Box>
+                </Box>
+                {r.hint ? <Text color={toneColor(r.hint.tone)} wrap="wrap">{r.hint.text}</Text> : null}
+              </Box>
+            ))}
           </Box>
         )
       case 'segments':

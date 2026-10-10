@@ -23,6 +23,7 @@ import { PLUGIN_ROOT, nxyProjectDir, nxyUserDir } from './paths.mjs';
  * @typedef {object} Role
  * @property {string} model
  * @property {string} provider
+ * @property {string} [effort] low, medium or high; applied to each dispatch of the role
  */
 
 function isPlainObject(v) {
