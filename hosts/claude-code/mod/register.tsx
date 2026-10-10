@@ -24,7 +24,7 @@ const api = ($: any) => ({
     read: (path: string) => $.fs.read(path),
     write: (path: string, data: string) => $.fs.write(path, data),
   },
-  process: { run: (argv: string[]) => $.process.run(argv) },
+  process: { run: (argv: string[], init?: { timeoutMs?: number }) => $.process.run(argv, init) },
   agent: { spawn: (args: any) => $.agent.spawn(args), list: () => $.agent.list() },
   session: {
     append: (args: any) => $.session.append(args),
@@ -530,13 +530,14 @@ function draw($: any, e: any, v: any) {
   const sevColor = (sev?: string) => (/alta|high|crit|blocker/i.test(sev ?? '') ? C.red : /media|medium/i.test(sev ?? '') ? C.amber : C.muted)
 
   // Memoria / launcher helpers: a field that clears after each submit (its key changes), and path:line rows.
+  // No field is drawn as nothing: Features has none until a "new" step asks for one.
   const stateColor = (s: string) => (s === 'error' ? C.red : s === 'ok' ? C.text : C.muted)
-  const inputOf = (inp: any) => (
+  const inputOf = (inp: any) => (!inp ? null : (
     <Box marginTop={1}>
       <Input key={inp.key} value="" placeholder={inp.placeholder} submitLabel={inp.submitLabel}
         onSubmit={(text: string) => { if (!inp.disabled) void onInput($, inp.field, text) }} />
     </Box>
-  )
+  ))
   const hitList = (rowsIn: any[]) => (rowsIn ?? []).map((r: any, ri: number) => (
     <Text key={`ht${ri}`} wrap="wrap"><Text color={C.cyan}>{r.loc}</Text><Text color={C.muted}>{r.rest ? `  ${r.rest}` : ''}</Text></Text>
   ))

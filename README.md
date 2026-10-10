@@ -456,7 +456,7 @@ nxy también cuesta algo, y está medido:
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.1.0` |
+| Versión actual | `1.1.1` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Publicado en `1.0.1`, probado en sesiones reales (Linux/WSL y Windows) durante las rc |
 | Después | CLI `nxy` (`doctor`, `stats`, `trend`, `mem`) para operarlo sin abrir Claude Code |

@@ -1237,7 +1237,7 @@ export function createDriver($, opts) {
     const run = launchChain.then(async () => {
       try {
         const script = `${$.plugin.root}/hosts/claude-code/entries/${e.script}.mjs`;
-        const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd]);
+        const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd], e.timeoutMs ? { timeoutMs: e.timeoutMs } : undefined);
         finish(e.script === 'features' && res?.exitCode === 0 ? featuresText(id, String(res?.stdout ?? '')) : `${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
         ranOk = res?.exitCode === 0;
         // settings.json changed: show it now (the next session.start reads the real value).

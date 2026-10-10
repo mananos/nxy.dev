@@ -10,8 +10,8 @@ const row = (/** @type {boolean} */ found, /** @type {string} */ action, /** @ty
 
 /** A fake `$`: process.run records every command and NEVER installs anything. */
 function world() {
-  /** @type {{ runs: string[][], tools: any, $?: any, driver?: any }} */
-  const w = { runs: [], tools: null };
+  /** @type {{ runs: string[][], inits: any[], tools: any, $?: any, driver?: any }} */
+  const w = { runs: [], inits: [], tools: null };
   w.tools = {
     ok: true, version: '1.0.2', platform: 'linux',
     rtk: row(false, 'install', ['sudo -n true-rtk-install']),
@@ -23,8 +23,9 @@ function world() {
     plugin: { root: '/plugin' },
     fs: { read: async () => { throw new Error('ENOENT'); }, write: async () => {} },
     process: {
-      run: async (/** @type {string[]} */ argv) => {
+      run: async (/** @type {string[]} */ argv, /** @type {any} */ init) => {
         w.runs.push(argv);
+        w.inits.push(init);
         if (argv.includes('--snapshot')) return { exitCode: 0, stdout: JSON.stringify(snap), stderr: '' };
         if (argv.some((a) => /entries\/config\.mjs$/.test(a))) return { exitCode: 0, stdout: JSON.stringify(w.tools), stderr: '' };
         if (argv.some((a) => /entries\/setup\.mjs$/.test(a))) return { exitCode: 0, stdout: 'instalado (stub)', stderr: '' };
@@ -73,6 +74,8 @@ test('confirm-yes runs setup.mjs run <tool> --yes --cwd once and asks for the to
   const a = runs[0];
   const i = a.findIndex((x) => /entries\/setup\.mjs$/.test(x));
   assert.deepEqual(a.slice(i + 1), ['run', 'rtk', '--yes', '--cwd', '/proj']);
+  // The engine kills a run after 30 s by default; codegraph's download alone took 28 s live (2026-10-10).
+  assert.equal(w.inits[w.runs.indexOf(a)]?.timeoutMs, 600000);
   assert.equal(toolsRuns(w).length, before + 1);
   assert.match(panelText(d.panel()), /instalado \(stub\)/);
   await d.press('confirm-yes');

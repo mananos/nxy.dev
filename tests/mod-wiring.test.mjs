@@ -182,6 +182,8 @@ test('register.tsx draws the Features worktrees block and wires the Select picks
   assert.ok(start > 0, "case 'worktrees': exists");
   const block = src.slice(start, src.indexOf("case 'rows':", start));
   assert.match(block, /inputOf\(b\.input\)/);
+  // Features sends `input: null` outside a "new" step: inputOf must draw nothing, not read `inp.key`.
+  assert.match(src, /const inputOf = \(inp: any\) => \(!inp \? null :/);
   for (const b of block.match(/<Button\b[^>]*?\/>/gs) ?? []) assert.match(b, /onPress=/, b);
   const selects = block.match(/<Select\b[\s\S]*?\/>/g) ?? [];
   assert.ok(selects.length > 0);

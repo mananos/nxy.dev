@@ -102,8 +102,9 @@ export const LAUNCHER = [
     id: 'update-nxy', tab: 'config', label: 'Actualizar', hotkey: 'u', script: 'config', args: ['update'],
     confirm: 'Actualizar nxy con claude plugin update nxy@nxy-dev? Después hay que reiniciar Claude Code.',
   },
+  // An install downloads (codegraph's bundle is ~50 MB): the engine's 30 s default killed it mid-way, so the engine's maximum.
   ...[['rtk', 'i'], ['rg', 'p'], ['codegraph', 'k']].map(([tool, hotkey]) => ({
-    id: `setup-${tool}`, tab: 'config', tool, hotkey, script: 'setup', after: /** @type {'tools'} */ ('tools'),
+    id: `setup-${tool}`, tab: 'config', tool, hotkey, script: 'setup', after: /** @type {'tools'} */ ('tools'), timeoutMs: 600000,
     label: (/** @type {any} */ ctx) => (ctx?.tools?.[tool]?.plan?.action === 'reinstall' ? 'Reinstalar' : 'Instalar'),
     args: ['run', tool, '--yes'],
     confirm: (/** @type {any} */ ctx) => {
@@ -162,7 +163,7 @@ const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false }
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
  * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string, tools?: Record<string, any>, features?: any}} [ctx]
- * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string, confirm?: string} | null}
+ * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string, confirm?: string, timeoutMs?: number} | null}
  */
 export function launcherOf(id, ctx = {}) {
   const e = LAUNCHER.find((l) => l.id === id);
