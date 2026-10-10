@@ -4,14 +4,20 @@
  * only draws what `buildPanel` returns; the headless fallback prints `panelText` of the same view.
  *
  * A tab's body is a list of typed blocks (`view.blocks`): hero, tiles, now, actions, goal, batches,
- * suite, checkpoint, note, agents, selectors, rows. The renderer only draws blocks.
+ * suite, checkpoint, note, agents, selectors, rows, plus the Memoria tab's blocks and the Agentes launcher:
+ * `memsearch` {input, state, message, query, rows: [{id, press, text, sub}], recent}, `memdetail` {id, state, message, lines, back},
+ * `handoff` {state, text, lines, button}, `locate` {input, state, message, question, rows: [{loc, rest, text}], ms, note, degraded, ask},
+ * `launch` {kinds, kind, input, running, card, hits, mems, raw, error, open}. An `input` is {field, key, placeholder, submitLabel, value,
+ * disabled?}: the driver changes `key` after each submit so the field clears (like the agent composer). The renderer
+ * draws a `loc` in cyan and the `rest` muted. Hotkeys there: only memdetail's Volver `b`; the other buttons are pressed
+ * with the mouse. The renderer only draws blocks.
  * `rows` = {title, right?, labelWidth, rows: [{label, cells: [{text, tone, prev?, next?, press?, on?, hotkey?, disabled?}], hint?: {text, tone}}]}:
  * a cell with prev/next is a cycler (‹ ›), a cell with press is a button (`on` = ● / ○ state), a plain cell is text;
  * the renderer gives every label `labelWidth` cells and never cuts it.
  * Adding a tab = one entry in TABS plus one builder in BUILDERS (it returns `{blocks}`). Adding a
  * button = one entry in LAUNCHER (with its own `tab`).
  *
- * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs, batch-status.mjs and statsview.mjs only.
+ * Pure: no `node:*`, no `process`. Its imports are orchestrator.mjs, batch-status.mjs, statsview.mjs, configedit.mjs and memview.mjs only.
  */
 import {
   effective, suiteDone, suiteIsRed, stateOf, nextActions,
@@ -22,16 +28,10 @@ import {
   sessionFigures, roleBars, modelBars, whatIf1h, windowRows, segmentsOf, trendChart, featureSummary, METRICS, money,
 } from './statsview.mjs';
 import { isField, ROLES } from './configedit.mjs';
+import { clipOutput, parseHits, parseMemIds, memResultRows, memDetailLines, hitRows } from './memview.mjs';
 
-/**
- * Clip a launcher's output for the pane: at most `maxLines` lines, long lines cut at 160 columns.
- * @param {string} text @param {number} [maxLines]
- */
-export function clipOutput(text, maxLines = 30) {
-  const lines = String(text ?? '').replace(/\s+$/, '').split(/\r?\n/).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l));
-  if (lines.length <= maxLines) return lines;
-  return [...lines.slice(0, maxLines), `… (${lines.length - maxLines} more lines)`];
-}
+// A launcher's output is clipped for the pane by memview's clipOutput (at most N lines, long lines cut at 160 columns).
+export { clipOutput };
 
 /** @typedef {'ok' | 'error' | 'running' | 'info' | 'dim' | 'warn'} Tone */
 
@@ -41,6 +41,7 @@ export const TABS = [
   { id: 'agents', label: 'Agentes', hotkey: '3' },
   { id: 'stats', label: 'Stats', hotkey: '4' },
   { id: 'config', label: 'Config', hotkey: '5' },
+  { id: 'memory', label: 'Memoria', hotkey: '6' },
 ];
 
 /** The hotkey of the checkpoint's "Arreglar N" button: not a/c/x/y/n/e/r/d, not a launcher's, not a tab digit. */
@@ -100,7 +101,8 @@ export const LAUNCHER = [
 const FILTER_ACTION_ID = 'cfg:modules.filter:toggle';
 const ENV_FILTER_HINT = 'forzado por NXY_FILTER';
 
-const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked', 'here', 'summary-hide'];
+const PANEL_IDS = ['refresh', 'dismiss', 'confirm-yes', 'confirm-no', 'fix-picked', 'here', 'summary-hide',
+  'mem-back', 'mem-handoff', 'mem-recent', 'launch:scout', 'launch:librarian', 'launch-ask'];
 
 /** The trend selectors: metric ids come from METRICS. */
 export const TREND_RANGES = ['7d', '30d'];
@@ -157,7 +159,7 @@ function isCfgAction(id) {
 /** @param {string} id */
 export const isPanelAction =(id) => PANEL_IDS.includes(id) || /^scope:(user|repo)$/.test(id) || isCfgAction(id) ||
   id.startsWith('tab:') || /^batch:\d+$/.test(id)
-  || /^pick:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
+  || /^pick:\S+$/.test(id) || /^mem:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
   || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
 // ---- layout (pure: the renderer asks it for widths) ----
@@ -558,6 +560,130 @@ function agentsBlocks(c) {
     more: shown.length < rows.length ? { id: 'agents-all', label: `Ver todos (+${rows.length - shown.length})` }
       : ui.agentsAll && rows.length > 10 ? { id: 'agents-all', label: 'Ver menos' } : null,
   });
+  blocks.push(launchBlock(c, rows));
+  return blocks;
+}
+
+/**
+ * The Agentes launcher: ask the scout (code, by path:line) or the librarian (memory, by meaning).
+ * `ui.launch` = {kind, agentId, question, key?, result?, error?}; the driver fills `result` from the book once the agent ends.
+ * @param {any} c @param {any[]} rows
+ */
+function launchBlock(c, rows) {
+  const l = c.ui?.launch ?? {};
+  const kind = l.kind === 'librarian' ? 'librarian' : 'scout';
+  const card = l.agentId ? rows.find((a) => a.id === l.agentId) ?? null : null;
+  const running = !!card?.live;
+  const result = typeof l.result === 'string' ? l.result : '';
+  const done = !!card && !running && result.trim() !== '';
+  const hits = done && kind === 'scout' ? hitRows(parseHits(result)) : [];
+  const mems = done && kind === 'librarian'
+    ? parseMemIds(result).map((m) => ({ id: m.id, press: `mem:${m.id}`, text: m.id, sub: m.why })) : [];
+  return {
+    type: 'launch',
+    title: 'Preguntarle a un agente',
+    kinds: [
+      { id: 'launch:scout', label: 'Scout', active: kind === 'scout' },
+      { id: 'launch:librarian', label: 'Librarian', active: kind === 'librarian' },
+    ],
+    kind,
+    hint: kind === 'scout' ? 'el scout busca en el código (Haiku, cuesta tokens)' : 'el librarian busca en la memoria por sentido (Haiku, cuesta tokens)',
+    input: {
+      field: 'launch', key: `launch:${l.key ?? 0}`, value: '', disabled: running,
+      placeholder: kind === 'scout' ? 'dónde está… / cómo funciona…' : 'qué decidimos sobre…',
+      submitLabel: running ? 'en curso' : 'preguntar',
+    },
+    running,
+    question: typeof l.question === 'string' ? l.question : '',
+    card,
+    hits,
+    mems,
+    raw: done && !hits.length && !mems.length ? clipOutput(result, 12) : [],
+    error: typeof l.error === 'string' && l.error ? l.error : '',
+    open: card ? { id: `agent:${card.id}`, label: 'Ver agente' } : null,
+  };
+}
+
+/**
+ * Memoria tab: search, one memory, the branch handoff and the model-free locate.
+ * `ui.mem` = {query, results, state, error, open, detail: {state, data: {memory, edges}, error},
+ * handoff: {state, data, error}, locate: {question, state, data: {hits, ms, degraded}, error}, key?, locate.key?}.
+ * @param {any} c
+ */
+function memoryBlocks(c) {
+  const m = c.ui?.mem ?? {};
+  /** @type {any[]} */
+  const blocks = [];
+  const input = (/** @type {string} */ field, /** @type {any} */ key, /** @type {string} */ placeholder, /** @type {string} */ label) =>
+    ({ field, key: `${field}:${key ?? 0}`, placeholder, submitLabel: label, value: '' });
+
+  if (m.open) {
+    const d = m.detail ?? {};
+    const back = { id: 'mem-back', label: 'Volver', hotkey: 'b' };
+    if (d.state === 'ok' && d.data?.memory) {
+      blocks.push({ type: 'memdetail', id: m.open, state: 'ok', message: '', lines: memDetailLines(d.data.memory, d.data.edges), back });
+    } else if (d.state === 'error') {
+      blocks.push({ type: 'memdetail', id: m.open, state: 'error', message: `No se pudo abrir la memoria: ${d.error ?? 'error desconocido'}`, lines: [], back });
+    } else if (d.state === 'empty') {
+      blocks.push({ type: 'memdetail', id: m.open, state: 'empty', message: 'Esa memoria ya no existe. Volvé y buscá de nuevo.', lines: [], back });
+    } else {
+      blocks.push({ type: 'memdetail', id: m.open, state: 'loading', message: 'Abriendo la memoria…', lines: [], back });
+    }
+  } else {
+    const rows = memResultRows(m.results);
+    const q = typeof m.query === 'string' ? m.query : '';
+    /** @type {{state: string, message: string}} */
+    const st = m.state === 'loading' ? { state: 'loading', message: 'Buscando…' }
+      : m.state === 'error' ? { state: 'error', message: `No se pudo buscar: ${m.error ?? 'error desconocido'}` }
+        : rows.length ? { state: 'ok', message: '' }
+          : m.state === 'ok' || m.state === 'empty' ? {
+            state: 'empty',
+            message: q ? `Nada coincide con «${q}». Probá con las palabras que usaría la nota; el librarian busca por sentido.` : 'Todavía no hay memorias guardadas en este repo.',
+          }
+            : { state: 'idle', message: 'Escribí palabras de la nota, o mirá las recientes.' };
+    blocks.push({
+      type: 'memsearch', input: input('mem-search', m.key, 'palabras de la nota', 'buscar'), ...st, query: q, rows,
+      recent: rows.length ? null : { id: 'mem-recent', label: 'Recientes' },
+    });
+  }
+
+  const h = m.handoff ?? {};
+  const hd = h.data;
+  /** @type {{state: string, text: string}} */
+  const hs = h.state === 'loading' ? { state: 'loading', text: 'Handoff: cargando…' }
+    : h.state === 'error' ? { state: 'error', text: `Handoff: no se pudo leer (${h.error ?? 'error desconocido'})` }
+      : hd && hd.exists === false ? { state: 'empty', text: `Sin handoff en la rama ${hd.label ?? ''}`.trimEnd() }
+        : hd ? {
+          state: 'ok',
+          text: ['Handoff', hd.label, hd.updated ? `actualizado ${hd.updated}` : '', hd.shared ? 'compartido' : '', typeof hd.progress === 'string' ? hd.progress : '']
+            .filter(Boolean).join(' · '),
+        }
+          : { state: 'idle', text: 'Handoff: sin leer todavía' };
+  blocks.push({
+    type: 'handoff', ...hs, lines: hs.state === 'ok' && typeof hd?.body === 'string' ? clipOutput(hd.body, 20) : [],
+    button: { id: 'mem-handoff', label: 'Handoff' },
+  });
+
+  const lc = m.locate ?? {};
+  const q = typeof lc.question === 'string' ? lc.question : '';
+  const hits = hitRows(lc.data?.hits);
+  const lau = c.ui?.launch ?? {};
+  const askLive = !!(lau.agentId && rowsOf(c).find((a) => a.id === lau.agentId)?.live);
+  /** @type {{state: string, message: string}} */
+  const ls = lc.state === 'loading' ? { state: 'loading', message: 'Buscando en el código…' }
+    : lc.state === 'error' ? { state: 'error', message: `No se pudo buscar en el código: ${lc.error ?? 'error desconocido'}` }
+      : hits.length ? { state: 'ok', message: '' }
+        : lc.state === 'ok' || lc.state === 'empty' ? { state: 'empty', message: `No encontré nada para «${q}». Probá con otro nombre, o preguntale al scout.` }
+          : { state: 'idle', message: 'Escribí qué buscás en el código: sin modelo, 0 tokens.' };
+  blocks.push({
+    type: 'locate', input: input('locate', lc.key, 'dónde está… (un nombre, una idea)', 'ubicar'), ...ls, question: q, rows: hits,
+    ms: typeof lc.data?.ms === 'number' ? lc.data.ms : null,
+    note: 'sin modelo · 0 tokens',
+    degraded: Array.isArray(lc.data?.degraded) ? lc.data.degraded.map(String) : [],
+    ask: q && (ls.state === 'ok' || ls.state === 'empty')
+      ? { id: askLive ? '' : 'launch-ask', label: askLive ? 'Scout en curso' : 'Preguntarle al scout', disabled: askLive } : null,
+    askNote: askLive ? 'Scout en curso, mirá Agentes' : '',
+  });
   return blocks;
 }
 
@@ -728,6 +854,7 @@ export const BUILDERS = {
   agents: (/** @type {any} */ c) => ({ blocks: agentsBlocks(c) }),
   stats: (/** @type {any} */ c) => ({ blocks: statsBlocks(c) }),
   config: (/** @type {any} */ c) => ({ blocks: configBlocks(c) }),
+  memory: (/** @type {any} */ c) => ({ blocks: memoryBlocks(c) }),
 };
 
 // ---- the view ----
@@ -766,7 +893,8 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  * @param {{
  *   snap: any, ask?: any, owned?: boolean,
  *   ui?: {tab?: string, scope?: 'user' | 'repo', confirm?: string | null, expanded?: number | null, picked?: string[], agent?: string | null, agentsAll?: boolean,
- *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null},
+ *     pendingSend?: {agentId: string, text: string, batch?: number | null} | null, mem?: any,
+ *     launch?: {kind?: string, agentId?: string | null, question?: string, key?: number | string, result?: string, error?: string} | null},
  *   agents?: any[] | null, agentDetail?: any, viewAgentId?: string | null,
  *   output?: {label: string, text: string, running?: boolean} | null,
  *   usage?: {tokens: number, percent?: number, window?: number | null, costUsd?: number | null, model?: string | null} | null,
@@ -923,6 +1051,40 @@ export function panelText(view) {
       case 'summary':
         out.push(`Feature: ${money(b.costUsd)}${b.pct != null ? ` (${b.pct}% de la sesión)` : ''}${b.tokens ? ` · ${b.tokens}` : ''}`);
         for (const x of b.batches) out.push(`  lote ${x.n}: ${x.text}`);
+        break;
+      case 'memsearch':
+        out.push(`Memoria${b.query ? `: «${b.query}»` : ''}`);
+        if (b.message) out.push(`  ${b.message}`);
+        for (const r of b.rows) out.push(`  ${r.text}${r.sub ? ` (${r.sub})` : ''} [${r.id}]`);
+        if (b.recent) out.push(`  [${b.recent.label}]`);
+        break;
+      case 'memdetail':
+        out.push(`Memoria ${b.id}`);
+        if (b.message) out.push(`  ${b.message}`);
+        for (const l of b.lines) out.push(`  ${l}`);
+        out.push(`[${b.back.hotkey}] ${b.back.label}`);
+        break;
+      case 'handoff':
+        out.push(b.text);
+        for (const l of b.lines) out.push(`  ${l}`);
+        break;
+      case 'locate':
+        out.push(`Ubicar${b.question ? `: «${b.question}»` : ''} · ${b.note}${b.ms != null ? ` · ${b.ms} ms` : ''}`);
+        if (b.message) out.push(`  ${b.message}`);
+        for (const r of b.rows) out.push(`  ${r.text}`);
+        if (b.degraded.length) out.push(`  (degradado: ${b.degraded.join(', ')})`);
+        if (b.ask) out.push(`  [${b.ask.label}]`);
+        break;
+      case 'launch':
+        out.push(`${b.title}: ${b.kinds.map((k) => (k.active ? `[${k.label}]` : k.label)).join(' ')}`);
+        out.push(`  ${b.hint}`);
+        if (b.question) out.push(`  > ${b.question}`);
+        if (b.card) out.push(`  ${rowText(b.card)}${b.running ? ' · en curso' : ''}`);
+        for (const r of b.hits) out.push(`  ${r.text}`);
+        for (const r of b.mems) out.push(`  ${r.text}${r.sub ? ` — ${r.sub}` : ''} [${r.id}]`);
+        for (const l of b.raw) out.push(`  ${l}`);
+        if (b.error) out.push(`  ✘ ${b.error}`);
+        if (b.open) out.push(`  [${b.open.label}]`);
         break;
       default:
     }

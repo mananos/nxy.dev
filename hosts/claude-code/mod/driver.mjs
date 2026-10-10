@@ -84,7 +84,19 @@ export function createDriver($, opts) {
     agentsAll: false,
     /** @type {{agentId: string, text: string, batch: number|null}|null} a message waiting for the user's yes */
     pendingSend: null,
+    /** @type {any} the Memoria tab: search, one memory, the branch handoff, the model-free locate */
+    mem: {
+      query: '', results: [], state: 'empty', error: '', open: null, key: 0,
+      detail: { state: 'loading', data: null, error: '' },
+      handoff: { state: 'loading', data: null, error: '' },
+      locate: { question: '', state: 'empty', data: null, error: '', key: 0 },
+    },
+    /** @type {any} the Agentes launcher (scout/librarian) */
+    launch: { kind: 'scout', agentId: null, question: '', key: 0, result: '', error: '' },
   };
+  /** @type {Set<string>} input fields with a run in flight */
+  const inputBusy = new Set();
+  let memStarted = false;
   const book = createBook();
   /** @type {string|null} the agent the main thread's task list is looking at */
   let viewAgentId = null;
@@ -485,6 +497,123 @@ export function createDriver($, opts) {
   function noteAgentTurn(e) {
     if (!e?.agentId) return;
     bookTurn(book, { agentId: e.agentId, usage: e.usage, answer: e.answer ?? e.text, reason: e.reason, at: e.at }, { prices: snap?.prices, ttl: cache.ttl });
+    syncLaunch();
+  }
+
+  /** The launched agent's answer, from the book (no node). */
+  function syncLaunch() {
+    const id = ui.launch.agentId;
+    if (!id) return;
+    const d = agentDetail(book, id, {});
+    if (d && typeof d.result === 'string') ui.launch.result = d.result;
+  }
+
+  // ── memoria tab ─────────────────────────────────────────────────────────
+
+  /** @param {any} r a `runJson` result @returns {{state: string, error: string, data: any}} */
+  function memOutcome(r) {
+    if (r.state === 'error') return { state: 'error', error: r.error ?? 'error', data: null };
+    if (r.state === 'empty') return { state: r.error ? 'error' : 'empty', error: r.error ?? '', data: null };
+    if (r.data && r.data.ok === false) return { state: 'empty', error: String(r.data.reason ?? ''), data: r.data };
+    return { state: 'ok', error: '', data: r.data };
+  }
+
+  /**
+   * One `mem.mjs` read on the launcher lane. kind: recent | search | get | handoff. Never throws.
+   * @param {'recent'|'search'|'get'|'handoff'} kind @param {string} [arg]
+   */
+  function loadMem(kind, arg = '') {
+    const m = ui.mem;
+    if (kind === 'handoff') {
+      m.handoff = { state: 'loading', data: m.handoff?.data ?? null, error: '' };
+      return lane(async () => {
+        const o = memOutcome(await runJson('mem', ['handoff', 'show']));
+        m.handoff = { state: o.state === 'ok' ? 'ok' : o.state, data: o.data, error: o.error };
+      });
+    }
+    if (kind === 'get') {
+      m.open = arg;
+      m.detail = { state: 'loading', data: null, error: '' };
+      return lane(async () => {
+        const o = memOutcome(await runJson('mem', ['get', arg]));
+        if (m.open !== arg) return; // the user went back or opened another
+        m.detail = { state: o.state, data: o.state === 'ok' ? { memory: o.data.memory, edges: o.data.edges ?? [] } : null, error: o.error };
+      });
+    }
+    m.state = 'loading';
+    m.error = '';
+    m.open = null;
+    const args = kind === 'recent' ? ['list', '--limit', '10'] : ['search', arg];
+    return lane(async () => {
+      const o = memOutcome(await runJson('mem', args));
+      m.results = o.state === 'ok' && Array.isArray(o.data?.results) ? o.data.results : [];
+      m.state = o.state === 'ok' && !m.results.length ? 'empty' : o.state;
+      m.error = o.error;
+    });
+  }
+
+  /** @param {string} question */
+  function loadLocate(question) {
+    const l = ui.mem.locate;
+    l.question = question;
+    l.state = 'loading';
+    l.error = '';
+    return lane(async () => {
+      let r;
+      try { r = await runJson('locate', [question]); } catch (err) { r = { state: 'error', error: String(/** @type {any} */ (err)?.message ?? err) }; }
+      const o = memOutcome(r);
+      if (l.question !== question) return;
+      if (o.state === 'ok') {
+        const d = o.data;
+        l.data = { hits: Array.isArray(d.hits) ? d.hits : [], ms: d.ms, degraded: Array.isArray(d.degraded) ? d.degraded : [], codegraph: d.codegraph };
+        l.state = l.data.hits.length ? 'ok' : 'empty';
+      } else { l.data = null; l.state = o.state; l.error = o.error; }
+    });
+  }
+
+  /** Launches the scout or the librarian from the panel; the answer lands via `noteAgentTurn`. @param {'scout'|'librarian'} kind @param {string} question */
+  async function launchAgent(kind, question) {
+    const l = ui.launch;
+    const role = snap?.config?.roles?.[kind];
+    const model = typeof role?.model === 'string' && role.model && role.model !== 'default' ? role.model : undefined;
+    l.kind = kind;
+    l.question = question;
+    l.error = '';
+    l.result = '';
+    l.agentId = null;
+    l.key = (l.key ?? 0) + 1;
+    try {
+      /** @type {any} */ const args = { prompt: question, subagentType: `nxy:${kind}`, description: `nxy-panel: ${question.slice(0, 40)}` };
+      if (model) args.model = model;
+      const res = await $.agent.spawn(args);
+      if (!res || res.deny || !res.agentId) { l.error = `no se pudo lanzar el ${kind}: ${res?.deny ?? 'sin agente'}`; return; }
+      l.agentId = res.agentId;
+      // The engine skips the hook that launched an agent, so the driver notes its own spawns.
+      // (an answer that already landed must not be reset to running by a second note)
+      if (!book.agents.get(res.agentId)?.endedAt) bookSpawn(book, { id: res.agentId, type: `nxy:${kind}`, description: `nxy-panel: ${question.slice(0, 40)}`, prompt: question, model: res.model ?? model, spawnedBy: 'nxy' });
+      syncLaunch(); // the answer may have landed before agentId was stored
+    } catch (err) {
+      l.error = `no se pudo lanzar el ${kind}: ${/** @type {any} */ (err)?.message ?? err}`;
+    }
+  }
+
+  const launchLive = () => {
+    const e = ui.launch.agentId ? book.agents.get(ui.launch.agentId) : null;
+    return !!e && statusView(e.status, e.reason).live;
+  };
+
+  /** Text from an input of the panel. Empty text is ignored; one run per field. @param {string} field @param {string} text */
+  async function submitInput(field, text) {
+    const t = String(text ?? '').trim();
+    if (!t || inputBusy.has(field)) return;
+    if (field === 'launch' && launchLive()) return;
+    if (field !== 'mem-search' && field !== 'locate' && field !== 'launch') return;
+    inputBusy.add(field);
+    try {
+      if (field === 'mem-search') { ui.mem.query = t; ui.mem.key += 1; await loadMem('search', t); }
+      else if (field === 'locate') { ui.mem.locate.key += 1; await loadLocate(t); }
+      else await launchAgent(ui.launch.kind === 'librarian' ? 'librarian' : 'scout', t);
+    } finally { inputBusy.delete(field); }
   }
   const setViewAgent = (id) => { viewAgentId = typeof id === 'string' && id ? id : null; };
 
@@ -751,7 +880,27 @@ export function createDriver($, opts) {
           if (!stats) jobs.push(loadStats());
           return Promise.all(jobs).then(() => {});
         }
+        if (id === 'memory' && !memStarted) { memStarted = true; return Promise.all([loadMem('recent'), loadMem('handoff')]).then(() => {}); }
         return Promise.resolve();
+      }
+      if (action.startsWith('mem:')) {
+        // From Agentes (librarian result) too: go to the Memoria tab so the detail is visible.
+        ui.tab = 'memory';
+        const jobs = [];
+        if (!memStarted) { memStarted = true; jobs.push(loadMem('recent'), loadMem('handoff')); }
+        // The list load clears `open`; queue the detail after it (same lane, in order).
+        jobs.push(loadMem('get', action.slice(4)));
+        return Promise.all(jobs).then(() => {});
+      }
+      if (action === 'mem-back') { ui.mem.open = null; return Promise.resolve(); }
+      if (action === 'mem-handoff') return loadMem('handoff');
+      if (action === 'mem-recent') { ui.mem.query = ''; ui.mem.key += 1; return loadMem('recent'); }
+      if (action === 'launch:scout' || action === 'launch:librarian') { ui.launch.kind = action.slice(7); return Promise.resolve(); }
+      if (action === 'launch-ask') {
+        const q = ui.mem.locate.question;
+        if (!q || launchLive() || inputBusy.has('launch')) return Promise.resolve();
+        inputBusy.add('launch');
+        return launchAgent('scout', q).finally(() => { inputBusy.delete('launch'); });
       }
       if (action === 'scope:user' || action === 'scope:repo') { ui.scope = action === 'scope:repo' ? 'repo' : 'user'; return Promise.resolve(); }
       if (action.startsWith('cfg:')) return pressCfg(action);
@@ -789,6 +938,13 @@ export function createDriver($, opts) {
         return Promise.resolve();
       }
       if (action === 'refresh') {
+        if (ui.tab === 'memory') {
+          memStarted = true;
+          // With a memory open, reload it (and keep it open) instead of the list.
+          const openId = ui.mem.open;
+          const first = openId ? loadMem('get', openId) : ui.mem.query ? loadMem('search', ui.mem.query) : loadMem('recent');
+          return Promise.all([first, loadMem('handoff')]).then(() => {});
+        }
         if (ui.tab === 'config') return Promise.all([queue(refresh), loadTools()]).then(() => {});
         if (ui.tab !== 'stats') return queue(refresh);
         trends.clear();
@@ -858,6 +1014,7 @@ export function createDriver($, opts) {
     const ok = !!snap?.ok;
     const owned = ok && isOwned();
     syncPicked();
+    syncLaunch();
     const s = !ok ? null : owned
       ? {
         ...build(), approved: snap.approved, handoff: snap.handoff, config: snap.config,
@@ -951,7 +1108,7 @@ export function createDriver($, opts) {
   const setColumns = (n) => { if (Number.isFinite(n) && n > 0) columns = Math.floor(n); };
 
   return {
-    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo,
+    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo, submitInput,
     noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
     step, start, onAgentDone, press, view, status, panel, setConfig, setSettings, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

@@ -34,13 +34,13 @@ const hotkeys = (v) => [
   ...(v.ask?.buttons ?? []).map((b) => b.hotkey), ...(v.output ? [v.output.dismiss.hotkey] : []),
 ];
 
-test('TABS: five tabs, a builder each, active tab', () => {
-  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config']);
-  assert.deepEqual(TABS.map((t) => t.hotkey), ['1', '2', '3', '4', '5']);
+test('TABS: six tabs, a builder each, active tab', () => {
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory']);
+  assert.deepEqual(TABS.map((t) => t.hotkey), ['1', '2', '3', '4', '5', '6']);
   assert.equal(TABS[0].label, 'Inicio');
   for (const t of TABS) assert.equal(typeof BUILDERS[t.id], 'function');
-  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false, false, false, false]);
-  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true, false, false, false]);
+  assert.deepEqual(home({}).tabs.map((t) => t.active), [true, false, false, false, false, false]);
+  assert.deepEqual(home({ ui: { tab: 'plan' } }).tabs.map((t) => t.active), [false, true, false, false, false, false]);
   assert.equal(home({ ui: { tab: 'nope' } }).tabs[0].active, true);
   assert.equal(home({}).sections, undefined);
 });
@@ -385,7 +385,7 @@ const rowsOf = (v, title) => v.blocks.find((b) => b.type === 'rows' && b.title =
 const allCells = (v) => v.blocks.filter((b) => b.type === 'rows').flatMap((b) => b.rows.flatMap((r) => r.cells));
 
 test('Config tab: sections in order, scope defaults to user, with and without snapshot', () => {
-  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config']);
+  assert.deepEqual(TABS.map((t) => t.id), ['home', 'plan', 'agents', 'stats', 'config', 'memory']);
   const v = cfgView();
   assert.deepEqual(v.blocks.filter((b) => b.type === 'rows').map((b) => b.title),
     ['Roles', 'Flujo', 'Gate', 'Cache', 'Interfaz', 'Statusline', 'Herramientas', 'nxy']);
@@ -659,9 +659,143 @@ test('barText, kFmt, fitSteps, panelText', () => {
   assert.ok(panelText(home({ snap: snap({ hash: null, batches: [] }) })).includes('Plan: ninguno'));
 });
 
-test('panel.mjs stays pure: no node: imports, only orchestrator, batch-status and statsview', () => {
+test('panel.mjs stays pure: no node: imports, only orchestrator, batch-status, statsview, configedit and memview', () => {
   const src = readFileSync(fileURLToPath(new URL('../core/panel.mjs', import.meta.url)), 'utf8');
   assert.ok(!/from\s+['"]node:/.test(src));
   const imports = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './configedit.mjs', './orchestrator.mjs', './statsview.mjs']);
+  assert.deepEqual(imports.sort(), ['./batch-status.mjs', './configedit.mjs', './memview.mjs', './orchestrator.mjs', './statsview.mjs']);
+});
+
+const mem = (over = {}) => buildPanel({ snap: snap(), now: NOW, ui: { tab: 'memory', mem: over } });
+const launchView = (launch, agents = []) => buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', launch }, agents });
+
+test('Memoria: sixth tab, keys 1-5 unchanged, isPanelAction for the new ids', () => {
+  assert.deepEqual(TABS.at(-1), { id: 'memory', label: 'Memoria', hotkey: '6' });
+  assert.deepEqual(TABS.slice(0, 5).map((t) => t.hotkey), ['1', '2', '3', '4', '5']);
+  for (const id of ['mem:abc-1', 'mem-back', 'mem-handoff', 'mem-recent', 'launch:scout', 'launch:librarian', 'launch-ask', 'tab:memory']) {
+    assert.ok(isPanelAction(id), id);
+  }
+  assert.ok(!isPanelAction('mem:') && !isPanelAction('launch:other') && !isPanelAction('mem-x'));
+});
+
+test('Memoria: search block in idle, loading, error, empty and ok', () => {
+  const s = (o) => block(mem(o), 'memsearch');
+  assert.equal(s({}).state, 'idle');
+  assert.deepEqual(s({}).recent, { id: 'mem-recent', label: 'Recientes' });
+  assert.equal(s({}).input.field, 'mem-search');
+  assert.equal(s({ state: 'loading' }).state, 'loading');
+  assert.match(s({ state: 'error', error: 'boom' }).message, /boom/);
+  const none = s({ state: 'ok', query: 'zzz', results: [] });
+  assert.equal(none.state, 'empty');
+  assert.match(none.message, /zzz/);
+  const ok = s({ state: 'ok', results: [{ id: 'a-1', title: 'Titulo', type: 'decision', area: 'core', scope: 'repo' }] });
+  assert.equal(ok.state, 'ok');
+  assert.equal(ok.recent, null);
+  assert.deepEqual(ok.rows[0], { id: 'a-1', press: 'mem:a-1', text: 'Titulo', sub: 'decision · core · repo' });
+  assert.notEqual(s({ key: 1 }).input.key, s({ key: 2 }).input.key);
+});
+
+test('Memoria: detail replaces the search while open; Volver is b', () => {
+  const memory = { id: 'a-1', title: 'Titulo', type: 'decision', scope: 'repo', keywords: ['x'], body: 'uno\ndos' };
+  const v = mem({ open: 'a-1', detail: { state: 'ok', data: { memory, edges: [{ kind: 'related', dir: 'out', other: 'b-2' }] } } });
+  assert.equal(block(v, 'memsearch'), undefined);
+  const d = block(v, 'memdetail');
+  assert.deepEqual(d.back, { id: 'mem-back', label: 'Volver', hotkey: 'b' });
+  assert.ok(d.lines.includes('→ related b-2') && d.lines.includes('uno'));
+  assert.equal(block(mem({ open: 'a-1' }), 'memdetail').state, 'loading');
+  assert.match(block(mem({ open: 'a-1', detail: { state: 'error', error: 'boom' } }), 'memdetail').message, /boom/);
+  assert.equal(block(mem({ open: 'a-1', detail: { state: 'empty' } }), 'memdetail').state, 'empty');
+});
+
+test('Memoria: handoff states and body clipped to 20 lines', () => {
+  const h = (o) => block(mem({ handoff: o }), 'handoff');
+  assert.equal(block(mem({}), 'handoff').state, 'idle');
+  assert.equal(h({ state: 'loading' }).state, 'loading');
+  assert.match(h({ state: 'error', error: 'boom' }).text, /boom/);
+  assert.match(h({ state: 'ok', data: { exists: false, label: 'feat' } }).text, /feat/);
+  const body = Array.from({ length: 40 }, (_, i) => `l${i}`).join('\n');
+  const ok = h({ state: 'ok', data: { exists: true, label: 'feat', updated: 'hoy', body } });
+  assert.equal(ok.state, 'ok');
+  assert.equal(ok.lines.length, 21);
+  assert.equal(ok.button.id, 'mem-handoff');
+});
+
+test('Memoria: locate states, hits, ms, no-model note and the scout button', () => {
+  const l = (o) => block(mem({ locate: o }), 'locate');
+  assert.equal(l(undefined).state, 'idle');
+  assert.equal(l(undefined).ask, null);
+  assert.equal(l({ question: 'q', state: 'loading' }).state, 'loading');
+  assert.match(l({ question: 'q', state: 'error', error: 'boom' }).message, /boom/);
+  const empty = l({ question: 'nada', state: 'ok', data: { hits: [], ms: 5 } });
+  assert.equal(empty.state, 'empty');
+  assert.equal(empty.ask.id, 'launch-ask');
+  const ok = l({ question: 'q', state: 'ok', data: { hits: [{ path: 'C:/x/y.mjs', line: 12, kind: 'function', name: 'foo' }], ms: 42, degraded: ['rg'] } });
+  assert.deepEqual(ok.rows, [{ loc: 'C:/x/y.mjs:12', rest: 'function foo', text: 'C:/x/y.mjs:12  function foo' }]);
+  assert.equal(ok.ms, 42);
+  assert.equal(ok.note, 'sin modelo · 0 tokens');
+  assert.deepEqual(ok.degraded, ['rg']);
+  assert.equal(ok.ask.label, 'Preguntarle al scout');
+});
+
+test('Agentes: launch block for scout and librarian, running, result, raw and error', () => {
+  const idle = block(launchView({}), 'launch');
+  assert.equal(idle.kind, 'scout');
+  assert.deepEqual(idle.kinds.map((k) => [k.id, k.active]), [['launch:scout', true], ['launch:librarian', false]]);
+  assert.equal(idle.input.field, 'launch');
+  assert.equal(idle.card, null);
+  assert.notEqual(block(launchView({ kind: 'librarian' }), 'launch').input.placeholder, idle.input.placeholder);
+  const running = block(launchView({ kind: 'scout', agentId: 'a1', question: 'q' }, [row('a1')]), 'launch');
+  assert.equal(running.running, true);
+  assert.equal(running.input.submitLabel, 'en curso');
+  assert.equal(running.open.id, 'agent:a1');
+  const fin = { live: false, tone: 'ok', state: 'terminó' };
+  const scout = block(launchView({ kind: 'scout', agentId: 'a1', result: '- `src/a.mjs:10` — foo\n- core\\b.mjs:7 bar' }, [row('a1', fin)]), 'launch');
+  assert.deepEqual(scout.hits.map((h) => h.loc), ['src/a.mjs:10', 'core\\b.mjs:7']);
+  assert.deepEqual(scout.raw, []);
+  const lib = block(launchView({ kind: 'librarian', agentId: 'a1', result: '- note-1 — aplica\nnone' }, [row('a1', fin)]), 'launch');
+  assert.deepEqual(lib.mems, [{ id: 'note-1', press: 'mem:note-1', text: 'note-1', sub: 'aplica' }]);
+  const raw = block(launchView({ kind: 'scout', agentId: 'a1', result: Array.from({ length: 30 }, (_, i) => `linea ${i}`).join('\n') }, [row('a1', fin)]), 'launch');
+  assert.equal(raw.hits.length, 0);
+  assert.equal(raw.raw.length, 13);
+  assert.equal(block(launchView({ error: 'sin spawn' }), 'launch').error, 'sin spawn');
+  // not in the agent detail view
+  assert.equal(block(buildPanel({ snap: snap(), now: NOW, ui: { tab: 'agents', agent: 'a1' }, agents: [row('a1')], agentDetail: detail() }), 'launch'), undefined);
+});
+
+test('Memoria and launch: panelText prints every block', () => {
+  const txt = panelText(buildPanel({
+    snap: snap(), now: NOW,
+    ui: { tab: 'memory', mem: {
+      state: 'ok', results: [{ id: 'a-1', title: 'Titulo' }], handoff: { state: 'ok', data: { exists: true, label: 'feat', body: 'cuerpo' } },
+      locate: { question: 'q', state: 'ok', data: { hits: [{ path: 'a.mjs', line: 3, kind: 'function', name: 'f' }], ms: 7 } },
+    } },
+  })).join('\n');
+  for (const s of ['[Memoria]', 'Titulo', 'Handoff · feat', 'cuerpo', 'a.mjs:3  function f', '7 ms', 'sin modelo · 0 tokens', 'Preguntarle al scout']) assert.ok(txt.includes(s), s);
+  const lt = panelText(launchView({ kind: 'scout', agentId: 'a1', question: 'donde', result: 'x.mjs:1 y' }, [row('a1', { live: false, tone: 'ok' })])).join('\n');
+  for (const s of ['Scout', 'donde', 'x.mjs:1  y', 'Ver agente']) assert.ok(lt.includes(s), s);
+});
+
+test('hotkeys stay unique on the Memoria tab in every state', () => {
+  for (const mm of [{}, { open: 'a-1' }, { open: 'a-1', detail: { state: 'ok', data: { memory: { id: 'a-1', body: 'x' } } } }]) {
+    for (const output of [null, { label: 'x', text: 'y' }]) {
+      const v = buildPanel({ snap: snap(), now: NOW, ui: { tab: 'memory', mem: mm }, output });
+      const keys = [...hotkeys(v), ...v.blocks.filter((b) => b.type === 'memdetail').map((b) => b.back.hotkey)];
+      assert.equal(new Set(keys).size, keys.length, keys.join());
+    }
+  }
+});
+
+test('memory locate: while the launched scout is live the ask button is off and a note says so', () => {
+  const mem = { locate: { question: 'dónde está foo', state: 'ok', data: { hits: [{ path: 'a.mjs', line: 3, kind: 'function', name: 'foo' }], ms: 5 } } };
+  const view = (live) => buildPanel({
+    snap: snap(), now: NOW, ui: { tab: 'memory', mem, launch: { kind: 'scout', agentId: 'ag1', question: 'dónde está foo' } },
+    agents: [{ id: 'ag1', role: 'scout', live, state: live ? 'corriendo' : 'listo' }],
+  }).blocks.find((b) => b.type === 'locate');
+  const on = view(true);
+  assert.equal(on.ask.id, '');
+  assert.equal(on.ask.disabled, true);
+  assert.match(on.askNote, /Agentes/);
+  const off = view(false);
+  assert.equal(off.ask.id, 'launch-ask');
+  assert.equal(off.askNote, '');
 });

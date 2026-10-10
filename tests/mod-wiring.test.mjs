@@ -76,6 +76,21 @@ test('register.tsx draws the approved design: Raster, layoutOf, no truncation, t
   assert.doesNotMatch(src, /from\s+'node:/);
 });
 
+test('register.tsx draws the Memoria and launch blocks and routes their inputs to the driver', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  for (const t of ['memsearch', 'memdetail', 'handoff', 'locate', 'launch']) assert.match(src, new RegExp(`case '${t}':`), t);
+  assert.match(src, /async function onInput\(\$: any, field: string, text: string\)/);
+  assert.match(src, /driver\.submitInput\(field, text\)/);
+  assert.match(src, /onInput\(\$, inp\.field, text\)/);
+  assert.match(src, /bodyColumns/);
+  assert.match(src, /b\.askNote/);
+  // Every Button has its onPress on the same line.
+  for (const line of src.split('\n').filter((l) => l.includes('<Button'))) assert.match(line, /onPress=/, line.trim());
+  assert.doesNotMatch(src, /\b(?:const|let|var)\s+h\b/);
+  const draw = src.slice(src.indexOf('function draw('));
+  assert.doesNotMatch(draw, /\$\.clock/);
+});
+
 test('register.tsx: one tick timer at module level, cancelled before a new one; batches and findings are focusable Buttons', () => {
   const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
   assert.match(src, /^let tickTimer\b/m);

@@ -155,6 +155,8 @@ Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude
 
 `"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) los edita desde el panel: guarda en tu usuario (`~/.nxy/config.json`) por defecto, o en el repo con el botón Repo; si el repo ya define la clave, avisa «el repo manda».
 
+Un scout o librarian lanzado desde el panel (Agentes, bloque «Preguntarle a un agente», o «Preguntarle al scout» en Memoria) toma el **modelo** de `roles.scout` / `roles.librarian`, pero no el **effort**: `agent.spawn` no lo acepta y rige el del agente. Cuando Claude los despacha, el hook aplica los dos.
+
 Los botones **Filter** (Inicio y Config) escriben `modules.filter` donde diga «Guardar en» (usuario por defecto). `/nxy:filter on|off` sigue igual que antes: escribe en el `.nxy/config.json` del repo.
 
 ### `docs`

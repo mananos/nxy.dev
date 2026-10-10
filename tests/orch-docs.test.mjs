@@ -55,6 +55,14 @@ test('README documents the editable Config tab, where it saves and the per-role 
   assert.ok(readme.includes('roles.<rol>.effort'));
 });
 
+test('README documents the Memoria tab and the roadmap marks 4b-1 done', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('**Memoria.**'));
+  assert.ok(readme.includes('`6`'));
+  assert.ok(readme.includes('Preguntarle al scout'));
+  assert.match(read('docs/roadmap-debate.md'), /4b-1: Memoria[^\n]*hecha \(2026-10-09\)/);
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);

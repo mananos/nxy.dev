@@ -209,6 +209,17 @@ async function onSend($: any, text: string): Promise<void> {
   } catch (err) { await fail($, 'ui.input', err) }
 }
 
+// A Memoria / launcher field's Enter: the driver runs it (search, locate or launch).
+async function onInput($: any, field: string, text: string): Promise<void> {
+  try {
+    if (!driver) return
+    const run = driver.submitInput(field, text)
+    await sync($)
+    await run
+    await sync($)
+  } catch (err) { await fail($, 'ui.input', err) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     try {
@@ -507,6 +518,18 @@ function draw($: any, e: any, v: any) {
   const stateGlyph = (s: string) => (s === 'done' ? { t: '✔', c: C.green } : s === 'running' ? { t: spin(), c: C.blue } : s === 'red' ? { t: '✘', c: C.red } : { t: '○', c: C.faint })
   const sevColor = (sev?: string) => (/alta|high|crit|blocker/i.test(sev ?? '') ? C.red : /media|medium/i.test(sev ?? '') ? C.amber : C.muted)
 
+  // Memoria / launcher helpers: a field that clears after each submit (its key changes), and path:line rows.
+  const stateColor = (s: string) => (s === 'error' ? C.red : s === 'ok' ? C.text : C.muted)
+  const inputOf = (inp: any) => (
+    <Box marginTop={1}>
+      <Input key={inp.key} value="" placeholder={inp.placeholder} submitLabel={inp.submitLabel}
+        onSubmit={(text: string) => { if (!inp.disabled) void onInput($, inp.field, text) }} />
+    </Box>
+  )
+  const hitList = (rowsIn: any[]) => (rowsIn ?? []).map((r: any, ri: number) => (
+    <Text key={`ht${ri}`} wrap="wrap"><Text color={C.cyan}>{r.loc}</Text><Text color={C.muted}>{r.rest ? `  ${r.rest}` : ''}</Text></Text>
+  ))
+
   const block = (b: any, bi: number) => {
     switch (b.type) {
       case 'hero': {
@@ -699,6 +722,83 @@ function draw($: any, e: any, v: any) {
           </Box>
         )
       }
+      case 'memsearch':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title="Memoria" color={C.violet} right={b.query ? `«${b.query}»` : undefined} />
+            {inputOf(b.input)}
+            {b.state === 'ok' ? b.rows.map((r: any) => (
+              <Box key={`mr:${r.id}`} flexDirection="column" marginTop={1}>
+                <Button plain label={r.text} key={r.press} onPress={press(r.press)} />
+                {r.sub ? <Box paddingLeft={2}><Text color={C.muted} wrap="wrap">{r.sub}</Text></Box> : null}
+              </Box>
+            )) : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+            {b.recent ? <Box flexDirection="row"><Button plain label={b.recent.label} key={b.recent.id} onPress={press(b.recent.id)} /></Box> : null}
+          </Box>
+        )
+      case 'memdetail':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title="Memoria" color={C.violet} right={b.id} />
+            {b.state === 'ok'
+              ? b.lines.map((line: string, li: number) => <Text key={`md${li}`} color={C.text} wrap="wrap">{line}</Text>)
+              : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+            <Box flexDirection="row" marginTop={1}><Keycap id={b.back.id} label={b.back.label} hotkey={b.back.hotkey} /></Box>
+          </Box>
+        )
+      case 'handoff':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title="Handoff" color={C.cyan} />
+            <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.text}`}</Text>
+            {b.lines.map((line: string, li: number) => <Text key={`ho${li}`} color={C.muted} wrap="wrap">{line}</Text>)}
+            <Box flexDirection="row"><Button plain label={b.button.label} key={b.button.id} onPress={press(b.button.id)} /></Box>
+          </Box>
+        )
+      case 'locate':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title="Ubicar" color={C.cyan} right={b.ms != null ? `${b.ms} ms` : undefined} />
+            {inputOf(b.input)}
+            {b.state === 'ok' ? hitList(b.rows) : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+            {b.state === 'ok' || b.state === 'empty' ? <Text color={C.muted} wrap="wrap">{[b.note, ...b.degraded].filter(Boolean).join(' · ')}</Text> : null}
+            {b.ask ? (b.ask.disabled || !b.ask.id
+              ? <Text color={C.muted} wrap="wrap">{b.ask.label}</Text>
+              : <Box flexDirection="row"><Button plain label={b.ask.label} key={b.ask.id} onPress={press(b.ask.id)} /></Box>) : null}
+            {b.askNote ? <Text color={C.muted} wrap="wrap">{b.askNote}</Text> : null}
+          </Box>
+        )
+      case 'launch':
+        return (
+          <Box key={`b${bi}`} flexDirection="column" width={CW}>
+            <Heading title={b.title} color={C.green} />
+            <Box flexDirection="row" columnGap={1}>
+              {b.kinds.map((k: any) => (k.active
+                ? <Pill key={k.id} text={k.label} bg={C.violet} />
+                : <Box key={k.id} paddingX={1}><Button plain label={k.label} dimColor key={`kind:${k.id}`} onPress={press(k.id)} /></Box>))}
+            </Box>
+            <Text color={C.muted} wrap="wrap">{b.hint}</Text>
+            {inputOf(b.input)}
+            {b.question ? <Text color={C.muted} wrap="wrap">{`«${b.question}»`}</Text> : null}
+            {b.card ? (
+              <Box flexDirection="row" columnGap={1}>
+                <Text color={b.card.live ? C.blue : toneColor(b.card.tone)}>{b.card.live ? spin() : doneGlyph(b.card)}</Text>
+                <Text color={roleColor(b.card)}>{b.card.role ?? ''}</Text>
+                <Text color={C.muted} wrap="wrap">{[b.card.state, b.card.elapsedMs != null ? durText(b.card.elapsedMs) : '', b.card.costText].filter(Boolean).join(' · ')}</Text>
+              </Box>
+            ) : null}
+            {b.error ? <Text color={C.red} wrap="wrap">{b.error}</Text> : null}
+            {hitList(b.hits)}
+            {b.mems.map((m: any) => (
+              <Box key={`lm:${m.id}`} flexDirection="column">
+                <Button plain label={m.text} key={m.press} onPress={press(m.press)} />
+                {m.sub ? <Box paddingLeft={2}><Text color={C.muted} wrap="wrap">{m.sub}</Text></Box> : null}
+              </Box>
+            ))}
+            {b.raw.map((line: string, li: number) => <Text key={`lw${li}`} color={C.text} wrap="wrap">{line}</Text>)}
+            {b.open ? <Box flexDirection="row"><Button plain label={b.open.label} key={b.open.id} onPress={press(b.open.id)} /></Box> : null}
+          </Box>
+        )
       case 'rows':
         return (
           <Box key={`b${bi}`} flexDirection="column">
