@@ -38,12 +38,15 @@ import {
 } from '../../../core/verify.mjs';
 import { gitBranch, nxyRuntimeDir } from '../../../core/paths.mjs';
 import { appendJsonl } from '../../../core/jsonl.mjs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { consumeTicket, readActive, readOrchState } from '../orch-state.mjs';
+import { denyMessage, ticketOf } from '../../../core/orchestrator.mjs';
 import { findAnswer, isApproved } from '../plan-approval.mjs';
 import {
   progressFor, readSuite, readVerify, recordBatch, recordReviewLaunch, recordSuite, recordSuiteFix,
 } from '../verify-state.mjs';
-import { roleModel } from '../roles.mjs';
+import { roleEffort, roleModel } from '../roles.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
 const IMPLEMENTER = /(^|:)implementer$/;
@@ -66,7 +69,7 @@ function suiteRunning(cwd, hash) {
  * @param {string} plan @param {string} hash @param {string} prompt @param {string} cwd
  * @param {string|null|undefined} transcript
  */
-function batchGate(plan, hash, prompt, cwd, transcript) {
+function batchGate(plan, hash, prompt, cwd, transcript, wavedThrough = /** @type {number[]} */ ([])) {
   const all = parseBatches(plan);
   const batches = all.map((b) => b.n);
   const n = batchOfPrompt(prompt);
@@ -79,7 +82,7 @@ function batchGate(plan, hash, prompt, cwd, transcript) {
     return null;
   }
   if (n == null || !batch) return { reason: 'batch-unnamed', message: unnamedBatchMessage(batches, allDone) };
-  const hit = blockingBatch(state.batches, batch.depends, (red) => findAnswer(transcript, continueQuestion(hash, red)) === CONTINUE);
+  const hit = blockingBatch(state.batches, batch.depends, (red) => wavedThrough.includes(red) || findAnswer(transcript, continueQuestion(hash, red)) === CONTINUE);
   return hit == null ? null : { reason: hit.why === 'red' ? 'batch-red' : 'batch-pending', message: blockedDispatchMessage(hash, hit.k, n, hit.why) };
 }
 
@@ -90,10 +93,36 @@ try {
   const isAgentTool = input?.tool_name === 'Agent' || input?.tool_name === 'Task';
   const cwd = toNativePath(process.env.CLAUDE_PROJECT_DIR || (typeof input?.cwd === 'string' ? input.cwd : process.cwd()));
   // The role table's model (0.4.4), for any nxy agent; the implementer carries it in its own output below.
-  const model = isAgentTool && typeof agent === 'string' ? roleModel(agent, loadConfig(cwd), toolInput.model) : null;
+  const roleCfg = isAgentTool && typeof agent === 'string' ? loadConfig(cwd) : null;
+  const model = roleCfg ? roleModel(agent, roleCfg, toolInput.model) : null;
+  const effort = roleCfg ? roleEffort(agent, roleCfg, toolInput.effort) : null;
+  const roleName = typeof agent === 'string' ? agent.replace(/^nxy:/, '') : '';
+  const roleWhy = `nxy: roles.${roleName}.${[model && 'model', effort && 'effort'].filter(Boolean).join('/')}`;
+  const roleInput = { ...(model ? { model } : {}), ...(effort ? { effort } : {}) };
   // The tester starts the full suite; the reviewer must not start while it runs (its verdict arrives
   // when it ends, possibly in the background). Recorded here, from the dispatch itself.
   let denied = false;
+  // While the orchestrator runs a plan, only its own (ticketed) dispatches of the three roles pass.
+  let ticketed = false;
+  if (isAgentTool && typeof agent === 'string' && (IMPLEMENTER.test(agent) || TESTER.test(agent) || REVIEWER.test(agent))) {
+    const marker = readActive(cwd);
+    const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
+    if (marker && !isSubagentCall(input, transcript)) {
+      const ticket = ticketOf(toolInput.description);
+      ticketed = ticket != null && consumeTicket(cwd, ticket.nonce);
+      if (!ticketed) {
+        let hash = typeof marker.hash === 'string' ? marker.hash : '';
+        if (!hash) {
+          const known = await lookupHandoff(cwd);
+          const plan = known.handoff ? extractPlan(known.handoff.body) : null;
+          hash = plan ? planHash(plan) : '';
+        }
+        const release = `node ${join(dirname(fileURLToPath(import.meta.url)), '..', 'entries', 'orch.mjs')} release --cwd ${cwd}`;
+        emit({ permissionDecision: 'deny', permissionDecisionReason: denyMessage(hash, release) });
+        process.exit(0);
+      }
+    }
+  }
   if (isAgentTool && typeof agent === 'string' && (TESTER.test(agent) || REVIEWER.test(agent))) {
     const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
     if (!isSubagentCall(input, transcript)) {
@@ -112,8 +141,8 @@ try {
       }
     }
   }
-  if (!denied && isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && model) {
-    emit({ permissionDecision: 'allow', permissionDecisionReason: `nxy: roles.${agent.replace(/^nxy:/, '')}.model`, updatedInput: { ...toolInput, model } });
+  if (!denied && isAgentTool && typeof agent === 'string' && !IMPLEMENTER.test(agent) && (model || effort)) {
+    emit({ permissionDecision: 'allow', permissionDecisionReason: roleWhy, updatedInput: { ...toolInput, ...roleInput } });
   }
   if (isAgentTool && typeof agent === 'string' && IMPLEMENTER.test(agent)) {
     const cfg = loadConfig(cwd);
@@ -135,7 +164,7 @@ try {
     // With the plan approved, each dispatch is one of its batches (0.4.1): named, so the SubagentStop
     // hook can verify it, and never on top of a batch that ended red unless the user said so.
     const batchBlock = !checkpoint.block && !verdict.block && plan && hash && !isSubagent
-      ? batchGate(plan, hash, typeof toolInput.prompt === 'string' ? toolInput.prompt : '', cwd, transcript)
+      ? batchGate(plan, hash, typeof toolInput.prompt === 'string' ? toolInput.prompt : '', cwd, transcript, ticketed ? readOrchState(cwd).continued : [])
       : null;
 
     if (checkpoint.block && hash) {
@@ -190,10 +219,10 @@ try {
       emit({
         permissionDecision: 'allow',
         permissionDecisionReason: 'nxy: task handoff attached to the implementer',
-        updatedInput: { ...toolInput, prompt: `${block}\n\n${prompt}`, ...(model ? { model } : {}) },
+        updatedInput: { ...toolInput, prompt: `${block}\n\n${prompt}`, ...(model ? { model } : {}), ...(effort ? { effort } : {}) },
       });
-    } else if (model) {
-      emit({ permissionDecision: 'allow', permissionDecisionReason: 'nxy: roles.implementer.model', updatedInput: { ...toolInput, model } });
+    } else if (model || effort) {
+      emit({ permissionDecision: 'allow', permissionDecisionReason: roleWhy, updatedInput: { ...toolInput, ...roleInput } });
     }
   }
 } catch (err) {

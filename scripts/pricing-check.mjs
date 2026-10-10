@@ -27,6 +27,17 @@ export function modelIdFromName(name) {
   return bare.toLowerCase().replace(/\./g, '-').replace(/\s+/g, '-');
 }
 
+/**
+ * `Claude Haiku 5.5 (for prompts over 100,000 tokens)` → { threshold: 100000, tier: 'above' }; `up to` → 'base'.
+ * Null when the name has no such parenthesis.
+ * @returns {{threshold: number, tier: 'base'|'above'} | null}
+ */
+export function tierOfName(name) {
+  const m = /\(\s*for prompts\s+(up to|over)\s+([\d,]+)\s+tokens\s*\)/i.exec(name);
+  if (!m) return null;
+  return { threshold: Number(m[2].replace(/,/g, '')), tier: m[1].toLowerCase() === 'over' ? 'above' : 'base' };
+}
+
 /** `$12.50 / MTok<sup>1</sup>` → 12.5; anything else → null. */
 function parseUsd(cell) {
   const m = /^\$\s*([\d.]+)\s*\/\s*MTok/i.exec(cell.replace(/<sup>.*?<\/sup>/gi, '').trim());
@@ -76,6 +87,10 @@ export function parsePricingDoc(md) {
   }
   /** @type {Record<string, Record<string, any>>} */
   const models = {};
+  /** @type {Record<string, Record<string, any>>} */
+  const tiers = {};
+  /** @type {Record<string, number>} */
+  const baseThreshold = {};
   for (const row of main.rows) {
     const id = modelIdFromName(row[0]);
     /** @type {Record<string, any>} */
@@ -85,7 +100,19 @@ export function parsePricingDoc(md) {
       if (v === null) throw new Error(`unreadable price for ${row[0]}: "${row[i + 1]}"`);
       price[k] = v;
     });
-    models[id] = price;
+    const t = tierOfName(row[0]);
+    if (!t || t.tier === 'base') {
+      models[id] = price;
+      if (t) baseThreshold[id] = t.threshold;
+    } else tiers[id] = { threshold: t.threshold, ...price };
+  }
+  for (const [id, above] of Object.entries(tiers)) {
+    if (!models[id]) throw new Error(`tier without base row: ${id}`);
+    if (baseThreshold[id] !== undefined && baseThreshold[id] !== above.threshold) throw new Error(`tier thresholds differ: ${id}`);
+    models[id].above = above;
+  }
+  for (const row of main.rows) {
+    if (/\((?=[^)]*\btokens\b)[^)]*\)/i.test(row[0]) && !tierOfName(row[0])) throw new Error(`unreadable tier label: ${row[0]}`);
   }
   if (!Object.keys(models).length) throw new Error('the "Model pricing" table is empty');
 
@@ -124,6 +151,10 @@ export function comparePricing(doc, table) {
     else if (p.fast && (t.fast.input !== p.fast.input || t.fast.output !== p.fast.output)) {
       changed.push(`${id}.fast: ${JSON.stringify(t.fast)} → ${JSON.stringify(p.fast)}`);
     } else if (!p.fast && t.fast) changed.push(`${id}.fast: ${JSON.stringify(t.fast)} → not on the page`);
+    if (p.above && !t.above) changed.push(`${id}.above: missing → ${JSON.stringify(p.above)}`);
+    else if (p.above) {
+      for (const k of ['threshold', ...FIELDS]) if (t.above[k] !== p.above[k]) changed.push(`${id}.above.${k}: ${t.above[k]} → ${p.above[k]}`);
+    } else if (t.above) changed.push(`${id}.above: ${JSON.stringify(t.above)} → not on the page`);
   }
   for (const id of Object.keys(table)) if (!doc[id]) gone.push(id);
   return { missing, changed, gone };

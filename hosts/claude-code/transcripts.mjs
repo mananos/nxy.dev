@@ -270,6 +270,55 @@ export function parseFile(path, opts = {}) {
   return { calls: [...calls.values()], agentLinks, tools, prompts, firstTs, lastTs, activeMs, turns: prompts.length, meta };
 }
 
+/**
+ * The cache TTL the main thread is writing with, read from the end of its transcript: the last
+ * response (not a sidechain) that wrote cache decides, '1h' if it wrote any 1h tokens, '5m' if only
+ * 5m tokens, null when the tail has no cache write. Reads at most `tailBytes`.
+ * @param {string|null|undefined} path
+ * @param {{tailBytes?: number}} [opts]
+ * @returns {'5m'|'1h'|null}
+ */
+export function lastCacheTtl(path, opts = {}) {
+  if (!path) return null;
+  const tailBytes = opts.tailBytes ?? 524288;
+  let text;
+  try {
+    const size = statSync(path).size;
+    const len = Math.min(size, tailBytes);
+    const fd = openSync(path, 'r');
+    try {
+      const buf = Buffer.alloc(len);
+      readSync(fd, buf, 0, len, size - len);
+      text = buf.toString('utf8');
+    } finally {
+      closeSync(fd);
+    }
+    // The tail may start mid-line: drop that partial first line.
+    if (size > len) {
+      const nl = text.indexOf('\n');
+      text = nl === -1 ? '' : text.slice(nl + 1);
+    }
+  } catch {
+    return null;
+  }
+  const lines = text.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (!line || !line.includes('"usage"')) continue;
+    let e;
+    try {
+      e = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (e.type !== 'assistant' || e.isSidechain || !e.message?.usage) continue;
+    const u = toUsage(e.message.usage);
+    if (u.cacheWrite1h > 0) return '1h';
+    if (u.cacheWrite5m > 0) return '5m';
+  }
+  return null;
+}
+
 /** Cache lifetime a call wrote with: the 1h tier if it wrote any 1h tokens, else 5 minutes. */
 const ttlMsOf = (usage) => (usage.cacheWrite1h > 0 ? 3_600_000 : 300_000);
 
@@ -375,7 +424,7 @@ export function parseSession(ref, opts = {}) {
         agentType: agentType || null,
         cause: breakCause(call),
         ttl: call.usage.cacheWrite1h > 0 ? '1h' : '5m',
-        usd: costFor(call.model, written),
+        usd: costFor(call.model, written, { promptTokens: totalInput(call.usage) }),
       });
     }
   };
@@ -568,7 +617,8 @@ export function readIncremental(path, state, opts = {}) {
       } else if (usage.output > prevOut) {
         const delta = { ...emptyUsage(), output: usage.output - prevOut };
         addUsage(state.usage, delta);
-        usd = costFor(model, { ...delta, thinking: 0 });
+        // the delta carries no input: the tier belongs to the request's whole prompt
+        usd = costFor(model, { ...delta, thinking: 0 }, { promptTokens: totalInput(usage) });
       }
       if (usd !== null) {
         state.usd += usd;

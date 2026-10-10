@@ -23,6 +23,7 @@ Also when the repo sets `flow.plan: "always"` in `.nxy/config.json` and the chan
 1. Dispatch `nxy:planner` with the task, and follow the `Next (main thread):` it returns, exactly:
    - **questions** → ask them as given, then dispatch the planner again with the answers;
    - **checkpoint** → show the plan and ask Approve / Change as given.
+   - **Orchestrator.** If nxy's orchestrator takes over after Approve (the `nxy` pane shows it, and nxy denies dispatches of implementer, tester and reviewer), end the turn without dispatching them and act on what nxy hands back: checkpoint 2, a ✘, or an Adjust request (dispatch `Batch N — adjust: <request>` as in step 2). Steps 2 to 4 then apply only to what it hands back; otherwise as written.
 2. After Approve **you do not edit**: one `nxy:implementer` per batch, its prompt starting `Batch N — `. Batches whose `Depends:` already passed can go in parallel (several Agent calls in one message).
 3. After each batch nxy adds `nxy verify: batch N ✔ / ✘ / – manual`. On ✘, dispatch that batch again with the failure, or ask the user exactly as nxy says.
 4. When every batch is green nxy says to dispatch `nxy:tester` once, then `nxy:reviewer` once. The reviewer returns **checkpoint 2**: ask it as given, dispatch one implementer per finding the user picks, and `nxy:documenter` if the user picks "Update docs".

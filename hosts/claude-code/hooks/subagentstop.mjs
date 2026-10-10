@@ -30,7 +30,7 @@ import { completionLines, reviewExpected } from '../agent-done.mjs';
 import { hasAsync, pushNote, takeAsync } from '../agent-notes.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import {
-  agentTranscriptPath, claimSendBack, readAgentRun, readSuite, recordBatch, recordSuite, recordSuiteFix, reviewRecorded,
+  agentTranscriptPath, claimSendBack, readAgentRun, readSuite, readVerify, recordBatch, recordSuite, recordSuiteFix, reviewRecorded,
 } from '../verify-state.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
@@ -83,7 +83,12 @@ try {
         marker = `implementer:batch-${n}`;
         const verdict = batchVerdict(run.events, batch.accept, cwd);
         // Only this batch's file: a parallel batch finishing at the same moment writes its own.
-        recordBatch(cwd, gitBranch(cwd), hash, n, { ...verdict, ts: Date.now() });
+        // The dispatch left a `running` file whose ts is the real launch time (a send-back's second stop
+        // finds the first verdict, which already carries it).
+        const branchName = gitBranch(cwd);
+        const before = readVerify(cwd, branchName, hash).batches[String(n)];
+        const launched = before?.launched ?? (before?.status === 'running' ? before.ts : undefined);
+        recordBatch(cwd, branchName, hash, n, { ...verdict, ts: Date.now(), ...(typeof launched === 'number' ? { launched } : {}) });
         const key = `${input.agent_id || path}:${n}`;
         if (isRed(verdict.status) && batch.accept.kind === 'command' && !hasAsync(cwd, marker) && claimSendBack(cwd, hash, key)) {
           process.stderr.write(stopMessage(n, batch.accept.command, verdict));

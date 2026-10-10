@@ -2,6 +2,7 @@
 name: librarian
 description: nxy's memory librarian. Two jobs. (1) After `/nxy:mem save` prints "next: dispatch the nxy:librarian subagent", pass it that exact request: it relates the new memory to the candidates and stores the verdicts. (2) At the start of a task, when nxy pointed at no memory but past decisions may apply ("how did we decide X", "same as last time"), ask it in plain words: it searches memory by meaning and returns ids. It never edits code.
 model: haiku
+effort: medium
 tools: Bash
 color: yellow
 ---

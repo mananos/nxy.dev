@@ -1,5 +1,6 @@
 {
   "description": "nxy: resolves the filter engine per session, rewrites Bash commands through it, records per-command metrics, gates writes from the main thread when its context is already expensive, keeps a live handoff per branch, points at relevant memories per prompt, verifies each plan batch against its acceptance command, and keeps the handoff from going stale at the end of a turn",
+  "modules": ["./register.tsx"],
   "hooks": {
     "SessionStart": [
       {

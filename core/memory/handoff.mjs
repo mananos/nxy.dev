@@ -56,6 +56,26 @@ export function handoffId(project, branch) {
 }
 
 /**
+ * Removes the lines `handoff show` derives and prints around the body (the `handoff · <label> ·
+ * updated ...` header and nxy's `Progress (recorded by nxy, not by the model): ...` line), so a body
+ * copied from `show` and saved again does not store them. Only the full fixed forms are matched.
+ * @param {string} body
+ * @returns {string}
+ */
+export function stripDerivedLines(body) {
+  const lines = String(body || '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    const derived = /^handoff · .+ · updated \d{4}-\d\d-\d\d \d\d:\d\d/.test(l) || l.startsWith('Progress (recorded by nxy, not by the model): ');
+    if (!derived) { out.push(l); continue; }
+    if (out.length && out[out.length - 1] === '') out.pop();
+    else if (!out.length && lines[i + 1] === '') i++;
+  }
+  return out.join('\n').replace(/^\n+/, '').replace(/\n+$/, '');
+}
+
+/**
  * Checks the shape. Only two things are required, because they are the two a next session cannot
  * reconstruct: *who writes* (the route — makes non-delegation visible instead of silent) and *what
  * is next*. Everything else is encouraged by the template, not enforced.

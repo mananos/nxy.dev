@@ -28,7 +28,7 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
 
 /**
- * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}>, sentBack: string[]}} VerifyState
+ * @typedef {{branch: string|null, hash: string, batches: Record<string, {status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number, launched?: number}>, sentBack: string[]}} VerifyState
  */
 
 /**
@@ -67,7 +67,7 @@ export function readVerify(cwd, branch, hash) {
  * Records one batch's verdict in its own file, replaced atomically (write aside, then rename), so a
  * parallel batch never overwrites it and a reader never sees half a file.
  * @param {string} cwd @param {string|null} branch @param {string} hash @param {number|string} n
- * @param {{status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number}} verdict
+ * @param {{status: import('../../core/verify.mjs').Status, error?: string, detail?: string, ts: number, launched?: number}} verdict
  */
 export function recordBatch(cwd, branch, hash, n, verdict) {
   try {
@@ -182,6 +182,37 @@ export function readReview(cwd, hash, sinceTs) {
   try {
     const r = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
     return r && r.planHash === hash && typeof r.ts === 'number' && r.ts >= since ? { id: String(r.id ?? ''), ts: r.ts } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The last review of this plan in full (for the panel's checkpoint): findings (capped at 40) and the
+ * ids already chosen. Null when there is no review of this plan.
+ * @param {string} cwd @param {string} hash
+ */
+export async function readReviewDetail(cwd, hash) {
+  try {
+    const r = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
+    if (!r || r.planHash !== hash || !Array.isArray(r.findings)) return null;
+    const { readJsonl } = await import('../../core/jsonl.mjs');
+    const chosen = readJsonl(join(nxyRuntimeDir(cwd), 'review.jsonl'))
+      .filter((x) => x && x.kind === 'chosen' && x.id === r.id).map((x) => x.finding);
+    return {
+      id: String(r.id ?? ''),
+      ts: typeof r.ts === 'number' ? r.ts : 0,
+      findings: r.findings.slice(0, 40).map((f) => ({
+        id: String(f.id ?? ''),
+        severity: String(f.severity ?? ''),
+        lens: String(f.lens ?? ''),
+        file: String(f.file ?? ''),
+        line: Number.isFinite(Number(f.line)) && Number(f.line) > 0 && f.line !== null && f.line !== '' ? Number(f.line) : null,
+        title: String(f.title ?? ''),
+        cause: String(f.cause ?? ''),
+      })),
+      chosen: [...new Set(chosen.map(String))],
+    };
   } catch {
     return null;
   }

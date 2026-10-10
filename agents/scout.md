@@ -2,6 +2,7 @@
 name: scout
 description: Locates where something lives in a repo and answers with path:line, never with file dumps. Use it for "where is X", "who calls Y", "where is Z decided", or before editing something whose location you are not certain about. Cheap and disposable on purpose.
 model: haiku
+effort: low
 tools: Bash, Read, Grep, Glob
 color: cyan
 ---

@@ -64,7 +64,8 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
     "documenter":  { "model": "sonnet", "provider": "claude" },
     "librarian":   { "model": "haiku",  "provider": "claude" }
   },
-  "memory": { "mode": "assisted", "handoff": { "required": true } }
+  "memory": { "mode": "assisted", "handoff": { "required": true } },
+  "ui": { "panel": "auto" }
 }
 ```
 
@@ -82,6 +83,18 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
 | `excludeCommands` | Comandos que nunca se filtran (por el primer token, ej. `["kubectl"]`) |
 | `onlyCommands` | Si no está vacía, sólo se filtran estos |
 | `autoAllowWhenOriginalAllowed` | Si el comando original estaba permitido por tus reglas `permissions.allow`, el reescrito hereda el permiso y no aparece un prompt nuevo |
+
+### Herramientas (`/nxy:setup` y Config › Herramientas)
+
+No hay clave de configuración: se detecta cada vez. Comandos por sistema operativo (los mismos del README):
+
+| Herramienta | Windows | Linux / WSL | macOS |
+| --- | --- | --- | --- |
+| rtk | `winget install rtk-ai.rtk` (reinstalar: `winget upgrade rtk-ai.rtk`) | `install.sh` de rtk-ai/rtk (se reejecuta para actualizar) | `brew install rtk` / `brew upgrade rtk` |
+| rg | `winget install BurntSushi.ripgrep.MSVC` / `winget upgrade …` | `sudo -n apt-get install -y ripgrep`, `sudo -n dnf install -y ripgrep` o `sudo -n pacman -S --noconfirm ripgrep` (según el primero que exista; con brew, sin sudo) | `brew install ripgrep` |
+| codegraph | `install.ps1` de colbymchenry/codegraph | `install.sh` de colbymchenry/codegraph | ídem Linux |
+
+**Choque:** rtk choca si hay un hook de rtk propio (`rtk init -g`), detectado con la misma regla del filtro; codegraph choca si `mcpServers.codegraph` está en `~/.claude.json` o `.mcp.json`, o un hook de `settings.json` nombra codegraph. La celda dice cuál: `choca: hook de rtk` (Reinstalar corre `rtk init -g --uninstall` si el hook es global; si está en el proyecto, nota manual), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) o `choca: hook en settings` (sólo aviso: nxy no edita settings ajenos). Después de quitar, Reinstalar actualiza. **Linux:** los pasos con permisos usan `sudo -n`; si pide contraseña, falla sin colgarse y se imprime el comando sin `-n`. Nada corre sin confirmación ni en SessionStart.
 
 ### `metrics`
 
@@ -131,15 +144,32 @@ El gate nunca frena a un subagente, nunca frena si no hay implementer disponible
 
 ### `roles`
 
-Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "opus" }` hace que el planner de ese repo corra en Opus. Valores: `sonnet`, `opus`, `haiku`, `fable`. Si Claude pide un modelo explícito para un despacho, gana el de Claude.
+Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model": "opus", "effort": "high" }` hace que el planner de ese repo corra en Opus con effort alto.
 
-- El **effort** no está en la config: Claude Code no permite cambiarlo por despacho, así que vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)).
+| Clave | Valores |
+| --- | --- |
+| `roles.<rol>.model` | `sonnet`, `opus`, `haiku`, `fable` |
+| `roles.<rol>.effort` | `low`, `medium`, `high` |
+
+Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)). Los agentes de Haiku ya lo declaran: `scout` y `tester` en `low`, `librarian` en `medium`; `roles.<rol>.effort` lo pisa. Si coincide con el del frontmatter no se emite nada.
 - `provider` todavía no hace nada (hay un solo proveedor); está declarado para que sumar otro sea un cambio de config.
 - Borrar un rol lo apaga: sin `implementer` el gate no frena (no hay a quién delegar); sin `librarian` las memorias se guardan sin relacionarse; sin `documenter` nunca se ofrece actualizar docs.
 
 ### `flow`
 
 `"plan": "always"`: en ese repo, todo cambio que toca un segundo archivo pasa primero por el planner. Sin ese valor decide Claude con la receta por tamaño.
+
+`"pauseAfterBatch": true`: el orquestador espera tu OK (Continue / Adjust / Stop) entre tandas de lotes. Default `false`.
+
+`"orchestrator": "off"`: apaga el orquestador de planes que se activa con Mods. Default `"auto"`.
+
+### `ui`
+
+`"panel": "off"`: con Mods, el panel `nxy` no se abre solo al empezar la sesión. `/nxy-panel` sigue andando. Default `"auto"`: se abre ya lleno (plan, handoff, contexto contra el gate, costo de la sesión) y queda abierto toda la sesión. Pestañas y botones en [Cómo funciona](como-funciona.md#el-panel-con-mods). La tarjeta Cache de Inicio y los avisos de vencimiento usan el TTL que Claude Code escribió en la transcripción (5 min o 1 h); `"promptCacheTtl"` de `~/.claude/settings.json` sólo respalda cuando todavía no hay dato, y la pestaña Stats te dice si conviene poner `"1h"` (what-if «Si la cache durara 1 h»). El costo en frío es tokens del contexto × tarifa de escritura de cache; `*` marca un precio estimado por familia. La pestaña Config (5) los edita desde el panel: guarda en tu usuario (`~/.nxy/config.json`) por defecto, o en el repo con el botón Repo; si el repo ya define la clave, avisa «el repo manda».
+
+Un scout o librarian lanzado desde el panel (Agentes, bloque «Preguntarle a un agente», o «Preguntarle al scout» en Memoria) toma el **modelo** de `roles.scout` / `roles.librarian`, pero no el **effort**: `agent.spawn` no lo acepta y rige el del agente (`low` para el scout, `medium` para el librarian), aunque `roles.<rol>.effort` diga otra cosa. Cuando Claude los despacha, el hook aplica los dos.
+
+Los botones **Filter** (Inicio y Config) escriben `modules.filter` donde diga «Guardar en» (usuario por defecto). `/nxy:filter on|off` sigue igual que antes: escribe en el `.nxy/config.json` del repo.
 
 ### `docs`
 
@@ -151,6 +181,10 @@ Qué modelo usa cada rol. nxy lo aplica en cada despacho: `"planner": { "model":
 | --- | --- |
 | `mode` | `assisted` (default): una línea por handoff al abrir sesión y punteros por mensaje. `manual`: nada automático, la memoria aparece sólo cuando la pedís. `proactive`: el handoff entero en cada sesión de esa rama |
 | `handoff.required` | `false` deja de exigir el handoff cuando la sesión pasa el umbral del gate (sigue disponible a mano) |
+
+### Features (worktrees)
+
+No hay clave nueva: la carpeta de los worktrees (`../<repo>.worktrees/`), el prefijo de rama (`feature/`) y la rama base preseleccionada no se configuran.
 
 ### Lentes de review
 

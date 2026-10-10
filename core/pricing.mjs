@@ -2,16 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { normalizeModel, familyOf, versionOf, priceIn, tierFor } from './price-table.mjs';
 
-/**
- * @typedef {object} ModelPrice
- * @property {number} input
- * @property {number} cache_write_5m
- * @property {number} cache_write_1h
- * @property {number} cache_read
- * @property {number} output
- * @property {{input: number, output: number}} [fast]
- */
+/** @typedef {import('./price-table.mjs').ModelPrice} ModelPrice */
 
 /**
  * Normalized token counts for one API call (all fields in tokens).
@@ -36,26 +29,7 @@ export function loadPricing() {
   return cached;
 }
 
-/**
- * Reduce un id de modelo a la clave de la tabla de precios. Cubre las tres plataformas:
- *   - API directa: `claude-opus-5-20260401[1m]` → `claude-opus-5`, `-latest` fuera.
- *   - Bedrock: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` → `claude-sonnet-4-5`
- *     (prefijos de región/alcance `us.` `eu.` `apac.` `global.`, luego `anthropic.`, sufijo `-vN:M`).
- *   - Vertex: `claude-sonnet-4-5@20250929` → `claude-sonnet-4-5`.
- * Lo que no matchea queda como está (`claude-3-5-haiku-latest` → `claude-3-5-haiku`, desconocido).
- * @param {string} id
- */
-export function normalizeModel(id) {
-  return String(id || '')
-    .toLowerCase()
-    .replace(/^(?:us|eu|apac|global)\./, '')
-    .replace(/^anthropic\./, '')
-    .replace(/-v\d+:\d+$/, '')
-    .replace(/@\d{8}$/, '')
-    .replace(/\[[^\]]*\]$/, '')
-    .replace(/-\d{8}$/, '')
-    .replace(/-latest$/, '');
-}
+export { normalizeModel, familyOf, versionOf, priceIn };
 
 /**
  * Claude Code escribe mensajes internos con `model: "<synthetic>"` (y usage en cero): no son
@@ -99,53 +73,12 @@ export function toUsage(u) {
 }
 
 /**
- * Familia de un id de modelo: opus|sonnet|haiku|fable|mythos (también el orden viejo
- * `claude-3-5-haiku`), o null si no es ninguna.
- * @param {string} id
- */
-export function familyOf(id) {
-  const m = /(opus|sonnet|haiku|fable|mythos)/.exec(normalizeModel(id));
-  return m ? m[1] : null;
-}
-
-/**
- * Grupos de dígitos de una clave, sin la fecha: `claude-sonnet-5-5` → [5, 5]; `claude-3-5-haiku` → [3, 5].
- * @param {string} key
- * @returns {number[]}
- */
-export function versionOf(key) {
-  return (String(key).match(/\d+/g) || []).map(Number);
-}
-
-function cmpVersion(a, b) {
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const d = (a[i] ?? 0) - (b[i] ?? 0);
-    if (d) return d;
-  }
-  return 0;
-}
-
-/**
- * Precio de un modelo: clave exacta, o (estimado) la mayor versión conocida de la misma familia
- * que sea <= la pedida (si no hay, la menor por encima). Familia desconocida → null.
+ * Precio de un modelo: clave exacta, o (estimado) la mayor versión conocida de la misma familia.
  * @param {string} model
  * @returns {{price: ModelPrice, key: string, estimated: boolean}|null}
  */
 export function priceFor(model) {
-  const models = loadPricing().models;
-  const id = normalizeModel(model);
-  if (models[id]) return { price: models[id], key: id, estimated: false };
-  const fam = familyOf(id);
-  if (!fam) return null;
-  const want = versionOf(id);
-  const same = Object.keys(models)
-    .filter((k) => familyOf(k) === fam)
-    .map((k) => ({ k, v: versionOf(k) }))
-    .sort((a, b) => cmpVersion(a.v, b.v));
-  if (!same.length) return null;
-  const below = same.filter((e) => cmpVersion(e.v, want) <= 0);
-  const pick = below.length ? below[below.length - 1] : same[0];
-  return { price: models[pick.k], key: pick.k, estimated: true };
+  return priceIn(loadPricing().models, model);
 }
 
 /**
@@ -161,13 +94,17 @@ export function estimateBasis(model) {
  * Cache-aware cost in USD. Una llamada sin tokens cuesta 0 sea cual sea el modelo (no hay nada
  * que tarifar). Con tokens y modelo desconocido devuelve `null` — nunca un número inventado.
  * @param {string} model
+ * El tramo de precio (`above`) pertenece a UN request: `usage` debe ser el de una sola llamada.
+ * Si `usage` es parcial (ej. solo lo escrito), `opts.promptTokens` da el prompt entero del request.
  * @param {Usage} usage
+ * @param {{promptTokens?: number}} [opts]
  * @returns {number|null}
  */
-export function costFor(model, usage) {
+export function costFor(model, usage, opts) {
   if (isZeroUsage(usage)) return 0;
-  const price = priceFor(model)?.price;
-  if (!price) return null;
+  const base = priceFor(model)?.price;
+  if (!base) return null;
+  const price = tierFor(base, opts?.promptTokens ?? totalInput(usage));
   const fast = usage.speed === 'fast' && price.fast ? price.fast : null;
   const inputRate = fast ? fast.input : price.input;
   const outputRate = fast ? fast.output : price.output;

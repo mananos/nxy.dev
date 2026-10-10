@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { APPROVE, approvalQuestion, parseBatches, planHash, validatePlan } from '../core/plan.mjs';
 import { afterBatch } from '../core/verify.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
+import { readVerify } from '../hosts/claude-code/verify-state.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -115,6 +116,20 @@ test('parallel batches: independent ones go together; red or unfinished stops on
   assert.match(s.dispatch('Batch 4 — wiring')?.permissionDecisionReason, /batch 3 of plan .* did not pass/, 'web wiring waits for the red form');
   s.finish(2);
   assert.equal(s.dispatch('Batch 2 — endpoint again')?.permissionDecision, 'allow', 'the api side is not held by the web side');
+});
+
+test('a batch verdict keeps the dispatch time as launched, also after a send-back', () => {
+  const s = sandbox();
+  s.node([MEM, 'handoff', 'plan'], PLAN);
+  const before = Date.now();
+  assert.equal(s.dispatch('Batch 1 — contract')?.permissionDecision, 'allow');
+  const running = readVerify(s.repo, 'feature/x', planHash(PLAN)).batches['1'];
+  assert.equal(running.status, 'running');
+  s.finish(1, false); // red: sent back once, then recorded again on the second stop
+  const verdict = readVerify(s.repo, 'feature/x', planHash(PLAN)).batches['1'];
+  assert.notEqual(verdict.status, 'running');
+  assert.equal(verdict.launched, running.ts);
+  assert.ok(verdict.launched >= before && verdict.ts >= verdict.launched);
 });
 
 test('approved plan: the main thread does not edit, unless the user runs /nxy:gate once', () => {

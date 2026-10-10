@@ -46,7 +46,7 @@ import { markHandoffSaved } from '../stop-state.mjs';
 import { progressFor } from '../verify-state.mjs';
 import { exportProject, importProject, memoryDir } from '../../../core/memory/exchange.mjs';
 import {
-  TEMPLATE, archiveHandoff, liveHandoff, saveHandoff, validateHandoff,
+  TEMPLATE, archiveHandoff, liveHandoff, saveHandoff, stripDerivedLines, validateHandoff,
 } from '../../../core/memory/handoff.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
@@ -77,6 +77,11 @@ function nextStep(plan) {
   const offers = parseDecisions(plan).filter((d) => d.rule && !known.has(d.rule.toLowerCase()));
   return checkpointInstruction(hash, { offers, saveCmd: memCommand('save') });
 }
+
+const asJson = Boolean(opts.json);
+/** One JSON line for the panel; a person browsing is not the model recalling, so callers skip the recall bookkeeping. */
+const emit = (obj) => console.log(JSON.stringify(obj));
+const brief = (m) => ({ id: m.id, scope: m.scope, area: m.area, type: m.type, title: m.title, updated: m.updated, keywords: m.keywords });
 
 const fmtDate = (ms) => new Date(ms).toISOString().slice(0, 10);
 const line = (m) => `${m.id}\n  [${m.scope}${m.area ? `:${m.area}` : ''}] ${m.type} · ${fmtDate(m.updated)}\n  ${m.title}`;
@@ -132,7 +137,8 @@ switch (action) {
   case 'search': {
     const query = rest.join(' ').trim();
     if (!query) {
-      console.log('Usage: mem.mjs search "<query>"');
+      if (asJson) emit({ ok: false, reason: 'empty query' });
+      else console.log('Usage: mem.mjs search "<query>"');
       break;
     }
     const rows = searchMemories(db, query, {
@@ -141,6 +147,10 @@ switch (action) {
       type: typeof opts.type === 'string' ? opts.type : null,
       limit: Number(opts.limit) || 10,
     });
+    if (asJson) {
+      emit({ ok: true, query, results: rows.map(brief) });
+      break;
+    }
     if (!rows.length) {
       console.log(`no memory matches "${query}"`);
       console.log('(search is lexical: try the words the note itself would use, or check `mem list`)');
@@ -153,7 +163,20 @@ switch (action) {
   case 'get': {
     const mem = rest[0] ? getMemory(db, rest[0]) : null;
     if (!mem) {
-      console.log(rest[0] ? `no memory with id ${rest[0]}` : 'Usage: mem.mjs get <id>');
+      if (asJson) emit({ ok: false, reason: rest[0] ? `no memory with id ${rest[0]}` : 'missing id' });
+      else console.log(rest[0] ? `no memory with id ${rest[0]}` : 'Usage: mem.mjs get <id>');
+      break;
+    }
+    if (asJson) {
+      const edges = [];
+      const files = [];
+      for (const e of edgesOf(db, mem.id)) {
+        if (e.kind === 'co_use') continue;
+        if (e.kind === 'file') files.push(e.dst.slice(5));
+        else if (e.src === mem.id) edges.push({ kind: e.kind, dir: 'out', other: e.dst });
+        else edges.push({ kind: e.kind, dir: 'in', other: e.src });
+      }
+      emit({ ok: true, memory: { ...brief(mem), private: Boolean(mem.private), body: mem.body }, edges, files });
       break;
     }
     console.log(`${mem.title}\n[${mem.scope}${mem.area ? `:${mem.area}` : ''}] ${mem.type} · updated ${fmtDate(mem.updated)}${mem.private ? ' · private' : ''}`);
@@ -181,6 +204,10 @@ switch (action) {
       type: typeof opts.type === 'string' ? opts.type : null,
       limit: Number(opts.limit) || 50,
     });
+    if (asJson) {
+      emit({ ok: true, query: '', results: rows.map(brief) });
+      break;
+    }
     if (!rows.length) {
       console.log(typeof opts.type === 'string' ? `no ${opts.type} memories yet for this project` : 'no memories yet for this project');
       break;
@@ -245,7 +272,7 @@ switch (action) {
     };
 
     if (sub === 'save') {
-      let body = readBody();
+      let body = stripDerivedLines(readBody());
       const check = validateHandoff(body);
       if (!check.ok) {
         console.log(`handoff not saved: ${check.errors.join('; ')}\n\nExpected shape (~20 lines):\n${TEMPLATE}`);
@@ -325,6 +352,10 @@ switch (action) {
       break;
     }
     const live = liveHandoff(db, project, branch);
+    if (!live && asJson) {
+      emit({ ok: true, exists: false, label, updated: null, shared: false, planHash: null, body: '', progress: '' });
+      break;
+    }
     if (!live) {
       console.log(`no handoff for \`${label}\` yet. Save one with \`mem handoff save\`, shaped like:\n\n${TEMPLATE}`);
       break;
@@ -332,6 +363,10 @@ switch (action) {
     const shownPlan = extractPlan(live.body);
     // The plan's progress is derived from what nxy recorded (0.4.5): never stale, never typed by the model.
     const progress = shownPlan ? await progressFor(cwd, branch, shownPlan) : '';
+    if (asJson) {
+      emit({ ok: true, exists: true, label, updated: live.updated, shared: !live.private, planHash: shownPlan ? planHash(shownPlan) : null, body: live.body, progress });
+      break;
+    }
     console.log(`handoff · ${label} · updated ${new Date(live.updated).toISOString().slice(0, 16).replace('T', ' ')}${live.private ? '' : ' · shared'}${shownPlan ? ` · plan ${planHash(shownPlan)}` : ''}\n\n${live.body}${progress ? `\n\n${progress}` : ''}`);
     break;
   }

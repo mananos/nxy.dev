@@ -29,15 +29,25 @@ const dirtyPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-dirty.json');
  * @returns {string|null}
  */
 export function gitRun(root, args) {
+  const r = gitResult(root, args);
+  return r.status === 0 ? r.stdout : null;
+}
+
+/**
+ * Same spawn as `gitRun` but keeps the exit status and stderr (status is null when git could not run).
+ * @param {string} root @param {string[]} args
+ * @returns {{status: number|null, stdout: string, stderr: string}}
+ */
+export function gitResult(root, args) {
   try {
     const r = spawnSync('git', args, {
       cwd: root, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, timeout: 10000, windowsHide: true,
       maxBuffer: 16 * 1024 * 1024, encoding: 'utf8',
     });
-    if (r.error || r.status !== 0) return null;
-    return r.stdout;
-  } catch {
-    return null;
+    if (r.error) return { status: null, stdout: '', stderr: String(r.error.message || r.error) };
+    return { status: r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
+  } catch (e) {
+    return { status: null, stdout: '', stderr: String(/** @type {any} */ (e)?.message || e) };
   }
 }
 

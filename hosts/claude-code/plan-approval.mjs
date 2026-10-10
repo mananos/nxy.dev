@@ -110,16 +110,38 @@ export function findApproval(transcriptPath, hash) {
  * @returns {string|null}
  */
 export function findAnswer(transcriptPath, wanted) {
-  if (!transcriptPath || !existsSync(transcriptPath)) return null;
+  return scanAnswer(transcriptPath, wanted).answer;
+}
+
+/**
+ * When (ms) the user approved this plan hash, or null: the timestamp of the answer line, only if the
+ * latest answer is the approval.
+ * @param {string|null|undefined} transcriptPath
+ * @param {string} hash
+ * @returns {number|null}
+ */
+export function findApprovalAt(transcriptPath, hash) {
+  const r = scanAnswer(transcriptPath, approvalQuestion(hash));
+  return r.answer === APPROVE ? r.ts : null;
+}
+
+/**
+ * @param {string|null|undefined} transcriptPath @param {string} wanted
+ * @returns {{answer: string|null, ts: number|null}}
+ */
+function scanAnswer(transcriptPath, wanted) {
+  if (!transcriptPath || !existsSync(transcriptPath)) return { answer: null, ts: null };
   /** @type {Set<string>} */
   const asked = new Set();
   /** @type {string|null} */
   let verdict = null;
+  /** @type {number|null} */
+  let verdictTs = null;
   let text;
   try {
     text = readTranscript(transcriptPath);
   } catch {
-    return null;
+    return { answer: null, ts: null };
   }
   for (const line of text.split('\n')) {
     if (!line || line[0] !== '{' || !line.includes('nxy plan')) continue;
@@ -141,11 +163,15 @@ export function findAnswer(transcriptPath, wanted) {
       for (const b of content) {
         if (b?.type !== 'tool_result' || b.is_error || !asked.has(b.tool_use_id)) continue;
         const answers = e.toolUseResult?.answers;
-        if (answers && typeof answers === 'object' && typeof answers[wanted] === 'string') verdict = answers[wanted];
+        if (answers && typeof answers === 'object' && typeof answers[wanted] === 'string') {
+          verdict = answers[wanted];
+          const ts = typeof e.timestamp === 'string' ? Date.parse(e.timestamp) : NaN;
+          verdictTs = Number.isNaN(ts) ? null : ts;
+        }
       }
     }
   }
-  return verdict;
+  return { answer: verdict, ts: verdictTs };
 }
 
 /**

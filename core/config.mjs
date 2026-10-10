@@ -12,7 +12,8 @@ import { PLUGIN_ROOT, nxyProjectDir, nxyUserDir } from './paths.mjs';
  * @property {{enabled: boolean, contextTokens: number, escapeMinutes: number}} gate
  * @property {Record<string, Role>} roles
  * @property {{mode: 'manual'|'assisted'|'proactive', handoff: {required: boolean}}} [memory]
- * @property {{plan?: "auto"|"always"}} [flow]  "always": every change that touches a second file goes through the planner (0.4.4)
+ * @property {{plan?: "auto"|"always", pauseAfterBatch?: boolean, orchestrator?: 'auto'|'off'}} [flow]  "always": every change that touches a second file goes through the planner (0.4.4); pauseAfterBatch: the Mod's orchestrator asks before each next wave; orchestrator "off": the Mod never takes a plan over
+ * @property {{panel?: 'auto'|'off'}} [ui]  "off": the Mod never opens the `nxy` pane unasked; `/nxy-panel` still works
  * @property {{paths?: string[]}} [docs]  where the documenter looks (0.4.3); unset = the docs that name the change + the wiki folder the CI publishes
  */
 
@@ -22,6 +23,7 @@ import { PLUGIN_ROOT, nxyProjectDir, nxyUserDir } from './paths.mjs';
  * @typedef {object} Role
  * @property {string} model
  * @property {string} provider
+ * @property {string} [effort] low, medium or high; applied to each dispatch of the role
  */
 
 function isPlainObject(v) {

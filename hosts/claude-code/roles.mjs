@@ -4,15 +4,18 @@
  * dispatch of that nxy agent, via the Agent hook's `updatedInput`. Until then the table only said
  * whether a role existed — the model was whatever the agent's frontmatter fixed.
  *
- * Only the model: effort cannot be set per dispatch, so it stays in the agent's frontmatter. Only
- * nxy's own agents, and only Claude Code's model aliases; anything else is left as the agent says.
+ * `roles.<role>.effort` works the same way (1.1.0): it becomes the `effort` of the dispatch when it
+ * differs from the agent's frontmatter. Only nxy's own agents, and only Claude Code's model aliases
+ * and the efforts nxy offers; anything else is left as the agent says.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { EFFORTS, MODELS } from '../../core/configedit.mjs';
+import { parseAgentMeta } from '../../core/agentview.mjs';
 import { PLUGIN_ROOT } from '../../core/paths.mjs';
 
 /** What the Agent tool accepts as `model`. */
-const ALIASES = new Set(['sonnet', 'opus', 'haiku', 'fable']);
+const ALIASES = new Set(MODELS);
 
 /** @param {string} name */
 function frontmatterModel(name) {
@@ -38,4 +41,29 @@ export function roleModel(agentType, cfg, requested) {
   const want = cfg.roles?.[name]?.model;
   if (typeof want !== 'string' || !ALIASES.has(want)) return null;
   return want === frontmatterModel(name) ? null : want;
+}
+
+/** @param {string} name */
+export function frontmatterEffort(name) {
+  try {
+    return parseAgentMeta(readFileSync(join(PLUGIN_ROOT, 'agents', `${name}.md`), 'utf8')).effort || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The effort this dispatch should run with when the role table asks for a different one than the
+ * agent's own, or null (leave the dispatch as it is).
+ * @param {string} agentType
+ * @param {{roles?: Record<string, {effort?: string}|null>}} cfg
+ * @param {string|undefined} [requested] an effort the dispatch already names: it wins
+ */
+export function roleEffort(agentType, cfg, requested) {
+  if (requested) return null;
+  const name = String(agentType || '').replace(/^nxy:/, '');
+  if (!/^[a-z-]+$/.test(name) || !existsSync(join(PLUGIN_ROOT, 'agents', `${name}.md`))) return null;
+  const want = cfg.roles?.[name]?.effort;
+  if (typeof want !== 'string' || !EFFORTS.includes(want)) return null;
+  return want === frontmatterEffort(name) ? null : want;
 }

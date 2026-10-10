@@ -75,8 +75,11 @@ export function searchWithoutModel(cwd, question, opts = {}) {
 
   if (!terms.length) {
     out.push('No searchable term could be pulled out of this question. Search it yourself with Grep/Glob.');
-    return { text: out.join('\n'), degraded: ['no-terms'], terms, ms: Date.now() - started };
+    return { text: out.join('\n'), degraded: ['no-terms'], terms, ms: Date.now() - started, hits: [], codegraph: 'no-terms' };
   }
+  /** @type {Map<string, {path: string, line: number, kind: string, name: string, source: string, text?: string}>} */
+  const hitMap = new Map();
+  let codegraph = 'ok';
 
   // 1. repo map ------------------------------------------------------------------------------
   let info = repoMapInfo(cwd);
@@ -90,6 +93,9 @@ export function searchWithoutModel(cwd, question, opts = {}) {
     for (const row of queryRepoMap(cwd, t, { limit: opts.limit ?? 25 }).rows) {
       symbols.set(`${row.path}:${row.line}`, row);
     }
+  }
+  for (const r of symbols.values()) {
+    hitMap.set(`${r.path}:${r.line}`, { path: r.path, line: r.line, kind: r.kind, name: r.name, source: 'index' });
   }
   out.push(`## repo index (${info.files} files, ${info.symbols ?? '?'} symbols)`);
   if (symbols.size) {
@@ -116,7 +122,11 @@ export function searchWithoutModel(cwd, question, opts = {}) {
       any = true;
       out.push(`\`${t}\`${res.truncated ? ' (capped)' : ''}:`);
       out.push('```');
-      for (const r of res.rows) out.push(`${r.path}:${r.line}: ${r.text}`);
+      for (const r of res.rows) {
+        out.push(`${r.path}:${r.line}: ${r.text}`);
+        const k = `${r.path}:${r.line}`;
+        if (!hitMap.has(k)) hitMap.set(k, { path: r.path, line: r.line, kind: 'text', name: t, source: 'rg', text: String(r.text).slice(0, 200) });
+      }
       out.push('```');
     }
     if (!any) {
@@ -130,6 +140,7 @@ export function searchWithoutModel(cwd, question, opts = {}) {
   out.push('## codegraph');
   if (opts.codegraph === false) {
     out.push('_Disabled by configuration._');
+    codegraph = 'disabled';
   } else {
     const res = explore(cwd, question, { env });
     if (res.ok) {
@@ -140,6 +151,7 @@ export function searchWithoutModel(cwd, question, opts = {}) {
     } else {
       out.push(`_Unavailable (${res.reason}) — answered with the index and rg instead._`);
       degraded.push(`codegraph:${res.reason}`);
+      codegraph = String(res.reason);
     }
   }
 
@@ -148,7 +160,7 @@ export function searchWithoutModel(cwd, question, opts = {}) {
     text = text.slice(0, MAX_OUTPUT_CHARS) + '\n\n_[output capped by nxy]_';
     degraded.push('output:truncated');
   }
-  return { text, degraded, terms, ms: Date.now() - started };
+  return { text, degraded, terms, ms: Date.now() - started, hits: [...hitMap.values()].slice(0, 25), codegraph };
 }
 
 /** Status block for `/nxy:locate --status`: which engines the scout would actually have. */

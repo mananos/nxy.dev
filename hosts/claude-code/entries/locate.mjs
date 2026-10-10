@@ -24,7 +24,8 @@ import { join } from 'node:path';
 const { opts, positional } = parseArgs(process.argv.slice(2));
 const cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
 const cfg = loadConfig(cwd);
-const question = positional.join(' ').trim();
+// `--json "q"` would be read as a flag with a value: give the word back to the question.
+const question = [typeof opts.json === 'string' && opts.json !== 'true' ? opts.json : '', ...positional].join(' ').trim();
 
 if (opts.status) {
   console.log(describeEngines(cwd));
@@ -38,6 +39,10 @@ if (opts.index) {
 }
 
 if (!question) {
+  if (opts.json) {
+    console.log(JSON.stringify({ ok: false, reason: 'no question' }));
+    process.exit(0);
+  }
   console.log('Usage: locate.mjs "<question>"  |  --status  |  --index');
   process.exit(0);
 }
@@ -49,7 +54,13 @@ const res = searchWithoutModel(cwd, question, {
   env: process.env,
 });
 
-console.log(res.text);
+if (opts.json) {
+  console.log(JSON.stringify({
+    ok: true, question, hits: res.hits, terms: res.terms, degraded: res.degraded, ms: res.ms, codegraph: res.codegraph,
+  }));
+} else {
+  console.log(res.text);
+}
 
 // One row per locate: terms, what degraded, how long. This is what tells us later whether
 // codegraph is earning its place and whether the scout is missing — without anyone running an
