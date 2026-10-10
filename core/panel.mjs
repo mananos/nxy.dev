@@ -898,7 +898,9 @@ function configBlocks(c) {
     const state = t?.found ? cell(`encontrada${t.version ? ` ${t.version}` : ''}`, 'ok') : cell('no encontrada', 'dim');
     const clashText = name === 'rtk' ? 'choca: hook de rtk' : t?.conflict === 'mcp' ? 'choca: servidor MCP de codegraph' : 'choca: hook en settings';
     const clash = t?.conflict ? [cell(clashText, 'warn')] : [];
-    return row(name, [state, ...clash, ...btn], [], t?.found && t.path ? { text: t.path, tone: 'dim' } : null);
+    // A tool found on PATH has its bare name as path: repeating `rtk` under `rtk` said nothing.
+    const where = !t?.found || !t.path ? null : /[\\/]/.test(t.path) ? t.path : 'en el PATH';
+    return row(name, [state, ...clash, ...btn], [], where ? { text: where, tone: 'dim' } : null);
   };
   blocks.push(block('Herramientas', ['rtk', 'rg', 'codegraph'].map(toolRow)));
   blocks.push(block('nxy', [
