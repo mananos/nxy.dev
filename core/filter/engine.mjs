@@ -164,10 +164,10 @@ export function describeEngine(info, cfg) {
   ];
   if (!info.rtkPath) {
     lines.push(
-      'install:       Windows → winget install rtk-ai.rtk   |   Linux/macOS → see https://github.com/rtk-ai/rtk#installation',
+      'install:       run /nxy:setup (shows the exact command, runs it after you confirm)   |   Windows → winget install rtk-ai.rtk   |   Linux/macOS → see https://github.com/rtk-ai/rtk#installation',
       '               Do NOT run `rtk init -g` — nxy installs its own hook.',
     );
   }
-  if (!info.rgAvailable && !info.rgInstalledAt) lines.push('install rg:    Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep');
+  if (!info.rgAvailable && !info.rgInstalledAt) lines.push('install rg:    run /nxy:setup   |   Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep');
   return lines.join('\n');
 }

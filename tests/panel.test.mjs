@@ -470,7 +470,8 @@ test('Config tab: launcher buttons follow settings; cache what-if and tools', ()
   }
   assert.ok(!actionIds(cfgView()).length);
   const tools = rowsOf(cfgView({ cfgInfo: { version: '1.2.3', tools: { rtk: { found: true, path: '/x/rtk', version: '0.1' }, rg: { found: false } } } }), 'Herramientas');
-  assert.deepEqual(tools.rows.map((x) => x.cells[0].text), ['encontrada 0.1 · /x/rtk', 'no encontrada', 'no encontrada']);
+  assert.deepEqual(tools.rows.map((x) => x.cells[0].text), ['encontrada 0.1', 'no encontrada', 'no encontrada']);
+  assert.equal(tools.rows[0].hint.text, '/x/rtk');
   assert.ok(allCells(cfgView({ cfgInfo: { version: '1.2.3', tools: {} } })).some((c) => c.text === '1.2.3'));
   assert.ok(rowsOf(cfgView(), 'Cache').rows.every((x) => x.cells.every((c) => c.text)));
   // A failed tools lookup is unknown, not "not found".

@@ -60,16 +60,20 @@ export const NEEDS = {
 /**
  * True when the entry's `needs` (if any) holds for this state: the buttons and the driver's
  * presses both ask this.
- * @param {{needs?: keyof typeof NEEDS}} entry @param {{snap: any, owned?: boolean}} state
+ * @param {{needs?: keyof typeof NEEDS, tool?: string}} entry @param {{snap: any, owned?: boolean, ctx?: any}} state
  */
-export const launcherAvailable = (entry, { snap, owned = false }) => !entry.needs || NEEDS[entry.needs]({ snap, owned });
+export const launcherAvailable = (entry, { snap, owned = false, ctx = null }) =>
+  (!entry.needs || NEEDS[entry.needs]({ snap, owned }))
+  // An entry with a tool is only available once its install plan is loaded: the command is shown before anything runs.
+  && (!entry.tool || Array.isArray(ctx?.tools?.[entry.tool]?.plan?.display));
 
 /**
  * The launcher: a button -> an nxy entry script. `label`/`args` may be functions of the context.
  * `after: 'refresh'` re-reads the snapshot once the process ends; `needs` names a NEEDS check: the
  * button is hidden, and its press ignored, while the check fails; `confirm` asks yes/no first.
  * @type {{id: string, tab: string, label: string | ((ctx: any) => string), hotkey: string, script: string,
- *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings', needs?: keyof typeof NEEDS, confirm?: string}[]}
+ *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings' | 'tools', needs?: keyof typeof NEEDS, tool?: string,
+ *   confirm?: string | ((ctx: any) => string)}[]}
  */
 export const LAUNCHER = [
   { id: 'gate-once', tab: 'home', label: 'Gate once', hotkey: 'g', script: 'gate', args: ['once'] },
@@ -95,6 +99,16 @@ export const LAUNCHER = [
     id: 'update-nxy', tab: 'config', label: 'Actualizar', hotkey: 'u', script: 'config', args: ['update'],
     confirm: 'Actualizar nxy con claude plugin update nxy@nxy-dev? Después hay que reiniciar Claude Code.',
   },
+  ...[['rtk', 'i'], ['rg', 'p'], ['codegraph', 'k']].map(([tool, hotkey]) => ({
+    id: `setup-${tool}`, tab: 'config', tool, hotkey, script: 'setup', after: /** @type {'tools'} */ ('tools'),
+    label: (/** @type {any} */ ctx) => (ctx?.tools?.[tool]?.plan?.action === 'reinstall' ? 'Reinstalar' : 'Instalar'),
+    args: ['run', tool, '--yes'],
+    confirm: (/** @type {any} */ ctx) => {
+      const plan = ctx?.tools?.[tool]?.plan;
+      const lines = Array.isArray(plan?.display) ? plan.display : [];
+      return `${plan?.action === 'reinstall' ? 'Reinstalar' : 'Instalar'} ${tool} con: ${lines.join(' · ')} ¿Correr?`;
+    },
+  })),
 ];
 
 /** The Home filter button is a config action (it honours «Guardar en»), not a launcher script. */
@@ -111,16 +125,18 @@ const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false }
 
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
- * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string}} [ctx]
- * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings', needs?: keyof typeof NEEDS, confirm?: string} | null}
+ * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string, tools?: Record<string, any>}} [ctx]
+ * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools', needs?: keyof typeof NEEDS, tool?: string, confirm?: string} | null}
  */
 export function launcherOf(id, ctx = {}) {
   const e = LAUNCHER.find((l) => l.id === id);
   if (!e) return null;
+  const { confirm, ...rest } = e;
   return {
-    ...e,
+    ...rest,
     label: typeof e.label === 'function' ? e.label(ctx) : e.label,
     args: typeof e.args === 'function' ? e.args(ctx) : [...e.args],
+    ...(confirm ? { confirm: typeof confirm === 'function' ? confirm(ctx) : confirm } : {}),
   };
 }
 
@@ -133,11 +149,13 @@ export const filterCtx = (snap) => (typeof snap?.config?.filter === 'boolean' ? 
 /**
  * The launcher context of the Config tab: the snapshot's filter plus what ~/.claude/settings.json says.
  * `settings` = {promptCacheTtl, statusLine} as read (or already {ttl1h, statusline}); a field stays absent while unknown.
- * @param {any} snap @param {any} [settings]
- * @returns {{filter?: boolean, ttl1h?: boolean, statusline?: 'nxy' | 'other' | 'none'}}
+ * `tools` = config.mjs tools' per-tool info (with `plan`), as the install buttons need it.
+ * @param {any} snap @param {any} [settings] @param {Record<string, any> | null} [tools]
+ * @returns {{filter?: boolean, ttl1h?: boolean, statusline?: 'nxy' | 'other' | 'none', tools?: Record<string, any>}}
  */
-export function configCtx(snap, settings) {
+export function configCtx(snap, settings, tools = null) {
   const ctx = /** @type {any} */ ({ ...filterCtx(snap) });
+  if (tools && typeof tools === 'object') ctx.tools = tools;
   if (settings && typeof settings === 'object') {
     if (typeof settings.ttl1h === 'boolean') ctx.ttl1h = settings.ttl1h;
     else ctx.ttl1h = settings.promptCacheTtl === '1h';
@@ -744,7 +762,7 @@ function statsBlocks(c) {
 function configBlocks(c) {
   const cfg = c.snap?.config;
   const scope = c.ui?.scope === 'repo' ? 'repo' : 'user';
-  const ctx = configCtx(c.snap, c.settings);
+  const ctx = configCtx(c.snap, c.settings, c.cfgInfo && !c.cfgInfo.failed ? c.cfgInfo.tools : null);
   const src = (/** @type {string} */ id) => cfg?.sources?.[id];
   /** @type {{text: string, tone: Tone}} */
   const unknown = { text: 'desconocido', tone: 'dim' };
@@ -837,8 +855,12 @@ function configBlocks(c) {
     const t = info?.tools?.[name];
     if (!info) return row(name, [cell('cargando…', 'dim')]);
     if (info.failed) return row(name, [cell(unknown.text, 'dim')]);
-    if (!t?.found) return row(name, [cell('no encontrada', 'dim')]);
-    return row(name, [cell(`encontrada${t.version ? ` ${t.version}` : ''}${t.path ? ` · ${t.path}` : ''}`, 'ok')]);
+    const entry = LAUNCHER.find((l) => l.tool === name);
+    const btn = entry && launcherAvailable(entry, { snap: c.snap, owned: c.owned, ctx }) ? [button(entry.id)] : [];
+    const state = t?.found ? cell(`encontrada${t.version ? ` ${t.version}` : ''}`, 'ok') : cell('no encontrada', 'dim');
+    const clashText = name === 'rtk' ? 'choca: hook de rtk' : t?.conflict === 'mcp' ? 'choca: servidor MCP de codegraph' : 'choca: hook en settings';
+    const clash = t?.conflict ? [cell(clashText, 'warn')] : [];
+    return row(name, [state, ...clash, ...btn], [], t?.found && t.path ? { text: t.path, tone: 'dim' } : null);
   };
   blocks.push(block('Herramientas', ['rtk', 'rg', 'codegraph'].map(toolRow)));
   blocks.push(block('nxy', [
@@ -863,14 +885,14 @@ export const BUILDERS = {
  * @param {any} snap @param {any} ask @param {{tab?: string, confirm?: string | null, pendingSend?: {agentId: string, text: string, batch?: number | null} | null}} ui
  * @returns {null | {tone: 'error' | 'info', question: string, buttons: {id: string, label: string, hotkey: string}[]}}
  */
-function askOf(snap, ask, ui) {
+function askOf(snap, ask, ui, ctx = {}) {
   if (ui.pendingSend) {
     const n = ui.pendingSend.batch;
     return { tone: 'info', question: `Hablarle al implementer${n != null ? ` del lote ${n}` : ''} puede romper el lote. ¿Mandar igual?`, buttons: [
       { id: 'confirm-yes', label: 'Yes', hotkey: 'y' }, { id: 'confirm-no', label: 'No', hotkey: 'n' }] };
   }
   if (ui.confirm) {
-    const e = launcherOf(ui.confirm);
+    const e = launcherOf(ui.confirm, ctx);
     if (e?.confirm) {
       return { tone: 'info', question: e.confirm, buttons: [
         { id: 'confirm-yes', label: 'Yes', hotkey: 'y' }, { id: 'confirm-no', label: 'No', hotkey: 'n' }] };
@@ -904,7 +926,7 @@ const lastSegment = (p) => (typeof p === 'string' ? p.replace(/[\\/]+$/, '').spl
  *   stats?: {state: string, data?: any, at?: number, error?: string} | null,
  *   trend?: {state: string, data?: any, at?: number, error?: string} | null,
  *   summary?: any, live?: {model?: string | null, effort?: string | null, turnUsd?: number | null} | null,
- *   bodyColumns?: number, settings?: any, cfgInfo?: {version?: string | null, failed?: boolean, tools?: Record<string, {found?: boolean, path?: string | null, version?: string | null}>} | null,
+ *   bodyColumns?: number, settings?: any, cfgInfo?: {version?: string | null, failed?: boolean, tools?: Record<string, {found?: boolean, path?: string | null, version?: string | null, conflict?: boolean | string, plan?: {action: string, display: string[]}}>} | null,
  *   cfgNote?: string | {text: string, tone?: string} | null,
  * }} o `owned`: the orchestrator runs the plan in `snap` (the pill and the lotes count follow it).
  * `ui.trendSel` = {metric, range, by, here}; `summary` = featureSummary's input.
@@ -927,7 +949,7 @@ export function buildPanel({
       title: 'nxy', pill: stateOf(ownedSnap, ask),
       repo: lastSegment(snap?.projectDir), branch: typeof snap?.branch === 'string' ? snap.branch : '', progress,
     },
-    ask: askOf(ownedSnap, ask, ui),
+    ask: askOf(ownedSnap, ask, ui, configCtx(snap, settings, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null)),
     output: output
       ? {
         title: output.label, lines: output.running ? [output.text] : clipOutput(output.text, 30),

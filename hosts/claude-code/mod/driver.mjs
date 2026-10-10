@@ -139,7 +139,7 @@ export function createDriver($, opts) {
   const launching = new Set();
   /** @type {{ttl1h: boolean, statusline: string}|null} what ~/.claude/settings.json says (null while unknown) */
   let settingsView = null;
-  /** @type {{version?: string|null, tools: any, failed?: boolean}|null} the Config tab's tools and installed version */
+  /** @type {{version?: string|null, platform?: string|null, tools: any, failed?: boolean}|null} the Config tab's tools and installed version */
   let cfgInfo = null;
   /** @type {{text: string, tone: string}|null} why the last config write failed */
   let cfgNote = null;
@@ -350,7 +350,7 @@ export function createDriver($, opts) {
         const out = await runConfig(['tools']);
         // The entry emits rtk/rg/codegraph at the top level next to version.
         cfgInfo = out && out.ok !== false
-          ? { version: out.version ?? null, tools: out.tools ?? { rtk: out.rtk, rg: out.rg, codegraph: out.codegraph } }
+          ? { version: out.version ?? null, platform: out.platform ?? null, tools: out.tools ?? { rtk: out.rtk, rg: out.rg, codegraph: out.codegraph } }
           : { version: null, tools: {}, failed: true };
       } catch { cfgInfo = { version: null, tools: {}, failed: true }; }
     });
@@ -1059,12 +1059,13 @@ export function createDriver($, opts) {
   const setConfig = (c) => { cfg = c && typeof c === 'object' ? c : {}; };
   const panelSetting = () => snap?.config?.ui?.panel ?? cfg.panel ?? 'auto';
   const setUsage = (u) => { usage = u ?? null; };
-  const launchCtx = () => configCtx(snap?.ok ? snap : null, settingsView);
+  const launchCtx = () => configCtx(snap?.ok ? snap : null, settingsView, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null);
 
   /** The entry's `needs` holds for the plan as the driver sees it now (an owned plan fails `plan`). */
   function allowed(id) {
-    const e = launcherOf(id);
-    return !!e && launcherAvailable(e, { snap: snap?.ok ? snap : null, owned: isOwned() });
+    const ctx = launchCtx();
+    const e = launcherOf(id, ctx);
+    return !!e && launcherAvailable(e, { snap: snap?.ok ? snap : null, owned: isOwned(), ctx });
   }
 
   /** Runs a launcher entry on its own lane: a slow Trend never holds the orchestrator's queue. */
@@ -1078,11 +1079,13 @@ export function createDriver($, opts) {
     const finish = (text) => {
       if (output && output.id === id && output.token === token && output.running) output = { id, token, label: e.label, text };
     };
+    let ranOk = false;
     const run = launchChain.then(async () => {
       try {
         const script = `${$.plugin.root}/hosts/claude-code/entries/${e.script}.mjs`;
         const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd]);
         finish(`${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
+        ranOk = res?.exitCode === 0;
         // settings.json changed: show it now (the next session.start reads the real value).
         if (e.after === 'settings' && res?.exitCode === 0 && settingsView) {
           if (id === 'cache-ttl') {
@@ -1101,7 +1104,8 @@ export function createDriver($, opts) {
       }
     }).finally(() => { launching.delete(id); });
     launchChain = run.catch(() => {});
-    return run;
+    // A tool was installed or reinstalled: ask for the tools again so the row changes by itself (one node, queued after the run on the same lane).
+    return run.then(() => (e.after === 'tools' && ranOk ? loadTools() : undefined));
   }
 
   /** The panel body's width in cells (`e.props.bodyColumns`); the module sets it before each `panel()`. */

@@ -63,6 +63,14 @@ test('README documents the Memoria tab and the roadmap marks 4b-1 done', () => {
   assert.match(read('docs/roadmap-debate.md'), /4b-1: Memoria[^\n]*hecha \(2026-10-09\)/);
 });
 
+test('README documents /nxy:setup and the tool conflict, and the roadmap marks 4b-2 done', () => {
+  const readme = read('README.md');
+  assert.ok(readme.includes('/nxy:setup'));
+  assert.ok(readme.includes('choca: hook de rtk') && readme.includes('choca: servidor MCP de codegraph') && readme.includes('choca: hook en settings'));
+  assert.ok(readme.includes('sudo -n'));
+  assert.match(read('docs/roadmap-debate.md'), /4b-2: \/nxy:setup, hecha \(2026-10-09\)/);
+});
+
 test('SKILL.md tells the main thread to wait for the orchestrator hand-back', () => {
   const skill = read('skills/nxy-workflow/SKILL.md');
   assert.match(skill, /orchestrator/i);

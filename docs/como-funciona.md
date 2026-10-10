@@ -99,6 +99,8 @@ Con esos candidatos lee 2 o 3 archivos con `offset`/`limit` y devuelve hasta 5 `
 
 **codegraph** se usa sólo por CLI y sólo desde adentro del scout, donde su salida muere con el subagente. Conectado como servidor MCP (`codegraph install`) sumaría la descripción de su herramienta a cada turno del principal.
 
+**Instalar y reinstalar** (`/nxy:setup`, Config › Herramientas). `core/setup.mjs` arma un plan puro por herramienta, sistema operativo y gestor de paquetes (winget; brew; apt-get, dnf o pacman, en ese orden), con los instaladores oficiales del README. El choque se detecta reusando `detectRtkHook` del filtro (rtk) y buscando `codegraph` en `mcpServers` o en comandos de hooks (codegraph). La celda distingue tres choques: `choca: hook de rtk` (`rtk init -g --uninstall` si es global; nota manual si está en el proyecto), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) y `choca: hook en settings` (sólo aviso, nxy no edita settings ajenos). Reinstalar = quitar lo que choca (salvo el aviso) + actualizar. Antes de correr, el panel y el comando muestran la línea exacta y esperan el sí. En Linux/WSL los pasos con permisos van con `sudo -n`: sin terminal no se puede escribir la contraseña, así que si la pide el paso falla y se imprime el comando para pegarlo a mano. Nunca se llama desde hooks.
+
 ## El freno de escritura
 
 Antes de cada `Edit`/`Write` del principal, el hook lee el final del transcript (los últimos 256 KB) y toma el contexto de la última llamada. Por debajo de `gate.contextTokens` no escribe nada: cero tokens. Por encima, rechaza la edición y le dice a Claude que delegue en el implementer con el `path:line`, el cambio y un criterio de aceptación.

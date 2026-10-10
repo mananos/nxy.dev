@@ -84,6 +84,18 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
 | `onlyCommands` | Si no está vacía, sólo se filtran estos |
 | `autoAllowWhenOriginalAllowed` | Si el comando original estaba permitido por tus reglas `permissions.allow`, el reescrito hereda el permiso y no aparece un prompt nuevo |
 
+### Herramientas (`/nxy:setup` y Config › Herramientas)
+
+No hay clave de configuración: se detecta cada vez. Comandos por sistema operativo (los mismos del README):
+
+| Herramienta | Windows | Linux / WSL | macOS |
+| --- | --- | --- | --- |
+| rtk | `winget install rtk-ai.rtk` (reinstalar: `winget upgrade rtk-ai.rtk`) | `install.sh` de rtk-ai/rtk (se reejecuta para actualizar) | `brew install rtk` / `brew upgrade rtk` |
+| rg | `winget install BurntSushi.ripgrep.MSVC` / `winget upgrade …` | `sudo -n apt-get install -y ripgrep`, `sudo -n dnf install -y ripgrep` o `sudo -n pacman -S --noconfirm ripgrep` (según el primero que exista; con brew, sin sudo) | `brew install ripgrep` |
+| codegraph | `install.ps1` de colbymchenry/codegraph | `install.sh` de colbymchenry/codegraph | ídem Linux |
+
+**Choque:** rtk choca si hay un hook de rtk propio (`rtk init -g`), detectado con la misma regla del filtro; codegraph choca si `mcpServers.codegraph` está en `~/.claude.json` o `.mcp.json`, o un hook de `settings.json` nombra codegraph. La celda dice cuál: `choca: hook de rtk` (Reinstalar corre `rtk init -g --uninstall` si el hook es global; si está en el proyecto, nota manual), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) o `choca: hook en settings` (sólo aviso: nxy no edita settings ajenos). Después de quitar, Reinstalar actualiza. **Linux:** los pasos con permisos usan `sudo -n`; si pide contraseña, falla sin colgarse y se imprime el comando sin `-n`. Nada corre sin confirmación ni en SessionStart.
+
 ### `metrics`
 
 | Clave | Qué hace |

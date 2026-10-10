@@ -21,7 +21,8 @@ import { setPath, validate, FIELDS } from '../../../core/configedit.mjs';
 import { resolveEngine, writeEngineCache } from '../../../core/filter/engine.mjs';
 import { parseArgs } from '../../../core/format.mjs';
 import { PLUGIN_ROOT, ensureDir, nxyUserDir, toNativePath } from '../../../core/paths.mjs';
-import { findCodegraph } from '../../../core/scout/codegraph.mjs';
+import { describePlan } from '../../../core/setup.mjs';
+import { toolsState } from '../setup-state.mjs';
 import { configView } from '../config-view.mjs';
 import { claudeMissing } from '../update-check.mjs';
 import { claudeSettingsFiles, claudeUserSettingsPath } from '../settings.mjs';
@@ -124,15 +125,12 @@ function doTools(cwd) {
   } catch {
     /* unknown */
   }
-  const eng = resolveEngine(loadConfig(cwd), claudeSettingsFiles(cwd));
-  const cg = findCodegraph();
-  out({
-    ok: true,
-    version,
-    rtk: { found: !!eng.rtkPath, path: eng.rtkPath ?? null, version: eng.rtkVersion ?? null },
-    rg: { found: eng.rgAvailable || !!eng.rgInstalledAt, path: eng.rgAvailable ? 'rg' : eng.rgInstalledAt ?? null, version: null },
-    codegraph: { found: !!cg, path: cg?.path ?? null, version: cg?.version ?? null },
-  });
+  const st = toolsState(cwd);
+  const row = (t) => {
+    const i = st.tools[t];
+    return { found: i.found, path: i.path, version: i.version, conflict: i.conflict, plan: { action: i.plan.action, display: describePlan(i.plan) } };
+  };
+  out({ ok: true, version, platform: st.platform, rtk: row('rtk'), rg: row('rg'), codegraph: row('codegraph') });
 }
 
 function doCacheTtl(arg) {

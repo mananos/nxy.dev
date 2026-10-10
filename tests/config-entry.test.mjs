@@ -164,3 +164,12 @@ test('tools reports the version and the three tools', () => {
   assert.equal(j.version, JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'plugin.json'), 'utf8')).version);
   for (const t of ['rtk', 'rg', 'codegraph']) assert.equal(typeof j[t].found, 'boolean');
 });
+
+test('tools carries the platform and an install plan per tool', () => {
+  const j = JSON.parse(box().run(['tools']).stdout.trim());
+  assert.equal(typeof j.platform, 'string');
+  for (const t of ['rtk', 'rg', 'codegraph']) {
+    assert.ok(['install', 'reinstall'].includes(j[t].plan.action));
+    assert.ok(Array.isArray(j[t].plan.display));
+  }
+});
