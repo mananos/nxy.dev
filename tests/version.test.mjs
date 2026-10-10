@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EXPECTED = '1.1.1';
+const EXPECTED = '1.1.2';
 const json = (/** @type {string[]} */ ...parts) => JSON.parse(readFileSync(join(ROOT, ...parts), 'utf8'));
 
 test('every manifest carries the same version', () => {
