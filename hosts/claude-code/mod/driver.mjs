@@ -1240,6 +1240,8 @@ export function createDriver($, opts) {
         const res = await $.process.run(['node', '--disable-warning=ExperimentalWarning', script, ...e.args, '--cwd', cwd], e.timeoutMs ? { timeoutMs: e.timeoutMs } : undefined);
         finish(e.script === 'features' && res?.exitCode === 0 ? featuresText(id, String(res?.stdout ?? '')) : `${res?.stdout ?? ''}${res?.stderr ?? ''}`.trimEnd());
         ranOk = res?.exitCode === 0;
+        // A finished update: load the new version now instead of asking for a restart. Not awaited: it resolves when the turn runs.
+        if (id === 'update-nxy' && ranOk) Promise.resolve($.prompt.submit({ text: '/reload-plugins' })).catch(() => {});
         // settings.json changed: show it now (the next session.start reads the real value).
         if (e.after === 'settings' && res?.exitCode === 0 && settingsView) {
           if (id === 'cache-ttl') {

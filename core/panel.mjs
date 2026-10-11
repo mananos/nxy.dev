@@ -100,7 +100,7 @@ export const LAUNCHER = [
   },
   {
     id: 'update-nxy', tab: 'config', label: 'Actualizar', hotkey: 'u', script: 'config', args: ['update'],
-    confirm: 'Actualizar nxy con claude plugin update nxy@nxy-dev? Después hay que reiniciar Claude Code.',
+    confirm: 'Actualizar nxy con claude plugin update nxy@nxy-dev? Si sale bien, nxy corre /reload-plugins solo.',
   },
   // An install downloads (codegraph's bundle is ~50 MB): the engine's 30 s default killed it mid-way, so the engine's maximum.
   ...[['rtk', 'i'], ['rg', 'p'], ['codegraph', 'k']].map(([tool, hotkey]) => ({

@@ -130,19 +130,26 @@ function stopTick() {
 function startTick($: any) {
   stopTick() // never two ticks: a restart replaces the one running
   let beat = 0
+  let busy = false // a slow tick (the pane list, the agent poll) must not stack another one behind it
   const timer: Timer = $.clock.every(250, async () => {
+    if (busy) return
+    busy = true
     try {
-      const up = (await $.ui.panes()).some((p: any) => p.id === PANE)
-      if (!up) { if (tickTimer === timer) stopTick(); else timer.cancel(); return }
-      const view = driver?.panel()
       beat++
+      // Is the pane still open? Once a second is enough: it is an engine round trip.
+      if (beat % 4 === 1) {
+        const up = (await $.ui.panes()).some((p: any) => p.id === PANE)
+        if (!up) { if (tickTimer === timer) stopTick(); else timer.cancel(); return }
+      }
+      const view = driver?.panel()
       // The agent list is polled here only (every 2 s), and only while some agent runs.
       if (beat % 8 === 0 && driver?.agentsLive()) await driver.syncAgents()
-      // The cache countdown on Home moves once a second: one tick in four.
-      if (!view?.animated && !(view?.clockTicks && beat % 4 === 0)) return
+      // The cache countdown on Home moves once a second: one tick in four. The animation redraws the
+      // whole pane, so it moves twice a second: with an agent running that was the busiest thing in the session.
+      if (!(view?.animated && beat % 2 === 0) && !(view?.clockTicks && beat % 4 === 0)) return
       if (view?.animated) frame++
       await $.ui.invalidate('ui.render')
-    } catch { /* optional */ }
+    } catch { /* optional */ } finally { busy = false }
   })
   tickTimer = timer
 }
