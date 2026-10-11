@@ -87,6 +87,21 @@ export function gaugeCells(width, ratio, stops) {
     : ['─', hex(PALETTE.faint), DEFAULT]));
 }
 
+/** Braille spinner glyphs, one per frame. */
+export const SPIN = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+
+/**
+ * A spinner as a 1x1 Raster: the braille glyph of `frame` (offset `k`) in blue.
+ * @param {number} frame
+ * @param {number} [k] offset, so rows do not spin in step
+ * @param {string} [bg] "#rrggbb" behind the glyph (default: the terminal's)
+ */
+export function spinCells(frame, k = 0, bg) {
+  const g = [...SPIN];
+  const ch = g[(((frame + k) % g.length) + g.length) % g.length] ?? '●';
+  return cells(1, 1, () => [ch, hex(PALETTE.blue), bg ? hex(bg) : DEFAULT]);
+}
+
 /**
  * Plan progress strip: one segment per batch; the running one shimmers with `frame`.
  * @param {number} width

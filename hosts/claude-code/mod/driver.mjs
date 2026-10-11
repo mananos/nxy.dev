@@ -25,7 +25,8 @@ import {
 } from '../../../core/agentview.mjs';
 
 /** The `session.messages` fallback asks about one agent at most this often. */
-const TRAIL_EVERY_MS = 2000;
+const TRAIL_MIN_MS = 2000;
+const TRAIL_MAX_MS = 16000;
 
 const CONTINUE_ANYWAY = CONTINUE;
 const MAX_TRENDS = 12;
@@ -55,7 +56,7 @@ const freshState = (hash) => ({
 export function createDriver($, opts) {
   const { cwd, sessionId } = opts;
   const headless = opts.headless === true;
-  const waitTries = opts.waitTries ?? 10;
+  const waitTries = opts.waitTries ?? 4; // sleeps double: 300, 600, 1200, 2400 ms (~4.5 s window, 5 snapshot spawns at most)
   const waitMs = opts.waitMs ?? 300;
   const sleep = opts.sleep ?? defaultSleep;
 
@@ -106,8 +107,9 @@ export function createDriver($, opts) {
   const book = createBook();
   /** @type {string|null} the agent the main thread's task list is looking at */
   let viewAgentId = null;
-  /** @type {Map<string, number>} when `session.messages` last answered for an agent */
+  /** @type {Map<string, {due: number, wait: number}>} when `session.messages` may be asked again for an agent, and the wait after that */
   const trailAt = new Map();
+  let shown = true;
   let syncing = false;
   /** @type {string|null} the review the ticks belong to */
   let pickedFor = null;
@@ -498,7 +500,9 @@ export function createDriver($, opts) {
   /** @param {{id: string, type?: string, description?: string, prompt?: string, model?: string, parentId?: string, spawnedBy?: string, at?: number}} a */
   const noteSpawn = (a) => bookSpawn(book, a);
   /** @param {string} agentId @param {{tool: string, input?: any, at?: number}} a */
-  const noteTool = (agentId, a) => bookTool(book, agentId, a);
+  const noteTool = (agentId, a) => { trailAt.delete(agentId); return bookTool(book, agentId, a); };
+  /** The pane is on screen or not; while it is not, nothing is polled. @param {boolean} on */
+  const setShown = (on) => { shown = !!on; };
   /** A subagent's turn ended (`turn.complete` with an `agentId`). @param {any} e */
   function noteAgentTurn(e) {
     if (!e?.agentId) return;
@@ -773,18 +777,24 @@ export function createDriver($, opts) {
    * orchestrator's, the selected one, the one being watched), the `session.messages` fallback.
    * Never throws.
    */
-  async function syncAgents() {
-    if (syncing) return;
+  async function syncAgents(now = Date.now()) {
+    if (!shown || syncing) return;
     syncing = true;
     try {
-      const now = Date.now();
       try { bookList(book, await $.agent?.list?.(), now); } catch { /* the list is a nicety */ }
-      const ids = new Set([...Object.keys(st?.inFlight ?? {}), ui.agent, viewAgentId].filter(Boolean));
+      // The trail is only worth its payload on the tabs that draw an agent's activity.
+      const drawsActivity = ui.tab === 'home' || ui.tab === 'agents' || !!ui.agent;
+      const ids = drawsActivity ? new Set([...Object.keys(st?.inFlight ?? {}), ui.agent, viewAgentId].filter(Boolean)) : new Set();
       for (const id of /** @type {Set<string>} */ (ids)) {
         if (!book.agents.get(id)?.confirmed || !needsTrail(book, id, now)) continue;
-        if (now - (trailAt.get(id) ?? 0) < TRAIL_EVERY_MS) continue;
-        trailAt.set(id, now);
+        const t = trailAt.get(id) ?? { due: 0, wait: TRAIL_MIN_MS };
+        if (now < t.due) continue;
+        const before = book.agents.get(id)?.lastTool?.label;
         try { bookTrail(book, id, await $.session?.messages?.({ agentId: id }), now); } catch { /* {deny} or a failure: degraded, not broken */ }
+        const fresh = book.agents.get(id)?.lastTool?.label !== before;
+        trailAt.set(id, fresh
+          ? { due: now + TRAIL_MIN_MS, wait: TRAIL_MIN_MS }
+          : { due: now + t.wait, wait: Math.min(t.wait * 2, TRAIL_MAX_MS) });
       }
       // The throttle map only keeps agents still in the book and still working.
       for (const id of [...trailAt.keys()]) {
@@ -996,7 +1006,7 @@ export function createDriver($, opts) {
         return info.role === 'tester' ? snap.suite?.status === 'done' : !!snap.review;
       };
       for (let i = 0; i < waitTries && !landed(); i++) {
-        await sleep(waitMs);
+        await sleep(waitMs * 2 ** i);
         await refresh();
       }
       if (!landed()) {
@@ -1276,7 +1286,8 @@ export function createDriver($, opts) {
   const setColumns = (n) => { if (Number.isFinite(n) && n > 0) columns = Math.floor(n); };
 
   return {
-    noteSpawn, noteTool, noteAgentTurn, syncAgents, agentsLive, setViewAgent, submitMessage, sendTo, submitInput, pickBase, pickBranch,
+    getColumns: () => columns,
+    noteSpawn, noteTool, noteAgentTurn, syncAgents, setShown, agentsLive, setViewAgent, submitMessage, sendTo, submitInput, pickBase, pickBranch,
     noteTurn, noteTurnStart, noteEffort, noteModelSwitch, setTtl, setColumns, cachePlan, cacheNotice, drainNotices, loadStats, loadTrend,
     step, start, onAgentDone, press, view, status, panel, setConfig, setSettings, panelSetting, setUsage, openPanel: () => queue(refresh), refresh: () => queue(refresh), release: () => queue(() => release()) };
 }

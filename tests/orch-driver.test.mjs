@@ -171,6 +171,26 @@ test('a verdict that never lands is treated as not-run', async () => {
   assert.deepEqual(d.panel().ask.buttons.map((b) => b.id), ['Retry', 'Continue anyway', 'Stop']);
 });
 
+test('the verdict wait doubles its sleep: a verdict on the 3rd refresh is taken after 300, 600', async () => {
+  const w = world();
+  const sleeps = [];
+  const d = w.driver({ waitTries: 4, waitMs: 300, sleep: async (ms) => { sleeps.push(ms); if (sleeps.length === 2) w.verdict(1, 'pass'); } });
+  await d.step();
+  await d.onAgentDone(w.agentOf('implementer', 1), 'x');
+  assert.deepEqual(sleeps, [300, 600]);
+  assert.equal(w.state().forced?.['1'], undefined);
+});
+
+test('no verdict: 4 tries sleeping 300, 600, 1200, 2400, then not-run', async () => {
+  const w = world();
+  const sleeps = [];
+  const d = w.driver({ waitTries: 4, waitMs: 300, sleep: async (ms) => { sleeps.push(ms); } });
+  await d.step();
+  await d.onAgentDone(w.agentOf('implementer', 1), 'x');
+  assert.deepEqual(sleeps, [300, 600, 1200, 2400]);
+  assert.equal(w.state().forced['1'].status, 'not-run');
+});
+
 test('headless: a red batch hands back with the afterBatch text instead of asking', async () => {
   const w = world();
   const d = w.driver({ headless: true });

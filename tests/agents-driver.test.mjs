@@ -196,6 +196,74 @@ test('the session.messages throttle is forgotten once the agent finishes', async
   assert.deepEqual(w.msgCalls, ['blind', 'blind'], 'no stale 2 s throttle after it ended');
 });
 
+test('hidden pane: no list and no messages calls', async () => {
+  const w = world({ approved: false, hash: '' });
+  let lists = 0;
+  w.$.agent.list = async () => { lists++; return w.list; };
+  const d = w.driver();
+  await d.start();
+  w.list = [{ id: 'blind', status: 'running' }];
+  lists = 0;
+  d.setShown(false);
+  await d.syncAgents();
+  assert.equal(lists, 0);
+  assert.deepEqual(w.msgCalls, []);
+  d.setShown(true);
+  await d.syncAgents();
+  assert.equal(lists, 1);
+});
+
+test('stats tab: the list is read but the trail is not', async () => {
+  const w = world({ approved: false, hash: '' });
+  let lists = 0;
+  w.$.agent.list = async () => { lists++; return w.list; };
+  const d = w.driver();
+  await d.start();
+  w.list = [{ id: 'blind', status: 'running' }];
+  d.press('tab:stats');
+  lists = 0;
+  await d.syncAgents();
+  assert.equal(lists, 1);
+  assert.deepEqual(w.msgCalls, []);
+});
+
+test('a quiet agent backs off 2, 4, 8, 16 s; a hook tool resets the wait', async () => {
+  const w = world({ approved: false, hash: '' });
+  const d = w.driver();
+  await d.start();
+  w.list = [{ id: 'blind', status: 'running' }];
+  await d.press('agent:blind');
+  w.msgCalls.length = 0;
+  const t0 = Date.now() + 1000;
+  for (let s = 0; s < 30; s++) await d.syncAgents(t0 + s * 1000);
+  assert.equal(w.msgCalls.length, 4, 'at +0, +2, +6, +14 s (today: 15)');
+  d.noteTool('blind', { tool: 'Read', input: { file_path: 'a' } });
+  w.msgCalls.length = 0;
+  // the hook is recent, so the trail stays quiet until TRAIL_QUIET_MS passes; then the wait starts from 2 s
+  const t1 = Date.now() + 60_000;
+  await d.syncAgents(t1);
+  await d.syncAgents(t1 + 1000);
+  await d.syncAgents(t1 + 2000);
+  assert.equal(w.msgCalls.length, 2, 'immediate, then again after 2 s (not 16)');
+});
+
+test('a trail with a new tool keeps the wait at 2 s', async () => {
+  const w = world({ approved: false, hash: '' });
+  let n = 0;
+  w.$.session.messages = async (a) => {
+    w.msgCalls.push(a.agentId);
+    return [{ role: 'assistant', toolUses: [{ tool: 'Bash', input: { command: `step ${++n}` } }] }];
+  };
+  const d = w.driver();
+  await d.start();
+  w.list = [{ id: 'blind', status: 'running' }];
+  await d.press('agent:blind');
+  w.msgCalls.length = 0;
+  const t0 = Date.now() + 1000;
+  for (let s = 0; s < 10; s++) await d.syncAgents(t0 + s * 1000);
+  assert.equal(w.msgCalls.length, 5, 'every 2 s while each trail brings something new');
+});
+
 test('the book caps at 40 agents', async () => {
   const w = world({ approved: false, hash: '' });
   const d = w.driver();

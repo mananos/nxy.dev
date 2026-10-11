@@ -2,12 +2,13 @@ import type { Register, Timer } from 'claude-code'
 
 import { COMPOSE_SECTION, readModConfig } from '../../../core/orchestrator.mjs'
 import { durText, layoutOf, lifecycleLayout, panelText } from '../../../core/panel.mjs'
-import { PALETTE as C, mix, gaugeCells, progressCells } from '../../../core/raster.mjs'
+import { PALETTE as C, mix, gaugeCells, progressCells, spinCells } from '../../../core/raster.mjs'
 import { COLUMN_WIDTH, money } from '../../../core/statsview.mjs'
+import { spinKey } from '../../../core/tick.mjs'
 import { createDriver } from './driver.mjs'
+import { createPane } from './pane.mjs'
 
 const PANE = 'nxy'
-const SPIN = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 // A view tone as a palette colour; `info` is the plain text colour.
 const TONE: Record<string, string> = { ok: C.green, running: C.blue, error: C.red, bad: C.red, warn: C.amber, dim: C.muted, info: C.text }
 const toneColor = (tone?: string) => TONE[tone ?? 'info'] ?? C.text
@@ -35,12 +36,22 @@ const api = ($: any) => ({
   settings: { read: () => $.settings.read() },
 })
 
+// The pane's engine calls, kept here so every `$` use stays in this file.
+const paneIo = ($: any) => ({
+  invalidate: () => $.ui.invalidate('ui.render'),
+  panes: () => $.ui.panes(),
+  usage: () => usageOf($),
+  blit: (args: any) => $.ui.blit(args),
+  log: (text: string) => $.ui.log(text, { to: 'debug' }),
+  now: () => Date.now(),
+})
+
 let driver: any = null
+let pane: any = null
 let headless = false
 let userPanel = false // the user opened the panel with /nxy-panel
 let autoPanel = false // the Mod opened it at session start
 let lastStatus = ''
-let frame = 0 // the animation frame (spinners, the progress shimmer)
 let tickTimer: Timer | null = null // the one animation timer (Timer.cancel is part of the clock API)
 
 async function fail($: any, where: string, err: unknown) {
@@ -129,26 +140,14 @@ function stopTick() {
 }
 function startTick($: any) {
   stopTick() // never two ticks: a restart replaces the one running
-  let beat = 0
-  let busy = false // a slow tick (the pane list, the agent poll) must not stack another one behind it
+  let busy = false // a slow tick (the pane list) must not stack another one behind it
   const timer: Timer = $.clock.every(250, async () => {
-    if (busy) return
+    if (busy || !pane) return
     busy = true
     try {
-      beat++
-      // Is the pane still open? Once a second is enough: it is an engine round trip.
-      if (beat % 4 === 1) {
-        const up = (await $.ui.panes()).some((p: any) => p.id === PANE)
-        if (!up) { if (tickTimer === timer) stopTick(); else timer.cancel(); return }
-      }
-      const view = driver?.panel()
-      // The agent list is polled here only (every 2 s), and only while some agent runs.
-      if (beat % 8 === 0 && driver?.agentsLive()) await driver.syncAgents()
-      // The cache countdown on Home moves once a second: one tick in four. The animation redraws the
-      // whole pane, so it moves twice a second: with an agent running that was the busiest thing in the session.
-      if (!(view?.animated && beat % 2 === 0) && !(view?.clockTicks && beat % 4 === 0)) return
-      if (view?.animated) frame++
-      await $.ui.invalidate('ui.render')
+      // The redraw policy (pane list, agent poll, what changed) lives in pane.mjs.
+      const r = await pane.tick()
+      if (r?.stop) { if (tickTimer === timer) stopTick(); else timer.cancel() }
     } catch { /* optional */ } finally { busy = false }
   })
   tickTimer = timer
@@ -180,7 +179,7 @@ async function sync($: any) {
     await showStatus($)
     return
   }
-  try { await $.ui.invalidate('ui.render') } catch { /* optional */ }
+  try { if (pane) await pane.redraw(); else await $.ui.invalidate('ui.render') } catch { /* optional */ }
   await showStatus($)
   // Pending toasts ("resumen listo"), shown once.
   try {
@@ -188,7 +187,10 @@ async function sync($: any) {
   } catch { /* optional */ }
 }
 async function ensure($: any) {
-  if (!driver) driver = createDriver(api($), { cwd: await $.session.cwd(), sessionId: await $.session.id(), headless })
+  if (!driver) {
+    driver = createDriver(api($), { cwd: await $.session.cwd(), sessionId: await $.session.id(), headless })
+    pane = createPane(paneIo($), driver, { id: PANE })
+  }
   return driver
 }
 
@@ -196,11 +198,9 @@ async function ensure($: any) {
 async function onPress($: any, element: string): Promise<void> {
   try {
     if (!driver) return
-    driver.setUsage(await usageOf($))
-    // A launcher runs on its own lane: draw its running box first, then wait for the output.
-    const pressed = driver.press(element)
-    await sync($)
-    await pressed
+    // The pane redraws first (no engine call before it), then the press's work and the usage.
+    if (pane) await pane.press(element)
+    else await driver.press(element)
     await sync($)
   } catch (err) { await fail($, 'ui.press', err) }
 }
@@ -243,6 +243,7 @@ export const register: Register = on => {
     try {
       headless = !e.isInteractive
       driver = createDriver(api($), { cwd: e.cwd, sessionId: await $.session.id(), headless })
+      pane = createPane(paneIo($), driver, { id: PANE })
       await driver.start()
       driver.setConfig(await readConfig($))
       try {
@@ -371,7 +372,9 @@ export const register: Register = on => {
     try {
       driver?.setColumns(e.props?.bodyColumns)
       driver?.setViewAgent(e.props?.view?.agentId)
-      return draw($, e, driver?.panel() ?? null)
+      const view = driver?.panel() ?? null
+      pane?.drawn(view)
+      return draw($, e, view)
     } catch (err) {
       const { Text } = $.ui.resolve(e) as any
       return <Text color={C.red}>{`nxy render error: ${String((err as any)?.message ?? err)}`}</Text>
@@ -398,8 +401,11 @@ function draw($: any, e: any, v: any) {
   if (!v) return <Text color={C.muted}>nxy: nothing running.</Text>
   const L = layoutOf(Number.isFinite(e.props?.bodyColumns) ? e.props.bodyColumns : 48)
   const { W, CW, narrow, stacked, tileW } = L
-  const spin = (k = 0) => SPIN[(frame + k) % SPIN.length] ?? '●'
-  const live = frame % 12 < 6
+  const frame: number = pane?.frame() ?? 0 // the animation frame, advanced by the pane's tick
+  // A spinner is a 1x1 Raster the pane's tick repaints by blit (keys: spinnersOf in core/tick.mjs).
+  const Spin = (p: { site: string; id: string | number; k?: number; bg?: string }) => (
+    <Raster key={spinKey(p.site, p.id)} columns={1} rows={1} cells={spinCells(frame, p.k ?? 0, p.bg)} />
+  )
   const press = (id: string) => () => onPress($, id)
 
   const Pill = (p: { text: string; bg: string }) => <Text backgroundColor={p.bg} color={C.ink} bold>{` ${p.text} `}</Text>
@@ -455,12 +461,16 @@ function draw($: any, e: any, v: any) {
     )
   }
   const AgentLine =(p: { a: any; i: number }) => (
-    <Text key={`ag${p.i}`} wrap="wrap">
-      <Text color={C.blue}>{`${spin(p.i * 5)} `}</Text>
-      <Text color={p.a.nxy ? C.green : C.muted}>{p.a.role}</Text>
-      <Text color={C.muted}>{`${p.a.batch != null ? ` · lote ${p.a.batch}` : ''}${p.a.elapsedMs != null ? ` · ${durText(p.a.elapsedMs)}` : ''}`}</Text>
-      {p.a.activity ? <Text color={C.muted}>{` · ${p.a.activity}`}</Text> : null}
-    </Text>
+    <Box key={`ag${p.i}`} flexDirection="row" columnGap={1}>
+      <Spin site="now" id={p.i} k={p.i * 5} />
+      <Box flexShrink={1}>
+        <Text wrap="wrap">
+          <Text color={p.a.nxy ? C.green : C.muted}>{p.a.role}</Text>
+          <Text color={C.muted}>{`${p.a.batch != null ? ` · lote ${p.a.batch}` : ''}${p.a.elapsedMs != null ? ` · ${durText(p.a.elapsedMs)}` : ''}`}</Text>
+          {p.a.activity ? <Text color={C.muted}>{` · ${p.a.activity}`}</Text> : null}
+        </Text>
+      </Box>
+    </Box>
   )
 
   // nxy roles in green, agents Claude Code started on its own in grey.
@@ -477,7 +487,7 @@ function draw($: any, e: any, v: any) {
           <Pill text="◆ nxy" bg={C.brand} />
           <Text backgroundColor={C.band} color={C.muted} wrap="wrap">{narrow ? ` ${hd.branch || hd.repo}` : `  ${where}`}</Text>
         </Box>
-        <Text backgroundColor={C.band} color={hd.pill?.tone === 'running' ? (live ? C.blue : C.cyan) : toneColor(hd.pill?.tone)} bold>
+        <Text backgroundColor={C.band} color={toneColor(hd.pill?.tone)} bold>
           {`${`${hd.pill?.glyph ?? ''} ${hd.pill?.text ?? ''}`.trim()} `}
         </Text>
       </Box>
@@ -495,7 +505,7 @@ function draw($: any, e: any, v: any) {
   )
 
   // ---- the blocks of the active tab ----
-  const nodeColor = (s: string) => (s === 'done' ? C.green : s === 'red' ? C.red : s === 'current' ? (live ? C.blue : C.cyan) : C.faint)
+  const nodeColor = (s: string) => (s === 'done' ? C.green : s === 'red' ? C.red : s === 'current' ? C.blue : C.faint)
   const nodeGlyph = (s: string) => (s === 'done' ? '●' : s === 'current' ? '◉' : s === 'red' ? '✘' : '○')
   const lifecycle = (steps: any[]) => {
     const lay = lifecycleLayout(steps, CW)
@@ -534,12 +544,19 @@ function draw($: any, e: any, v: any) {
       </Box>
     )
   }
-  const stateGlyph = (s: string) => (s === 'done' ? { t: '✔', c: C.green } : s === 'running' ? { t: spin(), c: C.blue } : s === 'red' ? { t: '✘', c: C.red } : { t: '○', c: C.faint })
+  const stateGlyph = (s: string) => (s === 'done' ? { t: '✔', c: C.green } : s === 'running' ? { t: '', c: C.blue } : s === 'red' ? { t: '✘', c: C.red } : { t: '○', c: C.faint })
   const sevColor = (sev?: string) => (/alta|high|crit|blocker/i.test(sev ?? '') ? C.red : /media|medium/i.test(sev ?? '') ? C.amber : C.muted)
 
   // Memoria / launcher helpers: a field that clears after each submit (its key changes), and path:line rows.
   // No field is drawn as nothing: Features has none until a "new" step asks for one.
   const stateColor = (s: string) => (s === 'error' ? C.red : s === 'ok' ? C.text : C.muted)
+  // A status line; while loading it starts with a spinner Raster (`site` keeps the key unique).
+  const loadingText = (state: string, site: string, text: string) => (state === 'loading' ? (
+    <Box flexDirection="row" columnGap={1}>
+      <Spin site={site} id={0} />
+      <Box flexShrink={1}><Text color={stateColor(state)} wrap="wrap">{text}</Text></Box>
+    </Box>
+  ) : <Text color={stateColor(state)} wrap="wrap">{text}</Text>)
   const inputOf = (inp: any) => (!inp ? null : (
     <Box marginTop={1}>
       <Input key={inp.key} value="" placeholder={inp.placeholder} submitLabel={inp.submitLabel}
@@ -566,10 +583,10 @@ function draw($: any, e: any, v: any) {
           <Box key={`b${bi}`} flexDirection="column" marginTop={1}>
             <Box flexDirection="row" justifyContent="space-between">
               <Box flexShrink={1}>
-                <Text wrap="wrap">
-                  <Text color={C.blue} bold>{running ? `${spin()} ` : ''}</Text>
-                  <Text bold color={C.text}>{b.headline}</Text>
-                </Text>
+                <Box flexDirection="row" columnGap={running ? 1 : 0}>
+                  {running ? <Spin site="hero" id={0} /> : null}
+                  <Box flexShrink={1}><Text bold color={C.text} wrap="wrap">{b.headline}</Text></Box>
+                </Box>
               </Box>
               {b.elapsedMs != null ? <Text color={C.muted}>{` ${durText(b.elapsedMs)}`}</Text> : null}
             </Box>
@@ -616,7 +633,10 @@ function draw($: any, e: any, v: any) {
               return (
                 <Box key={`pb${x.n}`} flexDirection="column" backgroundColor={x.open ? C.band : undefined} width={CW}>
                   <Box flexDirection="row">
-                    <Box width={4}><Text color={ic.c} bold>{`${ic.t} ${x.n}`}</Text></Box>
+                    <Box width={4} flexDirection="row">
+                      {x.state === 'running' ? <Spin site="bt" id={x.n} bg={x.open ? C.band : undefined} /> : null}
+                      <Text color={ic.c} bold>{x.state === 'running' ? ` ${x.n}` : `${ic.t} ${x.n}`}</Text>
+                    </Box>
                     <Box width={CW - 4 - 9}><Button plain label={x.title} key={`batch:${x.n}`} onPress={press(`batch:${x.n}`)} /></Box>
                     <Box width={9} justifyContent="flex-end"><Text color={C.muted}>{x.durationMs != null ? durText(x.durationMs) : ''}</Text></Box>
                   </Box>
@@ -625,7 +645,10 @@ function draw($: any, e: any, v: any) {
                     <Box flexDirection="column" paddingLeft={4} paddingBottom={1}>
                       {x.files.map((f: string) => <Text key={f} color={C.cyan} wrap="wrap">{`· ${f}`}</Text>)}
                       <Text wrap="wrap"><Text color={C.muted}>acepta  </Text><Text color={C.text}>{x.accept}</Text></Text>
-                      <Text color={toneColor(x.verdict.tone)} wrap="wrap">{`${x.state === 'running' ? `${spin()} ` : ''}${x.verdict.text}`}</Text>
+                      <Box flexDirection="row" columnGap={x.state === 'running' ? 1 : 0}>
+                        {x.state === 'running' ? <Spin site="bv" id={x.n} bg={C.band} /> : null}
+                        <Box flexShrink={1}><Text color={toneColor(x.verdict.tone)} wrap="wrap">{x.verdict.text}</Text></Box>
+                      </Box>
                     </Box>
                   ) : null}
                 </Box>
@@ -673,7 +696,7 @@ function draw($: any, e: any, v: any) {
             {b.agents.length ? b.agents.map((a: any, i: number) => (
               <Box key={`ar${a.id}`} flexDirection="column">
                 <Box flexDirection="row" columnGap={1}>
-                  <Text color={a.live ? C.blue : toneColor(a.tone)}>{a.live ? spin(i * 5) : doneGlyph(a)}</Text>
+                  {a.live ? <Spin site="ag" id={a.id} k={i * 5} /> : <Text color={toneColor(a.tone)}>{doneGlyph(a)}</Text>}
                   <Text color={roleColor(a)}>{a.role ?? ''}</Text>
                   <Button plain label={a.label} key={`agent:${a.id}`} onPress={press(`agent:${a.id}`)} />
                   <Text color={C.muted}>{a.modelEffort ?? ''}</Text>
@@ -691,7 +714,7 @@ function draw($: any, e: any, v: any) {
           <Box key={`b${bi}`} flexDirection="column">
             <Heading title="Mirando" color={C.cyan} />
             <Box flexDirection="row" columnGap={1}>
-              <Text color={b.card.live ? C.blue : toneColor(b.card.tone)}>{b.card.live ? spin() : doneGlyph(b.card)}</Text>
+              {b.card.live ? <Spin site="watch" id={0} /> : <Text color={toneColor(b.card.tone)}>{doneGlyph(b.card)}</Text>}
               <Text color={roleColor(b.card)}>{b.card.role ?? ''}</Text>
               <Text color={C.text}>{b.card.label}</Text>
               <Text color={C.muted}>{b.card.modelEffort ?? ''}</Text>
@@ -711,10 +734,14 @@ function draw($: any, e: any, v: any) {
         return (
           <Box key={`b${bi}`} flexDirection="column">
             <Heading title={card.label ?? 'Agente'} color={C.green} right={[card.modelEffort, card.elapsedMs != null ? durText(card.elapsedMs) : '', card.costText].filter(Boolean).join(' · ')} />
-            <Text wrap="wrap">
+            <Box flexDirection="row">
               <Text color={roleColor(card)} bold>{card.role ?? ''}</Text>
-              <Text color={card.live ? C.blue : toneColor(card.tone)}>{`${card.role ? ' · ' : ''}${card.live ? `${spin()} ` : ''}${card.state ?? ''}${b.batch != null ? ` · lote ${b.batch}` : ''}`}</Text>
-            </Text>
+              <Text color={card.live ? C.blue : toneColor(card.tone)}>{card.role ? ' · ' : ''}</Text>
+              {card.live ? <Spin site="detail" id={0} /> : null}
+              <Box flexShrink={1}>
+                <Text color={card.live ? C.blue : toneColor(card.tone)} wrap="wrap">{`${card.live ? ' ' : ''}${card.state ?? ''}${b.batch != null ? ` · lote ${b.batch}` : ''}`}</Text>
+              </Box>
+            </Box>
             {card.activity ? <Text color={C.muted} wrap="wrap">{card.activity}</Text> : null}
             {lines('Prompt', b.prompt, C.muted)}
             {b.tools?.length ? (
@@ -752,7 +779,7 @@ function draw($: any, e: any, v: any) {
                 <Button plain label={r.text} key={r.press} onPress={press(r.press)} />
                 {r.sub ? <Box paddingLeft={2}><Text color={C.muted} wrap="wrap">{r.sub}</Text></Box> : null}
               </Box>
-            )) : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+            )) : loadingText(b.state, 'ms', b.message)}
             {b.recent ? <Box flexDirection="row"><Button plain label={b.recent.label} key={b.recent.id} onPress={press(b.recent.id)} /></Box> : null}
           </Box>
         )
@@ -762,7 +789,7 @@ function draw($: any, e: any, v: any) {
             <Heading title="Memoria" color={C.violet} right={b.id} />
             {b.state === 'ok'
               ? b.lines.map((line: string, li: number) => <Text key={`md${li}`} color={C.text} wrap="wrap">{line}</Text>)
-              : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+              : loadingText(b.state, 'md', b.message)}
             <Box flexDirection="row" marginTop={1}><Keycap id={b.back.id} label={b.back.label} hotkey={b.back.hotkey} /></Box>
           </Box>
         )
@@ -770,7 +797,7 @@ function draw($: any, e: any, v: any) {
         return (
           <Box key={`b${bi}`} flexDirection="column" width={CW}>
             <Heading title="Handoff" color={C.cyan} />
-            <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.text}`}</Text>
+            {loadingText(b.state, 'ho', b.text)}
             {b.lines.map((line: string, li: number) => <Text key={`ho${li}`} color={C.muted} wrap="wrap">{line}</Text>)}
             <Box flexDirection="row"><Button plain label={b.button.label} key={b.button.id} onPress={press(b.button.id)} /></Box>
           </Box>
@@ -780,7 +807,7 @@ function draw($: any, e: any, v: any) {
           <Box key={`b${bi}`} flexDirection="column" width={CW}>
             <Heading title="Ubicar" color={C.cyan} right={b.ms != null ? `${b.ms} ms` : undefined} />
             {inputOf(b.input)}
-            {b.state === 'ok' ? hitList(b.rows) : <Text color={stateColor(b.state)} wrap="wrap">{`${b.state === 'loading' ? `${spin()} ` : ''}${b.message}`}</Text>}
+            {b.state === 'ok' ? hitList(b.rows) : loadingText(b.state, 'lo', b.message)}
             {b.state === 'ok' || b.state === 'empty' ? <Text color={C.muted} wrap="wrap">{[b.note, ...b.degraded].filter(Boolean).join(' · ')}</Text> : null}
             {b.ask ? (b.ask.disabled || !b.ask.id
               ? <Text color={C.muted} wrap="wrap">{b.ask.label}</Text>
@@ -802,7 +829,7 @@ function draw($: any, e: any, v: any) {
             {b.question ? <Text color={C.muted} wrap="wrap">{`«${b.question}»`}</Text> : null}
             {b.card ? (
               <Box flexDirection="row" columnGap={1}>
-                <Text color={b.card.live ? C.blue : toneColor(b.card.tone)}>{b.card.live ? spin() : doneGlyph(b.card)}</Text>
+                {b.card.live ? <Spin site="launch" id={0} /> : <Text color={toneColor(b.card.tone)}>{doneGlyph(b.card)}</Text>}
                 <Text color={roleColor(b.card)}>{b.card.role ?? ''}</Text>
                 <Text color={C.muted} wrap="wrap">{[b.card.state, b.card.elapsedMs != null ? durText(b.card.elapsedMs) : '', b.card.costText].filter(Boolean).join(' · ')}</Text>
               </Box>

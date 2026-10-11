@@ -155,8 +155,10 @@ test('register.tsx: agent hooks (spawn, observer tool.call, turn) with their cat
   assert.doesNotMatch(src, /turn\.step/);
   assert.match(src, /view\?\.agentId/);
   assert.match(src, /<Input\b[^\n]*key=\{[^}]*composer[^}]*\}[^\n]*value=""[^\n]*onSubmit=/);
-  assert.equal((src.match(/syncAgents\(\)/g) ?? []).length, 1);
-  assert.match(src.slice(src.indexOf('function startTick'), src.indexOf('async function openPane')), /syncAgents\(\)/);
+  assert.equal((src.match(/syncAgents\(\)/g) ?? []).length, 0);
+  const paneSrc = readFileSync(join(root, 'hosts/claude-code/mod/pane.mjs'), 'utf8');
+  assert.match(paneSrc.slice(paneSrc.indexOf('async tick()')), /syncAgents\(\)/);
+  assert.match(src.slice(src.indexOf('function startTick'), src.indexOf('async function openPane')), /pane\.tick\(\)/);
 });
 
 test("register.tsx draws the Config rows, passes the whole settings object and starts no clock for them", () => {
@@ -168,6 +170,31 @@ test("register.tsx draws the Config rows, passes the whole settings object and s
   assert.match(src, /on\('session\.start'[\s\S]*?driver\.setSettings\(s\)/);
   const rows = draw.slice(draw.indexOf("case 'rows':"), draw.indexOf("case 'segments':"));
   assert.doesNotMatch(rows, /clock|startTick/);
+});
+
+test('register.tsx: a press goes through pane.press with no engine call before it; the render records what it drew', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  const press = src.match(/async function onPress[\s\S]*?\n\}\n/)?.[0] ?? '';
+  assert.match(press, /pane\.press\(element\)/);
+  assert.doesNotMatch(press.slice(0, press.indexOf('pane.press')).replace(/if \(pane\) await $/, ''), /await|usageOf/);
+  assert.match(src, /pane\?\.drawn\(view\)[\s\S]*?return draw\(\$, e, view\)/);
+  assert.match(src, /pane\.redraw\(\)/);
+  assert.doesNotMatch(readFileSync(join(root, 'hosts/claude-code/mod/pane.mjs'), 'utf8'), /from\s+'node:/);
+});
+
+test('register.tsx: every spinner is a Raster keyed by spinKey, no glyph Text or colour blink left', () => {
+  const src = readFileSync(join(root, 'hosts/claude-code/mod/register.tsx'), 'utf8');
+  assert.doesNotMatch(src, /\bspin\(|\bSPIN\b|\(live \?|const live = /);
+  assert.match(src, /<Raster key=\{spinKey\(p\.site, p\.id\)\}/);
+  // each <Spin site="x" id=...> site is used at most once per JSX line, and the sites match spinnersOf's.
+  const sites = [...src.matchAll(/<Spin site="(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual([...new Set(sites)].sort(), ['ag', 'bt', 'bv', 'detail', 'hero', 'launch', 'now', 'watch']);
+  assert.equal(sites.length, new Set(sites).size);
+  assert.match(src, /loadingText\(b\.state, 'ms'/);
+  assert.match(src, /loadingText\(b\.state, 'md'/);
+  assert.match(src, /loadingText\(b\.state, 'ho'/);
+  assert.match(src, /loadingText\(b\.state, 'lo'/);
+  assert.match(src, /<Raster key="progress"/);
 });
 
 test('toolLabel reads the flat tool.call shape once the reserved keys are stripped', async () => {

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { PALETTE, DEFAULT, hex, mix, cells, gaugeCells, progressCells } from '../core/raster.mjs'
+import { PALETTE, DEFAULT, SPIN, hex, mix, cells, gaugeCells, progressCells, spinCells } from '../core/raster.mjs'
 
 /** Decode the base64 into rows of [cp, fg, bg]. */
 function decode(s) {
@@ -11,6 +11,16 @@ function decode(s) {
   for (let i = 0; i < w.length; i += 3) out.push([w[i], w[i + 1], w[i + 2]])
   return out
 }
+
+test('spinCells: one blue braille cell per frame, offset by k, wrapping', () => {
+  const g = [...SPIN]
+  const one = (f, k, bg) => decode(spinCells(f, k, bg))
+  assert.equal(one(0, 0).length, 1)
+  assert.deepEqual(one(3, 0)[0], [g[3].codePointAt(0), hex(PALETTE.blue), DEFAULT])
+  assert.equal(one(3, 5)[0][0], g[8].codePointAt(0))
+  assert.equal(one(g.length, 0)[0][0], g[0].codePointAt(0))
+  assert.equal(one(0, 0, PALETTE.band)[0][2], hex(PALETTE.band))
+})
 
 const filled = (s) => decode(s).filter(([cp]) => cp === 0x2501).length
 
