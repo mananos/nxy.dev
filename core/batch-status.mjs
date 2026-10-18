@@ -54,7 +54,7 @@ export function continueQuestion(hash, n) {
  * the other picked findings are dispatched next, and it never leads to another suite and review.
  * `dependents`: the batches that build on this one (default: the next one).
  * @param {{hash: string, n: number, command?: string, verdict: Verdict, batches: number[], recorded: Record<string, {status: Status}>,
- *   fix?: {finding?: string, review?: string} | boolean | null, dependents?: number[]}} o
+ *   fix?: {finding?: string, review?: string} | boolean | null, dependents?: number[], repos?: {label: string, root: string}[]}} o
  */
 export function afterBatch(o) {
   const { hash, n, verdict } = o;
@@ -77,7 +77,7 @@ export function afterBatch(o) {
     return [
       `nxy verify: batch ${n} ✘${cmd} ${notRun ? `was not run after the last edit${verdict.detail ? ` (${verdict.detail})` : ''}` : `failed after the last edit${verdict.error ? ` (${verdict.error})` : ''}`}.`,
       notRun
-        ? `Next: dispatch \`Batch ${n} — run the acceptance command only\` again, to run the Accept exactly as written and alone (no cd, pipe, redirection or absolute path): the code may already be right. Or ask the user with AskUserQuestion, with exactly this input:`
+        ? `Next: dispatch \`Batch ${n} — run the acceptance command only\` again, to run the Accept exactly as written and alone (no extra cd, pipe, redirection or absolute path; a cd that is part of the Accept stays): the code may already be right. Or ask the user with AskUserQuestion, with exactly this input:`
         : `Re-dispatch the implementer for batch ${n} with the failure (always allowed), or ask the user with AskUserQuestion, with exactly this input:`,
       `  ${JSON.stringify(input)}`,
       waiting.length
@@ -99,16 +99,51 @@ export function afterBatch(o) {
     return s === 'pass' || s === 'manual' || s === 'none';
   });
   if (done && o.batches.length) {
-    lines.push(`All ${o.batches.length} batch${o.batches.length === 1 ? '' : 'es'} of plan ${hash} verified. Next: dispatch the nxy:tester subagent once with "Full suite for nxy plan ${hash}" — it runs the suite of every repo the plan touched.`);
+    const all = `All ${o.batches.length} batch${o.batches.length === 1 ? '' : 'es'} of plan ${hash} verified.`;
+    if (o.repos && o.repos.length >= 2) {
+      lines.push(`${all} Next: dispatch one nxy:tester per repo, all in one message (they run in parallel):`);
+      for (const r of o.repos) lines.push(`- ${r.label}: "${testerPrompt(hash, r.root)}"`);
+    } else {
+      lines.push(`${all} Next: dispatch the nxy:tester subagent once with "Full suite for nxy plan ${hash}" — it runs the suite of every repo the plan touched.`);
+    }
   }
   return lines.join('\n');
 }
 
+const fwdPath = (p) => String(p).replace(/\\/g, '/');
+
+/**
+ * The tester's request. With a repo (1.3.0) it runs only that repo's suite; `alone` marks the rerun of a
+ * suite that failed while another repo's tester ran (nothing changes for the tester itself).
+ * @param {string} hash @param {string} [repo] @param {{alone?: boolean}} [opts]
+ */
+export const testerPrompt = (hash, repo, opts = {}) => (repo
+  ? `Full suite for nxy plan ${hash} (repo: ${fwdPath(repo)}${opts.alone ? ', alone' : ''})`
+  : `Full suite for nxy plan ${hash}`);
+
+/** @param {string} hash @param {string} project @param {string} [repo] */
+export const reviewerPrompt = (hash, project, repo) => `Review nxy plan ${hash} (project: ${fwdPath(project)})${repo ? ` (repo: ${fwdPath(repo)})` : ''}`;
+
+/** The repo a tester or reviewer request names, and whether it is the rerun alone. @param {unknown} prompt */
+export function repoOfPrompt(prompt) {
+  const s = typeof prompt === 'string' ? prompt : '';
+  // The clause ends the prompt, so anchor to the end: a ")" inside the path stays part of the path.
+  const m = /\(repo: (.+?)(, alone)?\)\s*$/.exec(s) || /\(repo: ([^)]*?)(, alone)?\)/.exec(s);
+  return { repo: m ? m[1].trim() : null, alone: !!(m && m[2]) };
+}
+
 /**
  * After the full suite: the instruction to review, or why there is nothing to review.
- * @param {{hash: string, project: string, needed: boolean, reason?: string}} o
+ * With 2+ repos (1.3.0) it is one reviewer per repo, all in one message; one repo or none: the single reviewer.
+ * @param {{hash: string, project: string, needed: boolean, reason?: string, repos?: {label: string, root: string}[]}} o
  */
-export function reviewInstruction({ hash, project, needed, reason }) {
+export function reviewInstruction({ hash, project, needed, reason, repos }) {
+  if (needed && repos && repos.length >= 2) {
+    return [
+      `nxy: full suite done. Next: dispatch one nxy:reviewer per repo, all in one message (they run in parallel); checkpoint 2 comes with the last one:`,
+      ...repos.map((r) => `- ${r.label}: "${reviewerPrompt(hash, project, r.root)}"`),
+    ].join('\n');
+  }
   return needed
     ? `nxy: full suite done. Next: dispatch the nxy:reviewer subagent once with "Review nxy plan ${hash} (project: ${project.replace(/\\/g, '/')})" — it reviews the plan's diff and returns the findings for checkpoint 2.`
     : `nxy: full suite done. No review needed for plan ${hash}: ${reason}.`;

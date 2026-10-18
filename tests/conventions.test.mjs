@@ -186,4 +186,10 @@ test('flow: docs that name the change are offered at checkpoint 2; escapes kept;
   writeFileSync(join(s.repo, '.git', 'HEAD'), 'ref: refs/heads/feature/other\n');
   assert.equal(prompt('s10').trim(), '', 'another branch: nothing');
   assert.ok(existsSync(join(s.repo, '.nxy', 'local', 'review.json')));
+
+  // A closed task (handoff done archives it) is not reminded, from a new session either.
+  writeFileSync(join(s.repo, '.git', 'HEAD'), 'ref: refs/heads/feature/x\n');
+  assert.equal(s.node([MEM, 'handoff', 'done', '--cwd', s.repo]).status, 0);
+  assert.equal(prompt('s11').trim(), '', 'closed task: no reminder');
+  assert.ok(existsSync(join(s.repo, '.nxy', 'local', 'review.json')), 'review.json stays');
 });

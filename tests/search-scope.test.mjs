@@ -2,7 +2,24 @@
 /** core/search-scope.mjs: broad vs targeted searches, from tool calls and console commands. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifySearch, isLocateCommand, LOCATE_NUDGE_MARK } from '../core/search-scope.mjs';
+import { classifySearch, isBroadMainSearch, isLocateCommand, LOCATE_NUDGE_MARK } from '../core/search-scope.mjs';
+
+test('isBroadMainSearch: grep/glob/find searches without a file path are broad; reads and files are not', () => {
+  const B = (t, i) => isBroadMainSearch(t, i);
+  assert.equal(B('Grep', { pattern: 'x' }), true);
+  assert.equal(B('Grep', { pattern: 'x', path: 'src' }), true);
+  assert.equal(B('Grep', { pattern: 'x', path: 'src/a.js' }), false);
+  assert.equal(B('Glob', { pattern: '**/*.js' }), true);
+  assert.equal(B('Read', { file_path: 'a.js' }), false);
+  assert.equal(B('Bash', { command: 'rg foo' }), true);
+  assert.equal(B('Bash', { command: 'rg foo src/a.js' }), false);
+  assert.equal(B('Bash', { command: 'grep -rn foo .' }), true);
+  assert.equal(B('Bash', { command: 'find . -name "*.js"' }), true);
+  assert.equal(B('Bash', { command: 'cat x | rg foo' }), false);
+  assert.equal(B('Bash', { command: 'npm test' }), false);
+  assert.equal(B('PowerShell', { command: 'gci -r' }), true);
+  assert.equal(B('Bash', null), false);
+});
 
 const FILES = new Set(['src/a.js', 'C:\\proj\\a.cs', 'C:/proj/b.cs', 'README.md']);
 const isFile = (p) => FILES.has(p);

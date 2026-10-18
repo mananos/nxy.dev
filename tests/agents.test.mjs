@@ -32,6 +32,13 @@ test('reviewer.md explains (inventory) files and reads ## Coverage', () => {
   assert.match(text, /## Coverage/);
 });
 
+test('scout.md reports what it ruled out and knows the relation flags', () => {
+  const text = read('scout.md');
+  assert.match(text, /## Ruled out/);
+  assert.match(text, /--callers/);
+  assert.match(text, /never run `codegraph init`/i);
+});
+
 test('every agent file has name, description and tools in its frontmatter', () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith('.md'));
   assert.ok(files.length > 0);

@@ -68,16 +68,17 @@ export function findRg(env = process.env) {
  *
  * @param {string} cwd
  * @param {string} pattern
- * @param {{bin?: string|null, maxRows?: number, fixed?: boolean, globs?: string[], timeoutMs?: number, env?: NodeJS.ProcessEnv}} [opts]
+ * @param {{bin?: string|null, maxRows?: number, maxPerFile?: number, fixed?: boolean, word?: boolean, globs?: string[], timeoutMs?: number, env?: NodeJS.ProcessEnv}} [opts]
  */
 export function rgSearch(cwd, pattern, opts = {}) {
   const env = opts.env || process.env;
   const bin = opts.bin === undefined ? findRg(env) : opts.bin;
   if (!bin) return { ok: false, reason: 'rg-missing', rows: [], truncated: false };
   const maxRows = opts.maxRows ?? 30;
-  const args = ['--line-number', '--no-heading', '--color', 'never', '--max-count', '3', '--max-filesize', '1M'];
+  const args = ['--line-number', '--no-heading', '--color', 'never', '--max-count', String(opts.maxPerFile ?? 3), '--max-filesize', '1M'];
   if (opts.fixed !== false) args.push('--fixed-strings');
   args.push('--smart-case');
+  if (opts.word) args.push('--word-regexp');
   for (const g of opts.globs || []) args.push('--glob', g);
   args.push('--', pattern, '.');
   let r;

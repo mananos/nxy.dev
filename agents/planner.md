@@ -18,7 +18,7 @@ If your prompt starts with **"Finish nxy plan"**, skip to [Finishing a plan with
    node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" list --type convention --all-areas
    ```
    Follow them and never ask what one of them answers.
-2. **Locate before reading.** Run the model-free search first:
+2. **Locate before reading.** If your prompt has a `## Map` (the scouts' `path:line` results and what they ruled out), read around those lines first and run `locate.mjs` only for what the map does not cover. Otherwise run the model-free search first:
    ```
    node "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/locate.mjs" "<what you need to find>"
    ```

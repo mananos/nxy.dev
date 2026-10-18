@@ -21,13 +21,21 @@ node "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/locate.mjs" "<the question
 
 That runs three engines that cost no tokens: the repo's symbol index, `rg` for exact text, and codegraph if it is installed. It returns in milliseconds with `path:line` candidates.
 
+**1b. For a relation question** ("who calls X", "what does X call", "what breaks if X changes"), run this instead of (or after) the search above:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/locate.mjs" --callers X     # or --callees X, or --impact X
+```
+
+It uses codegraph when it is indexed and falls back to `rg -w` (direct references only), saying so. Never run `codegraph init` yourself: indexing a repo is the user's decision.
+
 **2. Read only to confirm.** With candidates in hand, open **at most 2 or 3 files**, always with `offset`/`limit` around the candidate line. Never read a whole file just to see what it is about. If you need more context on a symbol, `Grep` for its name before you `Read`.
 
 **3. If the search found nothing**, the domain vocabulary does not match the code's — you were asked about "cancelling a booking" and the code says `revokeReservation`. Try synonyms and the other language with `Grep`, and say so in your report. That is useful information, not a failure.
 
 ## Response format (required)
 
-Answer with **only** this, and keep the whole thing under ~500 tokens:
+Answer with **only** this, and keep the whole thing under ~600 tokens:
 
 ```
 ## Where
@@ -41,11 +49,14 @@ Answer with **only** this, and keep the whole thing under ~500 tokens:
 ## Similar code already exists
 - `path:line` — <what it does and how it is similar>   (omit this section when there is nothing)
 
+## Ruled out
+- `path:line` — <why it is not the answer>   (at most 5 lines; omit this section when nothing was ruled out)
+
 ## How I found it
-<one line: which engine answered — index, rg, codegraph — and what degraded, if anything did>
+<one line: which engine answered — index, rg, codegraph or the rg fallback — and what degraded, if anything did>
 ```
 
-**Why the report is capped at ~500 tokens and 5 locations:** the main thread pays for your answer on every later call in its session, and it dispatched you precisely so it would not have to weigh twenty candidates itself. Twenty locations hand that problem straight back. So:
+**Why the report is capped at ~600 tokens and 5 locations:** the main thread pays for your answer on every later call in its session, and it dispatched you precisely so it would not have to weigh twenty candidates itself. Twenty locations hand that problem straight back. So:
 
 - **At most 5 locations.** If more genuinely match, pick the 5 that best answer the question and say how many you left out.
 - Needing more than 5 usually means the question was broader than it looked. Say that — an honest "this is spread across the codebase, here are the 5 entry points" is a real answer.

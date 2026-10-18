@@ -476,6 +476,10 @@ export function createDriver($, opts) {
       pauseAfterBatch: snap.config?.pauseAfterBatch === true,
       suite: snap.suite ?? st.forcedSuite ?? null,
       suiteLaunched: st.suiteLaunched,
+      repos: snap.repos,
+      recheck: snap.recheck,
+      aloneTried: st.aloneTried ?? [],
+      testersRunning: Object.values(st.inFlight ?? {}).filter((f) => f.role === 'tester').length,
       review: snap.review ?? st.forcedReview ?? null,
       reviewLaunched: st.reviewLaunched,
       reviewNeeded: snap.reviewNeeded,
@@ -857,6 +861,12 @@ export function createDriver($, opts) {
     return f.length ? f[f.length - 1] : null;
   }
 
+  /** The repos of the plan for afterBatch ({label, root}); undefined with fewer than two. */
+  function reposCtx() {
+    const roots = snap?.repos ?? [];
+    return roots.length >= 2 ? roots.map((root) => ({ label: String(root).replace(/[\\/]+$/, '').split(/[\\/]/).pop() || String(root), root })) : undefined;
+  }
+
   let refusedOnce = false;
   async function execute(view, actions) {
     let spawned = false;
@@ -878,18 +888,21 @@ export function createDriver($, opts) {
           else st.inFlight[res.agentId] = { role: 'implementer', batch: n };
         } else if (a.role === 'tester') {
           st.suiteLaunched = now;
+          if (a.alone && a.repo) st.aloneTried = [...new Set([...(st.aloneTried ?? []), a.repo])];
           await saveState();
           await writeMarker(snap.hash);
-          const res = await spawn('tester', 'full suite', testerPrompt(snap.hash), view);
+          const prompt = a.repo ? testerPrompt(snap.hash, a.repo, a.alone ? { alone: true } : undefined) : testerPrompt(snap.hash);
+          const res = await spawn('tester', a.repo ? `full suite (${a.repo})` : 'full suite', prompt, view);
           if (res.deny || !res.agentId) { st.forcedSuite = { status: 'fail', red: true }; st.testerAnswer = `dispatch refused: ${res.deny ?? 'no agent'}`; }
-          else st.inFlight[res.agentId] = { role: 'tester' };
+          else st.inFlight[res.agentId] = a.repo ? { role: 'tester', repo: a.repo } : { role: 'tester' };
         } else {
           st.reviewLaunched = now;
           await saveState();
           await writeMarker(snap.hash);
-          const res = await spawn('reviewer', 'review', reviewerPrompt(snap.hash, snap.projectDir ?? ''), view);
+          const prompt = a.repo ? reviewerPrompt(snap.hash, snap.projectDir ?? '', a.repo) : reviewerPrompt(snap.hash, snap.projectDir ?? '');
+          const res = await spawn('reviewer', a.repo ? `review (${a.repo})` : 'review', prompt, view);
           if (res.deny || !res.agentId) { st.forcedReview = { id: '' }; st.reviewAnswer = `dispatch refused: ${res.deny ?? 'no agent'}`; }
-          else st.inFlight[res.agentId] = { role: 'reviewer' };
+          else st.inFlight[res.agentId] = a.repo ? { role: 'reviewer', repo: a.repo } : { role: 'reviewer' };
         }
       } else if (a.type === 'ask') {
         if (headless) {
@@ -898,13 +911,13 @@ export function createDriver($, opts) {
             const verdict = view.verdicts[String(a.batch)] ?? { status: 'not-run' };
             await handback('red', {
               n: a.batch, command: b?.accept?.command, verdict,
-              batches: view.batches.map((x) => x.n), recorded: view.verdicts,
+              batches: view.batches.map((x) => x.n), recorded: view.verdicts, repos: reposCtx(),
             });
           } else {
             const n = lastFinished(view);
             await handback('pause', {
               n, verdict: view.verdicts[String(n)] ?? { status: 'pass' },
-              batches: view.batches.map((x) => x.n), recorded: view.verdicts, dependents: a.batches,
+              batches: view.batches.map((x) => x.n), recorded: view.verdicts, dependents: a.batches, repos: reposCtx(),
             });
           }
           return;
@@ -1002,14 +1015,19 @@ export function createDriver($, opts) {
       const info = st?.inFlight?.[agentId];
       if (!st || !info || st.done) return;
       delete st.inFlight[agentId];
-      if (info.role === 'tester') st.testerAnswer = String(answer ?? '');
-      if (info.role === 'reviewer') st.reviewAnswer = String(answer ?? '');
+      const part = (prev) => (info.repo && prev ? `${prev}\n\n${String(answer ?? '')}` : String(answer ?? ''));
+      if (info.role === 'tester') st.testerAnswer = part(st.testerAnswer);
+      if (info.role === 'reviewer') st.reviewAnswer = String(answer ?? ''); // the last part's answer is the merged checkpoint 2
+      const othersIn = (role) => Object.values(st.inFlight ?? {}).some((f) => f.role === role);
       const landed = () => {
         if (info.role === 'implementer') {
           const v = snap.verdicts?.[String(info.batch)];
           return !!v && v.status !== 'running' && (v.ts ?? 0) >= (st.launched[String(info.batch)] ?? 0);
         }
-        return info.role === 'tester' ? snap.suite?.status === 'done' : !!snap.review;
+        // One of several per-repo agents: the aggregate is not final until the last one (or a recheck is pending).
+        if (info.repo && othersIn(info.role)) return true;
+        if (info.role === 'tester') return snap.suite?.status === 'done' || (!!info.repo && (snap.recheck ?? []).length > 0);
+        return !!snap.review;
       };
       for (let i = 0; i < waitTries && !landed(); i++) {
         await sleep(waitMs * 2 ** i);

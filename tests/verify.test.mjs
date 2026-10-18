@@ -187,6 +187,24 @@ test('runMatches with a root: an absolute path under it equals the relative one'
   assert.equal(runMatches('cd /srv/proj && node --test tests/x.test.mjs', rel, '/srv/proj'), true);
 });
 
+test('an Accept that begins with its own cd: only the run with that cd counts', () => {
+  const accept = 'cd api && npm test';
+  assert.equal(runMatches('cd api && npm test', accept, '/home/u/proj'), true);
+  assert.equal(runMatches('npm test', accept, '/home/u/proj'), false, 'without the cd it could be another suite');
+  for (const run of ['cd /home/u/proj/api && npm test', 'cd "/home/u/proj/api" && npm test']) {
+    assert.equal(runMatches(run, accept, '/home/u/proj'), true, run);
+  }
+  for (const run of ['cd C:\\work\\proj\\api && npm test', 'cd "C:\\work\\proj\\api" && npm test', 'cd /c/work/proj/api && npm test']) {
+    assert.equal(runMatches(run, accept, 'C:\\work\\proj'), true, run);
+  }
+  assert.equal(runMatches('cd /home/u/proj/other && npm test', accept, '/home/u/proj'), false);
+  /** @type {any[]} */
+  const events = [{ kind: 'edit' }, { kind: 'run', command: 'cd api && npm test', ok: true }];
+  assert.deepEqual(batchVerdict(events, /** @type {any} */ ({ kind: 'command', command: accept }), '/home/u/proj'), { status: 'pass' });
+  const msg = afterBatch({ hash: 'abc12345', command: accept, batches: [1, 2], recorded: {}, n: 1, verdict: { status: 'not-run' } });
+  assert.match(msg, /no extra cd/);
+});
+
 test('inspectRun names why a near-miss does not count', () => {
   const a = 'npm test';
   assert.deepEqual(inspectRun('npm test', a), { match: true });

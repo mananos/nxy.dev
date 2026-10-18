@@ -8,7 +8,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { toNativePath } from '../../core/paths.mjs';
-import { classifySearch } from '../../core/search-scope.mjs';
+import { READ_GATE_MARK, classifySearch } from '../../core/search-scope.mjs';
 import { listSessions } from './transcripts.mjs';
 
 const TOOLS = new Set(['Grep', 'Glob', 'Read', 'Bash', 'PowerShell']);
@@ -43,6 +43,18 @@ export function broadSearchesInTranscript(path, { threshold, sinceMs = 0 }) {
   }
   const rows = [];
   const seen = new Set();
+  // tool_use ids whose result is the read gate's refusal: they were stopped, not run.
+  const stopped = new Set();
+  if (text.includes(READ_GATE_MARK)) {
+    for (const line of text.split('\n')) {
+      if (!line.includes(READ_GATE_MARK) || !line.includes('tool_result')) continue;
+      try {
+        const c = JSON.parse(line)?.message?.content;
+        if (!Array.isArray(c)) continue;
+        for (const b of c) if (b?.type === 'tool_result' && b.tool_use_id && JSON.stringify(b.content ?? '').includes(READ_GATE_MARK)) stopped.add(b.tool_use_id);
+      } catch { /* skip */ }
+    }
+  }
   /** @type {Map<string, number>} */ const lastCtx = new Map();
   for (const line of text.split('\n')) {
     if (!line.includes('"tool_use"')) continue;
@@ -67,6 +79,7 @@ export function broadSearchesInTranscript(path, { threshold, sinceMs = 0 }) {
     for (const b of content) {
       if (!b || b.type !== 'tool_use' || !TOOLS.has(b.name)) continue;
       if (b.id) {
+        if (stopped.has(b.id)) continue;
         if (seen.has(b.id)) continue;
         seen.add(b.id);
       }

@@ -32,7 +32,8 @@
   "gate": {
     "enabled": true,
     "contextTokens": 100000,
-    "escapeMinutes": 5
+    "escapeMinutes": 5,
+    "reads": true
   },
   "roles": {
     "scout": {

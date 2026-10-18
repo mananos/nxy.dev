@@ -22,6 +22,7 @@ import { taskKey } from '../tasks.mjs';
 import { areaFor, projectKey } from '../../../core/memory/scope.mjs';
 import { memCommand, reviewCommand } from '../handoff.mjs';
 import { takeNotes } from '../agent-notes.mjs';
+import { readMarker } from '../plan-approval.mjs';
 import { notePointers, readSession } from '../recall-state.mjs';
 
 /** @type {string[]} */
@@ -80,6 +81,8 @@ function escapeReminder(cwd, session) {
   try {
     const review = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
     if (!review || review.branch !== taskKey(cwd) || Date.now() - Number(review.ts) > 30 * 86_400_000) return null;
+    // A closed task (`mem handoff done` removes its plan) is not reminded: only the live plan's review.
+    if (readMarker(cwd, taskKey(cwd))?.hash !== review.planHash) return null;
     const markPath = join(nxyRuntimeDir(cwd), 'escape-reminded.json');
     /** @type {string[]} */
     let seen = [];

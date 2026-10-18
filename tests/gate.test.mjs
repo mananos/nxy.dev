@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { decideGate, describeGate } from '../core/gate.mjs';
 import { isSubagentTranscript, lastContextTokens } from '../hosts/claude-code/context.mjs';
 import { armEscape, clearEscape, consumeEscape, escapeUntil } from '../hosts/claude-code/gate-state.mjs';
-import { gateLedgerPath } from '../hosts/claude-code/gate-ledger.mjs';
+import { gateLedgerPath, recordGate } from '../hosts/claude-code/gate-ledger.mjs';
 import { writeMarker } from '../hosts/claude-code/plan-approval.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -120,6 +120,55 @@ test('escape: one use, expires, and never silently stays open', () => {
   writeFileSync(join(dir, '.nxy', 'local', 'gate-escape.json'), JSON.stringify({ until: Date.now() + 999 * 60_000 }), 'utf8');
   const until = escapeUntil(dir, 5);
   assert.ok(until && until <= Date.now() + 5 * 60_000 + 1000, 'an escape cannot outlive its own window');
+});
+
+test('escape: edit and search escapes are independent', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nxy-esc2-'));
+  armEscape(dir, 5, 'search');
+  assert.equal(consumeEscape(dir), false, 'an edit does not use the search escape');
+  assert.ok(escapeUntil(dir, 5, 'search'), 'and it stays armed');
+  assert.equal(escapeUntil(dir), null);
+  assert.equal(consumeEscape(dir, 5, 'search'), true);
+  assert.equal(consumeEscape(dir, 5, 'search'), false, 'single use');
+
+  armEscape(dir, 5);
+  assert.equal(consumeEscape(dir, 5, 'search'), false, 'a search does not use the edit escape');
+  assert.ok(escapeUntil(dir), 'and it stays armed');
+
+  armEscape(dir, 5, 'search');
+  clearEscape(dir);
+  assert.equal(escapeUntil(dir), null);
+  assert.equal(escapeUntil(dir, 5, 'search'), null, 'clearEscape clears both');
+});
+
+test('recordGate: capped ledger drops rows past 90 days, then keeps the newest half', () => {
+  const row = (ts, i) => ({ ts, tool: 'Edit', allow: true, reason: `r${i}`, contextTokens: 1, threshold: 1 });
+  const lines = (dir) => readFileSync(gateLedgerPath(dir), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const DAY = 86_400_000;
+
+  // below the cap: untouched, old rows included
+  const a = mkdtempSync(join(tmpdir(), 'nxy-cap-'));
+  recordGate(a, row(Date.now() - 200 * DAY, 0), { maxBytes: 10_000 });
+  recordGate(a, row(Date.now(), 1), { maxBytes: 10_000 });
+  assert.equal(lines(a).length, 2);
+
+  // over the cap with old rows: the old ones go
+  const b = mkdtempSync(join(tmpdir(), 'nxy-cap-'));
+  for (let i = 0; i < 6; i++) recordGate(b, row(Date.now() - 200 * DAY, i), { maxBytes: 1_000_000 });
+  for (let i = 6; i < 9; i++) recordGate(b, row(Date.now(), i), { maxBytes: 1_000_000 });
+  recordGate(b, row(Date.now(), 9), { maxBytes: 600 });
+  const kept = lines(b);
+  assert.deepEqual(kept.map((r) => r.reason), ['r6', 'r7', 'r8', 'r9']);
+  assert.ok(readFileSync(gateLedgerPath(b)).length <= 600);
+
+  // all recent and still over the cap: newest rows that fit in half
+  const c = mkdtempSync(join(tmpdir(), 'nxy-cap-'));
+  for (let i = 0; i < 30; i++) recordGate(c, row(Date.now(), i), { maxBytes: 1_000_000 });
+  recordGate(c, row(Date.now(), 30), { maxBytes: 1000 });
+  const after = lines(c);
+  assert.ok(readFileSync(gateLedgerPath(c)).length <= 500);
+  assert.equal(after[after.length - 1].reason, 'r30');
+  assert.ok(after.length > 1 && after.length < 31);
 });
 
 test('describeGate: states threshold, implementer availability and escape', () => {

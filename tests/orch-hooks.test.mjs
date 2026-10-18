@@ -39,7 +39,7 @@ test('marker: main-thread implementer, tester and reviewer are denied; other age
     assert.match(r?.permissionDecisionReason, /orchestrator is running plan/);
     assert.match(r?.permissionDecisionReason, /release/);
   }
-  for (const a of ['nxy:planner', 'nxy:scout', 'Explore']) assert.notEqual(pre(s, a, 'look')?.permissionDecision, 'deny', a);
+  for (const a of ['nxy:planner', 'nxy:scout', 'Explore']) assert.notEqual(pre(s, a, 'look\n\n## Map\n- a:1')?.permissionDecision, 'deny', a);
 });
 
 test('a valid ticket is allowed with the handoff, once', () => {

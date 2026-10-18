@@ -23,7 +23,7 @@
  *
  * Fail-open: any error or unknown, and the dispatch goes through as the model wrote it.
  */
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadConfig } from '../../../core/config.mjs';
 import { toNativePath } from '../../../core/paths.mjs';
 import { ASYNC_TTL_MS, clearAsync } from '../agent-notes.mjs';
@@ -31,7 +31,8 @@ import { isSubagentCall, lastContextTokens } from '../context.mjs';
 import { recordGate } from '../gate-ledger.mjs';
 import { handoffCheck, lookupHandoff, memCommand } from '../handoff.mjs';
 import {
-  checkpointDenyMessage, decideCheckpoint, extractPlan, parseBatches, parseQuestions, planHash, questionsDenyMessage,
+  checkpointDenyMessage, decideCheckpoint, extractPlan, hasMap, isPlanRevision, parseBatches, parseQuestions, planHash,
+  plannerMapMessage, questionsDenyMessage,
 } from '../../../core/plan.mjs';
 import {
   CONTINUE, batchOfPrompt, blockedDispatchMessage, blockingBatch, continueQuestion, suiteFixOfPrompt, unnamedBatchMessage,
@@ -42,15 +43,16 @@ import { appendJsonl } from '../../../core/jsonl.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { consumeTicket, readActive, readOrchState } from '../orch-state.mjs';
-import { denyMessage, ticketOf } from '../../../core/orchestrator.mjs';
+import { denyMessage, repoOfPrompt, ticketOf } from '../../../core/orchestrator.mjs';
 import { findAnswer, isApproved } from '../plan-approval.mjs';
 import {
-  progressFor, readSuite, readVerify, recordBatch, recordReviewLaunch, recordSuite, recordSuiteFix,
+  progressFor, readSuite, readSuiteRepos, suiteReposWithoutTester, readVerify, recordBatch, recordReviewLaunch, recordSuite, reviewLaunchRepos, reviewLaunchTs, reviewRecorded, recordSuiteFix, recordSuiteRepo,
 } from '../verify-state.mjs';
 import { roleEffort, roleModel } from '../roles.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
 const IMPLEMENTER = /(^|:)implementer$/;
+const PLANNER = /(^|:)planner$/;
 const TESTER = /(^|:)tester$/;
 const REVIEWER = /(^|:)reviewer$/;
 
@@ -79,7 +81,11 @@ function batchGate(plan, hash, prompt, cwd, transcript, wavedThrough = /** @type
   const allDone = all.length > 0 && all.every((b) => ['pass', 'manual', 'none'].includes(state.batches[String(b.n)]?.status));
   if (suiteFixOfPrompt(prompt)) {
     if (!allDone) return { reason: 'suitefix-early', message: `nxy: a "Suite fix" starts after every batch of plan ${hash} is verified; some are not (see the progress line). Carry out and verify the batches first.` };
-    if (suiteRunning(cwd, hash)) return { reason: 'suitefix-running', message: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the "Suite fix" if it failed. ${RESET_HINT}` };
+    if (suiteRunning(cwd, hash)) {
+      const missing = suiteReposWithoutTester(cwd, hash);
+      const names = missing.map((r) => r.replace(/\\/g, '/').split('/').pop()).join(', ');
+      return { reason: 'suitefix-running', message: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the "Suite fix" if it failed.${missing.length ? ` No tester has run for: ${names}; dispatch one nxy:tester for each.` : ''} ${RESET_HINT}` };
+    }
     return null;
   }
   if (n == null || !batch) return { reason: 'batch-unnamed', message: unnamedBatchMessage(batches, allDone) };
@@ -124,20 +130,72 @@ try {
       }
     }
   }
+  // Fan-out before the planner (1.3.0): a first planner dispatch with no `## Map` is held back once per
+  // task, so the scouts get a chance to find where things are; the next dispatch passes unchanged.
+  if (isAgentTool && typeof agent === 'string' && PLANNER.test(agent)) {
+    const prompt = typeof toolInput.prompt === 'string' ? toolInput.prompt : '';
+    const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
+    if (!hasMap(prompt) && !isPlanRevision(prompt) && loadConfig(cwd).roles?.scout && !isSubagentCall(input, transcript)) {
+      const taskId = (await lookupHandoff(cwd)).task?.id;
+      if (taskId) {
+        const file = join(nxyRuntimeDir(cwd), 'planner-map.json');
+        /** @type {Record<string, number>} */
+        let seen = {};
+        try {
+          const parsed = JSON.parse(readFileSync(file, 'utf8'));
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) seen = parsed;
+        } catch { /* none yet */ }
+        if (!seen[taskId]) {
+          const now = Date.now();
+          const kept = Object.fromEntries(Object.entries(seen).filter(([, ts]) => now - Number(ts) <= 30 * 24 * 3600 * 1000));
+          kept[taskId] = now;
+          mkdirSync(dirname(file), { recursive: true });
+          writeFileSync(file, JSON.stringify(kept));
+          denied = true;
+          emit({ permissionDecision: 'deny', permissionDecisionReason: plannerMapMessage() });
+        }
+      }
+    }
+  }
   if (isAgentTool && typeof agent === 'string' && (TESTER.test(agent) || REVIEWER.test(agent))) {
     const transcript = typeof input.transcript_path === 'string' ? toNativePath(input.transcript_path) : input.transcript_path;
     if (!isSubagentCall(input, transcript)) {
       const known = await lookupHandoff(cwd);
       const plan = known.handoff ? extractPlan(known.handoff.body) : null;
       const hash = plan ? planHash(plan) : null;
-      if (hash && TESTER.test(agent)) {
+      const { repo, alone } = repoOfPrompt(toolInput.prompt);
+      if (hash && TESTER.test(agent) && repo) {
+        // One tester per repo (1.3.0): this repo's own running file; the rerun alone waits for the others.
+        const others = readSuiteRepos(cwd, hash).filter((r) => r.repo.replace(/\\/g, '/').toLowerCase() !== repo.replace(/\\/g, '/').toLowerCase()
+          && r.status === 'running' && Date.now() - (Number(r.ts) || 0) <= ASYNC_TTL_MS);
+        if (alone && others.length) {
+          denied = true;
+          emit({ permissionDecision: 'deny', permissionDecisionReason: `nxy: wait for ${others.map((r) => r.repo.replace(/\\/g, '/').split('/').pop()).join(', ')}; the rerun must run alone. Dispatch it again once the other tester reports.` });
+        } else {
+          const { touchedRepos } = await import('../repos.mjs');
+          const mine = readSuiteRepos(cwd, hash).find((r) => r.repo.replace(/\\/g, '/').toLowerCase() === repo.replace(/\\/g, '/').toLowerCase());
+          const now = Date.now();
+          recordSuiteRepo(cwd, hash, repo, {
+            status: 'running', ts: now, started: now, expected: touchedRepos(cwd, known.task.id),
+            ...(alone ? { alone: true, firstRed: mine?.firstRed || [] } : {}),
+          });
+          clearAsync(cwd, 'tester');
+        }
+      } else if (hash && TESTER.test(agent)) {
         recordSuite(cwd, hash, { status: 'running', ts: Date.now() });
         clearAsync(cwd, 'tester');
       } else if (hash && suiteRunning(cwd, hash)) {
         denied = true;
-        emit({ permissionDecision: 'deny', permissionDecisionReason: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the reviewer. ${RESET_HINT}` });
+        const noTester = suiteReposWithoutTester(cwd, hash).map((r) => r.replace(/\\/g, '/').split('/').filter(Boolean).pop() || r);
+        const missing = noTester.length ? ` No tester ran for ${noTester.join(', ')}: dispatch one for each, or a plain "Full suite for nxy plan ${hash}" dispatch resets the suite.` : '';
+        emit({ permissionDecision: 'deny', permissionDecisionReason: `nxy: the full suite of plan ${hash} has not finished: wait for its completion notice, then dispatch the reviewer.${missing} ${RESET_HINT}` });
       } else if (hash) {
-        recordReviewLaunch(cwd, hash);
+        // One reviewer per repo (1.3.0): the launch carries the touched roots, so the last part knows it is the last.
+        const roots = repo ? (await import('../repos.mjs')).touchedRepos(cwd, known.task.id) : undefined;
+        const prior = repo ? reviewLaunchTs(cwd, hash) : 0;
+        // The second dispatch of the same round must not clear the first one's launch or part.
+        const sameRound = !!prior && reviewLaunchRepos(cwd, hash).length > 0 && !reviewRecorded(cwd, hash) && Date.now() - prior < 6 * 3600_000;
+        if (!sameRound) recordReviewLaunch(cwd, hash, Date.now(), roots);
         clearAsync(cwd, 'reviewer');
       }
     }

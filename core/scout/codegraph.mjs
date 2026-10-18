@@ -149,6 +149,29 @@ export function hasIndex(cwd, env = process.env) {
  * @param {{bin?: string, maxChars?: number, timeoutMs?: number, env?: NodeJS.ProcessEnv, platform?: NodeJS.Platform}} [opts]
  */
 export function explore(cwd, question, opts = {}) {
+  return runCodegraph(cwd, ['explore', question], opts);
+}
+
+/**
+ * Relations through the index: who calls a symbol, what it calls, what breaks if it changes.
+ * Same caps and result shape as `explore`.
+ *
+ * @param {string} cwd
+ * @param {'callers'|'callees'|'impact'} kind
+ * @param {string} symbol
+ * @param {{bin?: string, maxChars?: number, timeoutMs?: number, env?: NodeJS.ProcessEnv, platform?: NodeJS.Platform}} [opts]
+ */
+export function relations(cwd, kind, symbol, opts = {}) {
+  return runCodegraph(cwd, [kind, symbol], opts);
+}
+
+/**
+ * Spawns codegraph with `args`, capped in time and payload. Never throws.
+ * @param {string} cwd
+ * @param {string[]} args
+ * @param {{bin?: string, maxChars?: number, timeoutMs?: number, env?: NodeJS.ProcessEnv, platform?: NodeJS.Platform}} [opts]
+ */
+export function runCodegraph(cwd, args, opts = {}) {
   const env = opts.env || process.env;
   const platform = opts.platform || process.platform;
   const maxChars = opts.maxChars ?? 24_000; // ~6k tokens: dense, but it dies with the scout
@@ -160,7 +183,7 @@ export function explore(cwd, question, opts = {}) {
   let r;
   try {
     // No shell: the question is free text (see resolveLauncher).
-    r = spawnSync(launcher.file, [...launcher.prefix, 'explore', question], { cwd, encoding: 'utf8', timeout: timeoutMs, env, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+    r = spawnSync(launcher.file, [...launcher.prefix, ...args], { cwd, encoding: 'utf8', timeout: timeoutMs, env, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
   } catch {
     return { ok: false, reason: 'spawn-failed', text: '', truncated: false, ms: Date.now() - started };
   }

@@ -131,17 +131,117 @@ function readPlanFile(cwd, hash, name) {
 }
 
 /**
- * @typedef {{status: 'running' | 'done', ts: number, red?: {command: string, error?: string, status?: string, detail?: string}[], ran?: string[]}} SuiteRecord
+ * @typedef {{status: 'running' | 'done', ts: number, red?: {command: string, error?: string, status?: string, detail?: string}[], ran?: string[], rerun?: Record<string, {passedAlone: boolean, firstRed: {command: string, error?: string, detail?: string}[]}>}} SuiteRecord
  */
 
 /** The full suite's state for this plan (`suite.json`). @param {string} cwd @param {string} hash @param {SuiteRecord} rec */
 export function recordSuite(cwd, hash, rec) {
+  // A suite run for the whole plan replaces any per-repo state of an earlier round.
+  for (const f of suiteRepoFiles(cwd, hash)) {
+    try { unlinkSync(join(planDir(cwd, hash), f)); } catch { /* best-effort */ }
+  }
   writePlanFile(cwd, hash, 'suite.json', rec);
+}
+
+// ---- one tester per repo (1.3.0): `suite-<slug>.json`, a few hundred bytes each ----
+
+/**
+ * @typedef {{repo: string, status: 'running' | 'done' | 'recheck', ts: number, started?: number, ended?: number, expected?: string[],
+ *   red?: {command: string, error?: string, detail?: string}[], ran?: string[], alone?: boolean,
+ *   firstRed?: {command: string, error?: string, detail?: string}[], with?: string, rerun?: {passedAlone: boolean, firstRed: {command: string, error?: string, detail?: string}[]}}} SuiteRepoRecord
+ */
+
+const rootKey = (r) => {
+  const s = String(r).replace(/\\/g, '/').replace(/\/+$/, '');
+  return process.platform === 'win32' ? s.toLowerCase() : s;
+};
+const suiteSlug = (repo) => `${(rootKey(repo).split('/').pop() || 'repo').replace(/[^0-9a-z]+/gi, '-').slice(0, 24)}-${createHash('sha1').update(rootKey(repo)).digest('hex').slice(0, 6)}`;
+
+function suiteRepoFiles(cwd, hash) {
+  try {
+    return readdirSync(planDir(cwd, hash)).filter((n) => /^suite-.+\.json$/.test(n));
+  } catch {
+    return [];
+  }
+}
+
+/** Every repo's suite record of this plan. @returns {SuiteRepoRecord[]} */
+export function readSuiteRepos(cwd, hash) {
+  return suiteRepoFiles(cwd, hash).map((n) => readPlanFile(cwd, hash, n)).filter((r) => r && r.repo && r.status);
+}
+
+/**
+ * Records one repo's tester. A red stop whose run overlapped another repo's tester, and that is not the
+ * rerun alone, is stored as `recheck` (with the first failure): the suite is rerun alone before it counts.
+ * A rerun keeps the first failure and records `rerun: {passedAlone, firstRed}`.
+ * @param {string} cwd @param {string} hash @param {string} repo
+ * @param {Omit<SuiteRepoRecord, 'repo' | 'ts'> & {ts?: number}} rec
+ */
+export function recordSuiteRepo(cwd, hash, repo, rec) {
+  const now = Date.now();
+  const mine = readSuiteRepos(cwd, hash).find((r) => rootKey(r.repo) === rootKey(repo));
+  /** @type {SuiteRepoRecord} */
+  let out = { repo, ts: now, ...rec };
+  if (rec.status === 'running' && !rec.alone && mine?.status === 'done') {
+    // A new round: this repo already had a finished run, so the other repos' non-running records are the
+    // old round's. Drop them, or the aggregate would count them as this round's results.
+    for (const f of suiteRepoFiles(cwd, hash)) {
+      const r = readPlanFile(cwd, hash, f);
+      if (r && rootKey(r.repo) !== rootKey(repo) && r.status !== 'running') {
+        try { unlinkSync(join(planDir(cwd, hash), f)); } catch { /* best-effort */ }
+      }
+    }
+  }
+  if (rec.status === 'done') {
+    const started = rec.started ?? mine?.started ?? now;
+    const ended = rec.ended ?? now;
+    out = { ...out, started, ended };
+    if (rec.alone || mine?.alone) {
+      const firstRed = rec.firstRed || mine?.firstRed || [];
+      out = { ...out, rerun: { passedAlone: !(rec.red || []).length, firstRed } };
+      delete out.firstRed;
+    } else if ((rec.red || []).length) {
+      const other = readSuiteRepos(cwd, hash).find((r) => rootKey(r.repo) !== rootKey(repo)
+        && (r.started ?? r.ts) <= ended && (r.status === 'running' ? now - (Number(r.ts) || 0) <= 6 * 3600_000 : (r.ended ?? 0) >= started));
+      if (other) {
+        out = { ...out, status: 'recheck', firstRed: rec.red, with: other.repo };
+        delete out.red;
+      }
+    }
+  }
+  writePlanFile(cwd, hash, `suite-${suiteSlug(repo)}.json`, out);
+}
+
+/**
+ * Touched repos that have no tester record at all, while no repo tester is running: the aggregate suite
+ * would stay `running` for them. Empty when a tester is in flight or every expected repo has a record.
+ * @param {string} cwd @param {string} hash @returns {string[]}
+ */
+export function suiteReposWithoutTester(cwd, hash) {
+  const repos = readSuiteRepos(cwd, hash);
+  if (!repos.length || repos.some((r) => r.status === 'running')) return [];
+  const expected = [...new Set(repos.flatMap((r) => r.expected || []).map(String))];
+  return expected.filter((e) => !repos.some((r) => rootKey(r.repo) === rootKey(e)));
 }
 
 /** @returns {SuiteRecord|null} */
 export function readSuite(cwd, hash) {
-  return readPlanFile(cwd, hash, 'suite.json');
+  const repos = readSuiteRepos(cwd, hash);
+  if (!repos.length) return readPlanFile(cwd, hash, 'suite.json');
+  const expected = [...new Set([...repos.flatMap((r) => r.expected || []), ...repos.map((r) => r.repo)].map(String))];
+  const doneKeys = new Set(repos.filter((r) => r.status === 'done').map((r) => rootKey(r.repo)));
+  const allDone = expected.every((r) => doneKeys.has(rootKey(r)));
+  const ts = Math.max(...repos.map((r) => Number(r.ts) || 0));
+  if (!allDone) return { status: 'running', ts };
+  /** @type {Record<string, {passedAlone: boolean, firstRed: any[]}>} */
+  const rerun = {};
+  for (const r of repos) if (r.rerun) rerun[r.repo] = r.rerun;
+  return {
+    status: 'done', ts,
+    red: repos.filter((r) => r.status === 'done').flatMap((r) => r.red || []),
+    ran: repos.flatMap((r) => r.ran || []),
+    ...(Object.keys(rerun).length ? { rerun } : {}),
+  };
 }
 
 /** The post-suite fix's state (`suitefix.json`). @param {string} cwd @param {string} hash @param {SuiteRecord} rec */
@@ -154,9 +254,57 @@ export function readSuiteFix(cwd, hash) {
   return readPlanFile(cwd, hash, 'suitefix.json');
 }
 
-/** When the reviewer was dispatched (`reviewlaunch.json`). @param {string} cwd @param {string} hash @param {number} [ts] */
-export function recordReviewLaunch(cwd, hash, ts = Date.now()) {
-  writePlanFile(cwd, hash, 'reviewlaunch.json', { ts });
+/** When the reviewer was dispatched (`reviewlaunch.json`). @param {string} cwd @param {string} hash @param {number} [ts] @param {string[]} [repos] one reviewer per repo: the touched roots */
+export function recordReviewLaunch(cwd, hash, ts = Date.now(), repos) {
+  if (repos && repos.length) {
+    // One reviewer per repo (1.3.0): a new round clears the parts and the merge claim of the last one.
+    for (const n of reviewPartFiles(cwd, hash)) {
+      try { unlinkSync(join(planDir(cwd, hash), n)); } catch { /* best-effort */ }
+    }
+    try { unlinkSync(join(planDir(cwd, hash), 'review-merge.lock')); } catch { /* none */ }
+  }
+  writePlanFile(cwd, hash, 'reviewlaunch.json', repos && repos.length ? { ts, repos } : { ts });
+}
+
+/** The repos a per-repo review was launched for (empty for a single review). @param {string} cwd @param {string} hash @returns {string[]} */
+export function reviewLaunchRepos(cwd, hash) {
+  const r = readPlanFile(cwd, hash, 'reviewlaunch.json')?.repos;
+  return Array.isArray(r) ? r : [];
+}
+
+// ---- one reviewer per repo (1.3.0): `review-<slug>.json`, unnumbered findings, merged by the last part ----
+
+function reviewPartFiles(cwd, hash) {
+  try {
+    return readdirSync(planDir(cwd, hash)).filter((n) => /^review-.+\.json$/.test(n));
+  } catch {
+    return [];
+  }
+}
+
+/** One repo's review part. @param {string} cwd @param {string} hash @param {string} repo @param {any} part */
+export function recordReviewPart(cwd, hash, repo, part) {
+  writePlanFile(cwd, hash, `review-${suiteSlug(repo)}.json`, { repo, ts: Date.now(), ...part });
+}
+
+/** Every recorded review part of this plan. @returns {any[]} */
+export function readReviewParts(cwd, hash) {
+  return reviewPartFiles(cwd, hash).map((n) => readPlanFile(cwd, hash, n)).filter((r) => r && r.repo);
+}
+
+/** Whether this repo's part of the review is recorded. @param {string} cwd @param {string} hash @param {string} repo */
+export function reviewPartRecorded(cwd, hash, repo) {
+  return readReviewParts(cwd, hash).some((p) => rootKey(p.repo) === rootKey(repo));
+}
+
+/** Claims the merge of the parts: true for exactly one caller (exclusive create). @param {string} cwd @param {string} hash */
+export function claimReviewMerge(cwd, hash) {
+  try {
+    writeFileSync(join(ensureDir(planDir(cwd, hash)), 'review-merge.lock'), String(Date.now()), { flag: 'wx' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** When the reviewer was last dispatched for this plan, or 0. @param {string} cwd @param {string} hash */

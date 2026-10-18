@@ -173,7 +173,7 @@ const read = (p) => {
  * @param {string} cwd @param {string|null} branch
  * @param {Set<string>} covered absolute paths that have a baseline entry
  * @param {({root: string}|string)[]} [repos] the marker's repos
- * @returns {{files: any[], notReviewed: {path: string, reason: string}[], note: string|null, atApproval: number, now: number|null}}
+ * @returns {{files: any[], notReviewed: {path: string, abs: string, reason: string}[], note: string|null, atApproval: number, now: number|null}}
  */
 export function gitChangedFiles(cwd, branch, covered, repos = []) {
   const primary = primaryRoot(cwd);
@@ -207,6 +207,7 @@ export function gitChangedFiles(cwd, branch, covered, repos = []) {
       if (!before || before.has(rel)) {
         notReviewed.push({
           path: label,
+          abs,
           reason: before
             ? 'already modified before the plan was approved and nothing copied it, so the plan\'s part cannot be told from the user\'s'
             : `${name} is not in the plan; its prior uncommitted changes cannot be told apart`,

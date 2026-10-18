@@ -10,6 +10,24 @@ import { splitLines, tokenize } from './shellwrites.mjs';
 /** Fixed first words of the planner nudge, so metrics can find it in transcripts. */
 export const LOCATE_NUDGE_MARK = 'nxy locate nudge:';
 
+/** Fixed first words of the read gate's refusal, so the transcript counters can skip stopped searches. */
+export const READ_GATE_MARK = 'nxy read gate:';
+
+/**
+ * String work only (no filesystem): is this main-thread call a broad grep/glob/find search?
+ * A path counts as a file when its last segment has an extension. Never throws.
+ * @param {string} toolName @param {any} toolInput
+ */
+export function isBroadMainSearch(toolName, toolInput) {
+  try {
+    const isFile = (p) => /\.[A-Za-z0-9]{1,8}$/.test(String(p).replace(/[\\/]+$/, '').split(/[\\/]/).pop() || '');
+    const c = classifySearch(toolName, toolInput, { isFile });
+    return c.broad && (c.kind === 'grep' || c.kind === 'glob' || c.kind === 'find');
+  } catch {
+    return false;
+  }
+}
+
 /** True when the command runs the locate entry. */
 export function isLocateCommand(cmd) {
   return /locate\.mjs/.test(String(cmd ?? ''));

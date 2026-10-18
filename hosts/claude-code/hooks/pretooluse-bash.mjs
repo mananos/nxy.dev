@@ -75,12 +75,14 @@ try {
     }
     // The planner's one-time locate nudge (a deny); no ledger, the main thread is untouched.
     // Its own try: on error, fall through to the normal flow.
-    // Skipped (no import) outside a subagent: the main thread has nothing to do there.
+    // In the main thread it is the read gate, and only for broad searches.
     try {
       const inSubagent = (typeof input.agent_id === 'string' && input.agent_id)
         || (typeof input.agent_type === 'string' && input.agent_type)
         || /[\\/]subagents[\\/]/.test(String(input.transcript_path ?? ''));
-      const { deny } = inSubagent ? await (await import('../search-observe.mjs')).onSearchTool(cwd, input) : { deny: null };
+      // Main thread: only a broad search (string check) reaches the read gate; narrow commands read nothing new.
+      const watch = inSubagent || (await import('../../../core/search-scope.mjs')).isBroadMainSearch(input.tool_name, input.tool_input);
+      const { deny } = watch ? await (await import('../search-observe.mjs')).onSearchTool(cwd, input) : { deny: null };
       if (deny) {
         process.stdout.write(JSON.stringify({
           hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: deny },

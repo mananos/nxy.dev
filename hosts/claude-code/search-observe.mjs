@@ -1,13 +1,17 @@
 // @ts-check
 /**
  * Search tools seen from the PreToolUse hooks (Grep, Glob, and Bash/PowerShell searches): the
- * planner is nudged once per run from a repo-wide grep to locate.mjs. Nothing else happens here;
- * the main thread's broad-search observation lives in search-history.mjs (from the transcripts).
+ * planner is nudged once per run from a repo-wide grep to locate.mjs. The main thread's broad
+ * searches (the hooks call here only for those) go through the read gate: past the threshold they
+ * are refused and sent to a scout, unless `gate.reads` is off or the user armed `/nxy:gate once
+ * search`. Each decision is a `kind: 'read'` ledger row. The after-the-fact count lives in
+ * search-history.mjs (from the transcripts).
  */
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PLUGIN_ROOT, ensureDir, nxyRuntimeDir, toNativePath } from '../../core/paths.mjs';
 import { LOCATE_NUDGE_MARK, classifySearch, isLocateCommand } from '../../core/search-scope.mjs';
+import { decideReadGate, readGateMessage } from '../../core/gate.mjs';
 import { agentTypeOf, isSubagentCall } from './context.mjs';
 
 const NUDGE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -71,5 +75,63 @@ export async function onSearchTool(cwd, input) {
     return { deny: cls.kind === 'grep' && cls.broad ? nudgeMessage(cls.pattern) : null };
   }
 
-  return { deny: null };
+  return mainThreadSearch(cwd, input, transcript, isFile);
+}
+
+const HINT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * True the first time a session is refused (and remembers it): `.nxy/local/read-gate-hint.json`,
+ * `{sessionId: ts}`, entries older than 30 days dropped on write. Never throws.
+ */
+function firstRefusalOfSession(cwd, sessionId) {
+  if (!sessionId) return false;
+  try {
+    const p = join(nxyRuntimeDir(cwd), 'read-gate-hint.json');
+    let state = {};
+    try {
+      const o = JSON.parse(readFileSync(p, 'utf8'));
+      if (o && typeof o === 'object') state = o;
+    } catch { /* none yet */ }
+    if (state[sessionId]) return false;
+    const now = Date.now();
+    const next = {};
+    for (const [k, v] of Object.entries(state)) if (typeof v === 'number' && now - v < HINT_TTL_MS) next[k] = v;
+    next[sessionId] = now;
+    ensureDir(nxyRuntimeDir(cwd));
+    writeFileSync(p, JSON.stringify(next), 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The read gate for the main thread. Reached only for searches `isBroadMainSearch` already marked
+ * broad, so config and the transcript tail are read only then; the escape file only when it would block.
+ */
+async function mainThreadSearch(cwd, input, transcript, isFile) {
+  const tool = input?.tool_name;
+  const cls = classifySearch(tool, input?.tool_input, { isFile });
+  if (!cls.broad) return { deny: null };
+  const { loadConfig } = await import('../../core/config.mjs');
+  const cfg = loadConfig(cwd);
+  const gateCfg = cfg.gate;
+  if (!gateCfg || gateCfg.enabled === false || gateCfg.reads === false) return { deny: null };
+  const hasScout = Boolean(cfg.roles && cfg.roles.scout);
+  if (!hasScout) return { deny: null };
+  const { lastContextTokens } = await import('./context.mjs');
+  const contextTokens = lastContextTokens(transcript);
+  const base = { contextTokens, isSubagent: false, hasScout, search: cls };
+  if (decideReadGate({ ...base, escapeActive: false }, gateCfg).allow) return { deny: null };
+  const { consumeEscape } = await import('./gate-state.mjs');
+  const escaped = consumeEscape(cwd, gateCfg.escapeMinutes, 'search');
+  const { recordGate } = await import('./gate-ledger.mjs');
+  recordGate(cwd, {
+    ts: Date.now(), kind: 'read', tool, allow: escaped, reason: escaped ? 'escape' : 'over-threshold',
+    contextTokens, threshold: gateCfg.contextTokens,
+  });
+  if (escaped) return { deny: null };
+  const firstInSession = firstRefusalOfSession(cwd, typeof input?.session_id === 'string' ? input.session_id : '');
+  return { deny: readGateMessage(cls, /** @type {number} */ (contextTokens), gateCfg.contextTokens, { firstInSession }) };
 }
