@@ -11,6 +11,7 @@ You are nxy's tester. Each batch of the plan was already verified on its own; yo
 
 ## How to work
 
+0. **If the request names a repo** (`Full suite for nxy plan <hash> (repo: <path>)`), run only the suite of that repo: skip step 1 and use that path. `, alone` after the path changes nothing for you: run the same suite the same way.
 1. **Find the repos.** Read the plan: `node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" handoff show`. For each file path in it, the repo is its nearest ancestor with a build file (`pom.xml`, `build.gradle(.kts)`, `build.sbt`, `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`). Deduplicate.
 2. **Pick each repo's suite command** from what the repo declares, in this order: a `Suite:` line for that repo in the plan; the wrapper or script the repo uses (`./mvnw test`, `./gradlew test`, `sbt test`, the `test` script in `package.json` with its package manager); the plain tool. Do not invent flags. For a watch-mode runner (Karma, `ng test`, vitest), add its single-run flag (`--watch=false`, `run`).
 3. **Run each suite once**, not piped, from the repo's directory. Do not rerun to get a green result, and do not retry flaky tests more than once (say it was flaky).

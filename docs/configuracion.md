@@ -54,7 +54,7 @@ Regla: **`.nxy/` se comparte, `.nxy/local/` es de tu checkout.**
     "cacheBreakThreshold": 100000
   },
   "scout": { "codegraph": true },
-  "gate": { "enabled": true, "contextTokens": 100000, "escapeMinutes": 5 },
+  "gate": { "enabled": true, "reads": true, "contextTokens": 100000, "escapeMinutes": 5 },
   "roles": {
     "scout":       { "model": "haiku",  "provider": "claude" },
     "planner":     { "model": "opus",   "provider": "claude" },
@@ -137,8 +137,11 @@ Los cambios se ven en el próximo refresco, sin reiniciar.
 | Clave | Qué hace |
 | --- | --- |
 | `enabled` | `false` apaga el freno de escritura y, con él, la exigencia de guardar un handoff antes de editar (usan el mismo umbral) |
-| `contextTokens` | Desde cuánto contexto del principal se delegan las ediciones |
-| `escapeMinutes` | Cuánto vale un `/nxy:gate once` antes de vencer solo |
+| `reads` | `false` deja el freno de búsquedas amplias del principal sólo en observación (por defecto `true`). También: `/nxy:gate reads off\|on` (por repo) |
+| `contextTokens` | Desde cuánto contexto del principal se delegan las ediciones y se frenan las búsquedas amplias |
+| `escapeMinutes` | Cuánto vale un `/nxy:gate once` o `/nxy:gate once search` antes de vencer solo |
+
+`metrics/gate.jsonl` (las filas del freno) tiene tope de 256 KB: al pasarlo se descartan las de más de 90 días, y si aun así sobra quedan las más nuevas hasta 128 KB.
 
 El gate nunca frena a un subagente, nunca frena si no hay implementer disponible y ante cualquier duda deja pasar.
 

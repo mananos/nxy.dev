@@ -76,6 +76,36 @@ test('Approve: takes over a fresh approved plan and spawns batch 1 with a ticket
   assert.ok(w.state().launched['1']);
 });
 
+test('two repos: two testers, a recheck repo reruns alone, two reviewers, one hand-back', async () => {
+  const w = world({ repos: ['/a', '/b'], batches: [{ n: 1, depends: [], text: 'Batch 1 — one\nAccept: `x`', accept: { command: 'x' } }] });
+  const d = w.driver();
+  await d.step();
+  w.verdict(1, 'pass');
+  await d.onAgentDone(w.agentOf('implementer', 1), 'done');
+  const testers = w.spawns.filter((s) => s.subagentType === 'nxy:tester');
+  assert.deepEqual(testers.map((s) => s.prompt), [`Full suite for nxy plan ${HASH} (repo: /a)`, `Full suite for nxy plan ${HASH} (repo: /b)`]);
+  // /a stops: the suite is still running, nothing new is spawned
+  w.plan.suite = { status: 'running', ts: 1 };
+  await d.onAgentDone(testers[0].agentId, 'a green');
+  assert.equal(w.spawns.filter((s) => s.subagentType === 'nxy:tester').length, 2);
+  // /b stops red while /a ran: recheck, rerun alone
+  w.plan.recheck = ['/b'];
+  await d.onAgentDone(testers[1].agentId, 'b red');
+  const alone = w.spawns.filter((s) => s.subagentType === 'nxy:tester').at(-1);
+  assert.equal(alone.prompt, `Full suite for nxy plan ${HASH} (repo: /b, alone)`);
+  w.plan.recheck = [];
+  w.plan.suite = { status: 'done', ts: 2, red: [] };
+  await d.onAgentDone(alone.agentId, 'b green alone');
+  const reviewers = w.spawns.filter((s) => s.subagentType === 'nxy:reviewer');
+  assert.deepEqual(reviewers.map((s) => s.prompt), [`Review nxy plan ${HASH} (project: /proj) (repo: /a)`, `Review nxy plan ${HASH} (project: /proj) (repo: /b)`]);
+  await d.onAgentDone(reviewers[0].agentId, 'part 1 of 2');
+  assert.equal(w.submitted.length, 0);
+  w.plan.review = { id: 'r1' };
+  await d.onAgentDone(reviewers[1].agentId, 'REPORT: merged');
+  assert.equal(w.submitted.length, 1);
+  assert.match(w.submitted[0].text, /REPORT: merged/);
+});
+
 test('parallel batches after 1 passes, then tester, reviewer and hand-back with the report', async () => {
   const w = world();
   const d = w.driver();

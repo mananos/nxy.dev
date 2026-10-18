@@ -14,7 +14,7 @@
  */
 import { buildRepoMap, queryRepoMap, repoMapInfo } from '../index/repomap.mjs';
 import { findRg, rgSearch } from '../rg.mjs';
-import { describeCodegraph, explore } from './codegraph.mjs';
+import { describeCodegraph, explore, relations } from './codegraph.mjs';
 import { STOPWORDS } from '../text.mjs';
 
 
@@ -161,6 +161,92 @@ export function searchWithoutModel(cwd, question, opts = {}) {
     degraded.push('output:truncated');
   }
   return { text, degraded, terms, ms: Date.now() - started, hits: [...hitMap.values()].slice(0, 25), codegraph };
+}
+
+/**
+ * Relation questions ("who calls X", "what X calls", "what breaks if X changes").
+ *
+ * codegraph first; when it is missing, unindexed, slow or empty, falls back to `rg -w` (direct
+ * references only) or, for callees, to the symbol's definition in the repo map, and says so.
+ *
+ * @param {string} cwd
+ * @param {'callers'|'callees'|'impact'} kind
+ * @param {string} symbol
+ * @param {{codegraph?: boolean, env?: NodeJS.ProcessEnv, bin?: string, platform?: NodeJS.Platform}} [opts]
+ */
+export function relationsWithoutModel(cwd, kind, symbol, opts = {}) {
+  const env = opts.env || process.env;
+  const started = Date.now();
+  /** @type {string[]} */
+  const degraded = [];
+  /** @type {{path: string, line: number, kind: string, name: string, source: string, text?: string}[]} */
+  const hits = [];
+  const out = [`# model-free relations — ${kind} of "${symbol}"`, ''];
+  let codegraph = 'ok';
+
+  if (opts.codegraph === false) {
+    codegraph = 'disabled';
+  } else {
+    const res = relations(cwd, kind, symbol, { env, ...(opts.bin ? { bin: opts.bin } : {}), ...(opts.platform ? { platform: opts.platform } : {}) });
+    if (res.ok) {
+      out.push('## codegraph', `_${res.ms} ms${res.truncated ? ', payload capped' : ''}_`, '```', res.text, '```');
+      let text = out.join('\n');
+      if (text.length > MAX_OUTPUT_CHARS) {
+        text = text.slice(0, MAX_OUTPUT_CHARS) + '\n\n_[output capped by nxy]_';
+        degraded.push('output:truncated');
+      }
+      return { text, degraded, terms: [symbol], ms: Date.now() - started, hits, codegraph };
+    }
+    codegraph = String(res.reason);
+  }
+  degraded.push(`codegraph:${codegraph}`);
+  out.push(`_codegraph unavailable (${codegraph}) — answered with the index and rg instead._`, '');
+
+  if (kind === 'callees') {
+    degraded.push('callees:definition-only');
+    out.push('## definition (repo map)');
+    const rows = queryRepoMap(cwd, symbol, { limit: 10 }).rows;
+    if (rows.length) {
+      out.push('```');
+      for (const r of rows) {
+        out.push(`${r.path}:${r.line}\t${r.kind}\t${r.name}\t${r.sig}`);
+        hits.push({ path: r.path, line: r.line, kind: r.kind, name: r.name, source: 'index' });
+      }
+      out.push('```');
+    } else {
+      out.push('_No definition found in the repo map._');
+      degraded.push('repomap:no-hits');
+    }
+    out.push('', '_Callees need codegraph: read the body of the definition above to see what it calls._');
+  } else {
+    degraded.push('rg:direct-references-only');
+    out.push('## direct references (rg -w)');
+    const rgBin = findRg(env);
+    if (!rgBin) {
+      out.push('_ripgrep is not installed: nothing to search with._');
+      degraded.push('rg:missing');
+    } else {
+      const res = rgSearch(cwd, symbol, { bin: rgBin, word: true, maxRows: 40, maxPerFile: 20, env });
+      if (res.ok && res.rows.length) {
+        out.push(`_direct references only${res.truncated ? ' (capped)' : ''}: indirect callers (dynamic dispatch, re-exports) are not visible without codegraph._`, '```');
+        for (const r of res.rows) {
+          out.push(`${r.path}:${r.line}: ${r.text}`);
+          hits.push({ path: r.path, line: r.line, kind: 'text', name: symbol, source: 'rg', text: String(r.text).slice(0, 200) });
+        }
+        out.push('```');
+      } else {
+        out.push('_No literal reference to this symbol anywhere in the repo._');
+        degraded.push('rg:no-hits');
+      }
+    }
+  }
+
+  let text = out.join('\n');
+  if (text.length > MAX_OUTPUT_CHARS) {
+    text = text.slice(0, MAX_OUTPUT_CHARS) + '\n\n_[output capped by nxy]_';
+    degraded.push('output:truncated');
+  }
+  return { text, degraded, terms: [symbol], ms: Date.now() - started, hits: hits.slice(0, 40), codegraph };
 }
 
 /** Status block for `/nxy:locate --status`: which engines the scout would actually have. */

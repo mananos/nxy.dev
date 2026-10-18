@@ -8,7 +8,7 @@
  * Pure: snapshot in, actions out. No `node:*`, no `process`, no dynamic import — the module cannot
  * load them. Its only import is batch-status.mjs, which is import-free too.
  */
-import { RETRY, CONTINUE, STOP, isRed, isDone, blockingBatch, afterBatch, reviewInstruction } from './batch-status.mjs';
+import { RETRY, CONTINUE, STOP, isRed, isDone, blockingBatch, afterBatch, reviewInstruction, testerPrompt, reviewerPrompt, repoOfPrompt } from './batch-status.mjs';
 
 /** Where the orchestrator keeps its files, under nxy's runtime dir. */
 export const ORCH_DIR = 'orch';
@@ -36,8 +36,9 @@ export const PAUSE_STOP = 'Stop';
  *   suite?: {status?: 'running' | 'done', red?: {command?: string, error?: string}[]} | null, suiteLaunched?: boolean | number,
  *   review?: {id: string} | null, reviewLaunched?: boolean | number,
  *   reviewNeeded?: {needed: boolean, reason?: string},
+ *   repos?: string[], reviewRepos?: string[], recheck?: string[], aloneTried?: string[], testersRunning?: number,
  * }} Snap
- * @typedef {{role: 'implementer', batch: number, retry?: boolean, failure?: string} | {role: 'tester'} | {role: 'reviewer'}} Spawn
+ * @typedef {{role: 'implementer', batch: number, retry?: boolean, failure?: string} | {role: 'tester', repo?: string, alone?: boolean} | {role: 'reviewer', repo?: string}} Spawn
  * @typedef {{type: 'spawn'} & Spawn
  *   | {type: 'ask', kind: 'red', batch: number}
  *   | {type: 'ask', kind: 'pause', batches: number[]}
@@ -124,17 +125,27 @@ export function nextActions(snap) {
   }
   if (!snap.batches.length) return { phase: 'batches', actions: [{ type: 'wait', reason: 'no batches' }] };
 
+  const perRepo = (snap.repos ?? []).length >= 2 ? /** @type {string[]} */ (snap.repos) : null;
   if (!snap.suite || !suiteDone(snap.suite)) {
-    return snap.suite || snap.suiteLaunched
-      ? { phase: 'suite', actions: [{ type: 'wait', reason: 'full suite running' }] }
-      : { phase: 'suite', actions: [{ type: 'spawn', role: 'tester' }] };
+    if (!snap.suite && !snap.suiteLaunched) {
+      return { phase: 'suite', actions: perRepo ? perRepo.map((repo) => ({ type: 'spawn', role: 'tester', repo })) : [{ type: 'spawn', role: 'tester' }] };
+    }
+    // A repo whose suite failed while another ran is rerun alone, once the other testers finished.
+    // A repo already rerun alone is never rerun again (loop guard), whatever the record says.
+    const recheck = (snap.recheck ?? []).filter((r) => !(snap.aloneTried ?? []).includes(r));
+    if (perRepo && recheck.length && !snap.testersRunning) {
+      return { phase: 'suite', actions: [{ type: 'spawn', role: 'tester', repo: recheck[0], alone: true }] };
+    }
+    return { phase: 'suite', actions: [{ type: 'wait', reason: 'full suite running' }] };
   }
   if (suiteIsRed(snap.suite)) return { phase: 'suite', actions: [{ type: 'handback', reason: 'suite-red' }] };
   if (snap.reviewNeeded && !snap.reviewNeeded.needed) return { phase: 'review', actions: [{ type: 'handback', reason: 'review-skipped' }] };
   if (snap.review) return { phase: 'done', actions: [{ type: 'handback', reason: 'checkpoint2' }] };
-  return snap.reviewLaunched
-    ? { phase: 'review', actions: [{ type: 'wait', reason: 'review running' }] }
-    : { phase: 'review', actions: [{ type: 'spawn', role: 'reviewer' }] };
+  if (snap.reviewLaunched) return { phase: 'review', actions: [{ type: 'wait', reason: 'review running' }] };
+  // One reviewer per repo that has changed files (reviewRepos), like the hooks; else per touched repo.
+  const revRepos = snap.reviewRepos ?? snap.repos ?? [];
+  const perReview = revRepos.length >= 2 ? revRepos : null;
+  return { phase: 'review', actions: perReview ? perReview.map((repo) => ({ type: 'spawn', role: 'reviewer', repo })) : [{ type: 'spawn', role: 'reviewer' }] };
 }
 
 // ---- prompts: what the module hands each agent (same wording the main thread uses today) ----
@@ -148,11 +159,9 @@ export function batchPrompt({ text, failure }) {
   return failure ? `${base}\n\nThe previous attempt did not pass: ${failure}. Fix that, then run the Accept command again.` : base;
 }
 
-/** @param {string} hash */
-export const testerPrompt = (hash) => `Full suite for nxy plan ${hash}`;
-
-/** @param {string} hash @param {string} project */
-export const reviewerPrompt = (hash, project) => `Review nxy plan ${hash} (project: ${String(project).replace(/\\/g, '/')})`;
+// testerPrompt(hash, repo?, {alone}?), reviewerPrompt(hash, project, repo?) and repoOfPrompt(prompt) live in
+// batch-status.mjs (afterBatch needs them too); the module imports them from here.
+export { testerPrompt, reviewerPrompt, repoOfPrompt };
 
 // ---- tickets: the sentinel description that tells the dispatch hook a spawn is the module's own ----
 

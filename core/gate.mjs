@@ -18,12 +18,14 @@
  * This module is pure: it takes numbers and returns a verdict, so it can be tested without a
  * transcript, a hook or a host.
  */
+import { READ_GATE_MARK } from './search-scope.mjs';
 
 /**
  * @typedef {object} GateConfig
  * @property {boolean} enabled
  * @property {number} contextTokens   threshold; at or above it the main thread stops editing
  * @property {number} escapeMinutes   how long a `/nxy:gate once` escape stays valid
+ * @property {boolean} [reads]        broad main-thread searches are stopped past the threshold (false = observed only)
  */
 
 /**
@@ -81,19 +83,62 @@ function denyMessage(contextTokens, threshold, file) {
 }
 
 /**
+ * The read gate: a broad main-thread search (grep / glob / find) past the threshold is refused and
+ * handed to a scout. Never refuses a `read`. Pure; fails open on anything unknown.
+ * @param {{contextTokens: number|null, isSubagent: boolean, hasScout: boolean, escapeActive: boolean, search: {kind: string|null, broad: boolean}}} input
+ * @param {GateConfig} cfg
+ * @returns {{allow: boolean, reason: string}}
+ */
+export function decideReadGate(input, cfg) {
+  if (!cfg || cfg.enabled === false || cfg.reads === false) return { allow: true, reason: 'disabled' };
+  if (input.isSubagent) return { allow: true, reason: 'subagent' };
+  const s = input.search;
+  if (!s || !s.broad || !(s.kind === 'grep' || s.kind === 'glob' || s.kind === 'find')) return { allow: true, reason: 'not-broad-search' };
+  if (!input.hasScout) return { allow: true, reason: 'no-scout' };
+  if (typeof input.contextTokens !== 'number' || !Number.isFinite(input.contextTokens)) return { allow: true, reason: 'context-unknown' };
+  const threshold = cfg.contextTokens;
+  if (!Number.isFinite(threshold) || threshold <= 0) return { allow: true, reason: 'no-threshold' };
+  if (input.contextTokens < threshold) return { allow: true, reason: 'under-threshold' };
+  if (input.escapeActive) return { allow: true, reason: 'escape' };
+  return { allow: false, reason: 'over-threshold' };
+}
+
+/**
+ * The refusal text for a broad main-thread search. Starts with READ_GATE_MARK (core/search-scope.mjs).
+ * @param {{kind: string|null, pattern?: string|null, target?: string}} search
+ * @param {number} contextTokens
+ * @param {number} threshold
+ * @param {{firstInSession?: boolean}} [opts]
+ */
+export function readGateMessage(search, contextTokens, threshold, opts = {}) {
+  const what = search?.pattern ? ` for \`${String(search.pattern).slice(0, 80)}\`` : '';
+  const lines = [
+    `${READ_GATE_MARK} main thread context is ${k(contextTokens)} > ${k(threshold)} — a broad ${search?.kind || 'search'}${what} would pull its results into every later call.`,
+    '',
+    'Dispatch `nxy:scout` with the question (several scouts in one message for several questions); it answers with `path:line`.',
+    'Or narrow this to one file, or a `Read` with offset/limit — those are never stopped.',
+    '',
+    'If searching here really is cheaper, the user can run `/nxy:gate once search` to let one search through.',
+  ];
+  if (opts.firstInSession) lines.push('To stop this in this repo: `/nxy:gate reads off`');
+  return lines.join('\n');
+}
+
+/**
  * Human-readable status for `/nxy:gate status`.
  * @param {GateConfig} cfg
- * @param {{contextTokens: number|null, hasImplementer: boolean, escapeUntil: number|null}} state
+ * @param {{contextTokens: number|null, hasImplementer: boolean, escapeUntil: number|null, searchEscapeUntil?: number|null}} state
  */
 export function describeGate(cfg, state) {
   const now = Date.now();
-  const escape = state.escapeUntil && state.escapeUntil > now
-    ? `armed, ${Math.ceil((state.escapeUntil - now) / 60000)} min left`
-    : 'no';
+  const left = (t) => (t && t > now ? `armed, ${Math.ceil((t - now) / 60000)} min left` : 'no');
+  const escape = left(state.escapeUntil);
   return [
     `gate:            ${cfg.enabled === false ? 'DISABLED' : 'on'} (threshold ${k(cfg.contextTokens)} tokens of main-thread context)`,
     `context now:     ${typeof state.contextTokens === 'number' ? k(state.contextTokens) : 'unknown (only measurable inside a hook)'}`,
     `implementer:     ${state.hasImplementer ? 'available' : 'unavailable -> the gate never blocks'}`,
+    `reads:           ${cfg.reads === false ? 'off (broad searches are observed only)' : 'on'}`,
     `one-shot escape: ${escape}`,
+    `search escape:   ${left(state.searchEscapeUntil)}`,
   ].join('\n');
 }

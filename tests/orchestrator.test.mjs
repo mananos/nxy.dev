@@ -23,6 +23,14 @@ const pass = (ts = 10) => ({ status: 'pass', ts });
 const fail = (ts = 10) => ({ status: 'fail', error: 'boom', ts });
 const spawns = (r) => r.actions.filter((a) => a.type === 'spawn').map((a) => a.role === 'implementer' ? `b${a.batch}` : a.role);
 
+test('repoOfPrompt keeps a ")" inside the repo path', () => {
+  const repo = 'C:/work/app (v2)/api';
+  assert.deepEqual(status.repoOfPrompt(status.testerPrompt('abc', repo)), { repo, alone: false });
+  assert.deepEqual(status.repoOfPrompt(status.testerPrompt('abc', repo, { alone: true })), { repo, alone: true });
+  assert.deepEqual(status.repoOfPrompt(status.reviewerPrompt('abc', 'C:/p (x)', repo)), { repo, alone: false });
+  assert.deepEqual(status.repoOfPrompt('Full suite for nxy plan abc'), { repo: null, alone: false });
+});
+
 test('linear plan: batch 1, then 2 once 1 passes', () => {
   assert.deepEqual(spawns(nextActions(snap())), ['b1']);
   assert.deepEqual(spawns(nextActions(snap({ verdicts: { 1: pass() }, launched: { 1: 5 } }))), ['b2']);
@@ -79,6 +87,33 @@ test('all green: tester, reviewer, checkpoint 2', () => {
   assert.deepEqual(nextActions(snap({ ...green, reviewLaunched: true })).actions.map((a) => a.type), ['wait']);
   const end = nextActions(snap({ ...green, review: { id: 'r1' } }));
   assert.deepEqual(end.actions, [{ type: 'handback', reason: 'checkpoint2' }]);
+});
+
+test('two repos: one tester per repo, wait, a recheck repo reruns alone after the others, then one reviewer per repo', () => {
+  const base = { verdicts: { 1: pass(), 2: pass() }, launched: { 1: 5, 2: 6 }, repos: ['/a', '/b'] };
+  assert.deepEqual(nextActions(snap(base)).actions, [
+    { type: 'spawn', role: 'tester', repo: '/a' }, { type: 'spawn', role: 'tester', repo: '/b' },
+  ]);
+  const running = { ...base, suite: { status: 'running', ts: 7 }, suiteLaunched: true };
+  assert.deepEqual(nextActions(snap({ ...running, testersRunning: 1 })).actions.map((a) => a.type), ['wait']);
+  assert.deepEqual(nextActions(snap({ ...running, recheck: ['/b'], testersRunning: 1 })).actions.map((a) => a.type), ['wait'], 'the other tester still runs');
+  assert.deepEqual(nextActions(snap({ ...running, recheck: ['/b'], testersRunning: 0 })).actions,
+    [{ type: 'spawn', role: 'tester', repo: '/b', alone: true }]);
+  assert.deepEqual(nextActions(snap({ ...running, recheck: ['/b'], aloneTried: ['/b'], testersRunning: 0 })).actions.map((a) => a.type), ['wait'],
+    'a repo already rerun alone is never rerun again');
+  const green = { ...base, suite: { status: 'done', red: [] } };
+  assert.deepEqual(nextActions(snap(green)).actions, [
+    { type: 'spawn', role: 'reviewer', repo: '/a' }, { type: 'spawn', role: 'reviewer', repo: '/b' },
+  ]);
+  assert.deepEqual(nextActions(snap({ ...green, reviewLaunched: true })).actions.map((a) => a.type), ['wait']);
+  assert.deepEqual(nextActions(snap({ ...green, review: { id: 'r1' } })).actions, [{ type: 'handback', reason: 'checkpoint2' }]);
+  // one repo: unchanged
+  assert.deepEqual(spawns(nextActions(snap({ ...base, repos: ['/a'] }))), ['tester']);
+});
+
+test('two touched repos, only one with changed files: one reviewer spawn, without a repo', () => {
+  const green = { verdicts: { 1: pass(), 2: pass() }, launched: { 1: 5, 2: 6 }, repos: ['/a', '/b'], reviewRepos: ['/a'], suite: { status: 'done', red: [] } };
+  assert.deepEqual(nextActions(snap(green)).actions, [{ type: 'spawn', role: 'reviewer' }]);
 });
 
 test('suite red and review not needed hand back', () => {

@@ -30,8 +30,9 @@ import { completionLines, reviewExpected } from '../agent-done.mjs';
 import { hasAsync, pushNote, takeAsync } from '../agent-notes.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import {
-  agentTranscriptPath, claimSendBack, readAgentRun, readSuite, readVerify, recordBatch, recordSuite, recordSuiteFix, reviewRecorded,
+  agentTranscriptPath, claimSendBack, readAgentRun, readSuite, readVerify, recordBatch, recordSuite, recordSuiteFix, recordSuiteRepo, reviewPartRecorded, reviewRecorded,
 } from '../verify-state.mjs';
+import { repoOfPrompt } from '../../../core/orchestrator.mjs';
 
 /** Plugin agents arrive namespaced (`nxy:implementer`); a user-level copy would not be. */
 const IMPLEMENTER = /(^|:)implementer$/;
@@ -101,15 +102,31 @@ try {
       // What failed: the last run of each command, if it was non-zero; never nxy's own memory calls. When
       // the plan names its suite and Accept commands, only those count (a probe is not the suite).
       const runs = /** @type {any[]} */ (run.events.filter((e) => e.kind === 'run' && !/mem\.mjs/.test(/** @type {any} */ (e).command)));
-      const known = [...new Set([...parseSuites(plan).map((s) => s.command), ...parseBatches(plan).flatMap((b) => (b.accept.kind === 'command' ? [b.accept.command] : []))])];
+      const { repo, alone } = repoOfPrompt(run.prompt);
+      let suites = parseSuites(plan);
+      let batches = parseBatches(plan);
+      if (repo) {
+        // One tester per repo: only this repo's `Suite:` line and the Accept of the batches that edit it.
+        const { repoOf, touchedRepos } = await import('../repos.mjs');
+        const filesOf = (text) => [...String(text).matchAll(/^\s*[-*]\s*`([^`]+)`/gm)].map((m) => m[1]);
+        const roots = touchedRepos(cwd, known.task.id);
+        const same = (a, b) => String(a).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase() === String(b).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+        const mine = (file) => { const r = repoOf(cwd, file, roots); return !!r && same(r.root, repo); };
+        const primary = roots[0] != null && same(roots[0], repo);
+        const name = repo.replace(/\\/g, '/').split('/').filter(Boolean).pop() || '';
+        const mineSuites = suites.filter((s) => same(s.repo, repo) || s.repo.replace(/\\/g, '/').split('/').filter(Boolean).pop() === name || (primary && s.repo === '.'));
+        const mineBatches = batches.filter((b) => filesOf(b.text).some(mine));
+        if (mineSuites.length || mineBatches.length) { suites = mineSuites; batches = mineBatches; }
+      }
+      const commandsKnown = [...new Set([...suites.map((s) => s.command), ...batches.flatMap((b) => (b.accept.kind === 'command' ? [b.accept.command] : []))])];
       // Keyed by the known command a run matched (root-aware: `cd "<root>" && npm run check` is `npm run check`),
       // so a later clean run supersedes an earlier failing one. A run whose exit code is hidden (a pipe) is
       // a near miss: when it is all there is for a known command, that command is not certified.
       const last = new Map();
       const nearMiss = new Map();
       for (const e of runs) {
-        if (!known.length) { last.set(canonCommand(e.command), e); continue; }
-        for (const k of known) {
+        if (!commandsKnown.length) { last.set(canonCommand(e.command), e); continue; }
+        for (const k of commandsKnown) {
           const r = inspectRun(e.command, k, cwd);
           if (r.match) { last.set(k, e); nearMiss.delete(k); } else if (r.why) nearMiss.set(k, r.why);
         }
@@ -117,14 +134,23 @@ try {
       /** @type {{command: string, error?: string, detail?: string}[]} */
       const red = [...last.values()].filter((e) => !e.ok).map((e) => ({ command: e.command, ...(e.error ? { error: e.error } : {}) }));
       for (const [k, why] of nearMiss) if (!last.has(k)) red.push({ command: k, detail: `not certified: ${why}` });
-      recordSuite(cwd, hash, {
-        status: 'done', ts: Date.now(),
-        ran: runs.map((e) => e.command),
-        red,
-      });
+      if (repo) {
+        recordSuiteRepo(cwd, hash, repo, {
+          status: 'done', ended: Date.now(), ran: runs.map((e) => e.command), red, ...(alone ? { alone: true } : {}),
+        });
+      } else {
+        recordSuite(cwd, hash, {
+          status: 'done', ts: Date.now(),
+          ran: runs.map((e) => e.command),
+          red,
+        });
+      }
     } else if (plan && hash && role === 'reviewer') {
       marker = 'reviewer';
-      if (!reviewRecorded(cwd, hash) && await reviewExpected(cwd, hash) && !hasAsync(cwd, marker) && claimSendBack(cwd, hash, `${input.agent_id || path}:reviewer`)) {
+      const { repo: reviewRepo } = repoOfPrompt(run?.prompt);
+      // One reviewer per repo: it is sent back only while its own part is missing (the merge comes with the last one).
+      const missing = reviewRepo ? !reviewPartRecorded(cwd, hash, reviewRepo) && !reviewRecorded(cwd, hash) : !reviewRecorded(cwd, hash);
+      if (missing && await reviewExpected(cwd, hash) && !hasAsync(cwd, marker) && claimSendBack(cwd, hash, `${input.agent_id || path}:reviewer`)) {
         process.stderr.write(`nxy: you stopped without recording your review of plan ${hash}. Run the record command printed at the end of the packet output (\`review.mjs record\`, with your findings), then stop.`);
         code = 2;
         sentBack = true;

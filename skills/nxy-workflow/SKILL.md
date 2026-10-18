@@ -13,14 +13,14 @@ Edit directly while your context is light. When nxy's write gate stops an edit, 
 
 ## Medium — a few files, nothing left to decide
 
-1. If you do not know where the code is, dispatch `nxy:scout` with the question: it returns `path:line`, not files.
+1. If you do not know where the code is, split the task into its "where" questions and dispatch one `nxy:scout` per question, up to 4, all in one message: each returns `path:line` (and what it ruled out), not files. Read only there. Diagnosing a hard bug stays with you, never the scout.
 2. Dispatch `nxy:implementer` for each coherent change, with `path:line`, the change and a verifying command.
 
 ## Large — several files, a design choice, a new endpoint/entity/component, or more than one repo
 
 Also when the repo sets `flow.plan: "always"` in `.nxy/config.json` and the change touches a second file.
 
-1. Dispatch `nxy:planner` with the task, and follow the `Next (main thread):` it returns, exactly:
+1. First split the task into its "where" questions and dispatch one `nxy:scout` per question, up to 4, all in one message. Then dispatch `nxy:planner` with the task and their `path:line` and ruled-out lines under a `## Map` heading (the planner reads only there). Diagnosing a hard bug stays with you or the planner, never the scout. Follow the `Next (main thread):` it returns, exactly:
    - **questions** → ask them as given, then dispatch the planner again with the answers;
    - **checkpoint** → show the plan and ask Approve / Change as given.
    - **Orchestrator.** If nxy's orchestrator takes over after Approve (the `nxy` pane shows it, and nxy denies dispatches of implementer, tester and reviewer), end the turn without dispatching them and act on what nxy hands back: checkpoint 2, a ✘, or an Adjust request (dispatch `Batch N — adjust: <request>` as in step 2). Steps 2 to 4 then apply only to what it hands back; otherwise as written.

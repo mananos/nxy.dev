@@ -70,7 +70,7 @@ test('gate status --since counts only the window and sums its tokens', () => {
     entry(c, { ageDays: 20, ctx: 170_000, tools: [['Glob', { pattern: '**/*.mjs' }]] }),
   ]]);
   const out = run('gate.mjs', ['status', '--since', '7d', '--cwd', cwd]);
-  assert.match(out, /broad searches above 100k context[^\n]*: 2 — Grep 1 · Bash 1 · context carried at those searches 310k tokens/);
+  assert.match(out, /broad searches that ran above 100k context[^\n]*: 2 — Grep 1 · Bash 1 · context carried at those searches 310k tokens/);
   const wide = run('gate.mjs', ['status', '--since', '30d', '--cwd', cwd]);
   assert.match(wide, /: 3 — Grep 1 · Glob 1 · Bash 1 · context carried at those searches 480k tokens/);
 });
@@ -94,6 +94,15 @@ test('a missing path is a file only when it has an extension', () => {
   ]]);
   const out = run('gate.mjs', ['status', '--cwd', cwd]);
   assert.match(out, /: 2 — Grep 1 · Read 1 · /);
+});
+
+test('a search the read gate stopped (its result carries the mark) is not counted', () => {
+  const cwd = setup([(c) => [
+    entry(c, { ctx: 150_000, ids: ['tu_stopped'], tools: [['Grep', { pattern: 'foo' }]] }),
+    { type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_stopped', is_error: true, content: 'nxy read gate: main thread context is 150k > 100k' }] } },
+    entry(c, { ctx: 150_000, ids: ['tu_ran'], tools: [['Grep', { pattern: 'bar' }]] }),
+  ]]);
+  assert.match(run('gate.mjs', ['status', '--cwd', cwd]), /: 1 — Grep 1 · /);
 });
 
 test('a streamed duplicate (same requestId and tool_use id) counts once', () => {

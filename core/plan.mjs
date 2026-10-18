@@ -209,6 +209,39 @@ export function parseBatches(plan) {
 }
 
 /**
+ * The plan as one repo's reviewer needs it (1.3.0): the `Goal:` line and only the batches whose files
+ * resolve to `root` (headers and Accept lines kept); no Decisions, Risks, other batches or `### Repos`.
+ * A relative path belongs to the primary (`repos[0]`); an absolute one to the longest root containing it;
+ * a batch with no resolvable file stays with the primary.
+ * @param {string} plan @param {string} root @param {string[]} repos the touched roots, primary first
+ * @returns {string}
+ */
+export function planForRepo(plan, root, repos) {
+  const fwd = (p) => String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const roots = (repos.length ? repos : [root]).map(fwd);
+  const primary = roots[0];
+  const mine = fwd(root);
+  const ownerOf = (file) => {
+    const f = String(file).replace(/\\/g, '/').toLowerCase();
+    if (!/^([a-z]:)?\//.test(f)) return primary;
+    let best = null;
+    for (const r of roots) if ((f === r || f.startsWith(`${r}/`)) && (!best || r.length > best.length)) best = r;
+    return best;
+  };
+  const out = [];
+  const goal = parseGoal(plan);
+  if (goal) out.push(`Goal: ${goal}`);
+  for (const b of parseBatches(plan)) {
+    const owners = batchFiles(b.text).map(ownerOf).filter((o) => o !== null);
+    if (!(owners.length ? owners.includes(mine) : mine === primary)) continue;
+    const body = b.text.split('\n');
+    const stop = body.findIndex((l, i) => i > 0 && /^(Risks|Decisions):/i.test(l));
+    out.push(`### ${(stop > 0 ? body.slice(0, stop) : body).join('\n').replace(/\s+$/, '')}`);
+  }
+  return out.join('\n');
+}
+
+/**
  * The plan's `Decisions:` list — the user's answers, written by the planner as rules.
  * Each bullet starts with a scope tag: `[repo]` (a rule future tasks in this repo follow) or `[task]`
  * (what this task does). The tag is stripped from `rule`; an untagged (legacy) bullet is `task`.
@@ -493,6 +526,26 @@ export function planFirstDenyMessage(onceCmd) {
     'nxy: this repo plans every change that touches more than one file (`flow.plan: "always"` in .nxy/config.json), and there is no plan yet.',
     'Dispatch the nxy:planner subagent with the task first; the user approves the plan, then implementers carry it out.',
     `For a one-off exception, the user can run \`${onceCmd}\`.`,
+  ].join('\n');
+}
+
+/** Whether a planner prompt already carries the scouts' map (a `## Map` heading). @param {string} prompt */
+export function hasMap(prompt) {
+  return /^#{1,3}\s*Map\b/m.test(String(prompt || ''));
+}
+
+/** Prompts that revise an existing draft: no new exploration, so no map is asked for. @param {string} prompt */
+export function isPlanRevision(prompt) {
+  return /^\s*Finish nxy plan\b/.test(String(prompt || ''));
+}
+
+/** What the main thread is told when it dispatches the planner without a map (once per task). */
+export function plannerMapMessage() {
+  return [
+    'nxy: before the planner, let the scouts find where things are (cheap, in parallel).',
+    'Split the task into its "where" questions and dispatch one `nxy:scout` per question, up to 4, all in one message.',
+    'Then dispatch `nxy:planner` again with their `path:line` results and their "Ruled out" lines under a `## Map` heading; the planner reads only there.',
+    'To skip this, dispatch the planner again unchanged: this notice appears once per task.',
   ].join('\n');
 }
 

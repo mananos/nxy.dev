@@ -9,7 +9,7 @@ import { PLUGIN_ROOT, nxyProjectDir, nxyUserDir } from './paths.mjs';
  * @property {{engine: 'auto'|'rtk'|'off', excludeCommands: string[], onlyCommands: string[], autoAllowWhenOriginalAllowed: boolean}} filter
  * @property {{projectsDir: string|null, subscription: boolean, statusline: {color: boolean, preset: string, layout: string, separator?: string, brand: string, ctxWarnTokens: number, ctxCritTokens: number, turnWarnUsd: number, turnCritUsd: number, promptCacheTtlMin: number, theme: Record<string, string>}, cacheBreakThreshold: number}} metrics
  * @property {{codegraph: boolean}} scout
- * @property {{enabled: boolean, contextTokens: number, escapeMinutes: number}} gate
+ * @property {{enabled: boolean, contextTokens: number, escapeMinutes: number, reads?: boolean}} gate
  * @property {Record<string, Role>} roles
  * @property {{mode: 'manual'|'assisted'|'proactive', handoff: {required: boolean}}} [memory]
  * @property {{plan?: "auto"|"always", pauseAfterBatch?: boolean, orchestrator?: 'auto'|'off'}} [flow]  "always": every change that touches a second file goes through the planner (0.4.4); pauseAfterBatch: the Mod's orchestrator asks before each next wave; orchestrator "off": the Mod never takes a plan over

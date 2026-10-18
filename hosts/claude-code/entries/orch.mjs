@@ -32,8 +32,30 @@ import { findApprovalAt, isApproved } from '../plan-approval.mjs';
 import { lastCacheTtl, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
 import { lookupHandoff } from '../handoff.mjs';
 import { activeTask } from '../tasks.mjs';
-import { readReview, readReviewDetail, readSuite, readVerify } from '../verify-state.mjs';
+import { readReview, readReviewDetail, readSuite, readSuiteRepos, readVerify } from '../verify-state.mjs';
+import { touchedRepos } from '../repos.mjs';
 import { clearOrch } from '../orch-state.mjs';
+
+/** With 2+ repos touched: their roots and the ones whose suite failed in parallel and wait for a rerun alone. */
+async function perRepoView(cwd, key, hash) {
+  try {
+    const repos = touchedRepos(cwd, key);
+    if (repos.length < 2) return {};
+    const recheck = readSuiteRepos(cwd, hash).filter((r) => r.status === 'recheck').map((r) => r.repo).sort();
+    // Reviewers: only the repos with changed files (the same rule as agent-done.mjs reviewNext).
+    let reviewRepos = repos;
+    try {
+      const { reviewFiles } = await import('../baseline.mjs');
+      const { repoOf } = await import('../repos.mjs');
+      const files = reviewFiles(cwd, key, hash).files;
+      const norm = (r) => String(r).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+      reviewRepos = repos.filter((r) => files.some((f) => (f.abs ? norm(repoOf(cwd, f.abs, repos)?.root ?? '') === norm(r) : norm(r) === norm(repos[0]))));
+    } catch { /* keep every touched repo */ }
+    return { repos, reviewRepos, recheck };
+  } catch {
+    return {};
+  }
+}
 
 /** A batch title without its "Batch N — " prefix (the raw title when it does not match). */
 function titleOf(raw) {
@@ -109,6 +131,7 @@ async function snapshot(cwd, opts) {
     batches: parseBatches(plan).map((b) => ({ n: b.n, title: titleOf(b.title), depends: b.depends, text: b.text, files: batchFiles(b.text), accept: b.accept })),
     verdicts,
     suite: suite ? { status: suite.status, red: suite.red || [] } : null,
+    ...(await perRepoView(cwd, key, hash)),
     review,
     reviewDetail: await readReviewDetail(cwd, hash),
     reviewNeeded: need,

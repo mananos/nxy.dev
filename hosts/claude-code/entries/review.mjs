@@ -6,6 +6,7 @@
  * Usage:
  *   review.mjs packet [--full]   what the reviewer reads: saved to a file, an index printed (--full prints it all)
  *   review.mjs record <stdin>    the reviewer's findings (JSON) → classified, saved, checkpoint 2
+ *   (packet/record --repo <root>: one reviewer per repo; the last record merges the parts into checkpoint 2)
  *   review.mjs show [<id>]       the last review (or that one) again
  *   review.mjs docs              what the documenter reads: the docs that name the change, and the diff
  *   review.mjs escape "<rule>" --as convention|lens [--lens <l>]
@@ -16,12 +17,14 @@
  * (hosts/claude-code/baseline.mjs); files changed without a copy come from a read-only git status
  * (hosts/claude-code/gitstate.mjs), marked `(git)`.
  */
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from '../../../core/format.mjs';
 import { PLUGIN_ROOT, ensureDir, gitRoot, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { appendJsonl, readJsonl } from '../../../core/jsonl.mjs';
-import { extractPlan, parseBatches, planHash } from '../../../core/plan.mjs';
+import { extractPlan, parseBatches, planForRepo, planHash } from '../../../core/plan.mjs';
+import { claimReviewMerge, readReviewParts, recordReviewPart, reviewLaunchRepos } from '../verify-state.mjs';
 import {
   batchForFile, checkpoint2, chatRulesInstruction, classifyFindings, mergeLenses, packetOutline, parseFindings, parseLens, reviewId, reviewNeeded,
   reviewPacket, selectLenses,
@@ -84,6 +87,18 @@ function notReviewedLines(rv, withCoverage = false) {
   }
   if (withCoverage && cov.length) out.push('', '## Coverage', ...cov);
   return out;
+}
+
+const fwdRoot = (r) => String(r).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+const sameRoot = (a, b) => fwdRoot(a) === fwdRoot(b);
+const repoName = (r) => String(r).replace(/\\/g, '/').split('/').filter(Boolean).pop() || String(r);
+const repoSlug = (r) => `${repoName(r).replace(/[^0-9a-z]+/gi, '-').slice(0, 24)}-${createHash('sha1').update(fwdRoot(r)).digest('hex').slice(0, 6)}`;
+
+/** Whether a changed file belongs to this repo (a file with no absolute path belongs to the primary). */
+function inRepo(f, root, roots) {
+  if (!f.abs) return sameRoot(roots[0], root);
+  const r = repoOf(cwd, f.abs, roots);
+  return !!r && sameRoot(r.root, root);
 }
 
 /** @param {string} dir */
@@ -168,32 +183,43 @@ switch (action) {
       console.log(`no plan in the handoff of \`${label}\`: nothing to review`);
       break;
     }
-    const rv = reviewFiles(cwd, key, hash);
-    const files = rv.files;
+    const rvAll = reviewFiles(cwd, key, hash);
+    const roots = touchedRepos(cwd, key);
+    // One reviewer per repo (1.3.0): only that repo's files, lenses and conventions, and the plan trimmed to it.
+    const repoRoot = typeof opts.repo === 'string' ? toNativePath(opts.repo) : null;
+    // Its "Not reviewed" and "Coverage" notes too: nothing of another repo reaches this packet.
+    const rv = repoRoot
+      ? {
+        ...rvAll,
+        notReviewed: rvAll.notReviewed.filter((n) => (n.abs ? inRepo({ abs: n.abs }, repoRoot, roots) : sameRoot(roots[0], repoRoot))),
+        coverage: (rvAll.coverage ?? []).filter((c) => sameRoot(c.root, repoRoot)),
+      }
+      : rvAll;
+    const files = repoRoot ? rv.files.filter((f) => inRepo(f, repoRoot, roots)) : rv.files;
     const need = reviewNeeded(files.map((f) => f.path));
     if (!need.needed) {
-      console.log(`no review needed for plan ${hash}: ${need.reason}.`);
+      console.log(`no review needed for plan ${hash}${repoRoot ? ` in ${repoName(repoRoot)}` : ''}: ${need.reason}.`);
       if (!files.length) for (const l of emptyWhy(hash, rv)) console.log(l);
       for (const l of notReviewedLines(rv, true)) console.log(l);
       break;
     }
     // Every touched repo's lenses over the plugin's; the primary's last, so it wins.
-    const roots = touchedRepos(cwd, key);
+    const lensRoots = repoRoot ? [repoRoot] : roots;
     const lenses = selectLenses(
-      [...roots].reverse().reduce((acc, r) => mergeLenses(acc, lensesIn(join(r, '.nxy', 'lenses'))), lensesIn(join(PLUGIN_ROOT, 'lenses'))),
+      [...lensRoots].reverse().reduce((acc, r) => mergeLenses(acc, lensesIn(join(r, '.nxy', 'lenses'))), lensesIn(join(PLUGIN_ROOT, 'lenses'))),
       files.map((f) => ({ path: f.path, content: f.content })),
     );
     const { openStore } = await import('../../../core/memory/store.mjs');
     const db = openStore();
     let conventions;
     try {
-      conventions = (await conventionsOf(db, roots, { limit: 200 })).map((m) => ({ title: m.title, body: m.body }));
+      conventions = (await conventionsOf(db, lensRoots, { limit: 200 })).map((m) => ({ title: m.title, body: m.body }));
     } finally {
       db.close();
     }
     const packet = reviewPacket({
-      planHash: hash, plan, conventions, lenses, files, coverage: coverageOf(rv),
-      recordCmd: `node --disable-warning=ExperimentalWarning "${SELF}" record --cwd "${cwd.replace(/\\/g, '/')}"`,
+      planHash: hash, plan: repoRoot ? planForRepo(plan, repoRoot, roots) : plan, conventions, lenses, files, coverage: coverageOf(rv),
+      recordCmd: `node --disable-warning=ExperimentalWarning "${SELF}" record --cwd "${cwd.replace(/\\/g, '/')}"${repoRoot ? ` --repo "${repoRoot.replace(/\\/g, '/')}"` : ''}`,
     });
     const notes = notReviewedLines(rv);
     if (opts.full) {
@@ -202,7 +228,7 @@ switch (action) {
       break;
     }
     // The packet can be thousands of lines: it is saved, and only an index and the way to answer are printed.
-    const saved = packetPath(cwd, key);
+    const saved = repoRoot ? packetPath(cwd, key).replace(/(\.md)?$/, `-${repoSlug(repoRoot)}$&`) : packetPath(cwd, key);
     const text = [packet, ...notes].join('\n');
     ensureDir(dirname(saved));
     writeFileSync(saved, text, 'utf8');
@@ -235,8 +261,35 @@ switch (action) {
       process.exitCode = 1;
       break;
     }
-    const files = reviewFiles(cwd, key, hash).files;
-    const classified = classifyFindings(findings, new Map(files.map((f) => /** @type {[string, [number, number][]]} */ ([f.path, f.ranges]))));
+    const allFiles = reviewFiles(cwd, key, hash).files;
+    const repoRoot = typeof opts.repo === 'string' ? toNativePath(opts.repo) : null;
+    const roots = touchedRepos(cwd, key);
+    const forRepo = repoRoot ? allFiles.filter((f) => inRepo(f, repoRoot, roots)) : allFiles;
+    const classified = classifyFindings(findings, new Map(forRepo.map((f) => /** @type {[string, [number, number][]]} */ ([f.path, f.ranges]))));
+    let files = allFiles;
+    let findingsOut = classified;
+    if (repoRoot) {
+      // One reviewer per repo: the part is kept without ids; the last part merges and numbers once.
+      const part = classified.map(({ id: _id, ...f }) => f);
+      recordReviewPart(cwd, hash, repoRoot, { findings: part, summary: { files: forRepo.length } });
+      const launched = reviewLaunchRepos(cwd, hash);
+      const withChanges = (launched.length ? launched : roots).filter((r) => r === repoRoot || allFiles.some((f) => inRepo(f, r, roots)));
+      const expected = withChanges.some((r) => sameRoot(r, repoRoot)) ? withChanges : [...withChanges, repoRoot];
+      const parts = readReviewParts(cwd, hash);
+      const have = expected.filter((r) => parts.some((p) => sameRoot(p.repo, r)));
+      for (const e of errors) console.log(`skipped: ${e}`);
+      if (have.length < expected.length) {
+        console.log(`review of ${repoName(repoRoot)} recorded (${have.length} of ${expected.length}); checkpoint 2 comes with the last one`);
+        break;
+      }
+      if (!claimReviewMerge(cwd, hash)) {
+        console.log(`review of ${repoName(repoRoot)} recorded (${have.length} of ${expected.length}); checkpoint 2 comes from the reviewer that finished last`);
+        break;
+      }
+      findingsOut = expected
+        .flatMap((r) => parts.find((p) => sameRoot(p.repo, r))?.findings || [])
+        .map((f, i) => ({ ...f, id: `R${i + 1}` }));
+    }
     const docs = loadConfig(cwd).roles?.documenter ? findDocsAcross(files, loadConfig(cwd).docs || {}) : null;
     const state = {
       docs,
@@ -245,16 +298,16 @@ switch (action) {
       branch: key,
       ts: Date.now(),
       summary: { files: files.length, added: files.reduce((s, f) => s + f.added, 0), removed: files.reduce((s, f) => s + f.removed, 0) },
-      findings: classified,
+      findings: findingsOut,
       chosen: [],
     };
     ensureDir(nxyRuntimeDir(cwd));
     writeFileSync(statePath, JSON.stringify(state), 'utf8');
     appendJsonl(ledgerPath, {
       ts: state.ts, kind: 'review', id: state.id, planHash: hash,
-      findings: classified.map((f) => ({ id: f.id, lens: f.lens, severity: f.severity, cause: f.cause })),
+      findings: findingsOut.map((f) => ({ id: f.id, lens: f.lens, severity: f.severity, cause: f.cause })),
     });
-    for (const e of errors) console.log(`skipped: ${e}`);
+    if (!repoRoot) for (const e of errors) console.log(`skipped: ${e}`);
     const chatRules = claimChatRulesAsk(cwd, key) ? chatRulesInstruction(memCommand('save')) : null;
     console.log(checkpointText(state, parseBatches(plan), chatRules));
     break;

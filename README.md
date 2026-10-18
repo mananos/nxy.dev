@@ -204,6 +204,8 @@ Abrí Claude Code en un repo y nombrá en el pedido las rutas de los otros. El p
 
 Regla del gate: sólo quedan libres los archivos fuera del proyecto y de todo repo git (el scratchpad, la memoria de Claude). Los de `.nxy/` siguen con gate porque son archivos tuyos que se commitean. `/nxy:gate once` ahora también deja pasar una edición después de `mem handoff done`.
 
+Si te molesta que frene búsquedas amplias (1.3.0): `/nxy:gate reads off` lo apaga en este repo; detalles en [Ver en qué se gasta](#ver-en-qué-se-gasta), punto 5.
+
 ### Cambios hechos fuera de Claude (scripts, generadores, proyectos sin git)
 
 - **Qué ves.** Al aprobar, nxy copia los archivos que el plan nombra (hasta 200) y, en carpetas sin git, anota una lista liviana: ruta, tamaño, fecha y huella del contenido de cada archivo. Saltea `node_modules`, `target`, `dist`, `build`, `.git`, `.nxy` y similares; los archivos por encima del límite de copia sólo llevan tamaño y fecha. La lista se toma una vez por tarea, al primer plan aprobado; un plan revisado no la rehace. Con git no se hace inventario: git ya lo cubre.
@@ -230,6 +232,12 @@ nxy te ayuda a no olvidarte: si la tarea tiene handoff y Claude editó algo desp
 ```
 
 Un scout (Haiku) busca primero con herramientas que no gastan tokens (el índice de símbolos de nxy, `rg` y, si está, codegraph), confirma con dos o tres lecturas y devuelve hasta 5 `path:line` con tres líneas de código cada uno. Todo lo que leyó muere con él.
+
+**Lo que el scout descartó (`## Ruled out`).** Qué ves: al final del reporte, hasta 5 líneas `path:line — por qué no` con los candidatos que miró y no son; no aparece si no descartó nada. Qué significa: son lugares donde ya se buscó; sumados al `path:line`, evitan que el planner o vos vuelvan a abrirlos. Qué hacés: nada; el reporte sigue en unos ~600 tokens.
+
+**Quién llama a X / qué se rompe si cambio X.** Qué ves: el scout responde con `locate.mjs --callers X`, `--callees X` o `--impact X`. Con codegraph instalado y el repo indexado usa sus relaciones; el reporte dice en "How I found it" que fue codegraph. Sin codegraph (o sin índice, o si tarda más de 20 s) cae a `rg` y dice qué degradó: para callers e impact son sólo referencias directas, y para callees sólo te muestra dónde está definido el símbolo y avisa que las llamadas salientes necesitan codegraph. Qué hacés: es opcional; si lo querés completo, `codegraph init` en el repo (nxy nunca lo corre solo). `scout.codegraph: false` lo desactiva.
+
+**Scouts en paralelo antes del planner.** Qué ves: en una tarea mediana o grande, Claude parte el pedido en sus preguntas de "dónde" y despacha un `nxy:scout` por pregunta (hasta 4, todos en un mensaje); después el planner recibe sus `path:line` y lo descartado bajo un `## Map` y lee sólo ahí. Si Claude manda al planner sin `## Map`, **una sola vez por tarea** el hook rechaza el despacho con un mensaje que explica el reparto; el siguiente pasa igual. Qué significa: la exploración la hace Haiku, barata, y el planner (más caro) empieza con el mapa hecho. Qué hacés: nada. Diagnosticar un bug difícil sigue siendo del hilo principal o del planner, no del scout.
 
 Usá el `path:line` directamente: si volvés a abrir los archivos enteros "para verificar", pagás lo que el comando evitó. Si no encuentra nada, te dice qué términos probó; suele significar que el código usa otras palabras que el dominio ("anular turno" vs. `cancelBooking`).
 
@@ -277,7 +285,7 @@ Cuando nxy frena algo, el mensaje le dice a Claude exactamente qué hacer, así 
 | `/nxy:stats` | La sesión actual al detalle: tokens, costo, forma, por modelo, subagente y skill, el tiempo de cada subagente (`SUBAGENT TIME`) y la línea de búsquedas amplias del principal. `last`, `<id>`, `--all`, `--json` |
 | `/nxy:trend` | Evolución por día, semana, sesión, modelo o subagente, de todos tus proyectos. `--since 30d`, `--by week\|session\|model\|agent`, `--here`, `--json` |
 | `/nxy:mem …` | La memoria: `save`, `search`, `get`, `list`, `delete`, `export`, `import`, `status`, `related <archivos>` (tareas cerradas que tocaron esos archivos) y `handoff` (`show`, `done`, `delete`, y `--task <id>` para elegir la tarea). Ver [La memoria](#la-memoria) |
-| `/nxy:gate` | El freno de escritura: `status` (siempre muestra la línea de búsquedas amplias, de los últimos 30 días por defecto; `--since` cambia la ventana), `once` (dejar pasar la próxima edición), `on`, `off` (por repo) |
+| `/nxy:gate` | El freno de escritura: `status` (siempre muestra la línea de búsquedas amplias, de los últimos 30 días por defecto; `--since` cambia la ventana), `once` (dejar pasar la próxima edición), `once search` (dejar pasar la próxima búsqueda amplia), `reads off\|on` (apagar o prender sólo el freno de búsquedas amplias, por repo), `on`, `off` (por repo) |
 | `/nxy:review` | `status` (hallazgos por lente en 30 días), `show` (la última review), `escape "<regla>" --as convention\|lens` (algo que la review no vio) |
 | `/nxy:filter` | El filtro de comandos: `status`, `on`, `off` (por repo) |
 | `/nxy:statusline` | Instala la statusline (`--apply`) o imprime el snippet para pegarlo a mano |
@@ -368,7 +376,20 @@ Con una cache de 1 hora cada escritura cuesta más (2× el input en vez de 1,25�
 
 Debajo van los 5 comandos más lentos. Si el servicio frenó por límite de uso, esa pausa no se cuenta como trabajo del agente: aparece aparte como `usage-limit stops excluded: N` (sólo si N > 0). Qué hacer: si domina `bash`, mirá los comandos lentos (un `./mvnw test` de 4 minutos); si domina `waiting`, hay agentes esperando algo ajeno al modelo.
 
-**5. Búsquedas amplias del principal.** nxy cuenta, sin frenar nada, cuando el hilo principal, con el contexto en el umbral del gate o por encima, hizo una búsqueda amplia (un `Grep` o `Glob` sobre varios archivos, un `Read` de archivo entero, o su equivalente por Bash). Se calcula desde los transcripts de las sesiones cuando pedís el reporte, así que no cuesta nada mientras trabajás (no hay hook en cada lectura) y también cubre sesiones pasadas, por ejemplo justo después de instalar 1.2.0. No hay ningún freno de lectura detrás: no muestra nada a Claude, nunca bloquea y cuesta 0 tokens. Se ve en `/nxy:gate status` (últimos 30 días por defecto; `--since` cambia la ventana) y en una línea de `/nxy:stats`: `… context carried at those searches N tokens`. Ese número es una cota superior de lo que costaron esas llamadas, no lo que un scout habría ahorrado. Qué hacer: si es alto, delegá esas búsquedas con `/nxy:locate`.
+**5. Búsquedas amplias del principal (el freno de lectura).** Si te molesta: `/nxy:gate reads off` lo apaga en este repo y deja sólo la observación (`/nxy:gate reads on` lo vuelve a prender).
+
+Desde 1.3.0, cuando el hilo principal, con el contexto en el umbral del gate (`gate.contextTokens`, 100k) o por encima, hace una búsqueda amplia (un `Grep` o `Glob` sin apuntar a un archivo, o `rg`, `grep -r`, `find`, `fd`, `Get-ChildItem -Recurse`, `Select-String` por Bash sin ruta de archivo), el hook la **frena**. Nunca frena un `Read` (ni con `offset`/`limit` ni entero), una búsqueda sobre un archivo, ni a un subagente.
+
+- **Qué ves.** Un rechazo que empieza con `nxy read gate:`: mandá un `nxy:scout` con la pregunta (varios en un mensaje si son varias), o acotá la búsqueda a un archivo o a un `Read` con `offset`/`limit`. Claude suele mandar los scouts solo. La primera vez de cada sesión el mensaje suma una última línea: `To stop this in this repo: /nxy:gate reads off`.
+- **Qué significa.** Con 100k encima cada búsqueda amplia arrastra todo el contexto y se queda con el resultado; un scout (Haiku) la hace en su propio contexto y devuelve sólo `path:line`.
+- **Qué hacés.** Nada. Para dejar pasar **una** búsqueda: `/nxy:gate once search` (vale 5 minutos o hasta que se usa; no toca el permiso de edición de `/nxy:gate once`, ni al revés). Para apagarlo en este repo: `/nxy:gate reads off`. Para ver cuántas frenó y cuántas dejó pasar: `/nxy:gate status` (línea `searches: N stopped, M let through by /nxy:gate once search`). Si falta el rol `scout`, `gate.enabled` o `gate.reads` es `false`, o no se puede leer el contexto, no frena.
+- **Límite conocido.** Una carpeta con un punto en el nombre (por ejemplo `v1.2`) el chequeo rápido la toma por un archivo, así que una búsqueda sobre ella no se frena.
+
+Además, `/nxy:gate status` y `/nxy:stats` siguen contando desde los transcripts las búsquedas amplias hechas con el contexto en el umbral o por encima (incluidas sesiones pasadas), con `… context carried at those searches N tokens`: una cota superior de lo que costaron esas llamadas. Las que el freno rechazó no se cuentan ahí, porque no corrieron.
+
+**6. Tester y reviewer por repo.** Qué ves: en una tarea con 2 o más repos, al terminar los lotes Claude despacha un `nxy:tester` por repo (cada uno corre sólo la suite de ese repo) y después un `nxy:reviewer` por repo, todos en un mensaje. Las partes de la review no muestran ids; el **único checkpoint 2** sale con la última parte, con los hallazgos numerados `R1…Rn` sin repetirse entre repos. Qué significa: corren en paralelo y cada reviewer lee sólo el Goal, los lotes de su repo y sus convenciones (mediana ~$0,42 y 2 min por reviewer, medido en 1.2.0; n reviewers cuestan n veces eso). Si una suite falla mientras otro tester corría a la vez, nxy no la da por roja: la vuelve a correr **sola, una vez**, y el reporte lo dice: `<repo>: failed in parallel, rerun alone — passed (the first failure was likely contention: …)` o `— failed again alone: red`. Si fallan sin solaparse, rojo de inmediato. Qué hacés: nada. Con un solo repo todo sigue igual que en 1.2.0.
+
+**7. El recordatorio de review.** Qué ves: el aviso de "ya hay una review de este plan" ya no vuelve cuando la tarea se cerró con `mem handoff done`; sólo aparece con una tarea viva. `/nxy:review show` sigue mostrando la última review. El panel dice ahora «Sin plan activo» (los planes son por tarea desde 1.2.0). Qué hacés: nada.
 
 ## La memoria
 
@@ -435,6 +456,7 @@ Lo que se cambia más seguido:
 | Plan obligatorio para todo cambio de más de un archivo | `{ "flow": { "plan": "always" } }` |
 | Que el planner de este repo use Sonnet (más barato) | `{ "roles": { "planner": { "model": "sonnet" } } }` |
 | Apagar el freno de escritura | `{ "gate": { "enabled": false } }` (o `/nxy:gate off`) |
+| Apagar sólo el freno de búsquedas amplias | `{ "gate": { "reads": false } }` (o `/nxy:gate reads off`) |
 | Apagar el filtro | `{ "modules": { "filter": false } }` (o `/nxy:filter off`) |
 | Que nxy no inyecte nada de memoria solo | `{ "memory": { "mode": "manual" } }` |
 | Que el documenter busque docs en otra carpeta | `{ "docs": { "paths": ["wiki/"] } }` |
@@ -500,12 +522,13 @@ nxy también cuesta algo, y está medido:
 - **Tiempo por hook** (medido en Windows, Node 22): cada hook de nxy arranca Node, y eso son ~170–180 ms por hook en esta PC con Windows (mediana de 12 corridas: un `node -e 0` pelado ~173 ms, el hook de búsqueda ~182 ms). Depende de la máquina, y no hay números medidos para otros sistemas. El hook de búsqueda corre sólo antes de `Grep`/`Glob` (el aviso al planner); `Read` no paga nada. Además corre el hook de `AskUserQuestion` (poco frecuente). Las búsquedas amplias del principal se cuentan después, desde los transcripts, sin costo mientras trabajás.
 - **Tokens de los hooks:** cero cuando no frenan nada. Cuando frenan, el mensaje. Los punteros de memoria, ~30 tokens cada uno, hasta tres por mensaje y cada memoria una vez por sesión.
 - **Disco:** la base de memoria en `~/.nxy/memory/`, y por repo `.nxy/local/` (una línea por comando Bash, el índice, y durante un plan una copia de cada archivo que toca y una lista corta de los archivos que ya estaban modificados al aprobar, que se borran con `handoff done`). Desde 1.2.0 también `tasks.json`, `tasks/<tarea>/`, `planner-nudge.json`, y `chat-rules-asked.json` (con los topes de la tabla de arriba).
+- **Lo de 1.3.0:** no hay hook nuevo. Una búsqueda angosta no paga nada extra (no lee config, transcript ni escape); una búsqueda amplia del principal lee la config y, como mucho, los últimos 256 KB del transcript, sobre los ~170–180 ms de arranque de Node que cada hook ya paga en Windows (los milisegundos agregados son estimados, no medidos). En disco: `planner-map.json` (menos de 1 KB), `read-gate-hint.json` (~60 B por sesión, 30 días), el archivo del permiso `once search` (unos bytes, se borra al usarse o a los 5 minutos), `verify/<hash>/suite-<repo>.json` y `review-<repo>.json` (unos KB por repo y plan, se borran con la carpeta del plan a los 30 días) y una fila de ~150 B por búsqueda frenada en `metrics/gate.jsonl`, con tope de 256 KB (al pasarlo se descartan las filas de más de 90 días; si aun así sobra, quedan las más nuevas hasta 128 KB). Una suite roja que se solapó con otra cuesta una corrida completa más de esa suite.
 
 ## Estado del proyecto
 
 | Parte | Estado |
 | --- | --- |
-| Versión actual | `1.2.0` |
+| Versión actual | `1.3.0` |
 | Métricas, statusline, filtro con rtk | Publicado desde v0.1.x y usado a diario |
 | Scout, freno de escritura, memoria, handoff, plan, verificación, review | Publicado en `1.0.1`, probado en sesiones reales (Linux/WSL y Windows) durante las rc |
 | Después | CLI `nxy` (`doctor`, `stats`, `trend`, `mem`) para operarlo sin abrir Claude Code |

@@ -66,7 +66,7 @@ test('Home hero: lote N de M, state, lifecycle, meta line', () => {
   assert.equal(home({ snap: snap({ approved: false }) }).blocks[0].planValue, 'abc12345 · sin aprobar');
   const none = block(home({ snap: snap({ hash: null, batches: [] }) }), 'hero');
   assert.equal(none.planValue, 'ninguno');
-  assert.equal(none.headline, 'Sin plan en esta rama');
+  assert.equal(none.headline, 'Sin plan activo');
   assert.deepEqual(hero.steps.map((s) => s.label), ['plan', 'aprobado', 'lotes 0/2', 'tester', 'review', 'cierre']);
   assert.deepEqual(hero.steps.map((s) => s.state), ['done', 'done', 'current', 'pending', 'pending', 'pending']);
   const run = block(home({ snap: snap({ launched: { 1: NOW - 65000 } }) }), 'hero');
@@ -209,7 +209,7 @@ test('Plan tab: batches with titles and states, suite and review rows', () => {
   assert.equal(block(run, 'batches').items[0].state, 'running');
   assert.equal(block(run, 'batches').items[1].state, 'pending');
   const empty = plan({ snap: snap({ hash: null, batches: [] }) });
-  assert.deepEqual(empty.blocks[0], { type: 'note', text: 'Sin plan en esta rama', tone: 'dim' });
+  assert.deepEqual(empty.blocks[0], { type: 'note', text: 'Sin plan activo', tone: 'dim' });
 });
 
 test('Plan tab: goal, files, accept, verdict, open by default on the running batch', () => {

@@ -15,13 +15,13 @@ import { LOCATE_NUDGE_MARK } from '../core/search-scope.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
 
-function setup() {
+function setup(/** @type {any} */ config = { gate: { enabled: true, contextTokens: 10_000 } }) {
   const dir = mkdtempSync(join(tmpdir(), 'nxy-sh-'));
   const repo = join(dir, 'repo');
   mkdirSync(join(repo, '.git'), { recursive: true });
   writeFileSync(join(repo, '.git', 'HEAD'), 'ref: refs/heads/main\n');
   mkdirSync(join(repo, '.nxy'), { recursive: true });
-  writeFileSync(join(repo, '.nxy', 'config.json'), JSON.stringify({ gate: { enabled: true, contextTokens: 10_000 } }));
+  writeFileSync(join(repo, '.nxy', 'config.json'), JSON.stringify(config));
   writeFileSync(join(repo, 'one.txt'), 'x\n');
   const env = { ...process.env, NXY_HOME: join(dir, 'home'), CLAUDE_PROJECT_DIR: repo };
   /** Main transcript carrying `tokens` of context. */
@@ -40,8 +40,8 @@ function setup() {
 const search = (s, tool, tool_input, extra = {}) => s.run('pretooluse-search.mjs', { tool_name: tool, tool_input, ...extra });
 const bash = (s, command, extra = {}) => s.run('pretooluse-bash.mjs', { tool_name: 'Bash', tool_input: { command }, ...extra });
 
-test('main thread above the threshold: nothing is printed and no reads.jsonl is created', () => {
-  const s = setup();
+test('main thread above the threshold with gate.reads off: nothing is printed and no reads.jsonl is created', () => {
+  const s = setup({ gate: { enabled: true, contextTokens: 10_000, reads: false } });
   const t = s.main(50_000);
   for (const [tool, input] of [['Grep', { pattern: 'foo' }], ['Glob', { pattern: '**/*.js' }]]) {
     const r = search(s, tool, input, { transcript_path: t });
@@ -97,13 +97,92 @@ test('planner identified only through its .meta.json is nudged', () => {
   assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'deny');
 });
 
-test('implementer and main thread are never denied', () => {
+test('implementer is never denied, nor a Read', () => {
   const s = setup();
   const t = s.main(50_000);
   assert.equal(search(s, 'Grep', { pattern: 'foo' }, { agent_id: 'a5', agent_type: 'nxy:implementer', transcript_path: t }).stdout, '');
   assert.equal(search(s, 'Read', { file_path: join(s.repo, 'one.txt') }, { agent_id: 'a5', agent_type: 'nxy:planner', transcript_path: t }).stdout, '');
-  assert.equal(search(s, 'Grep', { pattern: 'foo' }, { transcript_path: t }).stdout, '');
   assert.ok(!existsSync(s.ledger));
+});
+
+// --- the read gate (1.3.0) ---
+const MARK = 'nxy read gate:';
+const gateLedger = (s) => join(s.repo, '.nxy', 'local', 'metrics', 'gate.jsonl');
+const escFile = (s, kind) => join(s.repo, '.nxy', 'local', kind === 'search' ? 'gate-escape-search.json' : 'gate-escape.json');
+const arm = (s, kind) => {
+  mkdirSync(join(s.repo, '.nxy', 'local'), { recursive: true });
+  writeFileSync(escFile(s, kind), JSON.stringify({ until: Date.now() + 60_000 }));
+};
+const reason = (r) => (r.stdout ? JSON.parse(r.stdout).hookSpecificOutput : {});
+
+test('read gate: broad main-thread Grep over the threshold is denied with its own escape named', () => {
+  const s = setup();
+  const r = search(s, 'Grep', { pattern: 'foo' }, { transcript_path: s.main(50_000) });
+  const out = reason(r);
+  assert.equal(out.permissionDecision, 'deny');
+  assert.ok(out.permissionDecisionReason.startsWith(MARK));
+  assert.match(out.permissionDecisionReason, /\/nxy:gate once search/);
+  assert.ok(!/\/nxy:gate once(?! search)/.test(out.permissionDecisionReason));
+  const rows = readFileSync(gateLedger(s), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(rows[0].kind, 'read');
+  assert.equal(rows[0].allow, false);
+});
+
+test('read gate: the reads-off line comes with the first refusal of a session only', () => {
+  const s = setup();
+  const t = s.main(50_000);
+  const msg = (sid) => reason(search(s, 'Grep', { pattern: 'foo' }, { transcript_path: t, session_id: sid })).permissionDecisionReason;
+  assert.match(msg('A'), /\/nxy:gate reads off/);
+  assert.ok(!/\/nxy:gate reads off/.test(msg('A')));
+  assert.match(msg('B'), /\/nxy:gate reads off/);
+});
+
+test('read gate: lets through under the threshold, on a file path, off switches, and without a scout', () => {
+  const t0 = setup();
+  assert.equal(search(t0, 'Grep', { pattern: 'foo' }, { transcript_path: t0.main(1_000) }).stdout, '');
+  const f = setup();
+  assert.equal(search(f, 'Grep', { pattern: 'foo', path: join(f.repo, 'one.txt') }, { transcript_path: f.main(50_000) }).stdout, '');
+  const r = setup({ gate: { enabled: true, contextTokens: 10_000, reads: false } });
+  assert.equal(search(r, 'Grep', { pattern: 'foo' }, { transcript_path: r.main(50_000) }).stdout, '');
+  const d = setup({ gate: { enabled: false, contextTokens: 10_000 } });
+  assert.equal(search(d, 'Grep', { pattern: 'foo' }, { transcript_path: d.main(50_000) }).stdout, '');
+  const n = setup({ gate: { enabled: true, contextTokens: 10_000 }, roles: { scout: null } });
+  assert.equal(search(n, 'Grep', { pattern: 'foo' }, { transcript_path: n.main(50_000) }).stdout, '');
+});
+
+test('read gate: the search escape is consumed once; the edit escape does not let a search through', () => {
+  const s = setup();
+  const t = s.main(50_000);
+  arm(s, 'search');
+  assert.equal(search(s, 'Grep', { pattern: 'foo' }, { transcript_path: t }).stdout, '');
+  assert.ok(!existsSync(escFile(s, 'search')));
+  assert.equal(reason(search(s, 'Grep', { pattern: 'foo' }, { transcript_path: t })).permissionDecision, 'deny');
+  arm(s, 'edit');
+  assert.equal(reason(search(s, 'Grep', { pattern: 'foo' }, { transcript_path: t })).permissionDecision, 'deny');
+  assert.ok(existsSync(escFile(s, 'edit')));
+});
+
+test('read gate: an armed search escape does not let a gated edit through', () => {
+  const s = setup();
+  arm(s, 'search');
+  const r = s.run('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: join(s.repo, 'one.txt') }, transcript_path: s.main(50_000) });
+  assert.equal(reason(r).permissionDecision, 'deny');
+  assert.ok(existsSync(escFile(s, 'search')));
+});
+
+test('read gate: Bash rg with no path is denied; with a file or piped, allowed', () => {
+  const s = setup();
+  const t = s.main(50_000);
+  assert.equal(reason(bash(s, 'rg foo', { transcript_path: t })).permissionDecision, 'deny');
+  assert.ok(!bash(s, 'rg foo src/a.mjs', { transcript_path: t }).stdout.includes('"deny"'));
+  assert.ok(!bash(s, 'cat x | rg foo', { transcript_path: t }).stdout.includes('"deny"'));
+});
+
+test('read gate: a narrow main-thread Grep reads nothing (unreadable config, no transcript)', () => {
+  const s = setup('{not json');
+  const r = search(s, 'Grep', { pattern: 'foo', path: join(s.repo, 'one.txt') }, { transcript_path: join(s.dir, 'missing.jsonl') });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, '');
 });
 
 test('malformed stdin: exit 0, empty stdout', () => {

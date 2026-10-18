@@ -494,7 +494,7 @@ function homeBlocks(c) {
       const stale = newest > upd;
       hero.handoff = { value: `${agoEs(now - upd)}${stale ? ' · desactualizado' : ''}`, tone: stale ? 'error' : 'info' };
     }
-    if (!snap.hash) Object.assign(hero, { status: 'none', planValue: 'ninguno', headline: 'Sin plan en esta rama' });
+    if (!snap.hash) Object.assign(hero, { status: 'none', planValue: 'ninguno', headline: 'Sin plan activo' });
     else {
       const states = batchStates(snap);
       const dn = states.filter((b) => b.state === 'done').length;
@@ -541,7 +541,7 @@ function homeBlocks(c) {
 function planBlocks(c) {
   const { snap, owned, ui, now } = c;
   const actions = actionsBlock('plan', { snap, owned });
-  if (!snap?.hash || !snap.batches?.length) return [{ type: 'note', text: 'Sin plan en esta rama', tone: 'dim' }, ...actions];
+  if (!snap?.hash || !snap.batches?.length) return [{ type: 'note', text: 'Sin plan activo', tone: 'dim' }, ...actions];
   const eff = effective(snap);
   const continued = snap.continued ?? [];
   const states = batchStates(snap);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * `/nxy:gate [status|on|off|once]` — the write gate's control surface.
+ * `/nxy:gate [status|on|off|once [search]|reads on|off]` —the write gate's control surface.
  *
  * `status` also reports what the gate has actually been doing, because the honest answer to
  * "should I keep this on?" is a count, not an opinion.
@@ -40,14 +40,27 @@ if (action === 'on' || action === 'off') {
   if (action === 'on') clearEscape(cwd);
   console.log(`gate: ${action.toUpperCase()} (written to ${p})`);
   if (action === 'off') console.log('Past the threshold, edits are no longer delegated and no handoff is required first.');
+} else if (action === 'once' && (positional[1] || '').toLowerCase() === 'search') {
+  const cfg = loadConfig(cwd);
+  const mins = cfg.gate?.escapeMinutes ?? 5;
+  const until = armEscape(cwd, mins, 'search');
+  console.log(`gate: the next broad main-thread search goes through unstopped (expires in ${mins} min, ${new Date(until).toLocaleTimeString()}).`);
+  console.log('Single use: the search after that is subject to the gate again. Edits are unaffected.');
 } else if (action === 'once') {
   const cfg = loadConfig(cwd);
   const mins = cfg.gate?.escapeMinutes ?? 5;
   const until = armEscape(cwd, mins);
   console.log(`gate: the next main-thread edit goes through unblocked (expires in ${mins} min, ${new Date(until).toLocaleTimeString()}).`);
   console.log('Covers the plan, threshold and no-handoff refusals. Single use: the edit after that is subject to them again.');
+} else if (action === 'reads' && ['on', 'off'].includes((positional[1] || '').toLowerCase())) {
+  const on = positional[1].toLowerCase() === 'on';
+  const p = writeProjectConfig({ gate: { reads: on } });
+  console.log(`gate reads: ${on ? 'ON' : 'OFF'} (written to ${p})`);
+  console.log(on
+    ? 'Broad main-thread searches are stopped past the threshold again.'
+    : 'Broad searches are observed only: nothing is stopped.');
 } else if (action !== 'status') {
-  console.log(`unknown action "${action}". Use: status | on | off | once`);
+  console.log(`unknown action "${action}". Use: status | on | off | once [search] | reads on|off`);
 }
 
 const cfg = loadConfig(cwd);
@@ -56,10 +69,13 @@ console.log(describeGate(gateCfg, {
   contextTokens: null, // outside a hook there is no "current" main thread to measure
   hasImplementer: Boolean(cfg.roles && cfg.roles.implementer),
   escapeUntil: escapeUntil(cwd, gateCfg.escapeMinutes),
+  searchEscapeUntil: escapeUntil(cwd, gateCfg.escapeMinutes, 'search'),
 }));
 
-// What it has done so far, from the ledger.
-const rows = readJsonl(gateLedgerPath(cwd));
+// What it has done so far, from the ledger: edits (no `kind`) and searches (`kind: 'read'`).
+const allRows = readJsonl(gateLedgerPath(cwd));
+const rows = allRows.filter((r) => r.kind !== 'read');
+const searchRows = allRows.filter((r) => r.kind === 'read');
 if (rows.length) {
   const decided = rows.filter((r) => typeof r.contextTokens === 'number');
   const blocked = rows.filter((r) => r.allow === false);
@@ -74,6 +90,11 @@ if (rows.length) {
 } else {
   console.log('\ndecisions:       no edit has gone through the gate in this repo yet');
 }
+{
+  const stopped = searchRows.filter((r) => r.allow === false).length;
+  const escaped = searchRows.filter((r) => r.allow === true).length;
+  console.log(`searches:        ${stopped} stopped, ${escaped} let through by \`/nxy:gate once search\``);
+}
 
 // Broad searches the main thread ran past the threshold (observation only, never blocked).
 {
@@ -85,6 +106,6 @@ if (rows.length) {
   } else {
     const kinds = ['Grep', 'Glob', 'Bash', 'Read'].filter((t) => b.byKind[t]).map((t) => `${t} ${b.byKind[t]}`);
     for (const t of Object.keys(b.byKind)) if (!['Grep', 'Glob', 'Bash', 'Read'].includes(t)) kinds.push(`${t} ${b.byKind[t]}`);
-    console.log(`broad searches above ${b.threshold ? fmtTokens(b.threshold) : '?'} context (since ${new Date(sinceMs).toISOString().slice(0, 10)}): ${b.count} — ${kinds.join(' · ')} · context carried at those searches ${fmtTokens(b.contextTokens)} tokens (sum of main-thread context size: an upper bound of what each call cost, not what a scout would have saved)`);
+    console.log(`broad searches that ran above ${b.threshold ? fmtTokens(b.threshold) : '?'} context (since ${new Date(sinceMs).toISOString().slice(0, 10)}): ${b.count} — ${kinds.join(' · ')} · context carried at those searches ${fmtTokens(b.contextTokens)} tokens (sum of main-thread context size: an upper bound of what each call cost, not what a scout would have saved)`);
   }
 }
