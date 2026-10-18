@@ -14,9 +14,10 @@
  *   mem.mjs link <id> <other> --kind related|supersedes|conflicts_with [--by librarian]
  *   mem.mjs unlink <id> <other> --kind <k>
  *   mem.mjs index                     (one line per memory: what the librarian reads)
+ *   mem.mjs related <paths...>        (closed tasks that touched those files, with their decisions)
  *   mem.mjs list [--scope <s>] [--type <t>] [--all-areas] [--limit N]
  *   mem.mjs delete <id>
- *   mem.mjs handoff [show | save [--body "<text>" | --file <path> | <stdin>] [--share] | plan [<same>] | next | done]
+ *   mem.mjs handoff [show | save [--body "<text>" | --file <path> | <stdin>] [--share] | plan [<same>] | next | done | delete] [--task <id>]
  *   mem.mjs export | import
  *   mem.mjs status
  */
@@ -31,22 +32,26 @@ import { areaFor, projectKey, repoRoot } from '../../../core/memory/scope.mjs';
 import { VERDICTS, addEdge, bumpCoUse, deriveEdges, edgesOf, removeEdge } from '../../../core/memory/graph.mjs';
 import { librarianRoute, linkCandidates, linkRequest } from '../../../core/memory/librarian.mjs';
 import { loadConfig } from '../../../core/config.mjs';
-import { noteFetch, recallSummary } from '../recall-state.mjs';
+import { claimChatRulesAsk, conventionSummary, noteConventionOffers, noteConventionSave, noteFetch, noteRelated, recallSummary } from '../recall-state.mjs';
+import { formatRelated, relatedTasks } from '../../../core/memory/related.mjs';
+import { isAbsolute, posix, relative, sep } from 'node:path';
 import {
-  PLAN_TEMPLATE, QUESTIONS_TEMPLATE, checkpointInstruction, extractPlan, parseDecisions, parseQuestions, parseRepos, planHash,
+  PLAN_TEMPLATE, QUESTIONS_TEMPLATE, checkpointInstruction, extractPlan, parseDecisions, parseGoal, parseQuestions, planHash,
   questionsInstruction, validatePlan, withPlan,
 } from '../../../core/plan.mjs';
 import { writeMarker } from '../plan-approval.mjs';
 import { memCommand } from '../handoff.mjs';
-import { clearBaseline, snapshotPlanFiles } from '../baseline.mjs';
-import { clearDirtyAtApproval, recordDirtyAtApproval } from '../gitstate.mjs';
-import { resolveRepos } from '../repos.mjs';
-import { takeInventory } from '../inventory.mjs';
+import { chatRulesInstruction } from '../../../core/review.mjs';
+import { clearBaseline, reviewFiles } from '../baseline.mjs';
+import { clearDirtyAtApproval } from '../gitstate.mjs';
+import { armPlan } from '../plan-arm.mjs';
+import { activeTask, corruptNotice, forgetTask, readTasks, setTaskGoal, startTask, taskById } from '../tasks.mjs';
+import { planDecision, refuseMessage, sameGoal, taskIdFromGoal } from '../../../core/tasks.mjs';
 import { markHandoffSaved } from '../stop-state.mjs';
 import { progressFor } from '../verify-state.mjs';
 import { exportProject, importProject, memoryDir } from '../../../core/memory/exchange.mjs';
 import {
-  TEMPLATE, archiveHandoff, liveHandoff, saveHandoff, stripDerivedLines, validateHandoff,
+  TEMPLATE, archiveHandoff, handoffId, liveHandoff, saveHandoff, stripDerivedLines, validateHandoff,
 } from '../../../core/memory/handoff.mjs';
 
 const { opts, positional } = parseArgs(process.argv.slice(2));
@@ -74,8 +79,20 @@ function nextStep(plan) {
   const questions = parseQuestions(plan);
   if (questions.length) return questionsInstruction(hash, questions);
   const known = new Set(listMemories(db, { project, allAreas: true, type: 'convention', limit: 1000 }).map((m) => m.title.trim().toLowerCase()));
-  const offers = parseDecisions(plan).filter((d) => d.rule && !known.has(d.rule.toLowerCase()));
+  const offers = parseDecisions(plan).filter((d) => d.scope === 'repo' && d.rule && !known.has(d.rule.toLowerCase()));
+  if (offers.length) noteConventionOffers(cwd, offers.map((d) => d.rule), 'plan');
   return checkpointInstruction(hash, { offers, saveCmd: memCommand('save') });
+}
+
+const OTHER_WORKTREES_NOTE = "Only this checkout's task state was removed; the task's state in other worktrees is not.";
+
+/** Ends a task's state:its stop-state, approval marker (and dirty/extra repos), baseline and tasks.json entry. */
+function closeTaskState(dir, key) {
+  markHandoffSaved(dir, key, null);
+  writeMarker(dir, key, null);
+  clearBaseline(dir, key);
+  clearDirtyAtApproval(dir, key);
+  forgetTask(dir, key);
 }
 
 const asJson = Boolean(opts.json);
@@ -113,6 +130,7 @@ switch (action) {
       private: Boolean(opts.private),
     });
     console.log(`${res.created ? 'saved' : 'updated'}: ${res.id}`);
+    if (opts.type === 'convention') noteConventionSave(cwd, title);
     if (scope !== 'global' && warning) console.log(`note: ${warning}`);
     const saved = getMemory(db, res.id);
     if (!saved) break;
@@ -253,14 +271,33 @@ switch (action) {
       console.log('Usage: mem.mjs delete <id>');
       break;
     }
-    console.log(deleteMemory(db, rest[0]) ? `deleted ${rest[0]}` : `no memory with id ${rest[0]}`);
+    const removed = deleteMemory(db, rest[0]);
+    console.log(removed ? `deleted ${rest[0]}` : `no memory with id ${rest[0]}`);
+    // A live task handoff takes its task's state with it.
+    if (removed) {
+      const keys = new Set([activeTask(cwd).id]);
+      const st = readTasks(cwd).state;
+      if (st.unpinned) keys.add(st.unpinned.id);
+      for (const e of Object.values(st.branches)) keys.add(e.id);
+      const k = [...keys].find((x) => handoffId(project, x) === rest[0]);
+      if (k) {
+        closeTaskState(cwd, k);
+        console.log(OTHER_WORKTREES_NOTE);
+      }
+    }
     break;
   }
 
   case 'handoff': {
     const sub = (rest[0] || 'show').toLowerCase();
     const branch = gitBranch(cwd);
-    const label = branch || '(no branch)';
+    // The task this subcommand acts on: the one named with --task, else the one active in this checkout
+    // (with no tasks.json that is the branch itself, exactly as before).
+    const t = typeof opts.task === 'string' ? taskById(cwd, opts.task) : activeTask(cwd);
+    const key = t.id;
+    const label = t.label;
+    const notice = corruptNotice(cwd);
+    if (notice) (asJson ? console.error : console.log)(notice);
 
     // Body from --body, --file, or stdin (a heredoc: the only multi-line form that survives
     // quoting in Git Bash, WSL and PowerShell alike).
@@ -281,18 +318,16 @@ switch (action) {
       }
       // Saving the handoff must not be a way around the checkpoint: a body without a plan keeps
       // the one already there; a body with a plan replaces it (and needs its own approval).
-      const livePlan = extractPlan(liveHandoff(db, project, branch)?.body || '');
+      const livePlan = extractPlan(liveHandoff(db, project, key)?.body || '');
       if (!extractPlan(body) && livePlan) body = withPlan(body, livePlan);
-      const res = saveHandoff(db, { project, branch, body, share: Boolean(opts.share) });
-      markHandoffSaved(cwd, branch);
+      const res = saveHandoff(db, { project, key, label, body, share: Boolean(opts.share) });
+      markHandoffSaved(cwd, key);
       const plan = extractPlan(body);
-      const repos = plan ? resolveRepos(cwd, parseRepos(plan)) : [];
-      writeMarker(cwd, branch, plan ? planHash(plan) : null, plan ? parseQuestions(plan).length : 0, repos.map((r) => r.root));
       if (plan) {
-        recordDirtyAtApproval(cwd, branch, repos, planHash(plan));
-        const pre = snapshotPlanFiles(cwd, branch, plan, repos);
-        if (pre.taken > 0) console.log(`copied the "before" of ${pre.taken} file(s) the plan names`);
-        takeInventory(cwd, branch, repos);
+        const armed = armPlan(cwd, key, plan);
+        if (armed.copied > 0) console.log(`copied the "before" of ${armed.copied} file(s) the plan names`);
+      } else {
+        writeMarker(cwd, key, null);
       }
       console.log(`${res.created ? 'saved' : 'replaced'} handoff for \`${label}\` (${check.lines} lines, route: ${check.route})${plan ? ` · plan ${planHash(plan)} kept` : ''}${opts.share ? ' · shared: `mem export` will write it' : ''}`);
       for (const w of check.warnings) console.log(`warning: ${w}`);
@@ -308,52 +343,120 @@ switch (action) {
         process.exitCode = 1;
         break;
       }
-      const live = liveHandoff(db, project, branch);
-      const base = live?.body
-        || 'route: implementer\n## Done\n- nothing yet: plan drafted\n## Next\n- after the user approves the plan: run its batches in order, one implementer per batch';
-      saveHandoff(db, { project, branch, body: withPlan(base, plan), share: Boolean(live && !live.private) });
-      markHandoffSaved(cwd, branch);
-      const hash = planHash(plan);
-      const repos = resolveRepos(cwd, parseRepos(plan));
-      writeMarker(cwd, branch, hash, check.questions, repos.map((r) => r.root));
-      recordDirtyAtApproval(cwd, branch, repos, hash);
-      const pre = snapshotPlanFiles(cwd, branch, plan, repos);
-      if (pre.taken > 0) console.log(`copied the "before" of ${pre.taken} file(s) the plan names`);
-      takeInventory(cwd, branch, repos);
-      for (const r of repos) {
+      const goal = parseGoal(plan);
+      const cmd = memCommand('').trimEnd();
+      const noPlanBody = 'route: implementer\n## Done\n- nothing yet: plan drafted\n## Next\n- after the user approves the plan: run its batches in order, one implementer per batch';
+      const { state, corrupt } = readTasks(cwd);
+
+      // Which task this plan belongs to. `planKey` is the handoff/marker key; `born` is set only when this call
+      // created the task (so a failed save can take it back).
+      let planKey = branch || '(no branch)';
+      let planLabel = planKey;
+      let born = false;
+      /** @type {string|null} */
+      let absorb = null; // legacy plan-less branch handoff folded into the new task
+      let base = '';
+      let shared = false;
+      let followNote = '';
+      if (!corrupt) {
+        const d = planDecision(state, branch, goal, typeof opts.task === 'string' ? opts.task : undefined);
+        if (d.action === 'refuse') {
+          // An explicit id that is a legacy handoff (id = its branch) is a revision of that handoff.
+          if (!d.task && typeof opts.task === 'string' && liveHandoff(db, project, opts.task)) {
+            planKey = opts.task;
+            planLabel = opts.task;
+          } else {
+            console.log(refuseMessage(d.task, cmd));
+            process.exitCode = 1;
+            break;
+          }
+        } else if (d.action === 'revise') {
+          planKey = d.id;
+          const cur = taskById(cwd, d.id);
+          planLabel = goal || cur.label;
+          if (!sameGoal(cur.goal, goal)) setTaskGoal(cwd, d.id, goal);
+        } else if (!extractPlan(liveHandoff(db, project, planKey)?.body || '')) {
+          // (Birth where the branch already has a legacy handoff WITH a plan falls through: revised in place.)
+          const id = taskIdFromGoal(goal, project, Date.now());
+          if (!startTask(cwd, { id, goal })) {
+            const u = readTasks(cwd).state.unpinned;
+            console.log(refuseMessage(u ? { ...u, branch: null } : null, cmd));
+            process.exitCode = 1;
+            break;
+          }
+          born = true;
+          const legacy = liveHandoff(db, project, planKey);
+          if (legacy) { absorb = legacy.id; base = legacy.body; shared = !legacy.private; }
+          planKey = id;
+          planLabel = goal || id;
+          followNote = ' It follows the checkout until the first edit pins it to a branch.';
+        } else {
+          // Legacy branch handoff that already has a plan: a different Goal is another task, never a silent overwrite.
+          const oldGoal = parseGoal(extractPlan(liveHandoff(db, project, planKey)?.body || '') || '');
+          if (goal && oldGoal && !sameGoal(oldGoal, goal)) {
+            console.log(refuseMessage({ id: planKey, goal: oldGoal, created: 0, branch: branch || null }, cmd));
+            process.exitCode = 1;
+            break;
+          }
+        }
+      }
+      const live = liveHandoff(db, project, planKey);
+      const body = withPlan(live?.body || base || noPlanBody, plan);
+      try {
+        saveHandoff(db, { project, key: planKey, label: planLabel, body, share: live ? !live.private : shared });
+      } catch (e) {
+        if (born) forgetTask(cwd, planKey);
+        throw e;
+      }
+      if (absorb) deleteMemory(db, absorb);
+      markHandoffSaved(cwd, planKey);
+      const armed = armPlan(cwd, planKey, plan);
+      if (armed.copied > 0) console.log(`copied the "before" of ${armed.copied} file(s) the plan names`);
+      for (const r of armed.repos) {
         if (r.git === false && !r.primary) console.log(`warning: ${r.root} ${r.missing ? 'does not exist' : 'is not a git repo'}; its changes are not reviewed through git`);
       }
       const open = check.questions ? `, ${check.questions} open question${check.questions === 1 ? '' : 's'}` : '';
-      console.log(`plan ${hash} saved in the handoff of \`${label}\` (${check.batches} batch${check.batches === 1 ? '' : 'es'}${open})\n`);
+      console.log(`plan ${armed.hash} saved in the handoff of \`${planLabel}\` (${check.batches} batch${check.batches === 1 ? '' : 'es'}${open}) · task ${planKey}.${followNote}\n`);
       console.log(`Next (main thread): ${nextStep(plan)}`);
       break;
     }
 
     if (sub === 'next') {
-      const plan = extractPlan(liveHandoff(db, project, branch)?.body || '');
+      const plan = extractPlan(liveHandoff(db, project, key)?.body || '');
       console.log(plan ? `Next (main thread): ${nextStep(plan)}` : `no plan in the handoff of \`${label}\``);
       break;
     }
 
     if (sub === 'done') {
-      markHandoffSaved(cwd, branch, null);
-      writeMarker(cwd, branch, null);
-      clearBaseline(cwd, branch);
-      clearDirtyAtApproval(cwd);
-      const id = archiveHandoff(db, project, branch);
+      // The files the task touched are read before its baseline is cleared.
+      let files = [];
+      try { files = reviewFiles(cwd, key).files.map((f) => f.path); } catch { /* best-effort */ }
+      closeTaskState(cwd, key);
+      const id = archiveHandoff(db, project, key, Date.now(), { branch: t.branch || branch, files, root: repoRoot(cwd) });
       console.log(id
-        ? `archived handoff for \`${label}\` as ${id}\nStill searchable: mem search "<words>" --type handoff`
+        ? `archived handoff for \`${label}\` as ${id}\n${getMemory(db, id)?.title || ''}\nStill searchable: mem search "<words>" --type handoff`
         : `no live handoff for \`${label}\``);
+      // A task that went through review already claimed the question at checkpoint 2.
+      // The panel launcher passes --json and has no main thread to ask: it must not consume the question.
+      if (id && !asJson && claimChatRulesAsk(cwd, key)) console.log(`\nNext (main thread): ${chatRulesInstruction(memCommand('save'))}`);
+      break;
+    }
+
+    if (sub === 'delete') {
+      closeTaskState(cwd, key);
+      const gone = deleteMemory(db, handoffId(project, key));
+      console.log(gone ? `deleted handoff for \`${label}\`\n${OTHER_WORKTREES_NOTE}` : `no live handoff for \`${label}\``);
       break;
     }
 
     if (sub !== 'show') {
-      console.log('Usage: mem.mjs handoff [show | save [--body "<text>" | --file <path> | <stdin>] [--share] | plan [<same inputs>] | next | done]');
+      console.log('Usage: mem.mjs handoff [show | save [--body "<text>" | --file <path> | <stdin>] [--share] | plan [<same inputs>] | next | done | delete] [--task <id>]');
       break;
     }
-    const live = liveHandoff(db, project, branch);
+    const live = liveHandoff(db, project, key);
+    const taskInfo = { id: t.id, label: t.label, goal: t.goal, branch: t.branch, pinned: t.pinned };
     if (!live && asJson) {
-      emit({ ok: true, exists: false, label, updated: null, shared: false, planHash: null, body: '', progress: '' });
+      emit({ ok: true, exists: false, task: taskInfo, label, updated: null, shared: false, planHash: null, body: '', progress: '' });
       break;
     }
     if (!live) {
@@ -362,12 +465,30 @@ switch (action) {
     }
     const shownPlan = extractPlan(live.body);
     // The plan's progress is derived from what nxy recorded (0.4.5): never stale, never typed by the model.
-    const progress = shownPlan ? await progressFor(cwd, branch, shownPlan) : '';
+    const progress = shownPlan ? await progressFor(cwd, key, shownPlan) : '';
     if (asJson) {
-      emit({ ok: true, exists: true, label, updated: live.updated, shared: !live.private, planHash: shownPlan ? planHash(shownPlan) : null, body: live.body, progress });
+      emit({ ok: true, exists: true, task: taskInfo, label, updated: live.updated, shared: !live.private, planHash: shownPlan ? planHash(shownPlan) : null, body: live.body, progress });
       break;
     }
-    console.log(`handoff · ${label} · updated ${new Date(live.updated).toISOString().slice(0, 16).replace('T', ' ')}${live.private ? '' : ' · shared'}${shownPlan ? ` · plan ${planHash(shownPlan)}` : ''}\n\n${live.body}${progress ? `\n\n${progress}` : ''}`);
+    console.log(`handoff · ${label} · task ${t.id} · updated ${new Date(live.updated).toISOString().slice(0, 16).replace('T', ' ')}${live.private ? '' : ' · shared'}${shownPlan ? ` · plan ${planHash(shownPlan)}` : ''}\n\n${live.body}${progress ? `\n\n${progress}` : ''}`);
+    break;
+  }
+
+  case 'related': {
+    const root = repoRoot(cwd) || cwd;
+    const files = [...new Set(rest.map((p) => {
+      const bare = String(p).trim().replace(/:\d+(:\d+)?$/, '');
+      const rel = isAbsolute(bare) ? relative(root, bare).split(sep).join('/') : bare.replace(/\\/g, '/');
+      const norm = posix.normalize(rel).replace(/^(\.\/)+/, '');
+      return norm === '.' || norm === '..' || norm.startsWith('../') || norm.startsWith('/') ? '' : norm;
+    }).filter(Boolean))];
+    if (!files.length) {
+      console.log('Usage: mem.mjs related <paths...>  (repo files the plan will touch)');
+      break;
+    }
+    const list = relatedTasks(db, { project, files });
+    noteRelated(cwd, list.map((t) => t.id));
+    console.log(list.length ? formatRelated(list, memCommand('get')) : 'no closed task touched these files');
     break;
   }
 
@@ -388,7 +509,7 @@ switch (action) {
   }
 
   default: {
-    if (action !== 'status') console.log(`unknown action "${action}". Use: save | search | get | list | index | link | unlink | delete | handoff | export | import | status\n`);
+    if (action !== 'status') console.log(`unknown action "${action}". Use: save | search | get | list | index | link | unlink | related | delete | handoff | export | import | status\n`);
     const counts = countsByScope(db, project);
     console.log(`store:      ${memoryDbPath().replace(/\\/g, '/')}`);
     console.log(`project:    ${project}  (from ${from})`);
@@ -402,6 +523,9 @@ switch (action) {
       const bySearch = rs.missesBySearch ? `, ${rs.missesBySearch} found by the librarian` : '';
       console.log(`recall 30d: ${rs.pointers} pointers (~${rs.tokens} tokens), ${rs.followed} loaded${pct} · ${rs.misses} loaded without a pointer (misses${bySearch})`);
     }
+    const cs = conventionSummary(cwd);
+    if (cs.offered || cs.saved) console.log(`conventions 30d: ${cs.offered} offered (${cs.fromPlans} from plans, ${cs.fromChat} from the chat), ${cs.saved} saved`);
+    if (rs.related) console.log(`related 30d: ${rs.related} planner lookups, ${rs.relatedTasks} closed tasks delivered`);
     const here = areaFor(cwd, 'x');
     if (here) console.log(`area here:  ${here}`);
   }

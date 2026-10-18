@@ -1,6 +1,6 @@
 ---
 description: Write gate — stops the main thread from editing once its context is expensive; `once` lets one edit through the plan, threshold or no-handoff refusal (nxy)
-argument-hint: [status | on | off | once]
+argument-hint: [status | on | off | once] [--since 30d]
 allowed-tools: Bash(node:*)
 ---
 

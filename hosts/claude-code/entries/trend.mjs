@@ -5,7 +5,7 @@
  * Sessions from before nxy was installed appear too, so the effect of using the plugin
  * shows up as the trend moves.
  *
- *   node trend.mjs [--since 30d] [--by day|week|session|model] [--here] [--cwd <dir>] [--json]
+ *   node trend.mjs [--since 30d] [--by day|week|session|model|agent] [--here] [--cwd <dir>] [--json]
  *   Global (all projects) by default; --here restricts to the current project.
  */
 import { existsSync } from 'node:fs';
@@ -20,14 +20,15 @@ import { engineInfo } from '../../../core/filter/engine.mjs';
 import { claudeSettingsFiles } from '../settings.mjs';
 import { rtkGain } from '../../../core/filter/rtk.mjs';
 import { sumTtlWhatIf } from '../../../core/metrics/cache-ttl.mjs';
+import { formatAgentTiming, summarizeTiming } from '../../../core/metrics/timing.mjs';
 
 const { opts } = parseArgs(process.argv.slice(2));
 const cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
 const cfg = loadConfig(cwd);
 const since = parseSince(typeof opts.since === 'string' ? opts.since : '30d');
 const by = typeof opts.by === 'string' ? opts.by : 'day';
-if (!['day', 'week', 'session', 'model'].includes(by)) {
-  console.error('nxy: --by must be day | week | session | model');
+if (!['day', 'week', 'session', 'model', 'agent'].includes(by)) {
+  console.error('nxy: --by must be day | week | session | model | agent');
   process.exit(1);
 }
 
@@ -63,9 +64,17 @@ if (!ledgerRows && by === 'day') {
 const utcDay = (ts) => new Date(ts).toISOString().slice(0, 10);
 
 const sessions = [];
+/** @type {{agentType: string, timing: any}[]} */
+const timingRuns = [];
+let agentSessions = 0;
 for (const ref of refs) {
-  const s = parseSession(ref, { cacheBreakThreshold: cfg.metrics.cacheBreakThreshold });
+  const s = parseSession(ref, { cacheBreakThreshold: cfg.metrics.cacheBreakThreshold, timing: by === 'agent' });
   if (!s.usage.calls) continue;
+  if (by === 'agent') {
+    for (const a of s.agents) if (a.timing) timingRuns.push({ agentType: a.agentType, timing: a.timing });
+    agentSessions++;
+    continue;
+  }
   const rows = filterRowsFor(s.cwd, s.sessionId);
   const nxy = rows.length > 0 || Object.keys(s.bySkill).some((k) => k.startsWith('nxy:'));
   const rtkCalls = rows.filter((r) => r.engine === 'rtk').length;
@@ -103,6 +112,18 @@ for (const ref of refs) {
   });
 }
 sessions.sort((a, b) => a.ts - b.ts);
+
+if (by === 'agent') {
+  const agentTiming = summarizeTiming(timingRuns);
+  if (opts.json) {
+    console.log(JSON.stringify({ since, by, agentTiming }, null, 2));
+    process.exit(0);
+  }
+  console.log(`nxy trend — ${here ? cwd : 'all projects'} · since ${fmtDate(since)} · by agent · ${agentSessions} sessions · ${timingRuns.length} runs`);
+  console.log('');
+  for (const l of formatAgentTiming(agentTiming)) console.log(l);
+  process.exit(0);
+}
 
 /** Suma USD de varias filas: la parte conocida más el aviso de que algo quedó sin tarifa. */
 function sumUsd(rows) {

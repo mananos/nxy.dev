@@ -18,7 +18,8 @@ import {
   batchFiles, conventionQuestions, parseGoal, planFiles, parseBatches, parseDecisions, parseQuestions, parseRepos, parseSuites, planHash, questionsInstruction, questionsPayload, validatePlan, withPlan,
 } from '../core/plan.mjs';
 import { subagentContextBlock, validateHandoff } from '../core/memory/handoff.mjs';
-import { findApproval } from '../hosts/claude-code/plan-approval.mjs';
+import { findApproval, taskDir } from '../hosts/claude-code/plan-approval.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -147,16 +148,18 @@ test('CLI: plan is validated, saved into the handoff, and survives a handoff sav
   const ok = s.mem(['handoff', 'plan'], PLAN);
   const hash = planHash(PLAN);
   assert.equal(ok.status, 0);
-  assert.match(ok.stdout, new RegExp(`plan ${hash} saved in the handoff of \`feature/x\` \\(2 batches\\)`));
+  assert.match(ok.stdout, new RegExp(`plan ${hash} saved in the handoff of \`[^\`]+\` \\(2 batches\\) · task [a-z0-9-]+\\.`));
   assert.match(ok.stdout, /Next \(main thread\): Checkpoint: .*AskUserQuestion/);
-  assert.ok(existsSync(join(s.repo, '.nxy', 'local', 'plan.json')));
+  const key = taskKey(s.repo);
+  assert.notEqual(key, 'feature/x', 'the plan was born as a task, not keyed by the branch');
+  assert.ok(existsSync(join(taskDir(s.repo, key), 'plan.json')));
 
   const saved = s.mem(['handoff', 'save'], 'route: implementer\n## Done\n- batch 1\n## Next\n- batch 2');
   assert.match(saved.stdout, new RegExp(`plan ${hash} kept`), 'saving the handoff cannot drop the checkpoint');
   assert.match(s.mem(['handoff', 'show']).stdout, new RegExp(`plan ${hash}[\\s\\S]*### Batch 2`));
 
   s.mem(['handoff', 'done']);
-  assert.ok(!existsSync(join(s.repo, '.nxy', 'local', 'plan.json')), 'done clears the pending plan');
+  assert.ok(!existsSync(join(taskDir(s.repo, key), 'plan.json')), 'done clears the pending plan');
 });
 
 test('hooks: a pending plan stops edits and the implementer until the user approves it', () => {
@@ -197,7 +200,7 @@ const DRAFT = `${PLAN}
 
 /** The draft finished with the user's answer. */
 const FINAL = PLAN.replace('Goal: corporate customers can be created',
-  'Goal: corporate customers can be created\nDecisions:\n- New endpoint for corporate customers — new endpoint or extend POST /clientes?');
+  'Goal: corporate customers can be created\nDecisions:\n- [repo] New endpoint for corporate customers — new endpoint or extend POST /clientes?');
 
 /** @param {string} text the JSON input line of an instruction */
 const inputOf = (text) => JSON.parse(/^\s+(\{.*\})$/m.exec(text)?.[1] || '{}');
@@ -225,7 +228,7 @@ test('questions: parsed for AskUserQuestion, validated, and turned into decision
   }));
   assert.deepEqual(questionsPayload(five).map((c) => c.questions.length), [4, 1], 'at most 4 questions per call');
 
-  assert.deepEqual(parseDecisions(FINAL), [{ rule: 'New endpoint for corporate customers', why: 'new endpoint or extend POST /clientes?' }]);
+  assert.deepEqual(parseDecisions(FINAL), [{ rule: 'New endpoint for corporate customers', why: 'new endpoint or extend POST /clientes?', scope: 'repo' }]);
   assert.deepEqual(parseDecisions(PLAN), []);
   assert.notEqual(planHash(DRAFT), planHash(FINAL), 'the answered plan is another plan');
 
@@ -236,6 +239,27 @@ test('questions: parsed for AskUserQuestion, validated, and turned into decision
   assert.equal(inputOf(ask).questions[0].header, 'Plan Q1');
   assert.match(ask, /nxy:planner .*"Finish nxy plan abc12345/);
   assert.doesNotMatch(ask, /Approve nxy plan/);
+});
+
+test('decisions: scope tag parsed and stripped, untagged is task-only and refused by validatePlan', () => {
+  const two = FINAL.replace('Decisions:\n', 'Decisions:\n- [task] Version 2 of the API — which version?\n');
+  assert.deepEqual(parseDecisions(two).map((d) => [d.rule, d.scope]),
+    [['Version 2 of the API', 'task'], ['New endpoint for corporate customers', 'repo']]);
+  const legacy = FINAL.replace('[repo] ', '');
+  assert.equal(parseDecisions(legacy)[0].scope, 'task');
+  assert.equal(parseDecisions(legacy)[0].rule, 'New endpoint for corporate customers');
+  assert.equal(validatePlan(FINAL).ok, true);
+  const bad = validatePlan(legacy);
+  assert.equal(bad.ok, false);
+  assert.match(bad.errors.join(), /New endpoint for corporate customers[\s\S]*\[repo\][\s\S]*\[task\]/);
+});
+
+test('checkpoint of a plan with one [repo] and one [task] decision offers only the repo one', () => {
+  const s = sandbox();
+  const two = FINAL.replace('Decisions:\n', 'Decisions:\n- [task] Version 2 of the API — which version?\n');
+  const out = s.mem(['handoff', 'plan'], two).stdout;
+  assert.match(out, /New endpoint for corporate customers/);
+  assert.doesNotMatch(out, /Version 2 of the API/);
 });
 
 test('checkpoint offers the decisions as conventions, in the same AskUserQuestion call', () => {
@@ -249,7 +273,7 @@ test('checkpoint offers the decisions as conventions, in the same AskUserQuestio
   ]);
   assert.equal(input.questions[1].multiSelect, false, 'one option alone would be rejected by AskUserQuestion');
   assert.match(text, /If the user picks "Save as convention": SAVE "New endpoint for corporate customers" --type convention/);
-  const many = Array.from({ length: 20 }, (_, i) => ({ rule: `r${i}`, why: '' }));
+  const many = Array.from({ length: 20 }, (_, i) => ({ rule: `r${i}`, why: '', scope: 'repo' }));
   assert.equal(inputOf(checkpointInstruction('x', { offers: many })).questions.length, 4, 'never more than AskUserQuestion takes');
 });
 

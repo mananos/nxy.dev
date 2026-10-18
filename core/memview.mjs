@@ -86,6 +86,16 @@ export function memDetailLines(memory, edges, maxBody = 30) {
 }
 
 /**
+ * The yes/no question before deleting an opened memory; a live handoff (not `-done-`) also takes its task state.
+ * @param {any} memory @returns {string}
+ */
+export function memDeleteQuestion(memory) {
+  const title = String(memory?.title || memory?.id || '');
+  const live = memory?.type === 'handoff' && typeof memory?.id === 'string' && !memory.id.includes('-done-');
+  return `¿Borrar «${title}»? No se puede deshacer.${live ? ' Es el handoff vivo de una tarea: se borran también su plan y su estado en este checkout (el de otros worktrees no se borra).' : ''}`;
+}
+
+/**
  * Rows of locate/scout hits: `path:line  kind name`, the path never truncated.
  * @param {{path: string, line: number, kind?: string, name?: string, note?: string}[] | null | undefined} hits
  * @returns {{loc: string, rest: string, text: string}[]}

@@ -2,8 +2,8 @@
 /**
  * Recall by prompt, the memory graph and the librarian's plumbing.
  *
- * What has to hold: relevance is decided by coverage and files, never by a raw score (so it does
- * not drift with corpus size); a pointer is shown once per session; superseded memories stop being
+ * What has to hold: relevance is decided by files and keywords, never by loose words or a raw score
+ * (so it does not drift with corpus size); a pointer is shown once per session; superseded memories stop being
  * pointed at; edges that are judgements travel with an export and edges that are telemetry do
  * not; and nothing private leaks through an edge.
  */
@@ -19,11 +19,11 @@ import {
   addEdge, bumpCoUse, deriveEdges, edgesOf, extractFiles, extractLinks, memoriesForFiles, neighbors, sharedEdges,
   supersededIds,
 } from '../core/memory/graph.mjs';
-import { coverage, fileMentions, fold, formatPointers, recall } from '../core/memory/recall.mjs';
+import { fileMentions, formatPointers, keywordHit, recall } from '../core/memory/recall.mjs';
 import { librarianRoute, linkCandidates, linkRequest } from '../core/memory/librarian.mjs';
 import { exportProject, fromMarkdown, importProject } from '../core/memory/exchange.mjs';
 import { contentTerms } from '../core/text.mjs';
-import { noteFetch, noteFile, notePointers, readSession, recallSummary } from '../hosts/claude-code/recall-state.mjs';
+import { conventionSummary, noteChatOffers, noteConventionOffers, noteConventionSave, noteFetch, noteFile, notePointers, readSession, recallSummary } from '../hosts/claude-code/recall-state.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOK = join(ROOT, 'hosts', 'claude-code', 'hooks', 'userpromptsubmit.mjs');
@@ -85,19 +85,13 @@ test('graph: neighbours by strength, supersedes hides, delete cascades, co-use n
   assert.equal(edgesOf(db, c).length, 0, 'deleting a memory takes its edges with it');
 });
 
-test('coverage: keyword, or two words one of which is the subject; accents folded', () => {
-  const mem = { title: 'El gate decide por contexto', keywords: 'umbral threshold', body: 'Mide el contexto del principal, no el tamaño del cambio.' };
-  const terms = (s) => new Set(contentTerms(fold(s)));
-  assert.match(coverage(terms('¿cuál es el threshold?'), mem) || '', /keyword "threshold"/);
-  assert.match(coverage(terms('por qué el gate mide contexto'), mem) || '', /words: gate, mide, contexto/);
-  assert.equal(coverage(terms('el principal cambio'), mem), null, 'two body words but none is the subject');
-  assert.equal(coverage(terms('gate'), mem), null, 'one word is not enough');
-  assert.match(coverage(terms('decisión del gate'), { ...mem, title: 'Decision del gate' }) || '', /words/, 'accents do not split words');
-
-  const filler = Array.from({ length: 40 }, (_, i) => `frame${String.fromCharCode(97 + (i % 26))}${i}`).join(' ');
-  assert.equal(coverage(terms(`Error principal cambio tamaño contexto ${filler}`), mem), null,
-    'a long paste sharing one subject word and some body words in passing does not match');
-  assert.match(coverage(terms(`gate contexto ${filler}`), mem) || '', /words: gate, contexto/, 'two subject words still do');
+test('keywordHit: whole word of the keywords field only; accents folded; title and body never count', () => {
+  const mem = { title: 'El gate decide por contexto', keywords: 'umbral, Decisión threshold', body: 'Mide el contexto del principal.' };
+  assert.match(keywordHit('¿cuál es el threshold?', mem) || '', /keyword "threshold"/);
+  assert.match(keywordHit('la decision de ayer', mem) || '', /keyword "decision"/, 'accents folded');
+  assert.equal(keywordHit('por qué el gate mide contexto del principal', mem), null, 'title and body words give nothing');
+  assert.equal(keywordHit('los umbrales', mem), null, 'a partial word is not a hit');
+  assert.equal(keywordHit('umbral', { keywords: '' }), null);
 });
 
 test('recall: files first, then words; handoffs, superseded and already-pointed are skipped', () => {
@@ -119,11 +113,21 @@ test('recall: files first, then words; handoffs, superseded and already-pointed 
   assert.deepEqual(byWords.map((p) => p.mem.id), [gate], 'the superseded note and the handoff never get a pointer');
   assert.deepEqual(recall(db, 'cuál es el umbral', { project: PROJECT, exclude: [gate] }), [], 'shown once per session');
   assert.deepEqual(recall(db, 'other project', { project: 'github.com/x/y' }), []);
+  save({ title: 'Panel antes de aprobar', body: 'nxy panel before approval' });
+  assert.deepEqual(recall(db, 'Gate por contexto mide contexto', { project: PROJECT }), [], 'two shared words but no keyword: nothing');
 
   const text = formatPointers(byFile, 'mem get', 'assisted');
   assert.equal(text.split('\n').length, 2, 'assisted: a header and one line per pointer, no body');
   assert.match(text, /mem get <id>/);
   assert.match(formatPointers(byFile, 'mem get', 'proactive'), /Tokens firmados/, 'proactive carries the body');
+});
+
+test('recall: an old keyworded memory still gets its pointer among more than 500 newer ones', () => {
+  const { db, save } = world();
+  const old = save({ title: 'Regla vieja', body: 'x', keywords: 'zafiro' });
+  db.prepare('UPDATE memories SET updated = ? WHERE id = ?').run('2000-01-01T00:00:00.000Z', old);
+  for (let i = 0; i < 520; i++) save({ title: `Nota ${i}`, body: `cuerpo ${i}` });
+  assert.deepEqual(recall(db, 'qué pasa con zafiro', { project: PROJECT }).map((p) => p.mem.id), [old]);
 });
 
 test('librarian: code preselects candidates, the role table picks who judges', () => {
@@ -201,12 +205,23 @@ test('recall summary: followed pointers, misses, and librarian bookkeeping kept 
   noteFetch(repo, 'x', now + 2000);                // loaded, never pointed: miss
   noteFetch(repo, 'y', now + 3000, 'search');      // found by the librarian: miss the hook did not see
   noteFetch(repo, 'z', now + 4000, 'link');        // librarian relating a new memory: neither
-  assert.deepEqual(recallSummary(repo, undefined, now + 5000), { pointers: 2, followed: 1, tokens: 30, misses: 2, missesBySearch: 1 });
+  assert.deepEqual(recallSummary(repo, undefined, now + 5000), { pointers: 2, followed: 1, tokens: 30, misses: 2, missesBySearch: 1, related: 0, relatedTasks: 0 });
+});
+
+test('conventionSummary: distinct offers by source, repeated checkpoints do not double count, saves counted', () => {
+  const { repo } = world();
+  noteConventionOffers(repo, ['Validation lives in services', 'Use records'], 'plan');
+  noteConventionOffers(repo, ['validation lives in services', 'Use records'], 'plan');
+  noteChatOffers(repo, ['Never mock the db']);
+  noteConventionSave(repo, 'Use records');
+  assert.deepEqual(conventionSummary(repo), { offered: 3, fromPlans: 2, fromChat: 1, saved: 1 });
+  assert.deepEqual(conventionSummary(repo, 1000, Date.now() + 5000), { offered: 0, fromPlans: 0, fromChat: 0, saved: 0 });
 });
 
 test('userpromptsubmit hook end to end: pointers once, silence otherwise', () => {
   const { dir, repo, home, save, db } = world();
   save({ title: 'Gate por contexto', body: 'el gate mide el contexto', keywords: 'umbral' });
+  save({ title: 'nxy panel before approval', body: 'the panel shows the plan before approval' });
   db.close();
   const run = (prompt, session = 's1') => execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', HOOK], {
     input: JSON.stringify({ session_id: session, cwd: repo, prompt }), encoding: 'utf8',
@@ -218,6 +233,7 @@ test('userpromptsubmit hook end to end: pointers once, silence otherwise', () =>
   assert.equal(run('cuál es el umbral').trim(), '', 'already pointed at in this session');
   assert.notEqual(run('cuál es el umbral', 's2').trim(), '', 'a new session gets it again');
   assert.equal(run('arreglemos el css').trim(), '', 'nothing relevant → zero tokens');
+  assert.equal(run('nxy panel before approval', 's5').trim(), '', 'title/body words alone stay silent');
   assert.equal(run('/nxy:mem search umbral', 's3').trim(), '', 'slash commands are instructions, not questions');
   assert.equal(recallSummary(repo).pointers, 2);
 
@@ -254,4 +270,7 @@ test('mem CLI: save derives files and dictates the librarian; link, index, get',
   assert.match(got, /file: core\/gate\.mjs/);
   assert.match(got, new RegExp(`superseded by: ${idB}`));
   assert.match(mem('unlink', idC, idB, '--kind', 'related'), /removed/);
+  assert.ok(!/conventions 30d/.test(mem('status')), 'nothing offered or saved yet');
+  mem('save', 'Records over classes', '--body', 'prefer records', '--type', 'convention');
+  assert.match(mem('status'), /conventions 30d: 0 offered \(0 from plans, 0 from the chat\), 1 saved/);
 });

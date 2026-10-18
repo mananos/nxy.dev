@@ -34,7 +34,7 @@ const PLAN = [
 
 /** What `review.mjs packet` leaves when a review is needed: the saved packet (written after the launch). */
 function savePacket(s) {
-  const p = packetPath(s.repo, 'feature/x');
+  const p = packetPath(s.repo, s.key);
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, '# packet\n');
 }
@@ -181,7 +181,7 @@ test('a background reviewer: the report waits for its end, and is left as a note
   assert.match(s.returnedAs('Review nxy plan x', 'nxy:reviewer', ASYNC), /the review launched in the background/);
   const silent = s.agent('Review nxy plan x', []);
   assert.equal(s.stop('r2', silent, 'nxy:reviewer').status, 0, 'a background stop is final: never sent back');
-  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, [], 'nothing claimed');
+  assert.deepEqual(readVerify(s.repo, s.key, s.hash).sentBack, [], 'nothing claimed');
   assert.match(s.returnedAs('look', 'nxy:scout'), /returned without recording a review[\s\S]*dispatch nxy:reviewer again once/);
 });
 
@@ -204,7 +204,7 @@ test('a background batch that ran its Accept piped is not sent back: recorded no
   s.returnedAs('Batch 1 — do it', 'nxy:implementer', ASYNC);
   const piped = s.agent(1, [{ edit: true }, { run: `cd ${s.repo.replace(/\\/g, '/')} && ${A1} 2>&1 | tail -40` }]);
   assert.equal(s.stop('b1', piped).status, 0);
-  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, [], 'no sent-* file');
+  assert.deepEqual(readVerify(s.repo, s.key, s.hash).sentBack, [], 'no sent-* file');
   assert.equal(s.recorded()['1'].status, 'not-run');
   assert.match(String(s.recorded()['1'].detail),/piped through tail/);
   const note = s.returnedAs('look', 'nxy:scout');
@@ -306,7 +306,7 @@ test('R7: a reviewer that returns with no packet (no review needed) is not sent 
   // A packet from before the launch does not count either.
   savePacket(s);
   const old = new Date(Date.now() - 3_600_000);
-  utimesSync(packetPath(s.repo, 'feature/x'), old, old);
+  utimesSync(packetPath(s.repo, s.key), old, old);
   s.dispatch('Review nxy plan x', undefined, 'nxy:reviewer');
   assert.equal(s.stop('r8', quiet, 'nxy:reviewer').status, 0);
 });
@@ -344,7 +344,7 @@ test('a background suite fix left unproven is not sent back and its note carries
   s.dispatch('Suite fix — typecheck failed');
   s.returnedAs('Suite fix — typecheck failed', 'nxy:implementer', ASYNC);
   assert.equal(s.stop('f9', s.agent('Suite fix — typecheck failed', [{ edit: true }])).status, 0);
-  assert.deepEqual(readVerify(s.repo, 'feature/x', s.hash).sentBack, []);
+  assert.deepEqual(readVerify(s.repo, s.key, s.hash).sentBack, []);
   assert.match(s.returnedAs('look', 'nxy:scout'), /suite fix ✘[\s\S]*npm run check[\s\S]*Dispatch nxy:implementer again/);
 });
 

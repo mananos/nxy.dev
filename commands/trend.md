@@ -1,6 +1,6 @@
 ---
 description: Consumption trend over time — by day, week or session, all projects (nxy)
-argument-hint: [--since 30d] [--by day|week|session|model] [--here] [--json]
+argument-hint: [--since 30d] [--by day|week|session|model|agent] [--here] [--json]
 allowed-tools: Bash(node:*)
 ---
 

@@ -14,14 +14,16 @@
 import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { MAX_COPY_BYTES, ensureDir, gitBranch, gitRoot, nxyRuntimeDir } from '../../core/paths.mjs';
+import { MAX_COPY_BYTES, ensureDir, gitBranch, gitRoot, nxyRuntimeDir, slug } from '../../core/paths.mjs';
 import { fileDiff } from '../../core/diff.mjs';
 import { primaryRoot, repoLabel, repoNames, undeclaredRepos } from './repos.mjs';
+import { taskDir } from './plan-approval.mjs';
 
 /** A repo with an untracked node_modules would otherwise be walked and stored. */
 export const MAX_DIRTY_FILES = 5000;
 
-const dirtyPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-dirty.json');
+const dirtyPath = (cwd, key) => join(taskDir(cwd, key), 'plan-dirty.json');
+const legacyDirtyPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-dirty.json');
 
 /**
  * stdout of a read-only git command, or null on any error (no git, no repo, timeout).
@@ -122,8 +124,8 @@ export function recordDirtyAtApproval(cwd, branch, repos = [], hash = '') {
       };
     } else if (others.length === prev.others.length) return;
     else rec = { ...prev, others };
-    ensureDir(nxyRuntimeDir(cwd));
-    writeFileSync(dirtyPath(cwd), JSON.stringify(rec), 'utf8');
+    ensureDir(taskDir(cwd, branch));
+    writeFileSync(dirtyPath(cwd, branch), JSON.stringify(rec), 'utf8');
   } catch {
     /* best-effort */
   }
@@ -136,9 +138,10 @@ export function recordDirtyAtApproval(cwd, branch, repos = [], hash = '') {
  */
 export function readDirtyAtApproval(cwd, branch) {
   try {
-    if (!existsSync(dirtyPath(cwd))) return null;
-    const d = JSON.parse(readFileSync(dirtyPath(cwd), 'utf8'));
-    if (!d || (d.branch || null) !== (branch || null) || !Array.isArray(d.files)) return null;
+    const p = existsSync(dirtyPath(cwd, branch)) ? dirtyPath(cwd, branch) : legacyDirtyPath(cwd);
+    if (!existsSync(p)) return null;
+    const d = JSON.parse(readFileSync(p, 'utf8'));
+    if (!d || slug(d.branch) !== slug(branch) || !Array.isArray(d.files)) return null;
     return { ...d, others: Array.isArray(d.others) ? d.others : [] };
   } catch {
     return null;
@@ -146,9 +149,10 @@ export function readDirtyAtApproval(cwd, branch) {
 }
 
 /** The task's snapshot ends with the task. */
-export function clearDirtyAtApproval(cwd) {
+export function clearDirtyAtApproval(cwd, branch) {
   try {
-    rmSync(dirtyPath(cwd), { force: true });
+    rmSync(dirtyPath(cwd, branch), { force: true });
+    if (readDirtyAtApproval(cwd, branch)) rmSync(legacyDirtyPath(cwd), { force: true });
   } catch {
     /* best-effort */
   }
@@ -175,7 +179,7 @@ export function gitChangedFiles(cwd, branch, covered, repos = []) {
   const primary = primaryRoot(cwd);
   const rec = readDirtyAtApproval(cwd, branch);
   const recOthers = rec ? rec.others : [];
-  const undeclared = undeclaredRepos(cwd).filter((r) => !same(r, primary) && !recOthers.some((o) => same(o.root, r))
+  const undeclared = undeclaredRepos(cwd, branch).filter((r) => !same(r, primary) && !recOthers.some((o) => same(o.root, r))
     && !repos.some((d) => same(typeof d === 'string' ? d : d.root, r)));
   const names = repoNames([primary, ...repos, ...recOthers.map((o) => o.root), ...undeclared]);
   const files = [];

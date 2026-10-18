@@ -15,10 +15,51 @@
  */
 import { closeSync, existsSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ensureDir, nxyRuntimeDir } from '../../core/paths.mjs';
+import { ensureDir, nxyRuntimeDir, slug } from '../../core/paths.mjs';
 import { APPROVE, approvalQuestion } from '../../core/plan.mjs';
 
-const markerPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan.json');
+/** One directory per task under the runtime dir: its marker, dirty-at-approval and extra repos. */
+export const taskDir = (cwd, key) => join(nxyRuntimeDir(cwd), 'tasks', slug(key));
+const markerPath = (cwd, key) => join(taskDir(cwd, key), 'plan.json');
+const LEGACY = ['plan.json', 'plan-dirty.json', 'plan-extra-repos.json'];
+const legacyPath = (cwd, name = 'plan.json') => join(nxyRuntimeDir(cwd), name);
+
+/**
+ * The key the pre-1.2 single `plan.json` belongs to, or undefined when there is none. Those files
+ * (marker, dirty, extra repos) are honored only for that key.
+ * @returns {string|null|undefined}
+ */
+export function legacyMarkerKey(cwd) {
+  try {
+    const p = legacyPath(cwd);
+    if (!existsSync(p)) return undefined;
+    const m = JSON.parse(readFileSync(p, 'utf8'));
+    return m && typeof m.hash === 'string' ? (m.branch || null) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Whether the legacy single plan.json belongs to `key` (null and '(no branch)' are the same key). */
+export function legacyIs(cwd, key) {
+  const k = legacyMarkerKey(cwd);
+  return k !== undefined && slug(k) === slug(key);
+}
+
+/** Moves the legacy files of `key` into its task dir (a file already there wins). */
+function migrateLegacy(cwd, key) {
+  if (!legacyIs(cwd, key)) return;
+  const dir = taskDir(cwd, key);
+  ensureDir(dir);
+  for (const name of LEGACY) {
+    const from = legacyPath(cwd, name);
+    if (!existsSync(from)) continue;
+    if (name !== 'plan.json' && !existsSync(join(dir, name))) {
+      try { writeFileSync(join(dir, name), readFileSync(from, 'utf8'), 'utf8'); } catch { /* best-effort */ }
+    }
+    rmSync(from, { force: true });
+  }
+}
 const cachePath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-approvals.json');
 
 /** A transcript bigger than this is scanned from its tail: an approval is recent by nature. */
@@ -32,13 +73,13 @@ const MAX_SCAN_BYTES = 32 * 1024 * 1024;
 export function writeMarker(cwd, branch, hash, questions = 0, repos = []) {
   try {
     if (!hash) {
-      rmSync(markerPath(cwd), { force: true });
-      rmSync(join(nxyRuntimeDir(cwd), 'plan-dirty.json'), { force: true });
-      rmSync(join(nxyRuntimeDir(cwd), 'plan-extra-repos.json'), { force: true });
+      rmSync(taskDir(cwd, branch), { recursive: true, force: true });
+      if (legacyIs(cwd, branch)) for (const n of LEGACY) rmSync(legacyPath(cwd, n), { force: true });
       return;
     }
-    ensureDir(nxyRuntimeDir(cwd));
-    writeFileSync(markerPath(cwd), JSON.stringify({ branch: branch || null, hash, questions, repos }), 'utf8');
+    migrateLegacy(cwd, branch);
+    ensureDir(taskDir(cwd, branch));
+    writeFileSync(markerPath(cwd, branch), JSON.stringify({ branch: branch || null, hash, questions, repos }), 'utf8');
   } catch {
     /* best-effort */
   }
@@ -50,9 +91,10 @@ export function writeMarker(cwd, branch, hash, questions = 0, repos = []) {
  */
 export function readMarker(cwd, branch) {
   try {
-    if (!existsSync(markerPath(cwd))) return null;
-    const m = JSON.parse(readFileSync(markerPath(cwd), 'utf8'));
-    return m && (m.branch || null) === (branch || null) && typeof m.hash === 'string'
+    const p = existsSync(markerPath(cwd, branch)) ? markerPath(cwd, branch) : legacyPath(cwd);
+    if (!existsSync(p)) return null;
+    const m = JSON.parse(readFileSync(p, 'utf8'));
+    return m && slug(m.branch) === slug(branch) && typeof m.hash === 'string'
       ? { hash: m.hash, questions: Number(m.questions) || 0, repos: Array.isArray(m.repos) ? m.repos.map(String) : [] }
       : null;
   } catch {

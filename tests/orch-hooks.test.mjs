@@ -63,7 +63,7 @@ test('a marker past its TTL does not deny; no marker leaves the dispatch untouch
 
 test('ticketed batch 2 behind a red batch 1: denied until the pane waved it through', () => {
   const s = sandbox(PLAN);
-  recordBatch(s.repo, 'feature/x', s.hash, 1, { status: 'fail', error: 'accept-failed', ts: Date.now() });
+  recordBatch(s.repo, s.key, s.hash, 1, { status: 'fail', error: 'accept-failed', ts: Date.now() });
   marker(s);
   assert.equal(pre(s, 'nxy:implementer', 'Batch 2 — go', ticket(s, 'n1'))?.permissionDecision, 'deny');
   writeOrchFile(s.repo, 'state.json', { continued: [1], acked: [], launched: {} });

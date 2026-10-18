@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { APPROVE, approvalQuestion, planHash } from '../core/plan.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
 import { readVerify } from '../hosts/claude-code/verify-state.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -78,6 +79,7 @@ export function sandbox(PLAN) {
     return out.trim() ? JSON.parse(out).hookSpecificOutput.additionalContext : '';
   };
   const returned = (n) => returnedAs(`Batch ${n} — do it`);
-  const recorded = () => readVerify(repo, 'feature/x', hash).batches;
-  return { hash, dir, repo, env, main, agent, stop, hook, dispatch, returned, returnedAs, recorded };
+  const key = taskKey(repo);
+  const recorded = () => readVerify(repo, key, hash).batches;
+  return { hash, dir, repo, env, key, main, agent, stop, hook, dispatch, returned, returnedAs, recorded };
 }

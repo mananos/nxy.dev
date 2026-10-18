@@ -23,6 +23,11 @@ If your prompt starts with **"Finish nxy plan"**, skip to [Finishing a plan with
    node "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/locate.mjs" "<what you need to find>"
    ```
    Then read only what the plan depends on, with `offset`/`limit` around the lines that matter.
+   Then ask which closed tasks already touched the files the plan will touch:
+   ```
+   node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" related <the files the plan will touch>
+   ```
+   Follow the `[repo]` decisions of those tasks unless the request contradicts them (then say so in Risks), reuse their approach, and run `mem get <id>` only when you need a full body.
 3. **Check what already exists** before planning anything new: a DTO, service, component or helper that does it (or almost does it) is reused or extended, not duplicated. Say which one in the plan.
 4. **Respect the conventions you can see in the code** (naming, layering, where validation lives, test style). If the request contradicts one, plan the convention and flag it in Risks.
 5. **Across repos**, plan the contract first (API, DTO, event) as its own batch; each later batch touches one repo. Give those later batches `Depends: 1` (the contract batch): they then run in parallel, one implementer per repo, and a red one stops only what depends on it. When the user named other repos' paths in the prompt, list every one of them (and the session's own repo as `.`) under `### Repos` right after `Goal:`, one bullet each: the path in backticks, then ` — ` and its role (api, web, shared lib). nxy uses that list to snapshot, review and label each repo.
@@ -47,18 +52,19 @@ Each question: 2–4 options, labels of a few words, exactly one `(recommended)`
 
 Your prompt carries the user's answers ("<question> → <answer>"). Do not explore again:
 
-1. Read the draft: `node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" handoff show`. Read code only if an answer took the plan somewhere the draft did not look.
+1. Read the draft: `node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" handoff show`. Read code only if an answer took the plan somewhere the draft did not look. Note the task id on its first line (`handoff · <label> · task <id> · ...`).
 2. Remove `### Questions`. Right under `Goal:`, add one line per answer:
    ```
    Decisions:
-   - Extend POST /clientes — new endpoint or extend the existing one?
+   - [task] Extend POST /clientes — new endpoint or extend the existing one?
+   - [repo] Records, not Lombok, for DTOs — Lombok or record?
    ```
-   The rule first, in a few words (it may become a repo convention with that title), then ` — ` and the question it settles. Only the user's answers go here, never your own choices.
-3. Adjust the batches to the answers and save the plan again, as below.
+   Start each bullet with `[repo]` (a rule a future task in this repo should follow: Lombok vs record, where validation lives) or `[task]` (what this task does: which endpoint, a version number); the save command refuses a bullet without one. Only `[repo]` ones are offered as conventions. After the tag, the rule first, in a few words (a `[repo]` one may become a convention with that title), then ` — ` and the question it settles. Only the user's answers go here, never your own choices.
+3. Adjust the batches to the answers and save the plan again, as below, adding `--task <id>` (the id from step 1) to the command: a revision, even one that changes the Goal, must name its task or it is refused as a second plan.
 
 ## Save the plan
 
-Save it with exactly this shape (the command validates it and refuses prose):
+Save it with exactly this shape (the command validates it and refuses prose). A new plan needs no `--task`; if the command refuses because another task is in progress, return its message as is and stop.
 
 ```
 node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" handoff plan <<'EOF'

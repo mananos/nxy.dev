@@ -14,7 +14,7 @@
 import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { MAX_COPY_BYTES, ensureDir, nxyRuntimeDir, toNativePath } from '../../core/paths.mjs';
+import { MAX_COPY_BYTES, ensureDir, nxyRuntimeDir, slug, toNativePath } from '../../core/paths.mjs';
 import { planFiles } from '../../core/plan.mjs';
 import { fileDiff } from '../../core/diff.mjs';
 import { dirtyFiles, gitChangedFiles, readDirtyAtApproval } from './gitstate.mjs';
@@ -24,7 +24,6 @@ import { diffInventory, inventoryDiffers } from './inventory.mjs';
 
 export { MAX_COPY_BYTES };
 
-const slug = (branch) => String(branch || 'no-branch').replace(/[^A-Za-z0-9._-]+/g, '_');
 export const baselineDir = (cwd, branch) => join(nxyRuntimeDir(cwd), 'baseline', slug(branch));
 const dirOf = baselineDir;
 const idOf = (abs) => createHash('sha1').update(abs).digest('hex').slice(0, 16);
@@ -206,8 +205,8 @@ export function changedFiles(cwd, branch) {
   const index = readBaseline(cwd, branch);
   const dir = dirOf(cwd, branch);
   const marked = readMarker(cwd, branch)?.repos ?? [];
-  const repoFor = new Map(Object.keys(index).map((abs) => [abs, repoOf(cwd, abs, [...marked, ...undeclaredRepos(cwd)])]));
-  const names = repoNames([primaryRoot(cwd), ...marked, ...undeclaredRepos(cwd), ...[...repoFor.values()].flatMap((r) => (r ? [r.root] : []))]);
+  const repoFor = new Map(Object.keys(index).map((abs) => [abs, repoOf(cwd, abs, [...marked, ...undeclaredRepos(cwd, branch)])]));
+  const names = repoNames([primaryRoot(cwd), ...marked, ...undeclaredRepos(cwd, branch), ...[...repoFor.values()].flatMap((r) => (r ? [r.root] : []))]);
   const out = [];
   for (const [abs, e] of Object.entries(index)) {
     const label = repoLabel(repoFor.get(abs) ?? null, abs, names);

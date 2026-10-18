@@ -11,7 +11,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 import { planHash } from '../core/plan.mjs';
+import { taskDir } from '../hosts/claude-code/plan-approval.mjs';
+import { conventionSummary } from '../hosts/claude-code/recall-state.mjs';
 import { recordSuite } from '../hosts/claude-code/verify-state.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -54,7 +57,7 @@ test('git: files changed without a copy are found, dirty-at-approval ones are na
   // The user's own uncommitted work, from before the plan is approved.
   writeFileSync(join(repo, 'a.js'), lines('user'));
   assert.equal(node([MEM, 'handoff', 'plan', '--cwd', repo], PLAN).status, 0);
-  const dirtyFile = join(repo, '.nxy', 'local', 'plan-dirty.json');
+  const dirtyFile = join(taskDir(repo, taskKey(repo)), 'plan-dirty.json');
   assert.deepEqual(JSON.parse(readFileSync(dirtyFile, 'utf8')).files, ['a.js']);
 
   // After the plan: b.js and c.js change with no hook; d.js through the Edit hook (a copy).
@@ -99,6 +102,20 @@ test('git: files changed without a copy are found, dirty-at-approval ones are na
 
   node([MEM, 'handoff', 'done', '--cwd', repo]);
   assert.ok(!existsSync(dirtyFile), 'the list goes with the plan');
+});
+
+test('escape --as convention counts as a convention saved in the metric', (t) => {
+  if (!hasGit) return t.skip('git is not available');
+  const { dir, repo, node } = setup();
+  const res = node([REVIEW, 'escape', 'Validation lives in services', '--as', 'convention', '--cwd', repo]);
+  assert.equal(res.status, 0, res.stdout + res.stderr);
+  const prev = process.env.NXY_HOME;
+  process.env.NXY_HOME = join(dir, 'home');
+  try {
+    assert.equal(conventionSummary(repo).saved, 1);
+  } finally {
+    if (prev === undefined) delete process.env.NXY_HOME; else process.env.NXY_HOME = prev;
+  }
 });
 
 test('git: the tester hook dispatches the reviewer when only a git-found file changed', (t) => {

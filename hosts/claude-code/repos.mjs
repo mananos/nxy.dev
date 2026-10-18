@@ -13,9 +13,10 @@
 import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import { ensureDir, gitRoot, nxyRuntimeDir, toNativePath } from '../../core/paths.mjs';
-import { readMarker } from './plan-approval.mjs';
+import { legacyIs, readMarker, taskDir } from './plan-approval.mjs';
 
-const extraPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-extra-repos.json');
+const extraPath = (cwd, key) => join(taskDir(cwd, key), 'plan-extra-repos.json');
+const legacyExtraPath = (cwd) => join(nxyRuntimeDir(cwd), 'plan-extra-repos.json');
 const WIN = process.platform === 'win32';
 
 /** Comparison key of a path: absolute, no trailing separator, case-insensitive on Windows. */
@@ -138,9 +139,14 @@ export function repoLabel(repo, abs, names) {
 }
 
 /** Roots edited that the plan did not declare, in order of first sight. */
-export function undeclaredRepos(cwd) {
+export function undeclaredRepos(cwd, key) {
   try {
-    const v = JSON.parse(readFileSync(extraPath(cwd), 'utf8'));
+    let p = extraPath(cwd, key);
+    if (!existsSync(p)) {
+      if (!legacyIs(cwd, key)) return [];
+      p = legacyExtraPath(cwd);
+    }
+    const v = JSON.parse(readFileSync(p, 'utf8'));
     return Array.isArray(v?.roots) ? v.roots.map(String) : [];
   } catch {
     return [];
@@ -148,12 +154,12 @@ export function undeclaredRepos(cwd) {
 }
 
 /** Remembers an undeclared root; true only the first time (the "warn once" state). */
-export function noteUndeclaredRepo(cwd, root) {
+export function noteUndeclaredRepo(cwd, key, root) {
   try {
-    const roots = undeclaredRepos(cwd);
+    const roots = undeclaredRepos(cwd, key);
     if (roots.some((r) => keyOf(r) === keyOf(root))) return false;
-    ensureDir(nxyRuntimeDir(cwd));
-    writeFileSync(extraPath(cwd), JSON.stringify({ roots: [...roots, root] }), 'utf8');
+    ensureDir(taskDir(cwd, key));
+    writeFileSync(extraPath(cwd, key),JSON.stringify({ roots: [...roots, root] }), 'utf8');
     return true;
   } catch {
     return false;
@@ -170,7 +176,7 @@ export function touchedRepos(cwd, branch) {
   const marked = readMarker(cwd, branch)?.repos ?? [];
   const out = [];
   const seen = new Set();
-  for (const r of [primaryRoot(cwd), ...marked, ...undeclaredRepos(cwd)]) {
+  for (const r of [primaryRoot(cwd), ...marked, ...undeclaredRepos(cwd, branch)]) {
     if (seen.has(keyOf(r))) continue;
     seen.add(keyOf(r));
     out.push(r);

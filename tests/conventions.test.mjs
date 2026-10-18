@@ -19,6 +19,7 @@ import { checkpoint2 } from '../core/review.mjs';
 import { APPROVE, approvalQuestion, planHash } from '../core/plan.mjs';
 import { findDocs } from '../hosts/claude-code/docs.mjs';
 import { findRg } from '../core/rg.mjs';
+import { pinActiveTask } from '../hosts/claude-code/tasks.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -181,6 +182,7 @@ test('flow: docs that name the change are offered at checkpoint 2; escapes kept;
   const prompt = (session) => s.hook('userpromptsubmit.mjs', { session_id: session, prompt: 'the PR says the CUIT check is in the wrong place' });
   assert.match(JSON.parse(prompt('s9')).hookSpecificOutput.additionalContext, /already reviewed \(review [0-9a-f]{6}\)[\s\S]*escape "<the rule>"/);
   assert.equal(prompt('s9').trim(), '', 'once per session');
+  pinActiveTask(s.repo); // the task is pinned to feature/x (first edit); another branch is another matter
   writeFileSync(join(s.repo, '.git', 'HEAD'), 'ref: refs/heads/feature/other\n');
   assert.equal(prompt('s10').trim(), '', 'another branch: nothing');
   assert.ok(existsSync(join(s.repo, '.nxy', 'local', 'review.json')));

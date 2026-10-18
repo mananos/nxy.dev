@@ -285,15 +285,21 @@ const CLOSE_TERMINAL = 'Si hay una terminal con Claude abierta ahí, cerrala ant
  * @param {FeatureNames} names
  * @param {string | null} [baseBranch]
  * @param {Shell} [shell]
+ * @param {{goal: string, on: boolean} | null} [carry] the unpinned task of this checkout, when there is one
  * @returns {string}
  */
-export function newQuestion(names, baseBranch, shell = 'posix') {
+export function newQuestion(names, baseBranch, shell = 'posix', carry = null) {
   const base = baseBranch ?? names.base;
   const cmd = commandText(addArgv(names.branch, names.path, names.create, base), shell);
   const what = names.create
     ? `Crea la rama ${names.branch}, que sale de la rama local ${base}, tal como está en este equipo: no se baja nada del remoto.`
     : `Usa la rama ${names.branch} que ya existe; no crea ninguna rama.`;
-  return `${cmd}\n${what}\n${CLOSE_TERMINAL}`;
+  const task = carry
+    ? `\n${carry.on
+      ? `Se lleva la tarea «${carry.goal}» al worktree nuevo (su plan se aprueba de nuevo allí).`
+      : `La tarea «${carry.goal}» queda en este checkout.`}`
+    : '';
+  return `${cmd}\n${what}${task}\n${CLOSE_TERMINAL}`;
 }
 
 /**

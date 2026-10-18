@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeTargets } from '../core/shellwrites.mjs';
-import { readBaseline } from '../hosts/claude-code/baseline.mjs';
+import { baselineDir, readBaseline } from '../hosts/claude-code/baseline.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MEM = join(ROOT, 'hosts', 'claude-code', 'entries', 'mem.mjs');
@@ -106,13 +107,14 @@ test('hook copies before sed -i, a redirect and cp, only with an active plan', (
     const out = hook(event(c));
     assert.equal(out.status, 0);
   }
-  const base = readBaseline(repo, branch);
+  assert.notEqual(taskKey(repo), branch, 'the plan became a task');
+  const base = readBaseline(repo, taskKey(repo));
   // f.txt is named by the plan, so it was pre-copied at approval; g.txt and h.txt are not in the plan:
   // they are the proof that the hook itself copies console-write targets.
   assert.deepEqual(Object.keys(base).sort(), [join(repo, 'f.txt'), join(repo, 'g.txt'), join(repo, 'h.txt')].sort());
   const copy = base[join(repo, 'g.txt')];
   assert.ok(copy.copy);
-  const dir = join(repo, '.nxy', 'local', 'baseline', 'feature_y');
+  const dir = baselineDir(repo, taskKey(repo));
   assert.equal(readFileSync(join(dir, copy.copy), 'utf8'), 'before-g\n');
 });
 
@@ -126,7 +128,7 @@ test('hook: targets outside the project, under .nxy or under .git are not copied
   writeFileSync(join(repo, '.git', 'note.txt'), 'g\n');
   for (const c of [`echo x > "${outsideCmd}"`, 'echo x > .nxy/note.txt', 'echo x > .git/note.txt']) assert.equal(hook(event(c)).status, 0);
   // only f.txt: plan-named, pre-copied at approval (not by the hook); none of these targets was copied by the hook
-  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt']);
+  assert.deepEqual(Object.keys(readBaseline(repo, taskKey(repo))).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt']);
 });
 
 test('hook: a subagent shell write into the project is denied; main thread and other cases pass', () => {
@@ -155,7 +157,7 @@ test('hook: nothing for 2>&1, >/dev/null; malformed events exit 0 silently', () 
   const { repo, env, plan, hook, event } = setup();
   spawnSync(process.execPath, [...NODE, MEM, 'handoff', 'plan'], { input: plan, encoding: 'utf8', env, cwd: repo });
   for (const c of ['ls 2>&1', 'ls >/dev/null 2>&1']) hook(event(c));
-  assert.deepEqual(Object.keys(readBaseline(repo, 'feature/y')).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt'], 'only the plan\'s own pre-copy');
+  assert.deepEqual(Object.keys(readBaseline(repo, taskKey(repo))).map((p) => p.replace(/\\/g, '/').split('/').pop()), ['f.txt'], 'only the plan\'s own pre-copy');
   for (const bad of ['not json', JSON.stringify({ tool_name: 'Bash', tool_input: {} }), '']) {
     const r = hook(bad);
     assert.equal(r.status, 0);

@@ -11,7 +11,8 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitBranch } from '../core/paths.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
+import { taskDir } from '../hosts/claude-code/plan-approval.mjs';
 import { changedFiles, readBaseline, reviewFiles } from '../hosts/claude-code/baseline.mjs';
 import { takeNotes } from '../hosts/claude-code/agent-notes.mjs';
 
@@ -58,9 +59,9 @@ const bash = (s, command) => s.hook('pretooluse-bash.mjs', { tool_name: 'Bash', 
 test('hooks: an Edit in a declared repo is copied and reviewed as B/<rel>', () => {
   const s = setup();
   s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: join(s.B, 'f.js') } });
-  assert.ok(readBaseline(s.A, gitBranch(s.A))[resolve(s.B, 'f.js')], 'an entry for the file in B');
+  assert.ok(readBaseline(s.A, taskKey(s.A))[resolve(s.B, 'f.js')], 'an entry for the file in B');
   writeFileSync(join(s.B, 'f.js'), 'two\n');
-  assert.deepEqual(changedFiles(s.A, gitBranch(s.A)).map((f) => f.path), ['B/f.js']);
+  assert.deepEqual(changedFiles(s.A, taskKey(s.A)).map((f) => f.path), ['B/f.js']);
 });
 
 test('hooks: console writes in B are copied; a subagent sed -i in B is denied, in a scratch dir it is not', () => {
@@ -72,7 +73,7 @@ test('hooks: console writes in B are copied; a subagent sed -i in B is denied, i
   // The main thread's console write is allowed and copied first.
   const main = JSON.stringify({ cwd: s.A, tool_name: 'Bash', tool_input: { command: `echo hi > ${p}` } });
   execFileSync(process.execPath, [join(HOOKS, 'pretooluse-bash.mjs')], { input: main, encoding: 'utf8', env: { ...process.env, NXY_HOME: join(s.dir, 'home'), CLAUDE_PROJECT_DIR: s.A } });
-  assert.ok(readBaseline(s.A, gitBranch(s.A))[resolve(s.B, 'f.js')], '`>` in B left a copy');
+  assert.ok(readBaseline(s.A, taskKey(s.A))[resolve(s.B, 'f.js')], '`>` in B left a copy');
   const sed = JSON.stringify({ cwd: s.A, tool_name: 'Bash', tool_input: { command: `sed -i s/one/two/ ${p}` } });
   const r = execFileSync(process.execPath, [join(HOOKS, 'pretooluse-bash.mjs')], { input: sed, encoding: 'utf8', env: { ...process.env, NXY_HOME: join(s.dir, 'home'), CLAUDE_PROJECT_DIR: s.A } });
   assert.doesNotMatch(r, /"permissionDecision":"deny"/, 'the main thread is not denied');
@@ -82,12 +83,13 @@ test('hooks: an edit in an undeclared repo leaves one note, and none in the proj
   const s = setup();
   const edit = (file) => s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: file } });
   edit(join(s.A, 'a.js'));
-  assert.equal(existsSync(join(s.A, '.nxy', 'local', 'plan-extra-repos.json')), false, 'A alone creates nothing');
+  const extra = join(taskDir(s.A, taskKey(s.A)), 'plan-extra-repos.json');
+  assert.equal(existsSync(extra), false, 'A alone creates nothing');
   edit(join(s.C, 'f.js'));
   assert.match(takeNotes(s.A).join('\n'), /C is not in the plan; its prior uncommitted changes cannot be told apart/);
   edit(join(s.C, 'f.js'));
   assert.deepEqual(takeNotes(s.A), [], 'the second edit adds no note');
-  assert.ok(existsSync(join(s.A, '.nxy', 'local', 'plan-extra-repos.json')));
+  assert.ok(existsSync(extra));
 });
 
 test('hooks: an undeclared repo with a file changed shows in Not reviewed', (t) => {
@@ -95,6 +97,6 @@ test('hooks: an undeclared repo with a file changed shows in Not reviewed', (t) 
   const s = setup(true);
   s.hook('pretooluse-edit.mjs', { tool_name: 'Edit', tool_input: { file_path: join(s.C, 'f.js') } });
   writeFileSync(join(s.C, 'g.js'), 'dirty, no copy\n');
-  const rv = reviewFiles(s.A, gitBranch(s.A));
+  const rv = reviewFiles(s.A, taskKey(s.A));
   assert.ok(rv.notReviewed.some((n) => /^C\/g\.js/.test(typeof n === 'string' ? n : n.path || '')), JSON.stringify(rv.notReviewed));
 });

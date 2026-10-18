@@ -30,7 +30,7 @@ function cutHeredocs(command) {
 }
 
 /** Splits on newlines that are outside quotes (a quoted multi-line argument stays in one piece). */
-function splitLines(text) {
+export function splitLines(text) {
   const out = [];
   let start = 0;
   let q = '';
@@ -58,7 +58,7 @@ function splitLines(text) {
  * @param {boolean} posix backslash escapes (false for PowerShell)
  * @returns {Tok[]}
  */
-function tokenize(seg, posix) {
+export function tokenize(seg, posix) {
   /** @type {Tok[]} */
   const toks = [];
   let cur = '';

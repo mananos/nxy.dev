@@ -13,7 +13,8 @@
  * Fail-open: any error and the turn ends as it would have.
  */
 import { readFileSync } from 'node:fs';
-import { gitBranch, toNativePath } from '../../../core/paths.mjs';
+import { toNativePath } from '../../../core/paths.mjs';
+import { activeTask } from '../tasks.mjs';
 import { decideStop, staleHandoffMessage } from '../../../core/memory/handoff.mjs';
 import { memCommand } from '../handoff.mjs';
 import { takeNotes } from '../agent-notes.mjs';
@@ -31,16 +32,17 @@ try {
       process.stderr.write(`${notes.join('\n\n')}\n`);
       process.exit(2);
     }
-    const branch = gitBranch(cwd);
+    const task = activeTask(cwd);
+    const key = task.id;
     const state = readStopState(cwd, session);
     const verdict = decideStop({
       stopHookActive: input.stop_hook_active === true,
-      savedTs: handoffSavedTs(cwd, branch),
+      savedTs: handoffSavedTs(cwd, key),
       lastEditTs: state.lastEditTs,
       remindedTs: state.remindedTs,
     });
     if (verdict.block && state.lastEditTs != null) {
-      process.stderr.write(staleHandoffMessage(branch, memCommand('handoff show'), memCommand('handoff save')));
+      process.stderr.write(staleHandoffMessage(task.label, memCommand('handoff show'), memCommand('handoff save')));
       code = 2;
       writeStopState(cwd, session, { remindedTs: state.lastEditTs });
     }

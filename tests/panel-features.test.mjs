@@ -47,6 +47,23 @@ test('worktrees block: three rows with tags and disabled buttons', () => {
   assert.ok(b.rows[2].lines.some((/** @type {string} */ l) => l.includes('node_modules')));
 });
 
+test('carry toggle: only with a task in the list and a mode open; args and question follow it', () => {
+  const task = { id: 'hacer-algo-abc123', goal: 'hacer algo' };
+  assert.ok(isPanelAction('feat:carry:toggle'));
+  assert.equal(wt(view({ mode: 'new', step: 'issue' })).carry, null);
+  assert.equal(wt(view({ data: { ...DATA, task } })).carry, null);
+  const on = wt(view({ mode: 'new', step: 'issue', data: { ...DATA, task } })).carry;
+  assert.equal(on.on, true);
+  assert.equal(on.label, 'Llevar tarea');
+  assert.equal(wt(view({ mode: 'new', step: 'issue', carry: false, data: { ...DATA, task } })).carry.on, false);
+  const of = (/** @type {any} */ carry, /** @type {any} */ t = task) => /** @type {any} */ (launcherOf('feat-new', { features: { name: 'x', base: 'main', main: MAIN, task: t, carry } }));
+  assert.deepEqual(of(true).args.slice(-2), ['--carry', task.id]);
+  assert.ok(!of(false).args.includes('--carry'));
+  assert.ok(!of(true, null).args.includes('--carry'));
+  assert.match(of(true).confirm, /Se lleva la tarea «hacer algo»/);
+  assert.match(of(false).confirm, /queda en este checkout/);
+});
+
 test('no mode: two branch buttons, no input, no select', () => {
   const b = wt(view());
   assert.deepEqual(b.modes.map((/** @type {any} */ m) => m.id), ['feat:mode:new', 'feat:mode:existing']);

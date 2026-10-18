@@ -134,6 +134,57 @@ test('pickBase shows the exact command and runs nothing until yes; no does not r
   assert.doesNotMatch(panelText(d.panel()), /falta elegir de qué rama sale/);
 });
 
+test('carry: shown only with a task, on by default, toggles, sends --carry only when on, resets after', async () => {
+  const none = await ready();
+  await none.d.press('feat:mode:new');
+  assert.doesNotMatch(panelText(none.d.panel()), /Llevar tarea/);
+
+  const w = world();
+  w.outs['features:list'] = listOut({ task: { id: 'hacer-algo-abc123', goal: 'hacer algo' } });
+  const d = await w.driver();
+  await d.press('tab:features');
+  await toBaseStep(d);
+  assert.match(panelText(d.panel()), /\[x\] Llevar tarea: «hacer algo»/);
+  d.pickBase('main');
+  assert.match(panelText(d.panel()), /Se lleva la tarea «hacer algo»/);
+  await d.press('confirm-no');
+  await d.press('feat:carry:toggle');
+  assert.match(panelText(d.panel()), /\[ \] Llevar tarea/);
+  d.pickBase('main');
+  assert.match(panelText(d.panel()), /queda en este checkout/);
+  await d.press('confirm-yes');
+  const off = feats(w).find((r) => sub(r) === 'new');
+  assert.ok(off && !off.includes('--carry'));
+  await toBaseStep(d, '', 'otro');
+  assert.match(panelText(d.panel()), /\[x\] Llevar tarea/, 'back on after a reset');
+  d.pickBase('main');
+  await d.press('confirm-yes');
+  const on = feats(w).filter((r) => sub(r) === 'new').at(-1);
+  assert.equal(on[on.indexOf('--carry') + 1], 'hacer-algo-abc123');
+});
+
+test('feat-new output mentions the carried task or the carry error', async () => {
+  const w = world();
+  w.outs['features:list'] = listOut({ task: { id: 't-1', goal: 'hacer algo' } });
+  w.outs['features:new'] = { ok: true, command: 'git worktree add x', carried: { id: 't-1', goal: 'hacer algo' } };
+  const d = await w.driver();
+  await d.press('tab:features');
+  await toBaseStep(d);
+  d.pickBase('main');
+  await d.press('confirm-yes');
+  assert.match(panelText(d.panel()), /Tarea llevada: «hacer algo»/);
+  w.outs['features:new'] = { ok: true, command: 'git worktree add y', carryError: 'sin remoto' };
+  await toBaseStep(d, '', 'dos');
+  d.pickBase('main');
+  await d.press('confirm-yes');
+  assert.match(panelText(d.panel()), /No se llevó la tarea: sin remoto/);
+  w.outs['features:new'] = { ok: true, command: 'git worktree add z', carried: { id: 't-1', goal: 'hacer algo' }, carryWarning: 'no se pudo armar el plan' };
+  await toBaseStep(d, '', 'tres');
+  d.pickBase('main');
+  await d.press('confirm-yes');
+  assert.match(panelText(d.panel()), /Tarea llevada; no se pudo armar el plan/);
+});
+
 test('pickBase ignores empty, unknown branches and calls outside the base step', async () => {
   const { d } = await ready();
   d.pickBase('main');

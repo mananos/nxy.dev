@@ -721,6 +721,23 @@ test('Memoria: search block in idle, loading, error, empty and ok', () => {
   assert.notEqual(s({ key: 1 }).input.key, s({ key: 2 }).input.key);
 });
 
+test('Memoria: mem-delete launcher needs an open memory and confirms with the memory title', () => {
+  const memory = { id: 'handoff-1', title: 'handoff: Meta', type: 'handoff' };
+  const ctx = { mem: { open: 'handoff-1', memory } };
+  const e = launcherOf('mem-delete', ctx);
+  assert.deepEqual(e.args, ['delete', 'handoff-1']);
+  assert.equal(e.after, 'mem');
+  assert.match(e.confirm, /«handoff: Meta».*handoff vivo/);
+  assert.equal(launcherAvailable(LAUNCHER.find((l) => l.id === 'mem-delete'), { snap: null, ctx }), true);
+  assert.equal(launcherAvailable(LAUNCHER.find((l) => l.id === 'mem-delete'), { snap: null, ctx: { mem: { open: null } } }), false);
+});
+
+test('Memoria: the handoff block shows the task label and its branch or follows the checkout', () => {
+  const text = (task) => block(mem({ handoff: { state: 'ok', data: { exists: true, label: 'x', task, body: 'b' } } }), 'handoff').text;
+  assert.match(text({ label: 'Meta', pinned: true, branch: 'feature/a' }), /Meta · rama feature\/a/);
+  assert.match(text({ label: 'Meta', pinned: false, branch: 'main' }), /Meta · sigue al checkout/);
+});
+
 test('Memoria: detail replaces the search while open; Volver is b', () => {
   const memory = { id: 'a-1', title: 'Titulo', type: 'decision', scope: 'repo', keywords: ['x'], body: 'uno\ndos' };
   const v = mem({ open: 'a-1', detail: { state: 'ok', data: { memory, edges: [{ kind: 'related', dir: 'out', other: 'b-2' }] } } });
@@ -728,6 +745,8 @@ test('Memoria: detail replaces the search while open; Volver is b', () => {
   const d = block(v, 'memdetail');
   assert.deepEqual(d.back, { id: 'mem-back', label: 'Volver', hotkey: 'b' });
   assert.ok(d.lines.includes('→ related b-2') && d.lines.includes('uno'));
+  assert.deepEqual(d.del, { id: 'mem-delete', label: 'Borrar' });
+  assert.equal(block(mem({ open: 'a-1' }), 'memdetail').del, undefined);
   assert.equal(block(mem({ open: 'a-1' }), 'memdetail').state, 'loading');
   assert.match(block(mem({ open: 'a-1', detail: { state: 'error', error: 'boom' } }), 'memdetail').message, /boom/);
   assert.equal(block(mem({ open: 'a-1', detail: { state: 'empty' } }), 'memdetail').state, 'empty');

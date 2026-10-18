@@ -7,7 +7,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, w
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitBranch, MAX_COPY_BYTES } from '../core/paths.mjs';
+import { MAX_COPY_BYTES } from '../core/paths.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 import { baselineDir, clearBaseline, reviewFiles, snapshot } from '../hosts/claude-code/baseline.mjs';
 import { INVENTORY_CAP, takeInventory } from '../hosts/claude-code/inventory.mjs';
 import { resolveRepos } from '../hosts/claude-code/repos.mjs';
@@ -28,16 +29,16 @@ function setup() {
   const env = { ...process.env, NXY_HOME: join(dir, 'home') };
   const A = join(dir, 'A');
   mkdirSync(A, { recursive: true });
-  const plan = (cwd, text) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', MEM, 'handoff', 'plan', '--cwd', cwd], {
+  const plan = (cwd, text, ...extra) => spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', MEM, 'handoff', 'plan', '--cwd', cwd, ...extra], {
     input: text, encoding: 'utf8', env: { ...env, CLAUDE_PROJECT_DIR: cwd }, cwd,
   });
   return { dir, A, plan };
 }
-const invFile = (cwd) => join(baselineDir(cwd, gitBranch(cwd)), 'inventory.json');
+const invFile = (cwd) => join(baselineDir(cwd, taskKey(cwd)), 'inventory.json');
 const readInv = (cwd) => JSON.parse(readFileSync(invFile(cwd), 'utf8'));
 const old = (p) => utimesSync(p, new Date(2020, 0, 1), new Date(2020, 0, 1));
 const later = (p, s = 60) => utimesSync(p, new Date(Date.now() + s * 1000), new Date(Date.now() + s * 1000));
-const review = (cwd) => reviewFiles(cwd, gitBranch(cwd));
+const review = (cwd) => reviewFiles(cwd, taskKey(cwd));
 const byPath = (rv) => Object.fromEntries(rv.files.map((f) => [f.path, f]));
 
 test('inventory: new, modified and deleted files outside the copies; unchanged and skipped folders absent', () => {
@@ -144,15 +145,15 @@ test('inventory: one per task; a revised plan only adds new roots; handoff done 
   assert.equal(plan(A, planWith()).status, 0);
   const ts = readInv(A).ts;
   writeFileSync(join(A, 'm.js'), 'm changed\n');
-  assert.equal(plan(A, planWith([], 'a.js', ' revised')).status, 0);
+  assert.equal(plan(A, planWith([], 'a.js', ' revised'), '--task', taskKey(A)).status, 0);
   assert.deepEqual(review(A).files.map((f) => f.path), ['m.js']);
   assert.equal(readInv(A).roots.length, 1);
-  assert.equal(plan(A, planWith([B], 'a.js', ' revised again')).status, 0);
+  assert.equal(plan(A, planWith([B], 'a.js', ' revised again'), '--task', taskKey(A)).status, 0);
   const inv = readInv(A);
   assert.equal(inv.roots.length, 2);
   assert.equal(inv.ts, ts);
   assert.deepEqual(review(A).files.map((f) => f.path), ['m.js']);
-  clearBaseline(A, gitBranch(A));
+  clearBaseline(A, taskKey(A));
   assert.equal(existsSync(invFile(A)), false);
 });
 
@@ -160,7 +161,7 @@ test('inventory: a snapshot copy of a file wins over the inventory', () => {
   const { A, plan } = setup();
   writeFileSync(join(A, 'c.js'), 'before\n');
   assert.equal(plan(A, planWith([], 'z.js')).status, 0);
-  snapshot(A, gitBranch(A), join(A, 'c.js'));
+  snapshot(A, taskKey(A), join(A, 'c.js'));
   writeFileSync(join(A, 'c.js'), 'after\n');
   assert.deepEqual(review(A).files.map((f) => [f.path, f.source]), [['c.js', 'copy']]);
 });

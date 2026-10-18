@@ -10,7 +10,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitBranch } from '../core/paths.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 import { changedFiles, readBaseline, reviewFiles } from '../hosts/claude-code/baseline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,11 +40,11 @@ test('precopy: a named file has an entry and a copy; a script rewrite reviews as
   const r = plan(A, planOf(['a.js:2']));
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /copied the "before" of 1 file\(s\) the plan names/);
-  const b = readBaseline(A, gitBranch(A));
+  const b = readBaseline(A, taskKey(A));
   const e = b[resolve(A, 'a.js')];
   assert.ok(e && e.existed && e.copy);
   writeFileSync(join(A, 'a.js'), 'one\nTWO\nthree\n');
-  const f = changedFiles(A, gitBranch(A));
+  const f = changedFiles(A, taskKey(A));
   assert.deepEqual(f.map((x) => [x.path, x.status, x.source]), [['a.js', 'modified', 'copy']]);
   assert.match(f[0].diff, /-two/);
   assert.match(f[0].diff, /\+TWO/);
@@ -54,11 +54,11 @@ test('precopy: a file that does not exist yet is existed:false and reviews as ne
   const { A, plan } = setup();
   const r = plan(A, planOf(['src/new.js']));
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  const e = readBaseline(A, gitBranch(A))[resolve(A, 'src', 'new.js')];
+  const e = readBaseline(A, taskKey(A))[resolve(A, 'src', 'new.js')];
   assert.equal(e.existed, false);
   mkdirSync(join(A, 'src'));
   writeFileSync(join(A, 'src', 'new.js'), 'x\n');
-  assert.deepEqual(changedFiles(A, gitBranch(A)).map((x) => [x.path, x.status]), [['src/new.js', 'new']]);
+  assert.deepEqual(changedFiles(A, taskKey(A)).map((x) => [x.path, x.status]), [['src/new.js', 'new']]);
 });
 
 test('precopy: a file in a declared repo is found; a path outside every root is skipped', () => {
@@ -69,7 +69,7 @@ test('precopy: a file in a declared repo is found; a path outside every root is 
   writeFileSync(join(dir, 'outside.js'), 'o\n');
   const r = plan(A, planOf(['lib/only-b.js', '../outside.js'], [B]));
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  const b = readBaseline(A, gitBranch(A));
+  const b = readBaseline(A, taskKey(A));
   assert.deepEqual(Object.keys(b), [resolve(B, 'lib', 'only-b.js')]);
   assert.equal(b[resolve(B, 'lib', 'only-b.js')].existed, true);
 });
@@ -79,13 +79,13 @@ test('precopy: saving again keeps the first copy; a revised plan copies only the
   writeFileSync(join(A, 'a.js'), 'orig\n');
   writeFileSync(join(A, 'b.js'), 'borig\n');
   plan(A, planOf(['a.js']));
-  const first = readBaseline(A, gitBranch(A))[resolve(A, 'a.js')];
+  const first = readBaseline(A, taskKey(A))[resolve(A, 'a.js')];
   writeFileSync(join(A, 'a.js'), 'edited\n');
   const again = plan(A, planOf(['a.js']));
   assert.doesNotMatch(again.stdout, /copied the "before"/);
   const revised = plan(A, planOf(['a.js', 'b.js'], [], ['Risks: revised']));
   assert.match(revised.stdout, /copied the "before" of 1 file/);
-  const b = readBaseline(A, gitBranch(A));
+  const b = readBaseline(A, taskKey(A));
   assert.equal(b[resolve(A, 'a.js')].copy, first.copy);
   assert.ok(b[resolve(A, 'b.js')].copy);
 });
@@ -106,8 +106,8 @@ test('precopy: revised plan does not swallow a script change git already reports
   writeFileSync(join(A, 'x.js'), 'ONE\n'); // a script, no hook
   const r = plan(A, planOfX(['x.js', 'y.js'], ['Risks: revised']));
   assert.doesNotMatch(r.stdout, /copied the "before"/);
-  assert.ok(!readBaseline(A, gitBranch(A))[resolve(A, 'x.js')]);
-  const f = reviewFiles(A, gitBranch(A)).files.find((x) => x.path === 'x.js');
+  assert.ok(!readBaseline(A, taskKey(A))[resolve(A, 'x.js')]);
+  const f = reviewFiles(A, taskKey(A)).files.find((x) => x.path === 'x.js');
   assert.ok(f);
   assert.equal(f.source, 'git');
   assert.match(f.diff, /\+ONE/);
@@ -122,10 +122,10 @@ test('precopy: revised plan does not swallow a script change the inventory repor
   writeFileSync(join(A, 'x.js'), 'ONE!\n');
   const r = plan(A, planOfX(['x.js', 'z.js', 'y.js'], ['Risks: revised']));
   assert.match(r.stdout, /copied the "before" of 1 file/); // z.js, unchanged: still pre-copied
-  const b = readBaseline(A, gitBranch(A));
+  const b = readBaseline(A, taskKey(A));
   assert.ok(!b[resolve(A, 'x.js')]);
   assert.ok(b[resolve(A, 'z.js')]);
-  const f = reviewFiles(A, gitBranch(A)).files.find((x) => x.path === 'x.js');
+  const f = reviewFiles(A, taskKey(A)).files.find((x) => x.path === 'x.js');
   assert.ok(f);
   assert.equal(f.source, 'inventory');
 });

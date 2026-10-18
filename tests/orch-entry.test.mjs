@@ -80,7 +80,7 @@ test('a review finding without a line keeps line null', () => {
 
 test('a recorded verdict makes the plan not fresh', () => {
   const sb = sandbox(PLAN);
-  recordBatch(sb.repo, 'feature/x', sb.hash, 1, { status: 'running', ts: Date.now() });
+  recordBatch(sb.repo, sb.key, sb.hash, 1, { status: 'running', ts: Date.now() });
   const s = run(sb, ['snapshot', '--cwd', sb.repo, '--transcript', sb.main()]);
   assert.equal(s.approved, true);
   assert.equal(s.fresh, false);

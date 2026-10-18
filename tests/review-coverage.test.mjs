@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitBranch } from '../core/paths.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 import { clearBaseline, readBaseline, reviewFiles } from '../hosts/claude-code/baseline.mjs';
 import { coverageLines, inventoryWhy } from '../hosts/claude-code/coverage.mjs';
 import { takeInventory } from '../hosts/claude-code/inventory.mjs';
@@ -31,14 +31,14 @@ function setup() {
 }
 const packet = (A, rv) => reviewPacket({
   planHash: 'h', plan: PLAN, conventions: [], lenses: [], files: rv.files, recordCmd: 'rec',
-  coverage: coverageLines(rv.coverage, rv, Object.keys(readBaseline(A, gitBranch(A)))),
+  coverage: coverageLines(rv.coverage, rv, Object.keys(readBaseline(A, taskKey(A)))),
 });
 
 test('packet of a non-git project: (inventory) file explained, ## Coverage names copies, inventory and what is not covered', () => {
   const { A } = setup();
   writeFileSync(join(A, 'a.js'), 'after\n');
   writeFileSync(join(A, 'fresh.js'), 'one\n');
-  const rv = reviewFiles(A, gitBranch(A));
+  const rv = reviewFiles(A, taskKey(A));
   const text = packet(A, rv);
   assert.match(text, /- fresh\.js \(new \(inventory\)/);
   assert.match(text, /\(inventory\) files changed with no copy and no git/);
@@ -51,11 +51,11 @@ test('packet of a non-git project: (inventory) file explained, ## Coverage names
 
 test('packet: inventory skipped says too many files and only copies cover the repo', () => {
   const { A } = setup();
-  clearBaseline(A, gitBranch(A));
+  clearBaseline(A, taskKey(A));
   writeFileSync(join(A, 'b.js'), 'b\n');
   writeFileSync(join(A, 'c.js'), 'c\n');
-  takeInventory(A, gitBranch(A), resolveRepos(A, []).map((r) => r.root), { cap: 2 });
-  const rv = reviewFiles(A, gitBranch(A), 'h');
+  takeInventory(A, taskKey(A), resolveRepos(A, []).map((r) => r.root), { cap: 2 });
+  const rv = reviewFiles(A, taskKey(A), 'h');
   const lines = coverageLines(rv.coverage, rv, []);
   assert.match(lines.join('\n'), /inventory skipped: too many files/);
 });

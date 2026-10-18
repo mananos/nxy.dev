@@ -136,6 +136,13 @@ test('newQuestion', () => {
   assert.match(e, /no crea ninguna rama/);
 });
 
+test('newQuestion: says whether the task goes to the new worktree', () => {
+  const n = featureNames({ issue: '14', name: 'algo', base: 'dev' }, '/srv/app');
+  assert.match(newQuestion(n, 'dev', 'posix', { goal: 'hacer algo', on: true }), /Se lleva la tarea «hacer algo» al worktree nuevo \(su plan se aprueba de nuevo allí\)\./);
+  assert.match(newQuestion(n, 'dev', 'posix', { goal: 'hacer algo', on: false }), /La tarea «hacer algo» queda en este checkout\./);
+  assert.doesNotMatch(newQuestion(n, 'dev'), /tarea/);
+});
+
 test('newQuestion / closeQuestion use the same commandText as the shell', () => {
   const n = featureNames({ issue: '14', name: 'algo', base: 'dev' }, "/srv/o'k");
   for (const shell of /** @type {('posix' | 'powershell')[]} */ (['posix', 'powershell'])) {

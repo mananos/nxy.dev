@@ -141,7 +141,7 @@ test('hook from a checkout: settings untouched, output still the single handoff 
   writeFileSync(join(repo, '.git', 'config'), '[remote "origin"]\n\turl = git@github.com:mananos/nxy.dev.git\n');
   const nxyHome = join(s.dir, 'nxyhome');
   const db = openStore({ path: join(nxyHome, 'memory', 'memory.db') });
-  saveHandoff(db, { project: 'github.com/mananos/nxy.dev', branch: 'feature/x', body: 'route: implementer\n## Done\n- x\n' });
+  saveHandoff(db, { project: 'github.com/mananos/nxy.dev', key: 'feature/x', body: 'route: implementer\n## Done\n- x\n' });
   db.close();
   const out = execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', HOOK], {
     input: JSON.stringify({ cwd: repo }), encoding: 'utf8',
@@ -170,7 +170,7 @@ function runCachedHook({ withHandoff }) {
   const nxyHome = join(s.dir, 'nxyhome');
   if (withHandoff) {
     const db = openStore({ path: join(nxyHome, 'memory', 'memory.db') });
-    saveHandoff(db, { project: 'github.com/mananos/nxy.dev', branch: 'feature/x', body: 'route: implementer\n## Done\n- x\n' });
+    saveHandoff(db, { project: 'github.com/mananos/nxy.dev', key: 'feature/x', body: 'route: implementer\n## Done\n- x\n' });
     db.close();
   }
   const out = execFileSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(s.root, 'hosts', 'claude-code', 'hooks', 'sessionstart.mjs')], {

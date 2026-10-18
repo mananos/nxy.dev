@@ -67,6 +67,17 @@ try {
     } catch (err) {
       if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] handoff: ${String((err instanceof Error && err.stack) || err)}\n`);
     }
+    // Tasks: file reads only (no SQLite, no git). Each task whose branch is gone is offered once.
+    try {
+      const { staleTaskHint } = await import('../../../core/tasks.mjs');
+      const { takeStaleTasks, corruptNotice } = await import('../tasks.mjs');
+      const stale = takeStaleTasks(cwd);
+      if (stale.length) contexts.push(staleTaskHint(stale, memCommand('').trim()));
+      const corrupt = corruptNotice(cwd);
+      if (corrupt) contexts.push(corrupt);
+    } catch (err) {
+      if (process.env.NXY_DEBUG) process.stderr.write(`[nxy] tasks: ${String((err instanceof Error && err.stack) || err)}\n`);
+    }
   }
   if (contexts.length || userNotice) {
     /** @type {Record<string, unknown>} */
