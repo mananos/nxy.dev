@@ -31,6 +31,7 @@ import { loadPricing } from '../../../core/pricing.mjs';
 import { findApprovalAt, isApproved } from '../plan-approval.mjs';
 import { lastCacheTtl, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
 import { lookupHandoff } from '../handoff.mjs';
+import { activeTask } from '../tasks.mjs';
 import { readReview, readReviewDetail, readSuite, readVerify } from '../verify-state.mjs';
 import { clearOrch } from '../orch-state.mjs';
 
@@ -57,6 +58,8 @@ function nxyRoles() {
 async function snapshot(cwd, opts) {
   const cfg = loadConfig(cwd);
   const branch = gitBranch(cwd);
+  const task = activeTask(cwd);
+  const key = task.id;
   const known = await lookupHandoff(cwd);
   const plan = known.handoff ? extractPlan(known.handoff.body) : null;
   let transcript = typeof opts.transcript === 'string' ? toNativePath(opts.transcript) : null;
@@ -74,6 +77,7 @@ async function snapshot(cwd, opts) {
     runtimeDir: nxyRuntimeDir(cwd),
     projectDir: cwd,
     branch: branch || null,
+    task: { id: task.id, label: task.label, pinned: task.pinned },
     config: configView(cwd),
     handoff: known.handoff ? { updated: known.handoff.updated } : null,
   };
@@ -82,7 +86,7 @@ async function snapshot(cwd, opts) {
   const hash = planHash(plan);
   const questions = parseQuestions(plan).length;
   const approved = questions === 0 && !!transcript && isApproved(cwd, transcript, hash);
-  const verdicts = readVerify(cwd, branch, hash).batches;
+  const verdicts = readVerify(cwd, key, hash).batches;
   const suite = readSuite(cwd, hash);
   const review = readReview(cwd, hash);
   const fresh = approved && Object.keys(verdicts).length === 0 && !suite && !review;
@@ -91,7 +95,7 @@ async function snapshot(cwd, opts) {
   try {
     const { reviewFiles } = await import('../baseline.mjs');
     const { reviewNeeded } = await import('../../../core/review.mjs');
-    need = reviewNeeded(reviewFiles(cwd, branch, hash).files.map((f) => f.path));
+    need = reviewNeeded(reviewFiles(cwd, key, hash).files.map((f) => f.path));
   } catch {
     /* unknown: not needed */
   }

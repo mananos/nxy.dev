@@ -67,6 +67,64 @@ const U = (input, w5, w1, read, output, thinking = 0) => ({
   speed: 'standard',
 });
 
+export const TIMING_FIXTURE = {
+  sessionId: 'sess-timing',
+  implementerId: 'impl000000000001',
+  plannerId: 'plan000000000001',
+  slowCommand: './mvnw -q test',
+  limitGapMs: 5 * 60 * 60 * 1000,
+};
+
+/**
+ * One session with two subagents, for the SUBAGENT TIME report (kept apart from `writeFixture`,
+ * whose exact totals other tests assert): an `nxy:implementer` with a 4-minute Bash call and a
+ * usage-limit stop followed by a 5-hour gap, and an `nxy:planner` that ran locate.mjs.
+ * @returns {{root: string, mainPath: string}}
+ */
+export function writeTimingFixture(root) {
+  const projDir = join(root, FIXTURE.slug);
+  const agentsDir = join(projDir, TIMING_FIXTURE.sessionId, 'subagents');
+  mkdirSync(agentsDir, { recursive: true });
+  const model = 'claude-sonnet-5';
+  const write = (path, lines) => writeFileSync(path, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  const gap = TIMING_FIXTURE.limitGapMs;
+
+  const main = [
+    user({ uuid: 't-u1', ts: 0, content: 'Plan and build it' }),
+    assistant({ uuid: 't-a1', requestId: 'req_t1', ts: 1000, model, usage: U(100, 0, 0, 0, 10), content: [{ type: 'text', text: 'ok' }] }),
+  ];
+  const mainPath = join(projDir, `${TIMING_FIXTURE.sessionId}.jsonl`);
+  write(mainPath, main);
+
+  const sub = (agentId, lines, agentType) => {
+    write(join(agentsDir, `agent-${agentId}.jsonl`), lines);
+    writeFileSync(join(agentsDir, `agent-${agentId}.meta.json`), JSON.stringify({ agentType, description: agentType, spawnDepth: 1 }));
+  };
+  const a = (agentId, uuid, requestId, ts, content, m = model) => assistant({ uuid, requestId, ts, model: m, usage: m === '<synthetic>' ? U(0, 0, 0, 0, 0) : U(100, 0, 0, 0, 10), content, sidechain: true, agentId, effort: null });
+  const r = (uuid, ts, id) => user({ uuid, ts, content: [{ type: 'tool_result', tool_use_id: id, content: 'x' }], sidechain: true });
+
+  const iid = TIMING_FIXTURE.implementerId;
+  const mvnwEnd = 1000 + 4 * 60 * 1000;
+  sub(iid, [
+    user({ uuid: 'i-u1', ts: 0, content: 'Run the tests', sidechain: true }),
+    a(iid, 'i-a1', 'req_i1', 1000, [{ type: 'tool_use', id: 'i-tu1', name: 'Bash', input: { command: TIMING_FIXTURE.slowCommand } }]),
+    r('i-u2', mvnwEnd, 'i-tu1'),
+    a(iid, 'i-a2', 'req_i2', mvnwEnd + 1000, [{ type: 'text', text: 'tests passed' }]),
+    { ...a(iid, 'i-a3', 'req_i3', mvnwEnd + 2000, [{ type: 'text', text: "You've hit your usage limit. It resets later." }], '<synthetic>'), apiError: 'usage_limit_reached' },
+    user({ uuid: 'i-u3', ts: mvnwEnd + 2000 + gap, content: 'continue', sidechain: true }),
+    a(iid, 'i-a4', 'req_i4', mvnwEnd + 3000 + gap, [{ type: 'text', text: 'done' }]),
+  ], 'nxy:implementer');
+
+  const pid = TIMING_FIXTURE.plannerId;
+  sub(pid, [
+    user({ uuid: 'p-u1', ts: 0, content: 'Plan it', sidechain: true }),
+    a(pid, 'p-a1', 'req_p1', 1000, [{ type: 'tool_use', id: 'p-tu1', name: 'Bash', input: { command: 'node "/x/hosts/claude-code/entries/locate.mjs" "health"' } }]),
+    r('p-u2', 2000, 'p-tu1'),
+    a(pid, 'p-a2', 'req_p2', 3000, [{ type: 'text', text: 'plan' }]),
+  ], 'nxy:planner');
+  return { root, mainPath };
+}
+
 /** @returns {{root: string, mainPath: string}} */
 export function writeFixture(root) {
   const projDir = join(root, FIXTURE.slug);

@@ -217,12 +217,30 @@ export function batchForFile(batches, file) {
 
 const where = (f) => `${f.file}:${f.line}`;
 
+/** The question that offers the rules the user stated in the chat as repo conventions. */
+export const CHAT_RULES_QUESTION = 'Keep as repo conventions?';
+
+/**
+ * What the main thread does when a task closes: look back over its own conversation for standing
+ * rules the user stated, and offer them once. Silent when there are none.
+ * @param {string} saveCmd the command that saves a memory (`mem.mjs save`)
+ */
+export function chatRulesInstruction(saveCmd) {
+  return [
+    'Conventions from the chat: look back over this task\'s conversation for standing rules the user stated (corrections the user said should always apply; "siempre / nunca / prefiero / no me gusta / de ahora en adelante"; "always / never / I prefer / from now on").',
+    'Keep only rules a future task in this repo should follow, and only if the user said it should outlast this task: not personal style (that stays in the native Claude Code memory), not this task\'s own decisions, not the plan\'s `Decisions:`.',
+    'None found: ask nothing and say nothing about it.',
+    `Otherwise ask ONE AskUserQuestion question, with ${JSON.stringify({ question: CHAT_RULES_QUESTION, header: 'Conventions', multiSelect: true })} and 1-4 options (label = the rule in a few words, description = the rule as the user said it); if you are also asking another question in this step, put it in that same AskUserQuestion call.`,
+    `For each rule the user picks, run: ${saveCmd} "<label>" --type convention --body "<the rule as the user said it>"`,
+  ].join('\n');
+}
+
 /**
  * Checkpoint 2: what the main thread shows and asks. Only the change's findings are offered; the
  * preexisting ones are listed as information.
  * `extra` is one more question for the same call (the documenter's, 0.4.3), with what to do after.
  * @param {{id: string, planHash: string, findings: Classified[], summary: {files: number, added: number, removed: number}, batchOf: (f: Finding) => number,
- *   extra?: {question: object, then: string}|null}} o
+ *   extra?: {question: object, then: string}|null, chatRules?: string|null}} o
  */
 export function checkpoint2(o) {
   const mine = o.findings.filter((f) => f.cause === 'change');
@@ -239,17 +257,19 @@ export function checkpoint2(o) {
   if (!mine.length) {
     if (!o.extra) {
       lines.push('Checkpoint 2: show the user this summary. Nothing from the change to fix.');
+      if (o.chatRules) lines.push('', o.chatRules);
       return lines.join('\n');
     }
     lines.push(
       'Checkpoint 2: show the user this summary (nothing from the change to fix) and ask with AskUserQuestion, with exactly this input:',
       `  ${JSON.stringify({ questions: [o.extra.question] })}`,
       o.extra.then,
+      ...(o.chatRules ? ['', o.chatRules] : []),
     );
     return lines.join('\n');
   }
   const groups = [];
-  const maxGroups = o.extra ? 3 : 4;
+  const maxGroups = 4 - (o.extra ? 1 : 0) - (o.chatRules ? 1 : 0);
   for (let i = 0; i < mine.length && groups.length < maxGroups; i += 4) groups.push(mine.slice(i, i + 4));
   const offered = groups.flat();
   const input = {
@@ -271,6 +291,7 @@ export function checkpoint2(o) {
     ...offered.map((f) => `  ${f.id}: "Batch ${o.batchOf(f)} — fix ${f.id} of review ${o.id}: ${f.title} at ${where(f)}.${f.fix ? ` ${f.fix}` : ''}"`),
     'One round only: no second review. What is left after it is the user\'s call.',
     ...(o.extra ? [o.extra.then] : []),
+    ...(o.chatRules ? ['', o.chatRules] : []),
   );
   return lines.join('\n');
 }

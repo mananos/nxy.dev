@@ -7,7 +7,7 @@
  * agent ended: the lines become a note for the next hook on the main thread).
  */
 import { statSync } from 'node:fs';
-import { gitBranch } from '../../core/paths.mjs';
+import { taskKey } from './tasks.mjs';
 import { extractPlan, parseBatches, planHash } from '../../core/plan.mjs';
 import {
   afterBatch, afterReviewRecorded, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, reviewInstruction, suiteFixOfPrompt,
@@ -19,7 +19,7 @@ import { readReview, readSuite, readSuiteFix, readVerify, reviewLaunchTs } from 
 async function reviewNext(cwd, hash) {
   const { reviewFiles } = await import('./baseline.mjs');
   const { reviewNeeded } = await import('../../core/review.mjs');
-  const need = reviewNeeded(reviewFiles(cwd, gitBranch(cwd), hash).files.map((f) => f.path));
+  const need = reviewNeeded(reviewFiles(cwd, taskKey(cwd), hash).files.map((f) => f.path));
   return reviewInstruction({ hash, project: cwd, needed: need.needed, reason: need.reason });
 }
 
@@ -34,11 +34,11 @@ export async function reviewExpected(cwd, hash) {
   try {
     const { reviewFiles } = await import('./baseline.mjs');
     const { reviewNeeded } = await import('../../core/review.mjs');
-    if (reviewNeeded(reviewFiles(cwd, gitBranch(cwd), hash).files.map((f) => f.path)).needed) return true;
+    if (reviewNeeded(reviewFiles(cwd, taskKey(cwd), hash).files.map((f) => f.path)).needed) return true;
   } catch { /* fall through to the packet */ }
   try {
     const { packetPath } = await import('./baseline.mjs');
-    return statSync(packetPath(cwd, gitBranch(cwd))).mtimeMs >= reviewLaunchTs(cwd, hash) - 2000;
+    return statSync(packetPath(cwd, taskKey(cwd))).mtimeMs >= reviewLaunchTs(cwd, hash) - 2000;
   } catch {
     return false;
   }
@@ -92,7 +92,7 @@ export async function completionLines({ cwd, role, prompt = '' }) {
     const batches = parseBatches(plan);
     const batch = batches.find((b) => b.n === n);
     if (batch && n != null) {
-      const state = readVerify(cwd, gitBranch(cwd), hash);
+      const state = readVerify(cwd, taskKey(cwd), hash);
       const recorded = state.batches[String(n)];
       if (recorded && recorded.status !== 'running') {
         lines.push(afterBatch({

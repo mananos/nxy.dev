@@ -21,8 +21,9 @@
  * choice only the user can make (new endpoint or extend? Lombok or record?) would otherwise be
  * made silently and caught — maybe — by reading. So a draft may carry `### Questions`, and while it
  * does it cannot be approved: the user answers, the planner turns the answers into `Decisions:`,
- * and only that final plan reaches Approve/Change. Each decision is then offered as a repo
- * convention, so the next plan does not ask it again.
+ * and only that final plan reaches Approve/Change. Only repo-wide decisions (`[repo]`) are offered
+ * as conventions, so the next plan does not ask them again; task-only ones (`[task]`) stay in the
+ * plan and reach the archived task.
  *
  * Pure: text in, text out.
  */
@@ -209,10 +210,25 @@ export function parseBatches(plan) {
 
 /**
  * The plan's `Decisions:` list — the user's answers, written by the planner as rules.
+ * Each bullet starts with a scope tag: `[repo]` (a rule future tasks in this repo follow) or `[task]`
+ * (what this task does). The tag is stripped from `rule`; an untagged (legacy) bullet is `task`.
  * @param {string} plan
- * @returns {{rule: string, why: string}[]}
+ * @returns {{rule: string, why: string, scope: 'repo'|'task'}[]}
  */
 export function parseDecisions(plan) {
+  return decisionBullets(plan).map((b) => {
+    const tag = DECISION_TAG_RE.exec(b);
+    const [rule, ...why] = (tag ? b.slice(tag[0].length) : b).split(DASH_RE);
+    /** @type {'repo'|'task'} */
+    const scope = tag && tag[1].toLowerCase() === 'repo' ? 'repo' : 'task';
+    return { rule: rule.trim(), why: why.join(' — ').trim(), scope };
+  });
+}
+
+const DECISION_TAG_RE = /^\[(repo|task)\]\s*/i;
+
+/** The raw `Decisions:` bullets (tag included), shared by parseDecisions and validatePlan. */
+function decisionBullets(plan) {
   const lines = norm(plan).split('\n');
   const start = lines.findIndex((l) => /^Decisions:\s*$/i.test(l.trim()));
   if (start < 0) return [];
@@ -220,8 +236,7 @@ export function parseDecisions(plan) {
   for (const l of lines.slice(start + 1)) {
     const m = /^\s*[-*]\s+(.+?)\s*$/.exec(l);
     if (!m) break;
-    const [rule, ...why] = m[1].split(DASH_RE);
-    out.push({ rule: rule.trim(), why: why.join(' — ').trim() });
+    out.push(m[1]);
   }
   return out;
 }
@@ -293,6 +308,9 @@ export function validatePlan(plan) {
   });
   parseRepos(text).forEach((r, i) => {
     if (!r.path) errors.push(`"### Repos" bullet ${i + 1} has no path: write it in backticks (\`/abs/path/to/repo\`)`);
+  });
+  decisionBullets(text).forEach((b) => {
+    if (!DECISION_TAG_RE.test(b)) errors.push(`"Decisions:" bullet "${b.slice(0, 60)}" has no scope: start it with "[repo]" (a rule future tasks in this repo follow) or "[task]" (what this task does), e.g. "- [repo] <rule> — <question>"`);
   });
   const questions = parseQuestions(text);
   questions.forEach((q, i) => {

@@ -10,7 +10,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitBranch } from '../core/paths.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
+import { taskDir } from '../hosts/claude-code/plan-approval.mjs';
 import { repoLabel, repoNames, repoOf, noteUndeclaredRepo, undeclaredRepos } from '../hosts/claude-code/repos.mjs';
 import { changedFiles, reviewFiles, snapshot } from '../hosts/claude-code/baseline.mjs';
 
@@ -49,7 +50,8 @@ function setup() {
   const plan = (cwd, text) => node(cwd, [MEM, 'handoff', 'plan', '--cwd', cwd], text);
   return { dir, A, node, plan };
 }
-const dirtyOf = (cwd) => JSON.parse(readFileSync(join(cwd, '.nxy', 'local', 'plan-dirty.json'), 'utf8'));
+const dirtyFile = (cwd) => join(taskDir(cwd, taskKey(cwd)), 'plan-dirty.json');
+const dirtyOf = (cwd) => JSON.parse(readFileSync(dirtyFile(cwd), 'utf8'));
 
 test('repos: a declared repo is snapshotted at approval; its own changes are git, the dirty ones not reviewed', (t) => {
   if (!hasGit) return t.skip('git is not available');
@@ -67,7 +69,7 @@ test('repos: a declared repo is snapshotted at approval; its own changes are git
 
   writeFileSync(join(B, 'y.js'), lines('plan'));
   writeFileSync(join(B, 'x.js'), lines('user and plan'));
-  const rv = reviewFiles(A, gitBranch(A));
+  const rv = reviewFiles(A, taskKey(A));
   assert.deepEqual(rv.files.map((f) => [f.path, f.source]), [['B/y.js', 'git']]);
   assert.deepEqual(rv.notReviewed.map((n) => n.path), ['B/x.js']);
 });
@@ -82,11 +84,12 @@ test('repos: an undeclared repo goes to Not reviewed; a declared path that is no
   mkdirSync(plain);
   const r = plan(A, planWith([plain]));
   assert.match(r.stdout, /warning: .*plain is not a git repo; its changes are not reviewed through git/);
-  assert.equal(noteUndeclaredRepo(A, C), true);
-  assert.equal(noteUndeclaredRepo(A, C), false, 'warn once');
-  assert.deepEqual(undeclaredRepos(A), [C]);
+  assert.equal(noteUndeclaredRepo(A, taskKey(A), C), true);
+  assert.equal(noteUndeclaredRepo(A, taskKey(A), C), false, 'warn once');
+  assert.deepEqual(undeclaredRepos(A, taskKey(A)), [C]);
+  assert.deepEqual(undeclaredRepos(A, 'other'), [], 'per task');
   writeFileSync(join(C, 'x.js'), lines('plan'));
-  const rv = reviewFiles(A, gitBranch(A));
+  const rv = reviewFiles(A, taskKey(A));
   assert.deepEqual(rv.files, []);
   assert.deepEqual(rv.notReviewed.map((n) => n.path), ['C/x.js']);
   assert.match(rv.notReviewed[0].reason, /C is not in the plan; its prior uncommitted changes cannot be told apart/);
@@ -102,10 +105,10 @@ test('repos: project without git, declared git repo B: copies plus B through git
   assert.equal(plan(A, planWith([B])).status, 0);
   assert.equal(dirtyOf(A).available, false);
   assert.equal(dirtyOf(A).others.length, 1);
-  snapshot(A, null, join(A, 'a.js'));
+  snapshot(A, taskKey(A), join(A, 'a.js'));
   writeFileSync(join(A, 'a.js'), lines('plan'));
   writeFileSync(join(B, 'y.js'), lines('plan'));
-  const rv = reviewFiles(A, null);
+  const rv = reviewFiles(A, taskKey(A));
   assert.deepEqual(rv.files.map((f) => [f.path, f.source]), [['a.js', 'copy'], ['B/y.js', 'git']]);
   assert.equal(rv.note, 'not a git repo');
 });
@@ -135,12 +138,12 @@ test('repos: a declared repo with the primary\'s basename; the primary stays bar
   mkRepo(U, ['a.js']);
   const { node } = setup();
   assert.equal(node(W, [MEM, 'handoff', 'plan', '--cwd', W], planWith([Z])).status, 0);
-  noteUndeclaredRepo(W, U);
-  snapshot(W, gitBranch(W), join(W, 'a.js'));
-  snapshot(W, gitBranch(W), join(Z, 'a.js'));
-  snapshot(W, gitBranch(W), join(U, 'a.js'));
+  noteUndeclaredRepo(W, taskKey(W), U);
+  snapshot(W, taskKey(W), join(W, 'a.js'));
+  snapshot(W, taskKey(W), join(Z, 'a.js'));
+  snapshot(W, taskKey(W), join(U, 'a.js'));
   for (const d of [W, Z, U]) writeFileSync(join(d, 'a.js'), lines('plan'));
-  assert.deepEqual(changedFiles(W, gitBranch(W)).map((f) => f.path), [
+  assert.deepEqual(changedFiles(W, taskKey(W)).map((f) => f.path), [
     'a.js', 'clientU/api/a.js', 'clientZ/api/a.js',
   ]);
   assert.equal(repoOf(W, join(Z, 'a.js'), [Z])?.primary, false);
@@ -162,18 +165,21 @@ test('repos: one snapshot per task; a revised plan only adds new repos; done cle
   const rec = dirtyOf(A);
   assert.deepEqual(rec.files, ['a.js'], 'b.js is not "already dirty"');
   assert.deepEqual(rec.others.map((o) => [o.name, o.files]), [['B', ['x.js']]]);
-  assert.ok(reviewFiles(A, gitBranch(A)).files.some((f) => f.path === 'b.js'));
+  assert.ok(reviewFiles(A, taskKey(A)).files.some((f) => f.path === 'b.js'));
 
-  writeFileSync(join(A, '.nxy', 'local', 'plan-extra-repos.json'), JSON.stringify({ roots: [B] }));
+  const extraFile = join(taskDir(A, taskKey(A)), 'plan-extra-repos.json');
+  writeFileSync(extraFile, JSON.stringify({ roots: [B] }));
   node(A, [MEM, 'handoff', 'done', '--cwd', A]);
-  assert.ok(!existsSync(join(A, '.nxy', 'local', 'plan-dirty.json')));
-  assert.ok(!existsSync(join(A, '.nxy', 'local', 'plan-extra-repos.json')));
+  assert.ok(!existsSync(dirtyFile(A)));
+  assert.ok(!existsSync(extraFile));
 
-  // A new branch replaces a record of the old one.
+  // The task follows the checkout until its first edit: the same task, on another branch, retakes its record.
   assert.equal(plan(A, planWith([])).status, 0);
+  const key = taskKey(A);
   gitA('checkout', '-q', '-b', 'other');
   writeFileSync(join(A, 'b.js'), lines('on other'));
   assert.equal(plan(A, planWith([], 'b.js')).status, 0);
-  assert.equal(dirtyOf(A).branch, 'other');
+  assert.equal(taskKey(A), key, 'same unpinned task on the new branch');
+  assert.equal(dirtyOf(A).branch, key);
   assert.deepEqual(dirtyOf(A).files, ['a.js', 'b.js'], 'retaken on the new branch');
 });

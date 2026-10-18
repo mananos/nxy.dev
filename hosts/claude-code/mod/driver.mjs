@@ -95,7 +95,7 @@ export function createDriver($, opts) {
     },
     /** @type {any} the Features tab: the worktree list (features.mjs list) and the "new" steps */
     features: {
-      state: 'idle', data: null, error: '', at: 0, mode: '', step: '', issue: '', name: '', base: '', branch: '', key: 0, target: '', force: false,
+      state: 'idle', data: null, error: '', at: 0, mode: '', step: '', issue: '', name: '', base: '', branch: '', key: 0, target: '', force: false, carry: true,
     },
     /** @type {any} the Agentes launcher (scout/librarian) */
     launch: { kind: 'scout', agentId: null, question: '', key: 0, result: '', error: '' },
@@ -630,7 +630,7 @@ export function createDriver($, opts) {
   /** Back to the initial state of the "new" steps (nothing runs, git is not touched). */
   function resetFeatures() {
     const f = ui.features;
-    f.mode = ''; f.step = ''; f.issue = ''; f.name = ''; f.base = ''; f.branch = ''; f.error = '';
+    f.mode = ''; f.step = ''; f.issue = ''; f.name = ''; f.base = ''; f.branch = ''; f.error = ''; f.carry = true;
     f.key += 1;
     if (ui.confirm === 'feat-new') ui.confirm = null;
   }
@@ -693,6 +693,7 @@ export function createDriver($, opts) {
   function pressFeature(action) {
     const f = ui.features;
     if (action === 'feat:mode:cancel') { resetFeatures(); return Promise.resolve(); }
+    if (action === 'feat:carry:toggle') { f.carry = !f.carry; return Promise.resolve(); }
     if (action === 'feat:mode:new' || action === 'feat:mode:existing') {
       resetFeatures();
       f.mode = action === 'feat:mode:new' ? 'new' : 'existing';
@@ -738,7 +739,12 @@ export function createDriver($, opts) {
     try { d = JSON.parse(String(raw).trim().split('\n').pop() || ''); } catch { return raw; }
     if (!d || typeof d !== 'object') return raw;
     if (d.ok === false) return `No se pudo: ${d.reason ?? 'error'}`;
-    if (id === 'feat-new') return `Creado.\n${d.command ?? ''}\nPara abrirlo, usá Abrir en su fila.`;
+    if (id === 'feat-new') {
+      const carried = d.carried ? `\nTarea llevada: «${d.carried.goal ?? d.carried.id}». Su plan se aprueba de nuevo en ese worktree.` : '';
+      const failed = d.carryError ? `\nNo se llevó la tarea: ${d.carryError}` : '';
+      const warned = d.carryWarning ? `\nTarea llevada; ${d.carryWarning}` : '';
+      return `Creado.\n${d.command ?? ''}${carried}${warned}${failed}\nPara abrirlo, usá Abrir en su fila.`;
+    }
     if (id === 'feat-close') return 'Worktree cerrado. La rama sigue en la lista de ramas libres.';
     if (id === 'feat-pause') {
       const parts = [d.paused ? `Pausado${d.branch ? ` (${d.branch})` : ''}.` : 'Reanudado.'];
@@ -1221,7 +1227,8 @@ export function createDriver($, opts) {
     const f = ui.features;
     return {
       ...configCtx(snap?.ok ? snap : null, settingsView, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null),
-      features: { name: f.name, issue: f.issue, base: f.base, branch: f.branch, main: f.data?.main ?? '', shell: f.data?.shell, target: f.target, force: f.force, rows: f.data?.worktrees ?? [] },
+      mem: { open: ui.mem.open, memory: ui.mem.detail?.data?.memory },
+      features: { name: f.name, issue: f.issue, base: f.base, branch: f.branch, main: f.data?.main ?? '', shell: f.data?.shell, target: f.target, force: f.force, rows: f.data?.worktrees ?? [], task: f.data?.task, carry: f.carry },
     };
   };
 
@@ -1277,6 +1284,10 @@ export function createDriver($, opts) {
         if (id === 'feat-new' && ranOk) resetFeatures();
         ui.features.target = ''; ui.features.force = false;
         return loadFeatures();
+      }
+      if (e.after === 'mem' && ranOk) {
+        ui.mem.open = null;
+        return Promise.all([loadMem('recent'), loadMem('handoff')]).then(() => {});
       }
       return e.after === 'tools' && ranOk ? loadTools() : undefined;
     });

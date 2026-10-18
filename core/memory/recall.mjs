@@ -6,23 +6,21 @@
  * tokens), not a body: in `assisted` mode a wrong call costs a pointer, so the rule can afford to
  * be simple. The body arrives only if the model asks for it (`mem get`).
  *
- * Relevance is **coverage, not score**. Raw BM25 depends on the corpus — the same -2.0 means one
- * thing with 10 notes and another with 500 — so any fixed floor on it is a number somebody would
- * have to tune, and nxy does not ask users to tune numbers. A memory earns a pointer when:
+ * Relevance is **files and keywords, never loose words**. Words shared with a title or body
+ * (the rule used before) fired on generic vocabulary and almost no pointer was ever followed. A
+ * memory earns a pointer only when:
  *
  *  - it is attached to a file the prompt names or the session has been editing (the strongest
  *    signal: same code, whatever the words), or
- *  - the prompt contains one of its keywords (an alias someone wrote on purpose), or
- *  - it shares at least two distinct content words with the prompt, and at least one of them is in
- *    its title or keywords — its *subject*. For a long paste (a log, a stack trace) both have to be
- *    subject words: 200 words share two with almost any note in passing.
+ *  - a whole word of the prompt equals one of its keywords (an alias someone wrote on purpose).
+ *    Title and body words never count.
  *
- * BM25 only orders what passed. Whether the rule is right is measured, not assumed: every pointer
- * and every `mem get` goes to a ledger, and `mem status` shows how many pointers were followed.
+ * No score, no threshold: nothing for anybody to tune. Whether the rule is right is measured: every
+ * pointer and every `mem get` goes to a ledger, and `mem status` shows how many pointers were
+ * followed.
  */
 import { memoriesForFiles, neighbors, supersededIds } from './graph.mjs';
-import { getMemory, searchMemories } from './store.mjs';
-import { contentTerms } from '../text.mjs';
+import { getMemory, listMemories } from './store.mjs';
 
 /** Pointers per prompt. Three lines is ~100 tokens at worst. */
 export const MAX_POINTERS = 3;
@@ -40,27 +38,22 @@ export const LONG_PROMPT_TERMS = 30;
 /** Lower-case, accents folded: "decisión" and "decision" are the same word for recall. */
 export const fold = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-/** @param {string} text */
-const termSet = (text) => new Set(contentTerms(fold(text)));
+/** Whole words of a text, folded. */
+const words = (text) => fold(text).split(/[^\p{L}\p{N}_]+/u).filter(Boolean);
 
 /**
- * Why a memory is relevant to a prompt, or null when it is not.
- * @param {Set<string>} promptTerms  folded content terms of the prompt
- * @param {{title: string, body: string, keywords: string}} mem
+ * Why a memory is relevant to a prompt, or null when it is not: a whole word of the prompt equals
+ * a token of the memory's keywords (split on spaces and commas). Title and body never count.
+ * @param {string} prompt
+ * @param {{keywords: string}} mem
  * @returns {string|null}
  */
-export function coverage(promptTerms, mem) {
-  const subject = termSet(`${mem.title} ${mem.keywords}`);
-  for (const k of termSet(mem.keywords)) if (promptTerms.has(k)) return `keyword "${k}"`;
-  if (promptTerms.size > LONG_PROMPT_TERMS) {
-    // A pasted log or stack trace shares a few words with almost anything; only the subject counts.
-    const onSubject = [...promptTerms].filter((t) => subject.has(t));
-    return onSubject.length >= 2 ? `words: ${onSubject.slice(0, 4).join(', ')}` : null;
-  }
-  const all = new Set([...subject, ...termSet(mem.body)]);
-  const shared = [...promptTerms].filter((t) => all.has(t));
-  if (shared.length >= 2 && shared.some((t) => subject.has(t))) return `words: ${shared.slice(0, 4).join(', ')}`;
-  return null;
+export function keywordHit(prompt, mem) {
+  const keys = fold(mem.keywords).split(/[\s,]+/).filter(Boolean);
+  if (!keys.length) return null;
+  const promptWords = new Set(words(prompt));
+  const k = keys.find((t) => promptWords.has(t));
+  return k ? `keyword "${k}"` : null;
 }
 
 /**
@@ -95,13 +88,12 @@ export function recall(db, prompt, o) {
     taken.add(id);
   }
 
-  // 2. Words, ordered by BM25, admitted by coverage.
-  const terms = termSet(prompt);
-  if (terms.size) {
-    for (const m of searchMemories(db, prompt, { project: o.project, areas: o.areas || [], limit: 20 })) {
+  // 2. Keywords: only memories that declare some, matched on whole words.
+  if (String(prompt || '').trim()) {
+    for (const m of listMemories(db, { project: o.project, areas: o.areas || [], excludeType: 'handoff', keywordsOnly: true, limit: null })) {
       if (out.length >= limit * 2) break;
-      if (skip(m) || taken.has(m.id)) continue;
-      const why = coverage(terms, m);
+      if (!m.keywords || !String(m.keywords).trim() || skip(m) || taken.has(m.id)) continue;
+      const why = keywordHit(prompt, m);
       if (!why) continue;
       out.push({ mem: m, why, related: [] });
       taken.add(m.id);

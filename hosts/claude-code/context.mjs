@@ -6,7 +6,7 @@
  * The gate needs this on every Edit, so it has to be free: a tail read of the last few KB of the
  * JSONL, no state, no daemon, no extra call. Same number the statusline shows.
  */
-import { closeSync, existsSync, openSync, readSync, statSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 
 const TAIL_BYTES = 256 * 1024; // enough to hold several assistant messages, cheap to read
 
@@ -32,6 +32,30 @@ export function isSubagentCall(input, transcriptPath) {
   if (typeof input?.agent_id === 'string' && input.agent_id) return true;
   if (typeof input?.agent_type === 'string' && input.agent_type) return true;
   return isSubagentTranscript(transcriptPath);
+}
+
+/**
+ * The subagent type of a hook call: `agent_type` from the payload, else `agentType` from the
+ * `.meta.json` next to the subagent's transcript, else null.
+ * @param {{agent_id?: unknown, agent_type?: unknown}} input
+ * @param {string|undefined|null} transcriptPath  already normalised with toNativePath
+ * @returns {string|null}
+ */
+export function agentTypeOf(input, transcriptPath) {
+  if (typeof input?.agent_type === 'string' && input.agent_type) return input.agent_type;
+  try {
+    if (!transcriptPath) return null;
+    let meta = null;
+    if (isSubagentTranscript(transcriptPath)) meta = transcriptPath.replace(/\.jsonl$/, '.meta.json');
+    else if (typeof input?.agent_id === 'string' && input.agent_id) {
+      meta = `${transcriptPath.replace(/\.jsonl$/, '')}/subagents/agent-${input.agent_id}.meta.json`;
+    }
+    if (!meta || !existsSync(meta)) return null;
+    const t = JSON.parse(readFileSync(meta, 'utf8'))?.agentType;
+    return typeof t === 'string' && t ? t : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

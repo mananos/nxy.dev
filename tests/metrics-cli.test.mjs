@@ -11,7 +11,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FIXTURE, writeFixture } from './fixtures/make-transcript.mjs';
+import { FIXTURE, TIMING_FIXTURE, writeFixture, writeTimingFixture } from './fixtures/make-transcript.mjs';
 import { fmtUsdPartial } from '../core/format.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -133,6 +133,49 @@ test('trend: calls/turn and ctx/call columns', () => {
   assert.match(text, /calls\/turn\s+ctx\/call\s+main edits\s+bash lines\s+rtk\s+rtk saved/);
   assert.match(text, /\s3\.5\s+13k\s+2\s/, '3.5 calls/turn · 13k ctx/call · 2 files edited by main');
   assert.equal(json.periods[0].mainEdits, 2);
+});
+
+/** Like setup(), over the timing fixture (two subagents, one usage-limit stop). */
+function setupTiming() {
+  const projectsDir = mkdtempSync(join(tmpdir(), 'nxy-cli-tim-'));
+  writeTimingFixture(projectsDir);
+  const cwd = mkdtempSync(join(tmpdir(), 'nxy-cli-cwd-'));
+  mkdirSync(join(cwd, '.nxy'));
+  writeFileSync(join(cwd, '.nxy', 'config.json'), JSON.stringify({ metrics: { projectsDir } }));
+  return cwd;
+}
+
+test('stats: SUBAGENT TIME shows slowest command, limit stop excluded, locate column', () => {
+  const cwd = setupTiming();
+  const text = run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd]);
+  assert.match(text, /^SUBAGENT TIME$/m);
+  assert.match(text, /slowest commands\n.*nxy:implementer .*\.\/mvnw -q test/);
+  assert.match(text, /^usage-limit stops excluded: 1$/m);
+  assert.match(text, /^nxy:planner\s+1\s.*1\/1\s*$/m, 'planner ran locate');
+
+  const json = JSON.parse(run('stats.mjs', ['--session', 'last', '--all', '--cwd', cwd, '--json']));
+  const impl = json.agentTiming.types.find((t) => t.agentType === 'nxy:implementer');
+  assert.ok(impl.maxMs < 10 * 60 * 1000, `limit gap must not count: ${impl.maxMs}`);
+  assert.equal(impl.limitStops, 1);
+  assert.equal(impl.withLocate, 0);
+  assert.equal(json.agentTiming.limitStops, 1);
+  assert.equal(json.agentTiming.slowest[0].text, TIMING_FIXTURE.slowCommand);
+  assert.equal(json.agentTiming.types.find((t) => t.agentType === 'nxy:planner').withLocate, 1);
+});
+
+test('trend --by agent: merged timing over the range, text and --json; unknown --by exits 1', () => {
+  const cwd = setupTiming();
+  const json = JSON.parse(run('trend.mjs', ['--by', 'agent', '--since', '30d', '--cwd', cwd, '--json']));
+  assert.equal(json.by, 'agent');
+  assert.deepEqual(json.agentTiming.types.map((t) => t.agentType).sort(), ['nxy:implementer', 'nxy:planner']);
+  assert.equal(json.agentTiming.limitStops, 1);
+  const text = run('trend.mjs', ['--by', 'agent', '--since', '30d', '--cwd', cwd]);
+  assert.match(text, /by agent · 1 sessions · 2 runs/);
+  assert.match(text, /usage-limit stops excluded: 1/);
+
+  const r = spawnSync(process.execPath, [join(ROOT, 'hosts', 'claude-code', 'entries', 'trend.mjs'), '--by', 'bogus', '--cwd', cwd], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /agent/);
 });
 
 /** Like setup(), but the only transcript has one call of a model missing from the pricing table. */

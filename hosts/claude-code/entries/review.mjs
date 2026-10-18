@@ -19,17 +19,19 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from '../../../core/format.mjs';
-import { PLUGIN_ROOT, ensureDir, gitBranch, gitRoot, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { PLUGIN_ROOT, ensureDir, gitRoot, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { appendJsonl, readJsonl } from '../../../core/jsonl.mjs';
 import { extractPlan, parseBatches, planHash } from '../../../core/plan.mjs';
 import {
-  batchForFile, checkpoint2, classifyFindings, mergeLenses, packetOutline, parseFindings, parseLens, reviewId, reviewNeeded,
+  batchForFile, checkpoint2, chatRulesInstruction, classifyFindings, mergeLenses, packetOutline, parseFindings, parseLens, reviewId, reviewNeeded,
   reviewPacket, selectLenses,
 } from '../../../core/review.mjs';
 import { packetPath, readBaseline, reviewFiles } from '../baseline.mjs';
 import { readMarker } from '../plan-approval.mjs';
-import { lookupHandoff } from '../handoff.mjs';
+import { lookupHandoff, memCommand } from '../handoff.mjs';
+import { claimChatRulesAsk, noteConventionSave } from '../recall-state.mjs';
 import { findDocs } from '../docs.mjs';
+import { activeTask } from '../tasks.mjs';
 import { conventionsOf, repoOf, touchedRepos } from '../repos.mjs';
 import { coverageLines, inventoryWhy } from '../coverage.mjs';
 import { docsPacket, docsQuestion } from '../../../core/docs.mjs';
@@ -38,7 +40,9 @@ import { loadConfig } from '../../../core/config.mjs';
 const { opts, positional } = parseArgs(process.argv.slice(2));
 const cwd = toNativePath(typeof opts.cwd === 'string' ? opts.cwd : process.env.CLAUDE_PROJECT_DIR || process.cwd());
 const action = (positional[0] || 'status').toLowerCase();
-const branch = gitBranch(cwd);
+const task = activeTask(cwd);
+const key = task.id;
+const label = task.label;
 const SELF = join(PLUGIN_ROOT, 'hosts', 'claude-code', 'entries', 'review.mjs').replace(/\\/g, '/');
 const statePath = join(nxyRuntimeDir(cwd), 'review.json');
 const ledgerPath = join(nxyRuntimeDir(cwd), 'review.jsonl');
@@ -50,10 +54,10 @@ const ledgerPath = join(nxyRuntimeDir(cwd), 'review.jsonl');
  * @param {{note: string|null, git: {atApproval: number, now: number|null}|null, coverage?: any}} [rv] the review's git result
  */
 function emptyWhy(planHash, rv) {
-  const copies = Object.keys(readBaseline(cwd, branch)).length;
-  const marker = readMarker(cwd, branch);
+  const copies = Object.keys(readBaseline(cwd, key)).length;
+  const marker = readMarker(cwd, key);
   return [
-    `looked in ${join(nxyRuntimeDir(cwd), 'baseline').replace(/\\/g, '/')} (project ${(gitRoot(cwd) ?? cwd).replace(/\\/g, '/')}, branch ${branch || '(none)'})`,
+    `looked in ${join(nxyRuntimeDir(cwd), 'baseline').replace(/\\/g, '/')} (project ${(gitRoot(cwd) ?? cwd).replace(/\\/g, '/')}, task ${label || '(none)'})`,
     `baseline copies: ${copies} · plan marker: ${marker ? `present (${marker.hash})` : 'absent'}${planHash && marker && marker.hash !== planHash ? ` (the handoff's plan is ${planHash})` : ''}`,
     ...(rv ? [rv.note ? `git: ${rv.note}` : rv.git ? `git: ${rv.git.atApproval} file(s) dirty at approval, ${rv.git.now ?? '?'} dirty now` : 'git: not checked (no plan marker)'] : []),
     ...(rv && inventoryWhy(rv.coverage) ? [/** @type {string} */ (inventoryWhy(rv.coverage))] : []),
@@ -62,7 +66,7 @@ function emptyWhy(planHash, rv) {
 
 /** The `## Coverage` bullets: what covered each repo without git (empty when every repo has git). */
 function coverageOf(rv) {
-  return coverageLines(rv.coverage, rv, Object.keys(readBaseline(cwd, branch)));
+  return coverageLines(rv.coverage, rv, Object.keys(readBaseline(cwd, key)));
 }
 
 /**
@@ -96,7 +100,7 @@ function lensesIn(dir) {
  * @param {{path: string, abs?: string}[]} files @param {any} docsCfg
  */
 function findDocsAcross(files, docsCfg) {
-  const roots = touchedRepos(cwd, branch);
+  const roots = touchedRepos(cwd, key);
   const primary = roots[0];
   /** @type {Map<string, string[]>} */
   const groups = new Map(roots.map((r) => [r, []]));
@@ -137,8 +141,9 @@ function readState() {
 }
 
 /** @param {any} state */
-function checkpointText(state, batches) {
+function checkpointText(state, batches, chatRules = /** @type {string|null} */ (null)) {
   return checkpoint2({
+    chatRules,
     id: state.id, planHash: state.planHash, findings: state.findings, summary: state.summary,
     batchOf: (f) => batchForFile(batches, f.file),
     extra: state.docs?.docs?.length ? docsQuestion(state.id, state.docs.docs.map((d) => d.path)) : null,
@@ -160,10 +165,10 @@ switch (action) {
   case 'packet': {
     const { plan, hash, project } = await currentPlan();
     if (!plan || !hash) {
-      console.log(`no plan in the handoff of \`${branch || '(no branch)'}\`: nothing to review`);
+      console.log(`no plan in the handoff of \`${label}\`: nothing to review`);
       break;
     }
-    const rv = reviewFiles(cwd, branch, hash);
+    const rv = reviewFiles(cwd, key, hash);
     const files = rv.files;
     const need = reviewNeeded(files.map((f) => f.path));
     if (!need.needed) {
@@ -173,7 +178,7 @@ switch (action) {
       break;
     }
     // Every touched repo's lenses over the plugin's; the primary's last, so it wins.
-    const roots = touchedRepos(cwd, branch);
+    const roots = touchedRepos(cwd, key);
     const lenses = selectLenses(
       [...roots].reverse().reduce((acc, r) => mergeLenses(acc, lensesIn(join(r, '.nxy', 'lenses'))), lensesIn(join(PLUGIN_ROOT, 'lenses'))),
       files.map((f) => ({ path: f.path, content: f.content })),
@@ -197,7 +202,7 @@ switch (action) {
       break;
     }
     // The packet can be thousands of lines: it is saved, and only an index and the way to answer are printed.
-    const saved = packetPath(cwd, branch);
+    const saved = packetPath(cwd, key);
     const text = [packet, ...notes].join('\n');
     ensureDir(dirname(saved));
     writeFileSync(saved, text, 'utf8');
@@ -219,7 +224,7 @@ switch (action) {
   case 'record': {
     const { plan, hash } = await currentPlan();
     if (!plan || !hash) {
-      console.log('no plan on this branch: nothing to record');
+      console.log('no plan on this task: nothing to record');
       process.exitCode = 1;
       break;
     }
@@ -230,14 +235,14 @@ switch (action) {
       process.exitCode = 1;
       break;
     }
-    const files = reviewFiles(cwd, branch, hash).files;
+    const files = reviewFiles(cwd, key, hash).files;
     const classified = classifyFindings(findings, new Map(files.map((f) => /** @type {[string, [number, number][]]} */ ([f.path, f.ranges]))));
     const docs = loadConfig(cwd).roles?.documenter ? findDocsAcross(files, loadConfig(cwd).docs || {}) : null;
     const state = {
       docs,
       id: reviewId(hash),
       planHash: hash,
-      branch,
+      branch: key,
       ts: Date.now(),
       summary: { files: files.length, added: files.reduce((s, f) => s + f.added, 0), removed: files.reduce((s, f) => s + f.removed, 0) },
       findings: classified,
@@ -250,7 +255,8 @@ switch (action) {
       findings: classified.map((f) => ({ id: f.id, lens: f.lens, severity: f.severity, cause: f.cause })),
     });
     for (const e of errors) console.log(`skipped: ${e}`);
-    console.log(checkpointText(state, parseBatches(plan)));
+    const chatRules = claimChatRulesAsk(cwd, key) ? chatRulesInstruction(memCommand('save')) : null;
+    console.log(checkpointText(state, parseBatches(plan), chatRules));
     break;
   }
 
@@ -272,7 +278,7 @@ switch (action) {
       break;
     }
     const { plan } = await currentPlan();
-    const files = reviewFiles(cwd, branch).files;
+    const files = reviewFiles(cwd, key).files;
     console.log(docsPacket({
       id: state.id, plan: plan || '(the plan was already closed)', files,
       docs: state.docs.docs, wikiDir: state.docs.wikiDir,
@@ -291,11 +297,12 @@ switch (action) {
     }
     const lens = typeof opts.lens === 'string' ? opts.lens : 'base';
     const last = readState();
-    appendJsonl(ledgerPath, { ts: Date.now(), kind: 'escape', lens, as, text, reviewId: last?.branch === branch ? last.id : null });
+    appendJsonl(ledgerPath, { ts: Date.now(), kind: 'escape', lens, as, text, reviewId: last?.branch === key ? last.id : null });
     if (as === 'convention') {
       const { projectKey } = await import('../../../core/memory/scope.mjs');
       const { openStore, saveMemory } = await import('../../../core/memory/store.mjs');
       const res = saveMemory(openStore(), { scope: 'project', project: projectKey(cwd).key, type: 'convention', title: text, body: `${text}\n\nMissed by a review (lens: ${lens}); saved as a convention.` });
+      noteConventionSave(cwd, text);
       console.log(`escape recorded (lens: ${lens}) · saved as convention ${res.id}: the planner and every implementer get it from now on`);
     } else {
       const file = appendRepoLens(text);

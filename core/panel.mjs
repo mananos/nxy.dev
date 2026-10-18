@@ -28,7 +28,7 @@ import {
   sessionFigures, roleBars, modelBars, whatIf1h, windowRows, segmentsOf, trendChart, featureSummary, METRICS, money,
 } from './statsview.mjs';
 import { isField, ROLES } from './configedit.mjs';
-import { clipOutput, parseHits, parseMemIds, memResultRows, memDetailLines, hitRows } from './memview.mjs';
+import { clipOutput, parseHits, parseMemIds, memResultRows, memDetailLines, memDeleteQuestion, hitRows } from './memview.mjs';
 import { featureNames, rowView, newQuestion, closeQuestion } from './featuresview.mjs';
 
 // A launcher's output is clipped for the pane by memview's clipOutput (at most N lines, long lines cut at 160 columns).
@@ -75,7 +75,7 @@ export const launcherAvailable = (entry, { snap, owned = false, ctx = null }) =>
  * `after: 'refresh'` re-reads the snapshot once the process ends; `needs` names a NEEDS check: the
  * button is hidden, and its press ignored, while the check fails; `confirm` asks yes/no first.
  * @type {{id: string, tab: string, label: string | ((ctx: any) => string), hotkey: string, script: string,
- *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string,
+ *   args: string[] | ((ctx: any) => string[]), after?: 'refresh' | 'settings' | 'tools' | 'features' | 'mem', needs?: keyof typeof NEEDS, tool?: string,
  *   needsCtx?: (ctx: any) => boolean, confirm?: string | ((ctx: any) => string)}[]}
  */
 export const LAUNCHER = [
@@ -84,6 +84,13 @@ export const LAUNCHER = [
   {
     id: 'plan-done', tab: 'plan', label: 'Terminar plan', hotkey: 'e', script: 'mem', args: ['handoff', 'done'],
     needs: 'plan', after: 'refresh', confirm: 'Terminar el plan y archivar el handoff?',
+  },
+  // Memoria tab: ctx.mem = {open, memory}; the button is drawn by the memdetail block (no hotkey).
+  {
+    id: 'mem-delete', tab: 'memory', label: 'Borrar', hotkey: '', script: 'mem', after: 'mem',
+    needsCtx: (ctx) => !!ctx?.mem?.open,
+    args: (ctx) => ['delete', ctx?.mem?.open ?? ''],
+    confirm: (ctx) => memDeleteQuestion(ctx?.mem?.memory),
   },
   // Config tab: the buttons that act outside nxy's config file (drawn inside the Config rows, not as an Actions block).
   {
@@ -119,13 +126,14 @@ export const LAUNCHER = [
     needsCtx: (ctx) => !!(ctx?.features?.name && ctx.features.base) || !!ctx?.features?.branch,
     args: (ctx) => {
       const f = ctx?.features ?? {};
-      return f.branch ? ['new', '--branch', f.branch]
-        : ['new', '--name', f.name, ...(f.issue ? ['--issue', f.issue] : []), '--base', f.base];
+      const carry = f.task?.id && f.carry ? ['--carry', f.task.id] : [];
+      return f.branch ? ['new', '--branch', f.branch, ...carry]
+        : ['new', '--name', f.name, ...(f.issue ? ['--issue', f.issue] : []), '--base', f.base, ...carry];
     },
     confirm: (ctx) => {
       const f = ctx?.features ?? {};
       const names = featureNames(f.branch ? { branch: f.branch } : { issue: f.issue ?? '', name: f.name ?? '', base: f.base ?? '' }, f.main ?? '');
-      return newQuestion(names, f.branch ? null : f.base, f.shell);
+      return newQuestion(names, f.branch ? null : f.base, f.shell, f.task ? { goal: f.task.goal ?? '', on: !!f.carry } : null);
     },
   },
   {
@@ -163,7 +171,7 @@ const DEFAULT_TREND_SEL = { metric: 'usd', range: '7d', by: 'day', here: false }
 /**
  * A launcher entry resolved against the context ({filter}; `filter` absent while unknown).
  * @param {string} id @param {{filter?: boolean, ttl1h?: boolean, statusline?: string, tools?: Record<string, any>, features?: any}} [ctx]
- * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools' | 'features', needs?: keyof typeof NEEDS, tool?: string, confirm?: string, timeoutMs?: number} | null}
+ * @returns {{id: string, tab: string, label: string, hotkey: string, script: string, args: string[], after?: 'refresh' | 'settings' | 'tools' | 'features' | 'mem', needs?: keyof typeof NEEDS, tool?: string, confirm?: string, timeoutMs?: number} | null}
  */
 export function launcherOf(id, ctx = {}) {
   const e = LAUNCHER.find((l) => l.id === id);
@@ -214,7 +222,7 @@ function isCfgAction(id) {
 /** @param {string} id */
 export const isPanelAction =(id) => PANEL_IDS.includes(id) || /^scope:(user|repo)$/.test(id) || isCfgAction(id) ||
   id.startsWith('tab:') || /^batch:\d+$/.test(id)
-  || /^feat:(open|pause|close):\d+$/.test(id) || /^feat:mode:(new|existing|cancel)$/.test(id)
+  || /^feat:(open|pause|close):\d+$/.test(id) || /^feat:mode:(new|existing|cancel)$/.test(id) || id === 'feat:carry:toggle'
   || /^pick:\S+$/.test(id) || /^mem:\S+$/.test(id) || /^agent:\S+$/.test(id) || id === 'agent-back' || id === 'agents-all' || LAUNCHER.some((l) => l.id === id)
   || (id.startsWith('metric:') && Object.hasOwn(METRICS, id.slice(7))) || /^range:(7d|30d)$/.test(id) || /^by:(day|week|model)$/.test(id);
 
@@ -677,7 +685,7 @@ function memoryBlocks(c) {
     const d = m.detail ?? {};
     const back = { id: 'mem-back', label: 'Volver', hotkey: 'b' };
     if (d.state === 'ok' && d.data?.memory) {
-      blocks.push({ type: 'memdetail', id: m.open, state: 'ok', message: '', lines: memDetailLines(d.data.memory, d.data.edges), back });
+      blocks.push({ type: 'memdetail', id: m.open, state: 'ok', message: '', lines: memDetailLines(d.data.memory, d.data.edges), back, del: { id: 'mem-delete', label: 'Borrar' } });
     } else if (d.state === 'error') {
       blocks.push({ type: 'memdetail', id: m.open, state: 'error', message: `No se pudo abrir la memoria: ${d.error ?? 'error desconocido'}`, lines: [], back });
     } else if (d.state === 'empty') {
@@ -711,7 +719,7 @@ function memoryBlocks(c) {
       : hd && hd.exists === false ? { state: 'empty', text: `Sin handoff en la rama ${hd.label ?? ''}`.trimEnd() }
         : hd ? {
           state: 'ok',
-          text: ['Handoff', hd.label, hd.updated ? `actualizado ${hd.updated}` : '', hd.shared ? 'compartido' : '', typeof hd.progress === 'string' ? hd.progress : '']
+          text: ['Handoff', hd.task?.label ?? hd.label, hd.task ? (hd.task.pinned && hd.task.branch ? `rama ${hd.task.branch}` : 'sigue al checkout') : '', hd.updated ? `actualizado ${hd.updated}` : '', hd.shared ? 'compartido' : '', typeof hd.progress === 'string' ? hd.progress : '']
             .filter(Boolean).join(' · '),
         }
           : { state: 'idle', text: 'Handoff: sin leer todavía' };
@@ -987,8 +995,10 @@ function featuresBlocks(c) {
     }
   }
   const err = typeof f.error === 'string' && f.error && state === 'ok' ? f.error : '';
+  const task = data?.task && typeof data.task.id === 'string' ? data.task : null;
+  const carry = task && f.mode ? { id: 'feat:carry:toggle', label: 'Llevar tarea', on: f.carry !== false, goal: String(task.goal ?? '') } : null;
   return [{
-    type: 'worktrees', title: 'Worktrees', state, message, rows, modes, input, select, busy, info, error: err,
+    type: 'worktrees', title: 'Worktrees', state, message, rows, modes, input, select, busy, info, error: err, carry,
     note: typeof f.note === 'string' && f.note ? f.note
       : 'Una sesión de Claude por worktree. Abrir copia el comando; nxy nunca commitea ni pushea.',
   }];
@@ -1079,10 +1089,12 @@ export function buildPanel({
     },
     ask: askOf(ownedSnap, ask, ui, {
       ...configCtx(snap, settings, cfgInfo && !cfgInfo.failed ? cfgInfo.tools : null),
+      mem: { open: ui.mem?.open ?? null, memory: ui.mem?.detail?.data?.memory },
       features: {
         name: ui.features?.name ?? '', issue: ui.features?.issue ?? '', base: ui.features?.base ?? '', branch: ui.features?.branch ?? '',
         main: ui.features?.data?.main ?? '', target: ui.features?.target ?? '', force: !!ui.features?.force, rows: ui.features?.data?.worktrees ?? [],
         shell: ui.features?.data?.shell ?? null,
+        task: ui.features?.data?.task ?? null, carry: ui.features?.carry !== false,
       },
     }),
     output: output
@@ -1252,6 +1264,7 @@ export function panelText(view) {
           out.push(`    ${r.buttons.map((x) => `[${x.label}]${x.disabled ? ` (${x.reason})` : ''}`).join(' ')}`);
         }
         if (b.modes.length) out.push(`  ${b.modes.map((x) => `[${x.label}]`).join(' ')}`);
+        if (b.carry) out.push(`  [${b.carry.on ? 'x' : ' '}] ${b.carry.label}: «${b.carry.goal}»`);
         if (b.input) out.push(`  ${b.input.placeholder} [${b.input.submitLabel}]`);
         for (const l of b.info) out.push(`  ${l}`);
         if (b.select) {

@@ -13,6 +13,7 @@ import { claudeProjectsDir, projectSlug } from './paths.mjs';
 import { addUsage, costFor, emptyUsage, estimateBasis, isSyntheticModel, isZeroUsage, toUsage, totalInput } from '../../core/pricing.mjs';
 import { addCall, finishBucket, newBucket } from '../../core/metrics/aggregate.mjs';
 import { hourTtlWhatIf } from '../../core/metrics/cache-ttl.mjs';
+import { agentTiming, summarizeTiming } from '../../core/metrics/timing.mjs';
 
 /** @typedef {import('../../core/metrics/aggregate.mjs').Call} Call */
 
@@ -380,8 +381,32 @@ export function formatBreaks(s, totalUsd, fmtTok) {
 }
 
 /**
+ * Every parseable line of a transcript, in file order. Malformed lines are skipped.
+ * @param {string} path
+ * @returns {object[]}
+ */
+export function readEvents(path) {
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const line of text.split('\n')) {
+    if (!line) continue;
+    try {
+      out.push(JSON.parse(line));
+    } catch {
+      // skip
+    }
+  }
+  return out;
+}
+
+/**
  * @param {SessionRef} ref
- * @param {{includeSubagents?: boolean, since?: number|null, cacheBreakThreshold?: number}} [opts]
+ * @param {{includeSubagents?: boolean, since?: number|null, cacheBreakThreshold?: number, timing?: boolean}} [opts]
  */
 export function parseSession(ref, opts = {}) {
   const includeSubagents = opts.includeSubagents !== false;
@@ -400,6 +425,8 @@ export function parseSession(ref, opts = {}) {
   const bySkill = {};
   const cacheBreaks = [];
   const agents = [];
+  /** @type {{agentType: string, timing: ReturnType<typeof agentTiming>}[]} */
+  const timingRuns = [];
   const tools = {
     calls: { ...main.tools.calls },
     filesRead: new Set(main.tools.filesRead),
@@ -447,6 +474,8 @@ export function parseSession(ref, opts = {}) {
       const at = (byAgentType[agentType] ||= { ...newBucket(), agents: 0 });
       at.agents++;
       for (const c of parsed.calls) addCall(at, c);
+      const timing = opts.timing ? agentTiming(readEvents(f.path)) : null;
+      if (timing) timingRuns.push({ agentType, timing });
       agents.push({
         agentId: f.agentId,
         agentType,
@@ -454,6 +483,7 @@ export function parseSession(ref, opts = {}) {
         model: parsed.meta.model || link?.model || null,
         ...finishBucket(b),
         durationMs: parsed.firstTs !== null && parsed.lastTs !== null ? parsed.lastTs - parsed.firstTs : null,
+        ...(timing ? { timing } : {}),
       });
       for (const [k, v] of Object.entries(parsed.tools.calls)) tools.calls[k] = (tools.calls[k] || 0) + v;
       for (const p of parsed.tools.filesRead) tools.filesRead.add(p);
@@ -493,6 +523,7 @@ export function parseSession(ref, opts = {}) {
     // Claude Code picks the TTL per bucket, and `promptCacheTtl` is the main conversation's.
     ttlWhatIf: hourTtlWhatIf(main.calls),
     unknownModels: usage.unknownModels,
+    ...(opts.timing ? { agentTiming: summarizeTiming(timingRuns) } : {}),
   };
 }
 

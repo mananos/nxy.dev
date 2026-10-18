@@ -17,7 +17,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { gitBranch, toNativePath } from '../../../core/paths.mjs';
+import { toNativePath } from '../../../core/paths.mjs';
+import { activeTask, pinActiveTask } from '../tasks.mjs';
 import { decideGate } from '../../../core/gate.mjs';
 import { isSubagentCall, lastContextTokens } from '../context.mjs';
 import { consumeEscape } from '../gate-state.mjs';
@@ -69,8 +70,9 @@ try {
     const hasImplementer = Boolean(cfg.roles && cfg.roles.implementer);
     const ti = input?.tool_input;
     const file = typeof ti?.file_path === 'string' ? ti.file_path : (typeof ti?.notebook_path === 'string' ? ti.notebook_path : undefined);
-    const branch = gitBranch(cwd);
-    const onBranch = file ? readMarker(cwd, branch) : null;
+    const task = activeTask(cwd);
+    const key = task.id;
+    const onBranch = file ? readMarker(cwd, key) : null;
     // Gate scope (1.0.1): a file outside the project dir AND outside every git root (the scratchpad,
     // Claude's own memory) is not the project's work: no gate, no copy, no ledger row. `.nxy/` and
     // `.git/` are inside a repo, so they stay gated like any file.
@@ -85,9 +87,9 @@ try {
     const touchedOther = Boolean(current) && before.some((f) => f !== current);
     // The plan's "before" (0.4.2): the first time its work touches a file, keep a copy for the review.
     if (abs && onBranch && !onBranch.questions) {
-      snapshot(cwd, branch, abs);
+      snapshot(cwd, key, abs);
       // A repo the plan did not declare: remembered, and the main thread is told once.
-      if (fileRepo && !fileRepo.primary && !(onBranch.repos || []).some((r) => sameRoot(r, fileRepo.root)) && noteUndeclaredRepo(cwd, fileRepo.root)) {
+      if (fileRepo && !fileRepo.primary && !(onBranch.repos || []).some((r) => sameRoot(r, fileRepo.root)) && noteUndeclaredRepo(cwd, key, fileRepo.root)) {
         pushNote(cwd, `${repoNames([primaryRoot(cwd), ...(onBranch.repos || []), fileRepo.root]).get(fileRepo.root)} is not in the plan; its prior uncommitted changes cannot be told apart`);
       }
     }
@@ -95,7 +97,7 @@ try {
     // A plan waiting for the user's approval stops everything else: nothing is written before the
     // checkpoint (0.4.0). Then the handoff, which yields to the user's `/nxy:gate once` like the
     // other rules (one escape lets the edit through both).
-    const pending = isSubagent ? null : readMarker(cwd, branch);
+    const pending = isSubagent ? null : readMarker(cwd, key);
     const pendingHash = pending ? pending.hash : null;
     const checkpoint = decideCheckpoint({
       isSubagent, planHash: pendingHash, questions: pending?.questions,
@@ -163,6 +165,9 @@ try {
 
       if (!verdict.allow) deny(verdict.message || 'nxy: delegate this edit to the implementer');
     }
+
+    // The first allowed edit pins an unpinned task to the branch it is being worked on (never a denied one).
+    if (file && !denied && task.source === 'unpinned') pinActiveTask(cwd);
 
     // For the Stop hook (0.4.5): this session wrote something the handoff may not say yet. Plan
     // batch work (an implementer under a plan) is not counted: its progress is derived by nxy.

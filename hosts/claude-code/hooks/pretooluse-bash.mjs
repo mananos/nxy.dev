@@ -10,7 +10,8 @@
 import { readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { gitBranch, toNativePath } from '../../../core/paths.mjs';
+import { toNativePath } from '../../../core/paths.mjs';
+import { activeTask, pinActiveTask, taskKey } from '../tasks.mjs';
 import { noteUndeclaredRepo, primaryRoot, repoNames, repoOf } from '../repos.mjs';
 import { pushNote } from '../agent-notes.mjs';
 import { readMarker } from '../plan-approval.mjs';
@@ -53,7 +54,7 @@ try {
     try {
       if (typeof input.agent_id === 'string' && input.agent_id) {
         const targets = writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name, { content: true });
-        const repos = targets.length ? (readMarker(cwd, gitBranch(cwd))?.repos || []) : [];
+        const repos = targets.length ? (readMarker(cwd, taskKey(cwd))?.repos || []) : [];
         const inside = targets.some((t) => projectTarget(cwd, t, repos) != null);
         if (inside) {
           process.stdout.write(
@@ -72,20 +73,41 @@ try {
     } catch {
       /* best-effort: allow */
     }
+    // The planner's one-time locate nudge (a deny); no ledger, the main thread is untouched.
+    // Its own try: on error, fall through to the normal flow.
+    // Skipped (no import) outside a subagent: the main thread has nothing to do there.
+    try {
+      const inSubagent = (typeof input.agent_id === 'string' && input.agent_id)
+        || (typeof input.agent_type === 'string' && input.agent_type)
+        || /[\\/]subagents[\\/]/.test(String(input.transcript_path ?? ''));
+      const { deny } = inSubagent ? await (await import('../search-observe.mjs')).onSearchTool(cwd, input) : { deny: null };
+      if (deny) {
+        process.stdout.write(JSON.stringify({
+          hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: deny },
+        }));
+        process.exit(0);
+      }
+    } catch {
+      /* best-effort */
+    }
     // Copy-before-write for console writes (sed -i, `>`, cp...) while a plan is active, so the
     // review sees them like Edit changes. Its own try: it never blocks or delays the command.
     try {
-      const branch = gitBranch(cwd);
-      const plan = readMarker(cwd, branch);
+      const task = activeTask(cwd);
+      const key = task.id;
+      const plan = readMarker(cwd, key);
       if (plan && !plan.questions) {
+        let pinned = false;
         // Only files inside a repo (the project's, a declared one or any git repo), never nxy state
         // (.nxy) or git internals (.git).
         const known = plan.repos || [];
         for (const t of writeTargets(command, typeof input.cwd === 'string' ? toNativePath(input.cwd) : cwd, input.tool_name)) {
           const repo = projectTarget(cwd, t, known);
           if (!repo) continue;
-          snapshot(cwd, branch, t);
-          if (!repo.primary && !known.some((r) => sameRoot(r, repo.root)) && noteUndeclaredRepo(cwd, repo.root)) {
+          snapshot(cwd, key, t);
+          // A console write to a project file is the task's first edit: pin it to this branch.
+          if (!pinned && task.source === 'unpinned') { pinned = true; pinActiveTask(cwd); }
+          if (!repo.primary && !known.some((r) => sameRoot(r, repo.root)) && noteUndeclaredRepo(cwd, key, repo.root)) {
             pushNote(cwd, `${repoNames([primaryRoot(cwd), ...known, repo.root]).get(repo.root)} is not in the plan; its prior uncommitted changes cannot be told apart`);
           }
         }

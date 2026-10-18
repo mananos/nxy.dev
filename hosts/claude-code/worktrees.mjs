@@ -21,6 +21,8 @@ import { gitResult, gitRun } from './gitstate.mjs';
 import { lookupHandoff } from './handoff.mjs';
 import { readActive } from './orch-state.mjs';
 import { readReview, readSuite, readVerify } from './verify-state.mjs';
+import { readTasks, taskKey } from './tasks.mjs';
+import { readMarker } from './plan-approval.mjs';
 
 const MAX_DIRTY = 5000;
 const MAX_BRANCHES = 200;
@@ -100,7 +102,6 @@ function gitWorktrees(root) {
  */
 async function progressOf(wt) {
   const path = wt.path;
-  const branch = gitBranch(path);
   let handoffAt = null;
   let batchDone = 0;
   let batchTotal = 0;
@@ -114,7 +115,7 @@ async function progressOf(wt) {
       const plan = extractPlan(known.handoff.body);
       if (plan) {
         const hash = planHash(plan);
-        const verdicts = readVerify(path, branch, hash).batches;
+        const verdicts = readVerify(path, taskKey(path), hash).batches;
         const batches = parseBatches(plan);
         batchTotal = batches.length;
         batchDone = batches.filter((b) => isDone(verdicts[String(b.n)]?.status)).length;
@@ -177,7 +178,15 @@ export async function listWorktrees(cwd) {
     bases: baseChoices(branches, defaultBranch),
     shell: shellOf({ platform: process.platform, env: process.env }),
     platform: process.platform,
+    task: carriableTask(cwd),
   };
+}
+
+/** The current checkout's unpinned task with a live approval marker, or null. @param {string} cwd */
+function carriableTask(cwd) {
+  const { state, corrupt } = readTasks(cwd);
+  const u = corrupt ? null : state.unpinned;
+  return u && readMarker(cwd, u.id) ? { id: u.id, goal: u.goal } : null;
 }
 
 /** @param {string} root @param {string} branch */

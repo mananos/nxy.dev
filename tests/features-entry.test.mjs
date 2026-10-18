@@ -14,6 +14,8 @@ import { fileURLToPath } from 'node:url';
 import { commandText, shellOf } from '../core/featuresview.mjs';
 import { planHash } from '../core/plan.mjs';
 import { recordBatch } from '../hosts/claude-code/verify-state.mjs';
+import { carryTask, readTasks, startTask, taskKey } from '../hosts/claude-code/tasks.mjs';
+import { readMarker } from '../hosts/claude-code/plan-approval.mjs';
 import { writeOrchFile } from '../hosts/claude-code/orch-state.mjs';
 import { MARKER_FILE } from '../core/orchestrator.mjs';
 
@@ -196,7 +198,7 @@ test('new --branch: an existing free branch opens without -b; busy or missing on
     const r = t.run(['new', '--branch', 'fix/login']);
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.command, commandText(['git', 'worktree', 'add', slash(join(t.wts, 'fix_login')), 'fix/login'], shell));
-    assert.ok(!r.command.includes('-b'));
+    assert.ok(!/(^|\s)-b(\s|$)/.test(r.command));
     assert.equal(t.run(['new', '--branch', 'fix/login']).ok, false);
     assert.equal(t.run(['new', '--branch', 'main']).ok, false);
     const none = t.run(['new', '--branch', 'no-existe']);
@@ -225,7 +227,7 @@ test('list: counts dirty files, unpushed commits, progress, pause and missing de
     t.gitIn(wt, 'commit', '-q', '-m', 'ahead');
     writeFileSync(join(wt, 'b.js'), '1\n2\n3\n');
     t.mem(wt, ['handoff', 'plan', '--body', PLAN]);
-    recordBatch(wt, 'feature/p', planHash(PLAN), 1, { status: 'pass', ts: Date.now() });
+    recordBatch(wt, taskKey(wt), planHash(PLAN), 1, { status: 'pass', ts: Date.now() });
     const paused = t.run(['pause', '--path', wt]);
     assert.equal(paused.ok, true, JSON.stringify(paused));
     const row = t.run(['list']).worktrees.find((/** @type {any} */ w) => !w.main);
@@ -360,6 +362,132 @@ test('close: clean removes the folder and keeps the branch; dirty needs --force;
     assert.equal(t.run(['close', '--path', c3, '--force'], c3).ok, false);
     assert.ok(existsSync(c3));
     assert.equal(t.run(['close', '--path', join(t.dir, 'ajeno')]).ok, false);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+const carryPlan = (/** @type {string} */ goal) => PLAN.replace('Goal: x', `Goal: ${goal}`);
+const taskOf = (/** @type {any} */ t, /** @type {string} */ cwd) =>
+  JSON.parse(t.mem(cwd, ['handoff', 'show', '--json']).trim().split('\n').pop() || '{}').task;
+
+test('new --carry: the unpinned task, its marker and plan move to the worktree; the source keeps none', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    // Memory is per project: with a remote the key is shared by every worktree (without one it is the path).
+    t.git('remote', 'add', 'origin', 'https://example.com/acme/nxy-carry.git');
+    t.mem(t.repo, ['handoff', 'plan', '--body', carryPlan('llevar esto')]);
+    const task = taskOf(t, t.repo);
+    assert.equal(task.pinned, false);
+    assert.equal(t.run(['list']).task.id, task.id);
+    const r = t.run(['new', '--name', 'carry', '--base', 'main', '--carry', task.id]);
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.carried.id, task.id);
+    assert.equal(r.carried.goal, 'llevar esto');
+    const wt = join(t.wts, 'carry');
+    assert.equal(taskOf(t, wt).id, task.id);
+    const m = readMarker(wt, task.id);
+    assert.ok(m, 'marker armed in the worktree');
+    assert.equal(norm(m.repos[0]), norm(wt));
+    assert.equal(readMarker(t.repo, task.id), null);
+    assert.equal(readTasks(t.repo).state.unpinned, null);
+    assert.equal(readTasks(wt).state.unpinned?.id, task.id);
+    assert.equal(t.run(['list']).task, null);
+    assert.match(t.mem(wt, ['handoff', 'show']), /Goal: llevar esto/);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+test('new --carry: armPlan failing after the task moved still reports carried, plus a warning', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    t.git('remote', 'add', 'origin', 'https://example.com/acme/nxy-carry-warn.git');
+    t.mem(t.repo, ['handoff', 'plan', '--body', carryPlan('armar falla')]);
+    const task = taskOf(t, t.repo);
+    const out = spawnSync(
+      process.execPath,
+      ['--disable-warning=ExperimentalWarning', FEATURES, 'new', '--name', 'warn', '--base', 'main', '--carry', task.id, '--cwd', t.repo, '--json'],
+      { encoding: 'utf8', env: { ...process.env, NXY_HOME: join(t.dir, 'home'), NXY_TEST_ARM_FAIL: '1' } },
+    );
+    const r = JSON.parse(out.stdout.trim().split('\n').pop() || '{}');
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.carried.id, task.id);
+    assert.equal(r.carryError, undefined);
+    assert.match(r.carryWarning, /guard/);
+    assert.match(r.carryWarning, new RegExp(task.id));
+    assert.equal(readTasks(join(t.wts, 'warn')).state.unpinned?.id, task.id);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+test('new without --carry: the task stays in the source checkout', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    t.mem(t.repo, ['handoff', 'plan', '--body', carryPlan('me quedo')]);
+    const task = taskOf(t, t.repo);
+    const r = t.run(['new', '--name', 'nocarry', '--base', 'main']);
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.carried, undefined);
+    assert.equal(readTasks(t.repo).state.unpinned?.id, task.id);
+    assert.ok(readMarker(t.repo, task.id));
+    assert.equal(readTasks(join(t.wts, 'nocarry')).state.unpinned, null);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+test('carry into a target with another unpinned task fails and keeps the task in the source', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    t.mem(t.repo, ['handoff', 'plan', '--body', carryPlan('origen')]);
+    const task = taskOf(t, t.repo);
+    const r = t.run(['new', '--name', 'ocupado', '--base', 'main']);
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(startTask(r.path, { id: 'otra-aaaaaa', goal: 'otra' }), true);
+    const moved = carryTask(t.repo, r.path, task.id);
+    assert.equal(moved.ok, false);
+    assert.equal(readTasks(t.repo).state.unpinned?.id, task.id);
+    assert.ok(readMarker(t.repo, task.id));
+    assert.equal(readTasks(r.path).state.unpinned?.id, 'otra-aaaaaa');
+    assert.equal(carryTask(t.repo, r.path, 'no-es-esa').ok, false);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+test('new --carry without a git remote: memory is not shared, so the task stays in the source', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    t.mem(t.repo, ['handoff', 'plan', '--body', carryPlan('sin remoto')]);
+    const task = taskOf(t, t.repo);
+    const r = t.run(['new', '--name', 'noremote', '--base', 'main', '--carry', task.id]);
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.match(r.carryError, /remoto/);
+    assert.equal(r.carried, undefined);
+    assert.equal(readTasks(t.repo).state.unpinned?.id, task.id);
+    assert.ok(readMarker(t.repo, task.id));
+    assert.equal(readTasks(join(t.wts, 'noremote')).state.unpinned, null);
+  } finally {
+    clean(t.dir);
+    clean(`${t.dir}/repo.worktrees`);
+  }
+});
+
+test('new --carry without a saved plan: carryError, worktree created, nothing moves', { skip: !hasGit }, async () => {
+  const t = setup();
+  try {
+    const r = t.run(['new', '--name', 'sinplan', '--base', 'main', '--carry', 'fantasma']);
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(typeof r.carryError, 'string');
+    assert.equal(r.carried, undefined);
+    assert.ok(existsSync(join(t.wts, 'sinplan')));
   } finally {
     clean(t.dir);
     clean(`${t.dir}/repo.worktrees`);

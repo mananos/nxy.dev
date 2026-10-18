@@ -11,7 +11,7 @@
  */
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ensureDir, nxyRuntimeDir } from '../../core/paths.mjs';
+import { ensureDir, nxyRuntimeDir, slug } from '../../core/paths.mjs';
 
 const savedPath = (cwd) => join(nxyRuntimeDir(cwd), 'handoff-saved.json');
 const safeId = (s) => String(s || 'unknown').replace(/[^\w.-]/g, '_').slice(0, 100);
@@ -45,7 +45,8 @@ export function markHandoffSaved(cwd, branch, ts = Date.now()) {
 /** When the live handoff of `branch` was last saved, or null when there is none. */
 export function handoffSavedTs(cwd, branch) {
   const m = readJson(savedPath(cwd));
-  return m && (m.branch || null) === (branch || null) && typeof m.ts === 'number' ? m.ts : null;
+  // Same normalizer as the verify/marker/baseline dirs (`slug`): keys must compare the way they are stored.
+  return m && slug(m.branch) === slug(branch) && typeof m.ts === 'number' ? m.ts : null;
 }
 
 /** @returns {{lastEditTs: number|null, remindedTs: number|null}} */

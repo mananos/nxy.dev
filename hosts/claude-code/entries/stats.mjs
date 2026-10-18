@@ -12,7 +12,9 @@ import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
 import { clip, estimatedNote, fmtDate, fmtDuration, fmtPct, fmtRatio, fmtTokens, fmtUsdPartial, parseArgs, table } from '../../../core/format.mjs';
 import { readJsonl } from '../../../core/jsonl.mjs';
+import { formatAgentTiming } from '../../../core/metrics/timing.mjs';
 import { nxyRuntimeDir } from '../../../core/paths.mjs';
+import { broadSearchesInTranscript, summarizeBroadSearches } from '../search-history.mjs';
 import { formatBreaks, formatTtlWhatIf, lastCacheTtl, parseSession, resolveSession, summarizeBreaks } from '../transcripts.mjs';
 import { ledgerUnavailableReason, readLedgerRows, rtkHistoryDbPath, savedPct, sessionSavings } from '../../../core/filter/ledger.mjs';
 
@@ -36,7 +38,7 @@ if (!ref) {
   console.error(`nxy: no session found (${selector}) for ${cwd}. Try --all or --session <id>.`);
   process.exit(1);
 }
-const s = parseSession(ref, { includeSubagents: !opts['no-agents'], cacheBreakThreshold: cfg.metrics.cacheBreakThreshold });
+const s = parseSession(ref, { includeSubagents: !opts['no-agents'], cacheBreakThreshold: cfg.metrics.cacheBreakThreshold, timing: true });
 if (!s.usage.calls && !opts.json) {
   console.log(`nxy stats — session ${s.sessionId.slice(0, 8)}: no API calls recorded yet (${s.turns} prompt${s.turns === 1 ? '' : 's'} sent). Numbers appear from the next turn on.`);
   process.exit(0);
@@ -50,6 +52,10 @@ const filter = summarizeFilter(filterRows);
 const ledgerRows = filter.byEngine.rtk ? readLedgerRows({ sinceMs: s.firstTs, untilMs: s.lastTs === null ? null : s.lastTs + 60_000 }) : null;
 const rtkSavings = ledgerRows ? sessionSavings(ledgerRows, s) : null;
 
+// Main-thread broad searches past the gate threshold, read from this session's own transcript.
+const broadThreshold = cfg.gate?.contextTokens ?? 0;
+const broadSearches = summarizeBroadSearches(broadSearchesInTranscript(ref.path, { threshold: broadThreshold }), broadThreshold);
+
 // The two numbers that drive cost: how much context each call carries and how many calls a turn takes.
 const shape = {
   callsPerTurn: s.turns ? s.usage.calls / s.turns : null,
@@ -59,7 +65,7 @@ const shape = {
 };
 
 if (opts.json) {
-  console.log(JSON.stringify({ ...s, shape, filter, rtkSavings, cacheTtl: lastCacheTtl(ref.path) }, null, 2));
+  console.log(JSON.stringify({ ...s, shape, broadSearches, filter, rtkSavings, cacheTtl: lastCacheTtl(ref.path) }, null, 2));
   process.exit(0);
 }
 
@@ -131,6 +137,9 @@ if (Object.keys(s.byAgentType).length) {
     { key: 'tokens', label: 'tokens', align: 'right', fmt: fmtTokens }, { key: 'usd', label: usdLabel, align: 'right', fmt: (v, r) => fmtUsdPartial(v, r.usdPartial, r.usdEstimated) }, { key: 'dur', label: 'time', align: 'right', fmt: fmtDuration },
   ]));
   out.push('');
+  out.push('SUBAGENT TIME');
+  for (const l of formatAgentTiming(s.agentTiming)) out.push(l);
+  out.push('');
 }
 
 if (Object.keys(s.bySkill).length) {
@@ -142,6 +151,10 @@ if (Object.keys(s.bySkill).length) {
 const toolList = Object.entries(s.tools.calls).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ');
 out.push(`TOOLS: ${toolList || 'none'}`);
 out.push(`  files read (distinct): ${s.tools.filesRead.length} · files edited: ${s.tools.filesEdited.length} (by main ${s.tools.filesEditedMain.length}) · Bash calls ${s.tools.bash.calls} → ${fmtTokens(s.tools.bash.resultLines)} lines / ${fmtTokens(s.tools.bash.resultChars)} chars back${s.tools.bash.interrupted ? ` · ${s.tools.bash.interrupted} interrupted` : ''}`);
+if (broadSearches.count) {
+  const kinds = Object.entries(broadSearches.byKind).map(([t, n]) => `${t} ${n}`).join(' · ');
+  out.push(`  broad searches in the main thread (above ${fmtTokens(broadSearches.threshold)} context): ${broadSearches.count} — ${kinds} · context carried at those searches ${fmtTokens(broadSearches.contextTokens)} tokens (sum of context size, an upper bound)`);
+}
 out.push('');
 
 out.push(`FILTER (nxy hook rows for this session): ${filter.rows}`);

@@ -8,6 +8,7 @@
  */
 import { join } from 'node:path';
 import { PLUGIN_ROOT, gitBranch } from '../../core/paths.mjs';
+import { activeTask } from './tasks.mjs';
 
 const MEM = join(PLUGIN_ROOT, 'hosts', 'claude-code', 'entries', 'mem.mjs').replace(/\\/g, '/');
 
@@ -36,10 +37,11 @@ export async function lookupHandoff(cwd) {
   const { openStore } = await import('../../core/memory/store.mjs');
   const { liveHandoff } = await import('../../core/memory/handoff.mjs');
   const project = projectKey(cwd).key;
+  const task = activeTask(cwd);
   const branch = gitBranch(cwd);
   const db = openStore();
   try {
-    return { project, branch, handoff: liveHandoff(db, project, branch) };
+    return { project, branch, task, handoff: liveHandoff(db, project, task.id) };
   } finally {
     db.close();
   }

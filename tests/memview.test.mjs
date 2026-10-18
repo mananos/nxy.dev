@@ -3,7 +3,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseHits, parseMemIds, memResultRows, memDetailLines, hitRows, clipOutput } from '../core/memview.mjs';
+import { parseHits, parseMemIds, memResultRows, memDetailLines, memDeleteQuestion, hitRows, clipOutput } from '../core/memview.mjs';
+
+test('memDeleteQuestion: archived or plain memory asks once; a live handoff adds the task sentence', () => {
+  assert.equal(memDeleteQuestion({ id: 'd-1', type: 'decision', title: 'T' }), '¿Borrar «T»? No se puede deshacer.');
+  assert.doesNotMatch(memDeleteQuestion({ id: 'handoff-done-x', type: 'handoff', title: 'feature: A' }), /vivo/);
+  assert.match(memDeleteQuestion({ id: 'handoff-abc', type: 'handoff', title: 'handoff: A' }), /handoff vivo de una tarea: se borran también su plan y su estado en este checkout \(el de otros worktrees no se borra\)/);
+});
 
 test('parseHits: backticks optional, drive letters, symbol of the same line, de-duplicated, max 10', () => {
   const text = [

@@ -232,18 +232,22 @@ export function searchMemories(db, query, opts = {}) {
  * The index: one line per memory, newest first, no bodies.
  * This is what a session can afford to carry; bodies are fetched on demand.
  * @param {import('node:sqlite').DatabaseSync} db
- * @param {{project?: string|null, areas?: string[], allAreas?: boolean, limit?: number, scope?: Scope|null, type?: string|null}} [opts]
+ * @param {{project?: string|null, areas?: string[], allAreas?: boolean, limit?: number|null, scope?: Scope|null, type?: string|null, excludeType?: string|null, keywordsOnly?: boolean}} [opts]  limit null = no cap
  */
 export function listMemories(db, opts = {}) {
   const scope = scopeClause(opts);
   const only = opts.scope ? ' AND scope = ?' : '';
   const ofType = opts.type ? ' AND type = ?' : '';
+  const notType = opts.excludeType ? ' AND type <> ?' : '';
+  const withKw = opts.keywordsOnly ? " AND TRIM(keywords) <> ''" : '';
+  // limit: null means no cap (SQLite reads -1 as unlimited).
+  const limit = opts.limit === null ? -1 : (opts.limit ?? 200);
   const rows = db.prepare(`
     SELECT * FROM memories
-    WHERE ${scope.sql}${only}${ofType}
+    WHERE ${scope.sql}${only}${ofType}${notType}${withKw}
     ORDER BY updated DESC
     LIMIT ?
-  `).all(...scope.params, ...(opts.scope ? [opts.scope] : []), ...(opts.type ? [opts.type] : []), opts.limit ?? 200);
+  `).all(...scope.params, ...(opts.scope ? [opts.scope] : []), ...(opts.type ? [opts.type] : []), ...(opts.excludeType ? [opts.excludeType] : []), limit);
   return rows.map(rowToMemory);
 }
 

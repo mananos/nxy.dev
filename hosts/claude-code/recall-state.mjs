@@ -110,6 +110,92 @@ export function noteFetch(cwd, id, now = Date.now(), purpose = null) {
   return [...recent];
 }
 
+/** Records a `mem related` lookup (the planner asking for closed tasks) and the task ids it delivered. */
+export function noteRelated(cwd, ids) {
+  try {
+    appendJsonl(recallLedgerPath(cwd), { ts: Date.now(), ev: 'related', ids });
+  } catch {
+    /* telemetry */
+  }
+}
+
+const MAX_ASKED = 200;
+const chatRulesPath = (cwd) => join(nxyRuntimeDir(cwd), 'chat-rules-asked.json');
+
+/**
+ * True only the first time for a task: the chat-rules question is asked once per task. Task ids
+ * are kept per checkout (last 200, a few KB, never committed).
+ * @param {string} cwd
+ * @param {string} taskId
+ */
+export function claimChatRulesAsk(cwd, taskId) {
+  try {
+    let ids = [];
+    try {
+      const s = JSON.parse(readFileSync(chatRulesPath(cwd), 'utf8'));
+      if (Array.isArray(s)) ids = s.map(String);
+    } catch {
+      /* none yet */
+    }
+    if (ids.includes(taskId)) return false;
+    ensureDir(nxyRuntimeDir(cwd));
+    writeFileSync(chatRulesPath(cwd), JSON.stringify([...ids, taskId].slice(-MAX_ASKED)), 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Records the rules offered from the chat (the labels of the question's options). */
+export function noteChatOffers(cwd, rules) {
+  if (!rules.length) return;
+  try {
+    appendJsonl(recallLedgerPath(cwd), { ts: Date.now(), ev: 'convention-offer', source: 'chat', rules });
+  } catch {
+    /* telemetry */
+  }
+}
+
+/** Records the plan decisions offered as conventions at a checkpoint. */
+export function noteConventionOffers(cwd, rules, source = 'plan') {
+  if (!rules.length) return;
+  try {
+    appendJsonl(recallLedgerPath(cwd), { ts: Date.now(), ev: 'convention-offer', source, rules });
+  } catch {
+    /* telemetry */
+  }
+}
+
+/** Records a convention saved to memory. */
+export function noteConventionSave(cwd, title) {
+  try {
+    appendJsonl(recallLedgerPath(cwd), { ts: Date.now(), ev: 'convention-save', title });
+  } catch {
+    /* telemetry */
+  }
+}
+
+const fold = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+
+/**
+ * Conventions offered vs saved. Offers count distinct folded rule texts, so a checkpoint printed
+ * again does not count twice.
+ * @param {string} cwd
+ * @param {number} [sinceMs]
+ * @param {number} [now]
+ */
+export function conventionSummary(cwd, sinceMs = 30 * 86_400_000, now = Date.now()) {
+  const rows = readLedger(cwd).filter((r) => now - r.ts <= sinceMs);
+  const plans = new Set();
+  const chat = new Set();
+  for (const r of rows) {
+    if (r.ev !== 'convention-offer' || !Array.isArray(r.rules)) continue;
+    for (const rule of r.rules) (r.source === 'chat' ? chat : plans).add(fold(rule));
+  }
+  const saved = new Set(rows.filter((r) => r.ev === 'convention-save').map((r) => fold(r.title)));
+  return { offered: plans.size + chat.size, fromPlans: plans.size, fromChat: chat.size, saved: saved.size };
+}
+
 /** @returns {any[]} */
 function readLedger(cwd) {
   try {
@@ -153,5 +239,10 @@ export function recallSummary(cwd, sinceMs = 30 * 86_400_000, now = Date.now()) 
   }
   const announced = (g) => pointerRows.some((r) => (r.ids || []).includes(g.id) && r.ts <= g.ts && g.ts - r.ts <= CO_USE_WINDOW_MS);
   const missed = gets.filter((g) => !announced(g));
-  return { pointers, followed, tokens, misses: missed.length, missesBySearch: missed.filter((g) => g.for === 'search').length };
+  const relatedRows = rows.filter((r) => r.ev === 'related');
+  const relatedTasks = relatedRows.reduce((n, r) => n + (Array.isArray(r.ids) ? r.ids.length : 0), 0);
+  return {
+    pointers, followed, tokens, misses: missed.length, missesBySearch: missed.filter((g) => g.for === 'search').length,
+    related: relatedRows.length, relatedTasks,
+  };
 }

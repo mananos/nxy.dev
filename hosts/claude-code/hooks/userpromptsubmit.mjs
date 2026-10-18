@@ -4,7 +4,7 @@
  * UserPromptSubmit hook: recall by prompt (core/memory/recall.mjs).
  *
  * Before each message reaches the model, looks for memories that deserve a pointer — by the files
- * the prompt names or the session has been editing, by keywords, by shared words — and puts up to
+ * the prompt names or the session has been editing, or by keywords — never by loose words — and puts up to
  * three one-line pointers in front of it. The body is never injected in `assisted` mode: the model
  * loads it with `mem get` if it is worth it.
  *
@@ -17,7 +17,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../../../core/config.mjs';
-import { gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
+import { taskKey } from '../tasks.mjs';
 import { areaFor, projectKey } from '../../../core/memory/scope.mjs';
 import { memCommand, reviewCommand } from '../handoff.mjs';
 import { takeNotes } from '../agent-notes.mjs';
@@ -78,7 +79,7 @@ process.exit(0);
 function escapeReminder(cwd, session) {
   try {
     const review = JSON.parse(readFileSync(join(nxyRuntimeDir(cwd), 'review.json'), 'utf8'));
-    if (!review || review.branch !== gitBranch(cwd) || Date.now() - Number(review.ts) > 30 * 86_400_000) return null;
+    if (!review || review.branch !== taskKey(cwd) || Date.now() - Number(review.ts) > 30 * 86_400_000) return null;
     const markPath = join(nxyRuntimeDir(cwd), 'escape-reminded.json');
     /** @type {string[]} */
     let seen = [];

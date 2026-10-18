@@ -17,6 +17,7 @@ import { APPROVE, approvalQuestion, parseBatches, planHash, validatePlan } from 
 import { afterBatch } from '../core/verify.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
 import { readVerify } from '../hosts/claude-code/verify-state.mjs';
+import { taskKey } from '../hosts/claude-code/tasks.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = join(ROOT, 'hosts', 'claude-code', 'hooks');
@@ -123,10 +124,10 @@ test('a batch verdict keeps the dispatch time as launched, also after a send-bac
   s.node([MEM, 'handoff', 'plan'], PLAN);
   const before = Date.now();
   assert.equal(s.dispatch('Batch 1 — contract')?.permissionDecision, 'allow');
-  const running = readVerify(s.repo, 'feature/x', planHash(PLAN)).batches['1'];
+  const running = readVerify(s.repo, taskKey(s.repo), planHash(PLAN)).batches['1'];
   assert.equal(running.status, 'running');
   s.finish(1, false); // red: sent back once, then recorded again on the second stop
-  const verdict = readVerify(s.repo, 'feature/x', planHash(PLAN)).batches['1'];
+  const verdict = readVerify(s.repo, taskKey(s.repo), planHash(PLAN)).batches['1'];
   assert.notEqual(verdict.status, 'running');
   assert.equal(verdict.launched, running.ts);
   assert.ok(verdict.launched >= before && verdict.ts >= verdict.launched);

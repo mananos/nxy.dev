@@ -12,7 +12,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { exportableMemories, listMemories, openStore, searchMemories } from '../core/memory/store.mjs';
+import { exportableMemories, getMemory, listMemories, openStore, searchMemories } from '../core/memory/store.mjs';
+import { edgesOf, fileNode } from '../core/memory/graph.mjs';
 import {
   CONTEXT_CLOSE, CONTEXT_OPEN, MAX_INJECT_LINES, TEMPLATE, age, archiveHandoff, decideHandoff, handoffDenyMessage,
   handoffId, liveHandoff, saveHandoff, sessionStartContext, stripContextBlock, subagentContextBlock, validateHandoff,
@@ -58,16 +59,16 @@ test('validateHandoff: requires only route and Next, warns on length', () => {
 
 test('save replaces, done archives and keeps it searchable, private by default', () => {
   const db = store();
-  const first = saveHandoff(db, { project: PROJECT, branch: 'feature/x', body: BODY });
+  const first = saveHandoff(db, { project: PROJECT, key: 'feature/x', body: BODY });
   assert.equal(first.created, true);
-  const second = saveHandoff(db, { project: PROJECT, branch: 'feature/x', body: BODY.replace('- hooks', '- tests') });
+  const second = saveHandoff(db, { project: PROJECT, key: 'feature/x', body: BODY.replace('- hooks', '- tests') });
   assert.equal(second.created, false, 'a new handoff replaces the old one');
   assert.equal(listMemories(db, { project: PROJECT }).length, 1);
   assert.match(liveHandoff(db, PROJECT, 'feature/x')?.body || '', /- tests/);
   assert.equal(liveHandoff(db, PROJECT, 'main'), null, 'other branch, other task');
 
   assert.equal(exportableMemories(db, PROJECT).length, 0, 'working state does not reach the repo unless shared');
-  saveHandoff(db, { project: PROJECT, branch: 'feature/shared', body: BODY, share: true });
+  saveHandoff(db, { project: PROJECT, key: 'feature/shared', body: BODY, share: true });
   assert.equal(exportableMemories(db, PROJECT).length, 1, '--share is the deliberate way to pass a task on');
 
   const archived = archiveHandoff(db, PROJECT, 'feature/x', Date.UTC(2026, 8, 24));
@@ -78,9 +79,47 @@ test('save replaces, done archives and keeps it searchable, private by default',
   assert.equal(archiveHandoff(db, PROJECT, 'feature/x'), null, 'archiving twice is a no-op');
 });
 
+const PLAN = [
+  '## Plan',
+  'Goal: Task identity instead of branch',
+  'Decisions:',
+  '- [repo] Never overwrite a live task — a second plan is refused',
+  '### Batch 1 — core',
+  '- `core/tasks.mjs` — new',
+  'Accept: `npm test`',
+].join('\n');
+
+test('archiveHandoff: feature title from the Goal, decision keywords, files touched and file edges', () => {
+  const db = store();
+  const body = `${BODY}\n\n${PLAN}`;
+  saveHandoff(db, { project: PROJECT, key: 'task-abc123', label: 'Task identity instead of branch', body });
+  assert.equal(liveHandoff(db, PROJECT, 'task-abc123')?.title, 'handoff: Task identity instead of branch', 'label wording');
+
+  const files = ['core/tasks.mjs', 'core\\paths.mjs', ...Array.from({ length: 45 }, (_, i) => `src/f${i}.mjs`)];
+  const id = archiveHandoff(db, PROJECT, 'task-abc123', Date.UTC(2026, 9, 17), { branch: 'feature/a', files, root: null });
+  assert.ok(id);
+  assert.equal(liveHandoff(db, PROJECT, 'task-abc123'), null);
+  const m = getMemory(db, id);
+  assert.equal(m?.title, 'feature: Task identity instead of branch · feature/a · 2026-10-17');
+  assert.match(m?.keywords || '', /handoff feature/);
+  assert.match(m?.keywords || '', /Never overwrite a live task/, 'decision rules are findable');
+  assert.match(m?.keywords || '', /feature a/);
+  assert.ok((m?.keywords || '').length <= 300);
+  assert.match(m?.body || '', /## Goal|Goal: Task identity/, 'the plan is kept');
+  assert.match(m?.body || '', /## Files touched\n- core\/tasks\.mjs\n- core\/paths\.mjs/, 'backslashes normalised');
+  assert.match(m?.body || '', /… 7 more$/, 'capped at 40 lines');
+  const edges = edgesOf(db, id).filter((e) => e.kind === 'file').map((e) => e.dst);
+  assert.ok(edges.includes(fileNode('core/paths.mjs')), 'file edge for a touched file');
+  assert.ok(searchMemories(db, 'identity', { project: PROJECT, type: 'handoff' }).some((x) => x.id === id));
+
+  saveHandoff(db, { project: PROJECT, key: 'legacy', body: BODY });
+  const legacy = archiveHandoff(db, PROJECT, 'legacy', Date.UTC(2026, 9, 17));
+  assert.equal(getMemory(db, legacy || '')?.title, 'handoff (done): legacy — 2026-10-17', 'no Goal: the old title');
+});
+
 test('sessionStartContext: nothing / one line / full body by mode', () => {
   const db = store();
-  saveHandoff(db, { project: PROJECT, branch: 'feature/x', body: BODY });
+  saveHandoff(db, { project: PROJECT, key: 'feature/x', body: BODY });
   const h = liveHandoff(db, PROJECT, 'feature/x');
   const now = (h?.updated || 0) + 2 * 3_600_000;
 
@@ -132,7 +171,7 @@ function sandbox(contextTokens = 150_000) {
   });
   const save = () => {
     const db = openStore({ path: join(dir, 'home', 'memory', 'memory.db') });
-    saveHandoff(db, { project: 'github.com/mananos/nxy.dev', branch: 'feature/x', body: BODY });
+    saveHandoff(db, { project: 'github.com/mananos/nxy.dev', key: 'feature/x', body: BODY });
     db.close();
   };
   return { dir, repo, transcript, run, save };
@@ -197,7 +236,7 @@ test('agent hook: denies only the implementer, only past the threshold, only wit
 
 test('subagentContextBlock / stripContextBlock: fresh, bounded, never duplicated', () => {
   const db = store();
-  saveHandoff(db, { project: PROJECT, branch: 'feature/x', body: BODY });
+  saveHandoff(db, { project: PROJECT, key: 'feature/x', body: BODY });
   const h = liveHandoff(db, PROJECT, 'feature/x');
   if (!h) throw new Error('no handoff');
   const block = subagentContextBlock(h, 'CMD show', h.updated + 3 * 3_600_000);
@@ -257,7 +296,7 @@ test('sessionstart hook: a pointer only when there is a handoff, nothing in manu
   s.save();
   const ctx = JSON.parse(s.run('sessionstart.mjs', {})).hookSpecificOutput;
   assert.equal(ctx.hookEventName, 'SessionStart');
-  assert.match(ctx.additionalContext, /handoff for branch `feature\/x`.*handoff show/);
+  assert.match(ctx.additionalContext, /handoff for `feature\/x`.*handoff show/);
 
   mkdirSync(join(s.repo, '.nxy'), { recursive: true });
   writeFileSync(join(s.repo, '.nxy', 'config.json'), JSON.stringify({ memory: { mode: 'manual' } }));
@@ -282,7 +321,7 @@ test('cli round trip: save from a subdirectory, pointer after /clear, show, proa
   assert.equal(rows().length, 1);
 
   const clear = JSON.parse(s.run('sessionstart.mjs', { source: 'clear' })).hookSpecificOutput.additionalContext;
-  assert.match(clear, /handoff for branch `feature\/x`.*handoff show/);
+  assert.match(clear, /handoff for `feature\/x`.*handoff show/);
   assert.ok(!clear.includes('the rule'), 'assisted mode: a pointer, not the body');
 
   for (const dir of [sub, s.repo]) {

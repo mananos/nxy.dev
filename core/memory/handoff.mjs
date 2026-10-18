@@ -19,7 +19,8 @@
  */
 import { createHash } from 'node:crypto';
 import { getMemory, deleteMemory, saveMemory } from './store.mjs';
-import { extractPlan } from '../plan.mjs';
+import { extractPlan, parseDecisions, parseGoal } from '../plan.mjs';
+import { addEdge, deriveEdges, fileNode } from './graph.mjs';
 
 /** What the model may declare. `inline` = the main thread edits; `implementer` = it delegates. */
 export const ROUTES = ['inline', 'implementer'];
@@ -43,13 +44,13 @@ export const TEMPLATE = [
 const NO_BRANCH = '(no branch)';
 
 /**
- * Deterministic id of the live handoff: readable slug of the branch plus a hash of project+branch,
- * so two repos with a `main` branch never collide.
+ * Deterministic id of the live handoff: readable slug of the key plus a hash of project+key, so two
+ * repos with the same key never collide. The key is the task id (or, for a legacy handoff, the branch).
  * @param {string} project
- * @param {string|null} branch
+ * @param {string|null} key
  */
-export function handoffId(project, branch) {
-  const b = branch || NO_BRANCH;
+export function handoffId(project, key) {
+  const b = key || NO_BRANCH;
   const slug = b.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'branch';
   const hash = createHash('sha1').update(`${project}\n${b}`).digest('hex').slice(0, 8);
   return `handoff-${slug}-${hash}`;
@@ -105,30 +106,30 @@ export function validateHandoff(body) {
 }
 
 /**
- * The live handoff for this project and branch, or null.
+ * The live handoff for this project and task, or null.
  * @param {import('node:sqlite').DatabaseSync} db
  * @param {string} project
- * @param {string|null} branch
+ * @param {string|null} key   task id (or branch for a legacy handoff)
  */
-export function liveHandoff(db, project, branch) {
-  return getMemory(db, handoffId(project, branch));
+export function liveHandoff(db, project, key) {
+  return getMemory(db, handoffId(project, key));
 }
 
 /**
  * Saves (replaces) the live handoff. Callers validate first; this stores whatever it is given.
  * @param {import('node:sqlite').DatabaseSync} db
- * @param {{project: string, branch: string|null, body: string, share?: boolean}} h
+ * @param {{project: string, key: string|null, label?: string, body: string, share?: boolean}} h
  */
 export function saveHandoff(db, h) {
-  const branch = h.branch || NO_BRANCH;
+  const label = h.label || h.key || NO_BRANCH;
   return saveMemory(db, {
-    id: handoffId(h.project, h.branch),
+    id: handoffId(h.project, h.key),
     scope: 'project',
     project: h.project,
     type: 'handoff',
-    title: `handoff: ${branch}`,
+    title: `handoff: ${label}`,
     body: String(h.body).replace(/\r\n/g, '\n').trim(),
-    keywords: `handoff ${branch.replace(/[/_-]+/g, ' ')}`,
+    keywords: `handoff ${label.replace(/[/_-]+/g, ' ')}`,
     private: !h.share,
   });
 }
@@ -138,23 +139,53 @@ export function saveHandoff(db, h) {
  * searchable (`mem search --type handoff`), which is how a PR comment weeks later finds its task.
  * @param {import('node:sqlite').DatabaseSync} db
  * @param {string} project
- * @param {string|null} branch
+ * @param {string|null} key   task id (or branch for a legacy handoff)
  * @param {number} [now]
+ * @param {{branch?: string|null, files?: string[], root?: string|null}} [o]  real branch, files touched, repo root for edges
  * @returns {string|null} the archived id, or null when there was no live handoff
  */
-export function archiveHandoff(db, project, branch, now = Date.now()) {
-  const live = liveHandoff(db, project, branch);
+export function archiveHandoff(db, project, key, now = Date.now(), o = {}) {
+  const live = liveHandoff(db, project, key);
   if (!live) return null;
   const id = `${live.id}-done-${now.toString(36)}`;
+  const plan = extractPlan(live.body);
+  const goal = plan ? parseGoal(plan) : '';
+  const branch = o.branch || key || NO_BRANCH;
+  const files = (o.files || []).map((f) => String(f).replace(/\\/g, '/'));
+  let body = live.body;
+  if (files.length) {
+    const shown = files.slice(0, MAX_FILES_TOUCHED);
+    body = `${body}\n\n## Files touched\n${shown.map((f) => `- ${f}`).join('\n')}${files.length > shown.length ? `\n… ${files.length - shown.length} more` : ''}`;
+  }
+  const words = (s) => String(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const rules = plan ? parseDecisions(plan).map((d) => d.rule) : [];
+  const keywords = `handoff feature ${[goal, ...rules, branch].map(words).join(' ')}`.replace(/\s+/g, ' ').slice(0, 300).trim();
   saveMemory(db, {
     ...live,
     id,
-    title: `handoff (done): ${branch || NO_BRANCH} — ${new Date(now).toISOString().slice(0, 10)}`,
+    title: archiveTitle({ goal, branch, now }),
+    body,
+    keywords,
     created: live.created,
     updated: now,
   });
   deleteMemory(db, live.id);
+  deriveEdges(db, { id, body }, o.root ?? null);
+  for (const f of files) addEdge(db, id, fileNode(f), 'file');
   return id;
+}
+
+/** Most touched files listed in an archived feature; the rest is a count. */
+const MAX_FILES_TOUCHED = 40;
+
+/**
+ * Title of an archived task: the feature it delivered, findable by its Goal.
+ * @param {{goal?: string, branch?: string|null, now: number}} o
+ */
+export function archiveTitle({ goal, branch, now }) {
+  const date = new Date(now).toISOString().slice(0, 10);
+  const b = branch || NO_BRANCH;
+  return goal ? `feature: ${goal} · ${b} · ${date}` : `handoff (done): ${b} — ${date}`;
 }
 
 /** "3 min" / "2 h" / "4 d": precise enough to tell a fresh handoff from a stale one. */
@@ -180,9 +211,9 @@ export function age(ms) {
  */
 export function sessionStartContext(mode, h, showCmd, now = Date.now()) {
   if (!h || mode === 'manual') return null;
-  const branch = h.title.replace(/^handoff:\s*/, '');
+  const label = h.title.replace(/^handoff:\s*/, '');
   const { route, lines } = validateHandoff(h.body);
-  const head = `nxy: there is a handoff for branch \`${branch}\` from ${age(now - h.updated)} ago (${lines} lines, route: ${route || '?'}).`;
+  const head = `nxy: there is a handoff for \`${label}\` from ${age(now - h.updated)} ago (${lines} lines, route: ${route || '?'}).`;
   if (mode === 'proactive') return `${head}\n\n${h.body}`;
   return `${head} If the user wants to resume that work, load it with: ${showCmd}`;
 }
@@ -235,7 +266,7 @@ export const MAX_INJECT_LINES = 60;
  * @param {string} [sheet]   sections appended at the end: the plan's progress (0.4.5) and the conventions sheet (0.4.3), already capped
  */
 export function subagentContextBlock(h, showCmd, now = Date.now(), sheet = '') {
-  const branch = h.title.replace(/^handoff:\s*/, '');
+  const label = h.title.replace(/^handoff:\s*/, '');
   const plan = extractPlan(h.body);
   const rest = plan ? h.body.replace(plan, '').trim() : h.body;
   const lines = rest.split('\n');
@@ -245,7 +276,7 @@ export function subagentContextBlock(h, showCmd, now = Date.now(), sheet = '') {
   const body = plan ? `${cut}\n\n${plan}` : cut;
   return [
     CONTEXT_OPEN,
-    `Task handoff for branch \`${branch}\` (updated ${age(now - h.updated)} ago). Its decisions are settled: do not reopen them.`,
+    `Task handoff for \`${label}\` (updated ${age(now - h.updated)} ago). Its decisions are settled: do not reopen them.`,
     'Use its files as starting points; do not read them all. Your own request below is what you must do.',
     '',
     body,
@@ -274,10 +305,10 @@ export function decideStop(s) {
   return { block: true, reason: 'handoff-stale' };
 }
 
-/** @param {string|null} branch @param {string} showCmd @param {string} saveCmd */
-export function staleHandoffMessage(branch, showCmd, saveCmd) {
+/** @param {string|null} label task label (or branch) @param {string} showCmd @param {string} saveCmd */
+export function staleHandoffMessage(label, showCmd, saveCmd) {
   return [
-    `nxy: this session edited files after the handoff of \`${branch || '(no branch)'}\` was last saved. Before ending the turn, bring it up to date so /clear or a new session picks up from here:`,
+    `nxy: this session edited files after the handoff of \`${label || '(no branch)'}\` was last saved. Before ending the turn, bring it up to date so /clear or a new session picks up from here:`,
     `  1. \`${showCmd}\`  2. update Done / Next / Files / Decisions (the plan and its progress are kept by nxy: leave them)  3. save it with \`${saveCmd}\` (heredoc).`,
     'Then end the turn. This is asked once.',
   ].join('\n');

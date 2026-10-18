@@ -155,6 +155,28 @@ export function memoriesForFiles(db, files) {
 }
 
 /**
+ * Like memoriesForFiles, but keeps every file that matched per memory.
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string[]} files  repo-relative
+ * @returns {Map<string, string[]>}  memory id → the matching files
+ */
+export function fileHitsByMemory(db, files) {
+  /** @type {Map<string, string[]>} */
+  const out = new Map();
+  if (!files.length) return out;
+  const nodes = files.map(fileNode);
+  const rows = db.prepare(`SELECT src, dst FROM edges WHERE kind = 'file' AND dst IN (${nodes.map(() => '?').join(',')})`).all(...nodes);
+  for (const r of rows) {
+    const id = String(r.src);
+    const f = String(r.dst).slice(FILE_PREFIX.length);
+    const list = out.get(id) || [];
+    if (!list.includes(f)) list.push(f);
+    out.set(id, list);
+  }
+  return out;
+}
+
+/**
  * One hop of neighbours of a memory, strongest first: explicit and judged edges, then two
  * memories sharing a file, then co-use seen at least twice (once is coincidence).
  * @param {import('node:sqlite').DatabaseSync} db

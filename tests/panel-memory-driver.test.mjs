@@ -68,6 +68,26 @@ test('first visit to Memoria loads recent and the handoff; a memory opens and go
   assert.match(panelText(d.panel()), /Use SQLite/);
 });
 
+test('Borrar asks first; confirm-yes runs mem delete <id> and returns to the list', async () => {
+  const w = world();
+  w.outs['mem:list'] = { ok: true, query: '', results: [MEM] };
+  w.outs['mem:handoff'] = { ok: true, exists: false, label: 'main' };
+  w.outs['mem:get'] = { ok: true, memory: { ...MEM, body: 'the body of the memory', private: false }, edges: [], files: [] };
+  const d = await w.driver();
+  await d.press('tab:memory');
+  await d.press('mem-delete');
+  assert.ok(!w.runs.some((r) => r.includes('delete')), 'nothing open: no run');
+  await d.press('mem:dec-1');
+  await d.press('mem-delete');
+  assert.ok(!w.runs.some((r) => r.includes('delete')), 'asks first');
+  assert.match(panelText(d.panel()), /¿Borrar «Use SQLite»\?/);
+  await d.press('confirm-yes');
+  const run = w.runs.find((r) => r.includes('delete'));
+  assert.ok(run && run.includes('dec-1') && run.includes('--cwd'));
+  assert.doesNotMatch(panelText(d.panel()), /the body of the memory/);
+  assert.match(panelText(d.panel()), /Use SQLite/);
+});
+
 test('locate shows the hits; an unparsable stdout is an error state, not a throw', async () => {
   const w = world();
   w.outs.locate = { ok: true, question: 'where', hits: [{ path: 'core/a.mjs', line: 7, kind: 'function', name: 'foo', source: 'index' }], terms: [], degraded: [], ms: 12, codegraph: 'x' };

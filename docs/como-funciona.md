@@ -83,6 +83,18 @@ Cada respuesta de la API deja en el transcript (`~/.claude/projects/**/*.jsonl`)
 
 **¿Conviene la cache de 1 hora?** (`core/metrics/cache-ttl.mjs`). Claude Code elige el TTL por separado para la conversación principal (`promptCacheTtl`) y para los subagentes (`subagentPromptCacheTtl`). Para la principal, nxy recalcula cada llamada que escribió con 5 minutos: esa escritura se paga a la tarifa de 1 hora (1,6× la de 5 minutos) y, si la llamada vino después de una pausa de 5 a 60 minutos, el prefijo que había dejado la llamada anterior pasa a ser lectura (un décimo del input) y sólo se escribe lo nuevo. Una pausa de más de una hora o una compactación reescriben igual con cualquier TTL. Con eso compara los dos totales: si la hora ahorra 1 % o más dice **worth it** y la línea exacta para `~/.claude/settings.json`; si cuesta más, **not worth it here**; en el medio, **about the same**. El umbral del 1 % es fijo: no hay nada que calibrar.
 
+**Tiempo por subagente** (`core/metrics/timing.mjs`). `/nxy:stats` imprime `SUBAGENT TIME` y `/nxy:trend --by agent` hace lo mismo sobre todo el período: para cada tipo de subagente (implementer, planner, scout...) dice cuántas corridas hubo, la mediana, el p90 y el máximo, y en qué se fue el tiempo. Sale de los transcripts de los subagentes, sin medir nada aparte:
+
+| Columna | Qué es |
+| --- | --- |
+| `model %` | El modelo generando (de la última cosa que recibió hasta su último fragmento de respuesta) |
+| `bash %` | Comandos de Bash/PowerShell, del pedido a su resultado |
+| `tools %` | Las demás herramientas (Read, Grep, Edit...) |
+| `waiting %` | Todo lo demás: tiempo sin nada en curso |
+| `locate` | `X/N`: en cuántas de las N corridas se usó `locate.mjs` |
+
+Los cuatro porcentajes suman el 100 % del tiempo de pared. Si un comando corre mientras el modelo sigue escribiendo, se cuenta una sola vez, como comando. Debajo van los comandos más lentos (los 5 mayores, con su tipo de agente): ahí se ve, por ejemplo, que un `./mvnw test` se llevó 4 minutos del lote. Cuando el servicio frena por límite de uso, esa pausa (a veces horas) no es trabajo del agente: se excluye del tiempo y se cuenta aparte en `usage-limit stops excluded: N`, que sólo aparece si N > 0. Qué hacer: si domina `bash %`, mirá los comandos lentos; si domina `waiting %`, hay agentes esperando algo ajeno al modelo.
+
 ## El scout y el índice
 
 `/nxy:locate` despacha el agente `scout` (Haiku), que antes de leer nada corre `locate.mjs`, tres buscadores que no gastan tokens:
@@ -97,6 +109,8 @@ Con esos candidatos lee 2 o 3 archivos con `offset`/`limit` y devuelve hasta 5 `
 
 **El índice** vive en `.nxy/local/index/`, respeta `.gitignore`, se arma solo la primera vez y después relee sólo los archivos que cambiaron (por fecha y tamaño). Extrae símbolos con expresiones regulares por lenguaje: JS/TS/JSX/TSX, Java, Scala, Python, Go y C#. Un lenguaje que no conoce no rompe nada: `rg` sigue funcionando.
 
+**El aviso al planner.** El planner también puede perderse en un `grep` de todo el repo. Si su primera búsqueda es un grep amplio (`Grep` sin archivo, o `rg`/`grep -r`/`git grep` por Bash) y todavía no corrió `locate.mjs`, el hook la rechaza una vez con el comando exacto de `locate.mjs` ya armado (el mensaje empieza con `nxy locate nudge:`). Después deja pasar todo: si el planner corrió `locate.mjs` o cualquier otra búsqueda antes, no se lo avisa. Nunca se aplica al principal ni a otros agentes. El estado es `.nxy/local/planner-nudge.json` (una entrada por ejecución del planner, las de más de 24 h se borran al escribir: unos pocos cientos de bytes). El planner se identifica por `agent_type` o, si falta, por el `.meta.json` de su transcript. En `/nxy:stats` la columna `locate` te dice en cuántas corridas del planner se usó `locate.mjs`.
+
 **codegraph** se usa sólo por CLI y sólo desde adentro del scout, donde su salida muere con el subagente. Conectado como servidor MCP (`codegraph install`) sumaría la descripción de su herramienta a cada turno del principal.
 
 **Instalar y reinstalar** (`/nxy:setup`, Config › Herramientas). `core/setup.mjs` arma un plan puro por herramienta, sistema operativo y gestor de paquetes (winget; brew; apt-get, dnf o pacman, en ese orden), con los instaladores oficiales del README. El choque se detecta reusando `detectRtkHook` del filtro (rtk) y buscando `codegraph` en `mcpServers` o en comandos de hooks (codegraph). La celda distingue tres choques: `choca: hook de rtk` (`rtk init -g --uninstall` si es global; nota manual si está en el proyecto), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) y `choca: hook en settings` (sólo aviso, nxy no edita settings ajenos). Reinstalar = quitar lo que choca (salvo el aviso) + actualizar. Antes de correr, el panel y el comando muestran la línea exacta y esperan el sí. En Linux/WSL los pasos con permisos van con `sudo -n`: sin terminal no se puede escribir la contraseña, así que si la pide el paso falla y se imprime el comando para pegarlo a mano. Nunca se llama desde hooks.
@@ -109,9 +123,15 @@ Nunca frena a un subagente (el implementer tiene que poder escribir), nunca fren
 
 `/nxy:gate once` deja un permiso de una sola edición que vence a los `escapeMinutes`. `/nxy:gate status` muestra cuántas ediciones frenó y cómo se distribuye el contexto al editar (p10/p50/p90).
 
+**Lectura en observación.** El freno no toca las lecturas, pero nxy las mide. Cuando pedís `/nxy:gate status` o `/nxy:stats`, nxy recorre los transcripts de las sesiones principales: toma el contexto de cada mensaje del asistente (input + cache read + cache creation) y sus llamadas a herramientas, y cuenta las búsquedas amplias hechas con un contexto igual o mayor que `gate.contextTokens`. Cuenta como amplia: un `Grep` que no apunta a un solo archivo, cualquier `Glob`, un `Read` de archivo entero (sin `offset` ni `limit`) y sus equivalentes por Bash/PowerShell (`rg`, `grep -r`, `git grep`, `find`/`fd`, `Get-ChildItem -Recurse`, `Select-String` sobre una carpeta). Leer un archivo con `offset`/`limit`, o `grep` sobre un solo archivo, no cuenta.
+
+No hay hook ni archivo de registro: mientras trabajás cuesta 0, y como se lee de los transcripts también cubre sesiones pasadas (por ejemplo, justo después de instalar 1.2.0). El costo es el del reporte: ~0,4 s para 65 sesiones / 93 MiB en este repo. Las rutas se resuelven contra el cwd de la sesión; una ruta que no existe y tiene extensión se cuenta como archivo. Un `.nxy/local/metrics/reads.jsonl` viejo se ignora y nxy no lo borra. No se muestra nada al modelo y nunca se frena. Corre aunque el freno esté apagado.
+
+Dónde se ve: `/nxy:gate status --since 30d` (por default 30 días) muestra cuántas búsquedas amplias hubo, de qué tipo y la suma del tamaño del contexto principal en esas búsquedas; y `/nxy:stats` suma una línea por sesión. Esa suma es una cota superior de lo que costó cada llamada, no los tokens que un scout habría ahorrado (no se registra el tamaño del resultado). Si es alta, considerá delegar la búsqueda con `/nxy:locate`.
+
 ## El handoff
 
-Uno por rama, en la memoria local, tipo `handoff`. Guardarlo de nuevo lo reemplaza. Tiene forma fija (~20 líneas):
+Uno por tarea, en la memoria local, tipo `handoff`. La tarea nace al guardar el plan (a partir de su Goal), sigue al checkout y queda fijada a la rama con la primera edición. Un segundo plan nunca reemplaza en silencio una tarea viva: se rechaza, o se lleva a un worktree nuevo (Features → Nuevo). `handoff done` la archiva como feature buscable, y desde el panel se pueden borrar handoffs viejos. Guardarlo de nuevo lo reemplaza. Tiene forma fija (~20 líneas):
 
 ```
 route: implementer        # inline | implementer — quién escribe el código
@@ -140,10 +160,19 @@ Si hay un plan, va adentro del handoff (`## Plan`), y un guardado sin plan conse
 **Punteros por mensaje** (`UserPromptSubmit`). Una memoria recibe un puntero cuando:
 
 - está atada a un archivo que nombraste o que la sesión viene editando (nxy la ata sola cuando su cuerpo menciona una ruta que existe en el repo);
-- tu mensaje contiene uno de sus `--keywords`;
-- comparte dos palabras con tu mensaje y al menos una es de su título o keywords (si pegaste un log largo, las dos tienen que serlo).
+- tu mensaje contiene una palabra entera de sus `--keywords`.
 
-Hasta 3 por mensaje, cada memoria una vez por sesión, las reemplazadas nunca. Un mensaje que empieza con `/` no dispara punteros.
+Las palabras del título o del cuerpo no cuentan: sin archivo ni keyword no hay puntero. Hasta 3 por mensaje, cada memoria una vez por sesión, las reemplazadas nunca. Un mensaje que empieza con `/` no dispara punteros.
+
+**Tareas cerradas por archivo.** Antes de armar el plan, el planner corre `mem related <archivos>`: devuelve hasta 3 tareas ya cerradas que tocaron esos mismos archivos, con sus decisiones. Sigue las `[repo]` salvo que tu pedido las contradiga.
+
+**Preguntas de convención.** En un plan, cada decisión se marca `[repo]` (una regla que una tarea futura de este repo debería seguir) o `[task]` (lo que hace esta tarea). Solo las `[repo]` se ofrecen como convención; las `[task]` quedan en el plan y en la tarea archivada. Además, al cerrar la tarea (checkpoint 2 de la review, o `handoff done` si no hubo review) el hilo principal revisa el chat y, si dijiste reglas de las que valen para el repo ("siempre", "nunca", "prefiero"), te las ofrece en una sola pregunta para guardarlas como convención. Se pregunta una vez por tarea.
+
+**Cómo saber si sirve** (`mem status`):
+
+- `recall 30d: N pointers … M loaded (P%)`: cuántos punteros se siguieron. Cerca de 0% quiere decir que las memorias no tienen archivos ni keywords.
+- `conventions 30d: N offered (P from plans, C from the chat), S saved`: cuántas reglas se ofrecieron (distintas, sin contar repeticiones) y cuántas guardaste. Muchas ofrecidas y pocas guardadas quiere decir que se está ofreciendo de más.
+- `related 30d: N planner lookups, M closed tasks delivered`: si el planner usa de verdad `mem related`.
 
 **Relaciones.** Salen de cuatro lados: archivos compartidos, links `[[id]]` en el cuerpo, memorias que se cargan juntas, y el **librarian** (Haiku), que al guardar decide si la nueva *reemplaza*, *contradice* o *se relaciona* con las parecidas. Esa decisión se toma una vez y viaja con el export; las de archivos y links se recalculan al importar; las de "se cargan juntas" nunca salen de tu máquina. `CONFLICTS with` quiere decir que dos memorias se contradicen y alguien tiene que resolverlo.
 
@@ -238,7 +267,9 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 | --- | --- | --- |
 | `SessionStart` | Resuelve el motor del filtro; una línea si la rama tiene handoff; migra la statusline de 0.1.x (aviso una sola vez) | ~40 si hay handoff |
 | `UserPromptSubmit` | Punteros a memorias; recordatorio de escape en rama revisada | ~30 por puntero |
-| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk; con un plan activo, copia antes los archivos que el comando va a escribir (`sed -i`, `>`, `tee`, `cp`/`mv`) | 0 |
+| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk; con un plan activo, copia antes los archivos que el comando va a escribir (`sed -i`, `>`, `tee`, `cp`/`mv`); un `rg`/`grep -r`/`find` amplio dispara el aviso al planner (no se registra nada) | 0 salvo el aviso al planner |
+| `PreToolUse` Grep/Glob | Sólo el aviso al planner: una vez, si su primera búsqueda es un grep de todo el repo. El principal no hace nada acá | 0 salvo el aviso al planner |
+| `PreToolUse` AskUserQuestion | Hook `pretooluse-ask.mjs` (poco frecuente) | 0 |
 | `PreToolUse` Edit/Write | Freno de escritura, handoff obligatorio, checkpoint del plan, copia para la review | 0 salvo que frene |
 | `PreToolUse` Agent | Modelo por rol; handoff + avance + convenciones al implementer; orden de los lotes | El bloque del implementer (~20–60 líneas) |
 | `PostToolUse` Bash/PowerShell | Una fila de métricas | 0 |
@@ -253,15 +284,19 @@ Todos fallan abiertos: ante cualquier error dejan pasar lo que Claude iba a hace
 ```
 core/                    # nada acá sabe qué es Claude Code
   config, paths, format, jsonl, shell, text, rg, pricing
+  search-scope.mjs       # clasifica una búsqueda (grep/glob/find/read) y si es amplia
   filter/                # decide qué comando pasa por rtk, y cómo; el ledger
   metrics/aggregate.mjs  # suma llamadas, las tarifa, sigue el pico de contexto (tipo Call)
+  metrics/timing.mjs     # tiempo por subagente: modelo / Bash / otras herramientas / espera
   index/ scout/          # índice de símbolos, búsqueda sin modelo, codegraph
   memory/                # store SQLite, ámbitos, recall, grafo, handoff, intercambio, convenciones
   gate, plan, verify, review, diff, docs
   orchestrator, panel    # la máquina de estados del plan y la vista del panel (puras)
 hosts/claude-code/       # todo lo específico de Claude Code
   transcripts.mjs        # ~/.claude/projects/*.jsonl -> Call[]
-  hooks/                 # un archivo por evento
+  hooks/                 # un archivo por evento (pretooluse-search.mjs: Grep/Glob)
+  search-observe.mjs     # el aviso al planner
+  search-history.mjs     # las búsquedas amplias del principal, calculadas desde los transcripts
   entries/               # los scripts detrás de cada /nxy:<comando>
   mod/                   # el Mod: dibuja el panel y despacha los agentes del orquestador
   statusline, permissions, settings, roles, *-state (estado en .nxy/local/)

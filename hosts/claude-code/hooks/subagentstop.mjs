@@ -23,7 +23,7 @@
  * Anything else, any error: silent.
  */
 import { readFileSync } from 'node:fs';
-import { gitBranch, toNativePath } from '../../../core/paths.mjs';
+import { toNativePath } from '../../../core/paths.mjs';
 import { extractPlan, parseBatches, parseQuestions, parseSuites, planHash } from '../../../core/plan.mjs';
 import { batchOfPrompt, batchVerdict, canonCommand, inspectRun, isRed, stopMessage, suiteFixOfPrompt, suiteFixVerdict } from '../../../core/verify.mjs';
 import { completionLines, reviewExpected } from '../agent-done.mjs';
@@ -85,7 +85,7 @@ try {
         // Only this batch's file: a parallel batch finishing at the same moment writes its own.
         // The dispatch left a `running` file whose ts is the real launch time (a send-back's second stop
         // finds the first verdict, which already carries it).
-        const branchName = gitBranch(cwd);
+        const branchName = known.task.id;
         const before = readVerify(cwd, branchName, hash).batches[String(n)];
         const launched = before?.launched ?? (before?.status === 'running' ? before.ts : undefined);
         recordBatch(cwd, branchName, hash, n, { ...verdict, ts: Date.now(), ...(typeof launched === 'number' ? { launched } : {}) });

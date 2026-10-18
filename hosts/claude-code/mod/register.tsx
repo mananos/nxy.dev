@@ -790,7 +790,10 @@ function draw($: any, e: any, v: any) {
             {b.state === 'ok'
               ? b.lines.map((line: string, li: number) => <Text key={`md${li}`} color={C.text} wrap="wrap">{line}</Text>)
               : loadingText(b.state, 'md', b.message)}
-            <Box flexDirection="row" marginTop={1}><Keycap id={b.back.id} label={b.back.label} hotkey={b.back.hotkey} /></Box>
+            <Box flexDirection="row" marginTop={1}>
+              <Keycap id={b.back.id} label={b.back.label} hotkey={b.back.hotkey} />
+              {b.del && b.state === 'ok' ? <Keycap id={b.del.id} label={b.del.label} /> : null}
+            </Box>
           </Box>
         )
       case 'handoff':
@@ -854,6 +857,12 @@ function draw($: any, e: any, v: any) {
             {b.modes.length ? (
               <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
                 {b.modes.map((m: any) => <Button key={m.id} plain label={m.label} onPress={press(m.id)} />)}
+              </Box>
+            ) : null}
+            {b.carry ? (
+              <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+                <Button plain label={`${b.carry.on ? '[x]' : '[ ]'} ${b.carry.label}`} onPress={press(b.carry.id)} />
+                <Text color={C.muted} wrap="wrap">{b.carry.on ? `«${b.carry.goal}» se va al worktree nuevo` : `«${b.carry.goal}» queda acá`}</Text>
               </Box>
             ) : null}
             {inputOf(b.input)}

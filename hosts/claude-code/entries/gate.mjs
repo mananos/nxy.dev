@@ -9,7 +9,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { deepMerge, loadConfig, projectConfigPath } from '../../../core/config.mjs';
-import { parseArgs } from '../../../core/format.mjs';
+import { fmtTokens, parseArgs, parseSince } from '../../../core/format.mjs';
+import { projectBroadSearches } from '../search-history.mjs';
 import { ensureDir } from '../../../core/paths.mjs';
 import { describeGate } from '../../../core/gate.mjs';
 import { writeFileSync } from 'node:fs';
@@ -72,4 +73,18 @@ if (rows.length) {
   }
 } else {
   console.log('\ndecisions:       no edit has gone through the gate in this repo yet');
+}
+
+// Broad searches the main thread ran past the threshold (observation only, never blocked).
+{
+  const sinceRaw = typeof opts.since === 'string' ? opts.since : '30d';
+  const sinceMs = parseSince(sinceRaw) ?? Date.now() - 30 * 86_400_000;
+  const b = projectBroadSearches(cwd, { sinceMs, projectsDir: cfg.metrics?.projectsDir, threshold: cfg.gate?.contextTokens ?? 0 });
+  if (!b.count) {
+    console.log(`broad searches:  none recorded (since ${new Date(sinceMs).toISOString().slice(0, 10)})`);
+  } else {
+    const kinds = ['Grep', 'Glob', 'Bash', 'Read'].filter((t) => b.byKind[t]).map((t) => `${t} ${b.byKind[t]}`);
+    for (const t of Object.keys(b.byKind)) if (!['Grep', 'Glob', 'Bash', 'Read'].includes(t)) kinds.push(`${t} ${b.byKind[t]}`);
+    console.log(`broad searches above ${b.threshold ? fmtTokens(b.threshold) : '?'} context (since ${new Date(sinceMs).toISOString().slice(0, 10)}): ${b.count} — ${kinds.join(' · ')} · context carried at those searches ${fmtTokens(b.contextTokens)} tokens (sum of main-thread context size: an upper bound of what each call cost, not what a scout would have saved)`);
+  }
 }

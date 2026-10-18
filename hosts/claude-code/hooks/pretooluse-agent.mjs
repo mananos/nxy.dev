@@ -36,7 +36,8 @@ import {
 import {
   CONTINUE, batchOfPrompt, blockedDispatchMessage, blockingBatch, continueQuestion, suiteFixOfPrompt, unnamedBatchMessage,
 } from '../../../core/verify.mjs';
-import { gitBranch, nxyRuntimeDir } from '../../../core/paths.mjs';
+import { nxyRuntimeDir } from '../../../core/paths.mjs';
+import { taskKey } from '../tasks.mjs';
 import { appendJsonl } from '../../../core/jsonl.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,7 +75,7 @@ function batchGate(plan, hash, prompt, cwd, transcript, wavedThrough = /** @type
   const batches = all.map((b) => b.n);
   const n = batchOfPrompt(prompt);
   const batch = all.find((b) => b.n === n);
-  const state = readVerify(cwd, gitBranch(cwd), hash);
+  const state = readVerify(cwd, taskKey(cwd), hash);
   const allDone = all.length > 0 && all.every((b) => ['pass', 'manual', 'none'].includes(state.batches[String(b.n)]?.status));
   if (suiteFixOfPrompt(prompt)) {
     if (!allDone) return { reason: 'suitefix-early', message: `nxy: a "Suite fix" starts after every batch of plan ${hash} is verified; some are not (see the progress line). Carry out and verify the batches first.` };
@@ -151,6 +152,7 @@ try {
     const contextTokens = isSubagent ? null : lastContextTokens(transcript);
     const threshold = Number(cfg.gate?.contextTokens) || 0;
     const known = await lookupHandoff(cwd);
+    const key = known.task.id;
 
     // The plan checkpoint (0.4.0) comes first: an implementer dispatched before the user approved
     // the plan is exactly the "400 lines I have to undo" this exists to prevent.
@@ -189,7 +191,7 @@ try {
       let conventions = [];
       try {
         const { conventionsOf, touchedRepos } = await import('../repos.mjs');
-        conventions = await conventionsOf(db, touchedRepos(cwd, gitBranch(cwd)));
+        conventions = await conventionsOf(db, touchedRepos(cwd, key));
         if (!conventions.length) conventions = listMemories(db, { project: known.project, allAreas: true, type: 'convention', limit: 500 });
       } finally {
         db.close();
@@ -198,7 +200,7 @@ try {
       const scope = plan ? (parseBatches(plan).find((b) => b.n === n)?.text || plan) : '';
       const sheet = conventionSheet(conventions, pathsIn(scope), memCommand('list --type convention --all-areas'));
       // The plan's progress as nxy recorded it (0.4.5): which batches passed, which are red.
-      const progress = plan ? await progressFor(cwd, gitBranch(cwd), plan) : '';
+      const progress = plan ? await progressFor(cwd, key, plan) : '';
       const block = subagentContextBlock(known.handoff, memCommand('handoff show'), Date.now(), [progress, sheet].filter(Boolean).join('\n\n'));
       const prompt = stripContextBlock(typeof toolInput.prompt === 'string' ? toolInput.prompt : '');
       // A fix dispatched from checkpoint 2 is the user's choice: counted for `review status`.
@@ -211,7 +213,7 @@ try {
           recordSuiteFix(cwd, hash, { status: 'running', ts: Date.now() });
           clearAsync(cwd, 'implementer:suite-fix');
         } else if (n != null && parseBatches(plan).some((b) => b.n === n)) {
-          recordBatch(cwd, gitBranch(cwd), hash, n, { status: 'running', ts: Date.now() });
+          recordBatch(cwd, key, hash, n, { status: 'running', ts: Date.now() });
           clearAsync(cwd, `implementer:batch-${n}`);
         }
       }
