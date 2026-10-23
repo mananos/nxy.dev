@@ -30,6 +30,26 @@ test('nextValue salta el null que no cambia lo que se ve (effort del frontmatter
   assert.equal(nextValue('roles.planner.effort', 'high', 'next'), null);
 });
 
+test('nextValue con el effort del frontmatter recorre los tres valores, guardado o no, sin pasos que se vean igual', () => {
+  const seen = (v, fm) => v ?? fm;
+  for (const fm of EFFORTS) {
+    for (const dir of /** @type {const} */ (['next', 'prev'])) {
+      // el driver pasa como current lo que se ve (el frontmatter cuando no hay nada guardado)
+      let stored = null;
+      const shown = [];
+      for (let k = 0; k < 6; k++) {
+        stored = nextValue('roles.implementer.effort', seen(stored, fm), dir, fm);
+        assert.notEqual(stored, fm, 'el valor igual al frontmatter se guarda como null');
+        shown.push(seen(stored, fm));
+      }
+      const order = dir === 'next' ? EFFORTS : [...EFFORTS].reverse();
+      const from = order.indexOf(fm);
+      const want = Array.from({ length: 6 }, (_, k) => order[(from + k + 1) % order.length]);
+      assert.deepEqual(shown, want, `${dir} desde ${fm}`);
+    }
+  }
+});
+
 test('nextValue de toggles', () => {
   assert.equal(nextValue('flow.orchestrator', 'auto', 'toggle'), 'off');
   assert.equal(nextValue('flow.orchestrator', 'off', 'toggle'), 'auto');

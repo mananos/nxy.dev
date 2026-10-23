@@ -58,9 +58,17 @@ export function nextValue(fieldId, current, dir = 'next', fallback = null) {
     if (step > 0) return nums.find((n) => n > cur) ?? nums[nums.length - 1];
     return [...nums].reverse().find((n) => n < cur) ?? nums[0];
   }
+  // «predeterminado» (null) se ve como `fallback` (p. ej. el effort del frontmatter): se cicla por lo que se ve
+  // (low → medium → high) y el valor igual al fallback se guarda como null, así nunca hay dos pasos que se vean igual
+  const values = options.filter((o) => o !== null);
+  if (fallback != null && options[0] === null && values.includes(/** @type {any} */ (fallback))) {
+    const seen = current === undefined || current === null ? fallback : current;
+    const j = values.indexOf(/** @type {any} */ (seen));
+    const cand = j < 0 ? values[0] : values[(j + step + values.length) % values.length];
+    return cand === fallback ? null : cand;
+  }
   const i = options.indexOf(current === undefined ? null : /** @type {any} */ (current));
   if (i < 0) return options[0];
-  // «predeterminado» (null) se ve como `fallback` (p. ej. el effort del frontmatter): un paso que no cambia lo que se ve se salta
   const shown = (/** @type {any} */ v) => (v === null ? fallback ?? null : v);
   for (let k = 1; k <= options.length; k++) {
     const cand = options[(i + step * k + options.length * k) % options.length];

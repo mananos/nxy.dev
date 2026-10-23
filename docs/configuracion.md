@@ -154,7 +154,7 @@ Qué modelo y effort usa cada rol. nxy lo aplica en cada despacho: `"planner": {
 | `roles.<rol>.model` | `sonnet`, `opus`, `haiku`, `fable` |
 | `roles.<rol>.effort` | `low`, `medium`, `high` |
 
-Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)). Los agentes de Haiku ya lo declaran: `scout` y `tester` en `low`, `librarian` en `medium`; `roles.<rol>.effort` lo pisa. Si coincide con el del frontmatter no se emite nada.
+Si Claude pide un modelo o effort explícito para un despacho, gana el de Claude. Sin `effort` vale el del archivo de cada agente (`agents/*.md`; ver la tabla en el [README](../README.md#modelo-y-effort-de-cada-agente)). Los agentes de Haiku ya lo declaran: `scout` y `tester` en `low`, `librarian` en `medium`; `roles.<rol>.effort` lo pisa. nxy manda siempre el modelo y el effort en cada despacho, aunque coincidan con los del archivo del agente: desde Claude Code 2.1.300 los subagentes corren en el modelo de la sesión principal e ignoran el `model:` del `.md`, y un valor explícito en el despacho sí se respeta.
 - `provider` todavía no hace nada (hay un solo proveedor); está declarado para que sumar otro sea un cambio de config.
 - Borrar un rol lo apaga: sin `implementer` el gate no frena (no hay a quién delegar); sin `librarian` las memorias se guardan sin relacionarse; sin `documenter` nunca se ofrece actualizar docs.
 

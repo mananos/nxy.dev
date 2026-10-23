@@ -223,13 +223,19 @@ test('agent hook: denies only the implementer, only past the threshold, only wit
 
   assert.match(reason(dispatch('nxy:implementer')), /no handoff yet[\s\S]*dispatch the implementer again/);
   assert.match(reason(dispatch('implementer')), /no handoff yet/, 'a user-level copy is the same role');
-  assert.equal(dispatch('nxy:scout').trim(), '', 'reading is not the work a handoff protects');
+  const scout = JSON.parse(dispatch('nxy:scout')).hookSpecificOutput;
+  assert.notEqual(scout.permissionDecision, 'deny', 'reading is not the work a handoff protects');
+  assert.doesNotMatch(scout.updatedInput.prompt, /<nxy-context/);
+  assert.equal(scout.updatedInput.model, 'haiku');
   assert.equal(dispatch('Explore').trim(), '');
   s.save();
   const out = JSON.parse(dispatch('nxy:implementer')).hookSpecificOutput;
   assert.equal(out.permissionDecision, 'allow', 'with a handoff the dispatch goes through');
 
-  assert.equal(sandbox(20_000).run('pretooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:implementer' } }).trim(), '');
+  const cheap = JSON.parse(sandbox(20_000).run('pretooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:implementer' } })).hookSpecificOutput;
+  assert.notEqual(cheap.permissionDecision, 'deny');
+  assert.equal(cheap.updatedInput.prompt, undefined);
+  assert.equal(cheap.updatedInput.model, 'sonnet');
   assert.equal(execFileSync(process.execPath, [join(HOOKS, 'pretooluse-agent.mjs')], { input: 'garbage', encoding: 'utf8' }).trim(), '',
     'garbage in → fail open');
 });
@@ -267,7 +273,10 @@ test('agent hook: attaches the handoff to the implementer, fresh and exactly onc
   const dispatch = (type, prompt) => s.run('pretooluse-agent.mjs', {
     tool_name: 'Agent', tool_input: { subagent_type: type, description: 'apply fix', prompt },
   });
-  assert.equal(dispatch('nxy:implementer', 'Fix a.ts:12').trim(), '', 'no handoff, cheap session: untouched');
+  const bare = JSON.parse(dispatch('nxy:implementer', 'Fix a.ts:12')).hookSpecificOutput;
+  assert.notEqual(bare.permissionDecision, 'deny');
+  assert.equal(bare.updatedInput.prompt, 'Fix a.ts:12', 'no handoff, cheap session: prompt untouched');
+  assert.equal(bare.updatedInput.model, 'sonnet');
 
   s.save();
   const out = JSON.parse(dispatch('nxy:implementer', 'Fix a.ts:12')).hookSpecificOutput;
@@ -280,7 +289,10 @@ test('agent hook: attaches the handoff to the implementer, fresh and exactly onc
 
   const again = JSON.parse(dispatch('nxy:implementer', out.updatedInput.prompt)).hookSpecificOutput.updatedInput.prompt;
   assert.equal(again.split(CONTEXT_OPEN).length - 1, 1, 'a re-dispatch with the old block carries one block, not two');
-  assert.equal(dispatch('nxy:scout', 'where is x').trim(), '', 'the scout searches unbiased');
+  const scout = JSON.parse(dispatch('nxy:scout', 'where is x')).hookSpecificOutput;
+  assert.notEqual(scout.permissionDecision, 'deny');
+  assert.equal(scout.updatedInput.prompt, 'where is x', 'the scout searches unbiased');
+  assert.equal(scout.updatedInput.model, 'haiku');
 });
 
 test('isSubagentCall: agent_id first, transcript path as fallback', () => {

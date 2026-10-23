@@ -382,8 +382,8 @@ test('flow: draft with questions → answers → final plan → approval; known 
   writeFileSync(approvedDraft, `${JSON.stringify(s.usage)}\n`, { flag: 'a' });
   assert.match(reason(edit(approvedDraft)), /1 open question[\s\S]*handoff next/);
   assert.match(reason(dispatch(approvedDraft)), /1 open question/);
-  assert.equal(s.hook('pretooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:planner', prompt: `Finish nxy plan ${draftHash}` } }).trim(), '',
-    'the planner is dispatched freely to finish its draft');
+  const planner = s.hook('pretooluse-agent.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'nxy:planner', prompt: `Finish nxy plan ${draftHash}` } });
+  assert.doesNotMatch(planner, /"permissionDecision":"deny"/, 'the planner is dispatched freely to finish its draft');
   assert.match(s.mem(['handoff', 'next']).stdout, /Questions first[\s\S]*"Plan Q1"/, 'next reprints what the draft needs');
 
   const final = s.mem(['handoff', 'plan'], FINAL);

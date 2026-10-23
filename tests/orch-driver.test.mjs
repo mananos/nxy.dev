@@ -586,6 +586,13 @@ function cfgWorld(over = {}) {
       if (key === 'modules.filter') config.filter = value;
       if (key === 'gate.contextTokens') config.gate = { ...config.gate, contextTokens: value };
       if (key === 'flow.orchestrator') config.orchestrator = value;
+      const role = /^roles\.([^.]+)\.(model|effort)$/.exec(key);
+      if (role) {
+        const was = config.roles?.[role[1]] ?? {};
+        const shown = value ?? (role[2] === 'effort' ? was.defaultEffort ?? null : null);
+        config.roles = { ...config.roles, [role[1]]: { ...was, [role[2]]: shown } };
+        config.sources = { ...config.sources, [key]: value === null ? 'default' : argv[argv.indexOf('--scope') + 1] };
+      }
       return { exitCode: 0, stdout: JSON.stringify({ ok: true, path: '/x', bytes: 10, config }), stderr: '' };
     }
     return { exitCode: 0, stdout: `${act} ok`, stderr: '' };
@@ -621,6 +628,37 @@ test('the Home filter button (cfg:modules.filter:toggle) writes with the chosen 
   assert.deepEqual(w.sets, [{ scope: 'repo', key: 'modules.filter', value: true }]);
   assert.ok(text(d).some((l) => l.includes('Filter ● on')));
   assert.equal(nodes(w, 'filter').length, 0);
+});
+
+test('effort ‹ › walks low, medium and high once something is saved (the frontmatter effort stays «predeterminado»)', async () => {
+  const w = cfgWorld();
+  w.plan.config.roles = { implementer: { model: null, effort: 'medium', defaultEffort: 'medium' } };
+  w.plan.config.sources = { 'roles.implementer.effort': 'default' };
+  const d = w.driver();
+  await d.start();
+  for (let k = 0; k < 3; k++) await d.press('cfg:roles.implementer.effort:next');
+  assert.deepEqual(w.sets.map((s) => s.value), ['high', 'low', null]);
+  for (let k = 0; k < 3; k++) await d.press('cfg:roles.implementer.effort:prev');
+  assert.deepEqual(w.sets.slice(3).map((s) => s.value), ['low', 'high', null]);
+});
+
+test('a snapshot read across a Config write keeps the config the write returned', async () => {
+  const w = cfgWorld();
+  const d = w.driver();
+  await d.start();
+  let release = () => {};
+  const held = new Promise((r) => { release = () => r(undefined); });
+  const inner = w.$.process.run;
+  w.$.process.run = async (argv) => {
+    if (argv.includes('snapshot')) { const res = inner(argv); await held; return res; }
+    return inner(argv);
+  };
+  const stepping = d.step('ask');
+  await d.press('cfg:gate.contextTokens:next');
+  release();
+  await stepping;
+  await d.press('cfg:gate.contextTokens:next');
+  assert.deepEqual(w.sets.map((s) => s.value), [150000, 200000], 'the stale snapshot (100000) did not win');
 });
 
 test('a second press on the same field while its write is in flight is ignored', async () => {

@@ -24,6 +24,7 @@ import { parseAgentMeta } from '../../../core/agentview.mjs';
 import { parseArgs } from '../../../core/format.mjs';
 import { gitBranch, nxyRuntimeDir, toNativePath } from '../../../core/paths.mjs';
 import { loadConfig } from '../../../core/config.mjs';
+import { MODELS, EFFORTS } from '../../../core/configedit.mjs';
 import { batchFiles, extractPlan, parseBatches, parseGoal, parseQuestions, planHash } from '../../../core/plan.mjs';
 import { claudeProjectsDir, projectSlug } from '../paths.mjs';
 import { configView } from '../config-view.mjs';
@@ -63,13 +64,23 @@ function titleOf(raw) {
   return t.replace(/^#*\s*Batch\s+\d+\s*[—–-]\s*/i, '') || t;
 }
 
-/** The model and effort each nxy role declares in agents/<role>.md ({} when unreadable). */
-function nxyRoles() {
+/** The model and effort each nxy role runs with: the config's when valid, else agents/<role>.md's ({} when unreadable). */
+function nxyRoles(cwd) {
   try {
     const dir = fileURLToPath(new URL('../../../agents/', import.meta.url));
+    let conf = {};
+    try { conf = loadConfig(cwd).roles ?? {}; } catch { /* the frontmatter alone */ }
     const roles = {};
     for (const f of readdirSync(dir).filter((n) => n.endsWith('.md')).sort()) {
-      roles[f.slice(0, -3)] = parseAgentMeta(readFileSync(join(dir, f), 'utf8'));
+      const r = f.slice(0, -3);
+      const meta = parseAgentMeta(readFileSync(join(dir, f), 'utf8'));
+      const m = conf?.[r]?.model;
+      const e = conf?.[r]?.effort;
+      roles[r] = {
+        ...meta,
+        ...(MODELS.includes(m) ? { model: m } : {}),
+        ...(EFFORTS.includes(e) ? { effort: e } : {}),
+      };
     }
     return roles;
   } catch {
@@ -95,7 +106,7 @@ async function snapshot(cwd, opts) {
     // table, so the Mod can price a cold cache without importing anything node-side.
     cacheTtl: lastCacheTtl(transcript),
     prices: loadPricing().models,
-    roles: nxyRoles(),
+    roles: nxyRoles(cwd),
     runtimeDir: nxyRuntimeDir(cwd),
     projectDir: cwd,
     branch: branch || null,

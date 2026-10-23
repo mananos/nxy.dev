@@ -28,13 +28,16 @@ export function configView(cwd) {
   const cfg = loadConfig(cwd);
   const user = readScope(join(nxyUserDir(), 'config.json'));
   const repo = readScope(projectConfigPath(cwd));
-  /** @type {Record<string, {model: string|null, effort: string|null}>} */
+  /** @type {Record<string, {model: string|null, effort: string|null, defaultEffort: string|null}>} */
   const roles = {};
   for (const r of ROLES) {
     const c = /** @type {any} */ (cfg).roles?.[r];
+    // defaultEffort: the frontmatter's, what «predeterminado» means even once a value is saved (the panel cycles by it)
+    const defaultEffort = frontmatterEffort(r);
     roles[r] = {
       model: typeof c?.model === 'string' ? c.model : null,
-      effort: typeof c?.effort === 'string' ? c.effort : frontmatterEffort(r),
+      effort: typeof c?.effort === 'string' ? c.effort : defaultEffort,
+      defaultEffort,
     };
   }
   /** @type {Record<string, 'default'|'user'|'repo'|'env'>} */

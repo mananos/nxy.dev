@@ -154,6 +154,8 @@ export function createDriver($, opts) {
   let toolsStarted = false;
   /** @type {Set<string>} fields whose write has not come back yet */
   const cfgBusy = new Set();
+  /** Config writes that came back ok: a snapshot read across one keeps the config the write returned. */
+  let cfgWrites = 0;
   let asked = false;
   const isOwned = () => !!st && st.ours === true && !st.done;
 
@@ -168,10 +170,12 @@ export function createDriver($, opts) {
   async function refresh() {
     const args = ['snapshot'];
     if (sessionId) args.push('--session', sessionId);
+    const writes = cfgWrites;
     const res = await runNode(args);
     const out = JSON.parse(String(res?.stdout ?? '').trim().split('\n').pop() || '{}');
     const prev = snap;
-    snap = out;
+    // a Config write landed while this snapshot was read: its config is older than the one the write returned
+    snap = writes !== cfgWrites && out?.ok && prev?.config ? { ...out, config: prev.config } : out;
     if (out && out.ok && typeof out.runtimeDir === 'string') runtimeDir = out.runtimeDir;
     if (out?.ok) setTtl(out.cacheTtl, 'observed');
     if (out?.ok && out.roles) bookRoles(book, out.roles);
@@ -388,8 +392,10 @@ export function createDriver($, opts) {
     if (field === 'flow.orchestrator' && isOwned()) return Promise.resolve();
     if (cfgBusy.has(field)) return Promise.resolve();
     const cur = configValue(field);
-    // sin valor guardado, lo que se ve (p. ej. el effort del frontmatter) es el «predeterminado»: no se cicla a un null que no cambia nada
-    const fallback = snap.config.sources?.[field] === 'default' ? cur : null;
+    // el effort del frontmatter es lo que se ve como «predeterminado», haya o no un valor guardado: sin él, el ciclo se partía en dos
+    const role = /^roles\.([^.]+)\.effort$/.exec(field);
+    const fallback = (role ? snap.config.roles?.[role[1]]?.defaultEffort : null)
+      ?? (snap.config.sources?.[field] === 'default' ? cur : null);
     const value = nextValue(field, cur, /** @type {'next'|'prev'|'toggle'} */ (m[2]), fallback);
     const scope = ui.scope;
     cfgBusy.add(field);
@@ -397,7 +403,7 @@ export function createDriver($, opts) {
       try {
         cfgNote = null;
         const out = await runConfig(['set', '--scope', scope, '--key', field, '--json', JSON.stringify(value)]);
-        if (out?.ok && out.config) { if (snap) snap = { ...snap, config: out.config }; }
+        if (out?.ok && out.config) { cfgWrites++; if (snap) snap = { ...snap, config: out.config }; }
         else cfgNote = { text: String(out?.reason ?? 'no se pudo guardar'), tone: 'error' };
       } catch (err) {
         cfgNote = { text: `no se pudo guardar: ${/** @type {any} */ (err)?.message ?? err}`, tone: 'error' };
@@ -489,11 +495,10 @@ export function createDriver($, opts) {
   async function spawn(role, label, prompt, view) {
     const nonce = newNonce();
     await $.fs.write(`${dir()}/${TICKET_DIR}/${nonce}`, String(Date.now()));
-    const res = await $.agent.spawn({
-      prompt,
-      subagentType: `nxy:${role}`,
-      description: ticketDescription(nonce, label),
-    });
+    const model = snap?.roles?.[role]?.model;
+    const args = { prompt, subagentType: `nxy:${role}`, description: ticketDescription(nonce, label) };
+    if (typeof model === 'string' && model) args.model = model;
+    const res = await $.agent.spawn(args);
     // The engine skips the hook that launched an agent, so the driver notes its own spawns.
     if (res?.agentId) bookSpawn(book, { id: res.agentId, type: `nxy:${role}`, description: label, prompt, model: res.model, spawnedBy: 'nxy' });
     return res ?? {};

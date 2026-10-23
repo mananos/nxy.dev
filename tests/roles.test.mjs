@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { roleEffort, frontmatterEffort } from '../hosts/claude-code/roles.mjs';
+import { roleEffort, roleModel, frontmatterEffort } from '../hosts/claude-code/roles.mjs';
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), '..', 'hosts', 'claude-code', 'hooks', 'pretooluse-agent.mjs');
 
@@ -14,29 +14,37 @@ test('roleEffort: configured effort that differs from the frontmatter', () => {
   assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'low' } } }), 'low');
 });
 
-test('roleEffort: equal to the frontmatter does not emit', () => {
-  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'high' } } }), null);
+test('roleEffort: equal to the frontmatter is still sent (Claude Code 2.1.300 launches with defaults)', () => {
+  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'high' } } }), 'high');
+  assert.equal(roleEffort('nxy:reviewer', {}), 'high');
+});
+
+test('roleModel: the table, else the agent\'s own; a model the dispatch names wins', () => {
+  assert.equal(roleModel('nxy:implementer', { roles: { implementer: { model: 'haiku' } } }), 'haiku');
+  assert.equal(roleModel('nxy:implementer', {}), 'sonnet');
+  assert.equal(roleModel('nxy:implementer', { roles: { implementer: { model: 'gpt-9' } } }), 'sonnet');
+  assert.equal(roleModel('nxy:planner', {}, 'sonnet'), null);
+  assert.equal(roleModel('Explore', {}), null);
 });
 
 test('haiku roles declare effort in the frontmatter', () => {
   assert.equal(frontmatterEffort('scout'), 'low');
   assert.equal(frontmatterEffort('tester'), 'low');
   assert.equal(frontmatterEffort('librarian'), 'medium');
-  assert.equal(roleEffort('nxy:scout', { roles: { scout: { effort: 'low' } } }), null);
+  assert.equal(roleEffort('nxy:scout', { roles: { scout: { effort: 'low' } } }), 'low');
   assert.equal(roleEffort('nxy:scout', { roles: { scout: { effort: 'high' } } }), 'high');
-  assert.equal(roleEffort('nxy:librarian', { roles: { librarian: { effort: 'medium' } } }), null);
+  assert.equal(roleEffort('nxy:librarian', { roles: { librarian: { effort: 'medium' } } }), 'medium');
 });
 
 test('roleEffort: the dispatch own effort wins', () => {
   assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'low' } } }, 'medium'), null);
 });
 
-test('roleEffort: unknown role or invalid value does not emit', () => {
+test('roleEffort: unknown role does not emit; an invalid value falls back to the agent\'s own', () => {
   assert.equal(roleEffort('nxy:nope', { roles: { nope: { effort: 'low' } } }), null);
   assert.equal(roleEffort('Explore', { roles: { Explore: { effort: 'low' } } }), null);
-  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'max' } } }), null);
-  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: /** @type {any} */ (3) } } }), null);
-  assert.equal(roleEffort('nxy:reviewer', {}), null);
+  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: 'max' } } }), 'high');
+  assert.equal(roleEffort('nxy:reviewer', { roles: { reviewer: { effort: /** @type {any} */ (3) } } }), 'high');
 });
 
 test('hook: configured effort arrives in updatedInput', () => {
@@ -56,8 +64,9 @@ test('hook: configured effort arrives in updatedInput', () => {
     const out = JSON.parse(run({ subagent_type: 'nxy:scout', prompt: 'find x' }).stdout).hookSpecificOutput;
     assert.equal(out.updatedInput.effort, 'high');
     assert.equal(out.updatedInput.prompt, 'find x');
-    assert.match(out.permissionDecisionReason, /roles\.scout\.effort/);
-    assert.equal(run({ subagent_type: 'nxy:scout', prompt: 'x', effort: 'low' }).stdout, '');
+    assert.equal(out.updatedInput.model, 'haiku');
+    assert.match(out.permissionDecisionReason, /roles\.scout\.model\/effort/);
+    assert.equal(run({ subagent_type: 'nxy:scout', prompt: 'x', effort: 'low', model: 'sonnet' }).stdout, '', 'what the dispatch names wins');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
