@@ -172,7 +172,7 @@ const GOLDEN_RECORD = [
   'Checkpoint 2: show the user the findings above and ask with AskUserQuestion, with exactly this input:',
   '  {"questions":[{"question":"Fix which findings of nxy review <ID>?","header":"Review","multiSelect":true,"options":[{"label":"R1 Golden finding","description":"high · base · a.js:2"},{"label":"None","description":"leave it as is"}]}]}',
   'For each finding the user picks, dispatch nxy:implementer with its line below (its batch\'s Accept is verified again):',
-  '  R1: "Batch 1 — fix R1 of review <ID>: Golden finding at a.js:2. do it"',
+  '  R1: "Batch 1 — fix R1 of review <ID>: Golden finding at a.js:2. do it" — Accept (batch 1): `node -v`, exactly as written after the last edit; a new test is run separately, before it.',
   'One round only: no second review. What is left after it is the user\'s call.',
   '',
   'Conventions from the chat: look back over this task\'s conversation for standing rules the user stated (corrections the user said should always apply; "siempre / nunca / prefiero / no me gusta / de ahora en adelante"; "always / never / I prefer / from now on").',

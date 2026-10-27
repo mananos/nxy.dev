@@ -161,6 +161,10 @@ function checkpointText(state, batches, chatRules = /** @type {string|null} */ (
     chatRules,
     id: state.id, planHash: state.planHash, findings: state.findings, summary: state.summary,
     batchOf: (f) => batchForFile(batches, f.file),
+    acceptOf: (n) => {
+      const a = batches.find((b) => b.n === n)?.accept;
+      return a && a.kind === 'command' ? a.command : null;
+    },
     extra: state.docs?.docs?.length ? docsQuestion(state.id, state.docs.docs.map((d) => d.path)) : null,
   });
 }

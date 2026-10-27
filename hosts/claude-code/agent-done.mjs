@@ -10,7 +10,7 @@ import { statSync } from 'node:fs';
 import { taskKey } from './tasks.mjs';
 import { extractPlan, parseBatches, planHash } from '../../core/plan.mjs';
 import {
-  afterBatch, afterReviewRecorded, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, reviewInstruction, suiteFixOfPrompt,
+  afterBatch, afterReviewRecorded, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, reviewFixOfPrompt, reviewInstruction, suiteFixOfPrompt,
 } from '../../core/verify.mjs';
 import { lookupHandoff } from './handoff.mjs';
 import {
@@ -168,7 +168,7 @@ export async function completionLines({ cwd, role, prompt = '' }) {
           command: batch.accept.kind === 'command' ? batch.accept.command : undefined,
           batches: batches.map((b) => b.n),
           dependents: batches.filter((b) => b.depends.includes(n)).map((b) => b.n),
-          fix: ((m) => (m ? { finding: m[1], review: m[2] } : null))(/\bfix (R\d+) of review ([0-9a-f]+)/.exec(prompt)),
+          fix: reviewFixOfPrompt(prompt),
         }));
         pause = true;
       }

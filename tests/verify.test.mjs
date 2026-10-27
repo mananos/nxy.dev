@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url';
 import { parseAccept, parseBatches } from '../core/plan.mjs';
 import {
   CONTINUE, afterBatch, afterReviewer, afterSuiteFix, afterTester, batchOfPrompt, batchVerdict, blockingBatch, continueQuestion, launchNote,
-  inspectRun, progressLine, reviewInstruction, runMatches, stopMessage, suiteFixOfPrompt, suiteFixVerdict, unnamedBatchMessage,
+  inspectRun, progressLine, reviewFixOfPrompt, reviewFixVerdict, reviewInstruction, runMatches, stopMessage, suiteFixOfPrompt, suiteFixVerdict, unnamedBatchMessage,
 } from '../core/verify.mjs';
 import { CONTEXT_CLOSE, CONTEXT_OPEN } from '../core/memory/handoff.mjs';
 import { claimSendBack, readVerify, recordBatch } from '../hosts/claude-code/verify-state.mjs';
@@ -93,6 +93,52 @@ test('batchVerdict: the last matching run after the last edit decides', () => {
   assert.deepEqual(batchVerdict([edit, run(ACCEPT1, false, 'x'), edit, run(ACCEPT1)], cmd), { status: 'pass' }, 'fixed and rerun');
   assert.deepEqual(batchVerdict([edit, run(`${ACCEPT1} | tail`)], cmd).status, 'not-run');
   assert.deepEqual(batchVerdict([], { kind: 'manual', note: '' }), { status: 'manual' });
+});
+
+test('appended test files: the Accept with extra paths still certifies the run', () => {
+  const acc = 'npm run typecheck && node --test tests/pane.test.mjs tests/mod-wiring.test.mjs';
+  const accept = { kind: /** @type {const} */ ('command'), command: acc };
+  for (const tail of [' tests/tick.test.mjs', ' tests/tick.test.mjs 2>&1', ' tests/tick.test.mjs && echo ok']) {
+    assert.equal(runMatches(acc + tail, acc), true, tail);
+  }
+  assert.deepEqual(batchVerdict([edit, run(`${acc} tests/tick.test.mjs`)], accept), { status: 'pass' });
+  assert.match(inspectRun(`${acc} tests/tick.test.mjs | tail`, acc).why || '', /piped through tail/);
+  const flag = inspectRun(`${acc} --test-name-pattern=x`, acc);
+  assert.equal(flag.match, false);
+  assert.match(flag.why || '', /^extra arguments after the command: --test-name-pattern=x/);
+  assert.equal(batchVerdict([edit, run(`${acc} --test-name-pattern=x`)], accept).detail, flag.why);
+  assert.equal(runMatches(`${acc} $(rm -rf x)`, acc), false);
+});
+
+test('a newline, a bare word or a background & after the Accept do not certify', () => {
+  const acc = 'npm run typecheck && node --test tests/pane.test.mjs';
+  const nl = inspectRun(`${acc}\necho ok`, acc);
+  assert.equal(nl.match, false);
+  assert.match(nl.why || '', /^followed by a newline/);
+  assert.equal(runMatches(`cd x &&\n${acc}\n`, acc), true);
+  const word = inspectRun(`${acc} echo ok`, acc);
+  assert.equal(word.match, false);
+  assert.match(word.why || '', /^extra arguments after the command: echo ok/);
+  assert.equal(runMatches(`${acc} tests/tick.test.mjs`, acc), true);
+  const bg = inspectRun(`${acc} &`, acc);
+  assert.equal(bg.match, false);
+  assert.match(bg.why || '', /^run in the background/);
+});
+
+test('reviewFixOfPrompt and reviewFixVerdict', () => {
+  assert.deepEqual(reviewFixOfPrompt('Batch 2 — fix R1 of review abc123: x'), { finding: 'R1', review: 'abc123' });
+  assert.equal(reviewFixOfPrompt('Batch 2 — go'), null);
+  assert.equal(reviewFixOfPrompt(`${CONTEXT_OPEN}\nfix R1 of review abc123\n${CONTEXT_CLOSE}\nBatch 2 — go`), null);
+  assert.deepEqual(reviewFixVerdict([edit, run('npm run check')], cmd, ['npm run check']), { status: 'pass' });
+  assert.equal(reviewFixVerdict([run('npm run check'), edit], cmd, ['npm run check']).status, 'not-run');
+  assert.deepEqual(reviewFixVerdict([edit, run(ACCEPT1)], cmd, ['npm run check']), { status: 'pass' });
+  assert.deepEqual(reviewFixVerdict([edit], cmd, []), batchVerdict([edit], cmd));
+});
+
+test('stopMessage: a review fix also names the suite', () => {
+  const v = { status: /** @type {const} */ ('not-run') };
+  assert.match(stopMessage(2, 'x', v, ['npm run check']), /plan suite passing after your last edit also counts: `npm run check`/);
+  assert.doesNotMatch(stopMessage(2, 'x', v), /also counts/);
 });
 
 test('blockingBatch and batchOfPrompt', () => {
@@ -243,7 +289,8 @@ test('messages carry the detail and the next step', () => {
   assert.doesNotMatch(fail, /run the acceptance command only/);
   const fixed = afterBatch({ ...base, n: 3, verdict: { status: 'pass' }, fix: { finding: 'R1', review: 'f7cbdc' } });
   assert.match(fixed, /Review fix R1 of review f7cbdc done \(batch 3 ✔\)/);
-  assert.match(fixed, /picked more findings, dispatch the remaining ones next.*Batch 3 — fix R<k> of review f7cbdc/);
+  assert.match(fixed, /picked more findings, dispatch the remaining ones one at a time.*Batch 3 — fix R<k> of review f7cbdc/);
+  assert.doesNotMatch(fixed, /can run in parallel/);
   assert.doesNotMatch(fixed, /round|nxy:tester/i);
   assert.match(afterSuiteFix({ hash: 'abc12345', verdict: { status: 'not-run', detail: 'piped through tail: the exit code is hidden' }, commands: ['npm test'] }), /did not run the suite commands after the last edit \(piped through tail/);
   assert.match(progressLine([{ n: 1 }], { 1: { status: 'not-run', detail: 'piped through tail: the exit code is hidden' } }), /1 ✘ \(not run: piped through tail/);

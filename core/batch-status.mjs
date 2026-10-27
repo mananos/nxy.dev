@@ -51,7 +51,7 @@ export function continueQuestion(hash, n) {
 /**
  * The line the main thread sees when an implementer returns, and what to do next.
  * A fix from the review's checkpoint 2 (`fix`: the finding and the review) closes with its own line:
- * the other picked findings are dispatched next, and it never leads to another suite and review.
+ * the other picked findings are dispatched next, one at a time (never in parallel), and it never leads to another suite and review.
  * `dependents`: the batches that build on this one (default: the next one).
  * @param {{hash: string, n: number, command?: string, verdict: Verdict, batches: number[], recorded: Record<string, {status: Status}>,
  *   fix?: {finding?: string, review?: string} | boolean | null, dependents?: number[], repos?: {label: string, root: string}[]}} o
@@ -91,7 +91,7 @@ export function afterBatch(o) {
     const f = typeof o.fix === 'object' ? o.fix : {};
     const what = f.finding && f.review ? `${f.finding} of review ${f.review}` : f.finding ? f.finding : 'the picked finding';
     const rid = f.review || '<id>';
-    lines.push(`Review fix ${what} done (batch ${n} ✔). If the user picked more findings, dispatch the remaining ones next, each as its own \`Batch ${n} — fix R<k> of review ${rid}: ...\` (they can run in parallel); once every picked finding is fixed there is no new suite or review: tell the user what was fixed and what was left.`);
+    lines.push(`Review fix ${what} done (batch ${n} ✔). If the user picked more findings, dispatch the remaining ones one at a time, never in parallel (implementers on the same tree break each other's checks), each with its own checkpoint-2 line \`Batch ${n} — fix R<k> of review ${rid}: ...\`; findings of the same batch may go together in one implementer; once every picked finding is fixed there is no new suite or review: tell the user what was fixed and what was left.`);
     return lines.join('\n');
   }
   const done = o.batches.every((k) => {

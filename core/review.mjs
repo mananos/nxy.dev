@@ -239,8 +239,9 @@ export function chatRulesInstruction(saveCmd) {
  * Checkpoint 2: what the main thread shows and asks. Only the change's findings are offered; the
  * preexisting ones are listed as information.
  * `extra` is one more question for the same call (the documenter's, 0.4.3), with what to do after.
+ * `acceptOf(n)`: the Accept command of batch n (null for a manual one); each dispatch line carries it.
  * @param {{id: string, planHash: string, findings: Classified[], summary: {files: number, added: number, removed: number}, batchOf: (f: Finding) => number,
- *   extra?: {question: object, then: string}|null, chatRules?: string|null}} o
+ *   extra?: {question: object, then: string}|null, chatRules?: string|null, acceptOf?: (n: number) => string|null}} o
  */
 export function checkpoint2(o) {
   const mine = o.findings.filter((f) => f.cause === 'change');
@@ -288,7 +289,12 @@ export function checkpoint2(o) {
     `  ${JSON.stringify(input)}`,
     ...(mine.length > offered.length ? [`(only the first ${offered.length} are offered; the rest stay in \`review show ${o.id}\`)`] : []),
     'For each finding the user picks, dispatch nxy:implementer with its line below (its batch\'s Accept is verified again):',
-    ...offered.map((f) => `  ${f.id}: "Batch ${o.batchOf(f)} — fix ${f.id} of review ${o.id}: ${f.title} at ${where(f)}.${f.fix ? ` ${f.fix}` : ''}"`),
+    ...offered.map((f) => {
+      const n = o.batchOf(f);
+      const acc = o.acceptOf?.(n);
+      const tail = acc ? ` — Accept (batch ${n}): \`${acc}\`, exactly as written after the last edit; a new test is run separately, before it.` : '';
+      return `  ${f.id}: "Batch ${n} — fix ${f.id} of review ${o.id}: ${f.title} at ${where(f)}.${f.fix ? ` ${f.fix}` : ''}"${tail}`;
+    }),
     'One round only: no second review. What is left after it is the user\'s call.',
     ...(o.extra ? [o.extra.then] : []),
     ...(o.chatRules ? ['', o.chatRules] : []),

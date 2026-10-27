@@ -17,6 +17,9 @@
  * else the commands the tester saw fail. The tester's stop records how the full suite ended; a reviewer
  * that stops without having recorded its review is sent back once.
  *
+ * A review fix ("Batch N — fix R1 of review ...") passes with its batch Accept or with a plan `Suite:`
+ * command that passed after the last edit.
+ *
  * A background agent's launch was marked by PostToolUse; when it stops (and is not sent back), what
  * the main thread must hear is left as a note for the next hook that runs on it.
  *
@@ -25,7 +28,7 @@
 import { readFileSync } from 'node:fs';
 import { toNativePath } from '../../../core/paths.mjs';
 import { extractPlan, parseBatches, parseQuestions, parseSuites, planHash } from '../../../core/plan.mjs';
-import { batchOfPrompt, batchVerdict, canonCommand, inspectRun, isRed, stopMessage, suiteFixOfPrompt, suiteFixVerdict } from '../../../core/verify.mjs';
+import { batchOfPrompt, batchVerdict, canonCommand, inspectRun, isRed, reviewFixOfPrompt, reviewFixVerdict, stopMessage, suiteFixOfPrompt, suiteFixVerdict } from '../../../core/verify.mjs';
 import { completionLines, reviewExpected } from '../agent-done.mjs';
 import { hasAsync, pushNote, takeAsync } from '../agent-notes.mjs';
 import { lookupHandoff } from '../handoff.mjs';
@@ -82,7 +85,9 @@ try {
       const batch = n != null ? parseBatches(plan).find((b) => b.n === n) : null;
       if (batch && n != null) {
         marker = `implementer:batch-${n}`;
-        const verdict = batchVerdict(run.events, batch.accept, cwd);
+        const fix = reviewFixOfPrompt(run.prompt);
+        const suites = fix ? parseSuites(plan).map((s) => s.command) : [];
+        const verdict = fix ? reviewFixVerdict(run.events, batch.accept, suites, cwd) : batchVerdict(run.events, batch.accept, cwd);
         // Only this batch's file: a parallel batch finishing at the same moment writes its own.
         // The dispatch left a `running` file whose ts is the real launch time (a send-back's second stop
         // finds the first verdict, which already carries it).
@@ -92,7 +97,7 @@ try {
         recordBatch(cwd, branchName, hash, n, { ...verdict, ts: Date.now(), ...(typeof launched === 'number' ? { launched } : {}) });
         const key = `${input.agent_id || path}:${n}`;
         if (isRed(verdict.status) && batch.accept.kind === 'command' && !hasAsync(cwd, marker) && claimSendBack(cwd, hash, key)) {
-          process.stderr.write(stopMessage(n, batch.accept.command, verdict));
+          process.stderr.write(stopMessage(n, batch.accept.command, verdict, suites));
           code = 2;
           sentBack = true;
         }

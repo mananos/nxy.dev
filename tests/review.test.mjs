@@ -103,12 +103,17 @@ test('findings: parsed, classified by where they point, offered only when they a
   assert.equal(input.questions[0].multiSelect, true);
   assert.deepEqual(input.questions[0].options.map((o) => o.label), ['R1 N+1 on contactos', 'None'], 'only the change\'s; "None" when one');
   assert.match(text, /R1: "Batch 1 — fix R1 of review abc123: N\+1 on contactos at src\/app\/ClienteRepository\.java:12\. fetch join"/);
+  assert.doesNotMatch(text, /Accept \(batch/);
+  const withAccept = checkpoint2({ id: 'abc123', planHash: 'p1', findings: c, summary: { files: 2, added: 30, removed: 4 }, batchOf: (f) => batchForFile(batches, f.file), acceptOf: (n) => (n === 1 ? 'npm test' : null) });
+  assert.match(withAccept, /R1: "Batch 1 — fix R1 .*" — Accept \(batch 1\): `npm test`, exactly as written after the last edit/);
   assert.match(checkpoint2({ id: 'x', planHash: 'p', findings: [], summary: { files: 1, added: 1, removed: 0 }, batchOf: () => 1 }), /Nothing from the change to fix/);
 });
 
 test('a review fix closes without another suite or review', () => {
   const text = afterBatch({ hash: 'h', n: 1, verdict: { status: 'pass' }, batches: [1], recorded: {}, fix: { finding: 'R1', review: 'abc123' }, command: 'x' });
   assert.match(text, /Review fix R1 of review abc123 done/);
+  assert.match(text, /one at a time/);
+  assert.doesNotMatch(text, /can run in parallel/);
   assert.doesNotMatch(text, /One correction round only|round is over/i);
   assert.doesNotMatch(text, /nxy:tester/);
 });

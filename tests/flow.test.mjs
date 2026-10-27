@@ -186,3 +186,28 @@ test('session cut: suggested at a pause, past the statusline warning, once per s
     'not a pause: an exploration is not a natural point to cut');
   assert.ok(readFileSync(join(s.repo, '.nxy', 'local', 'cut-suggested.json'), 'utf8').includes('s2'));
 });
+
+test('a review fix passes with the plan Suite; the same run as a plain batch is not-run', () => {
+  const s = sandbox();
+  const plan = `${PLAN}\nSuite: . — \`npm run check\``;
+  s.node([MEM, 'handoff', 'plan'], plan);
+  const stop = (prompt, id) => {
+    const t = join(s.dir, `fix-${id}.jsonl`);
+    writeFileSync(t, [
+      { type: 'user', message: { content: `${CONTEXT_OPEN}\n${plan}\n${CONTEXT_CLOSE}\n\n${prompt}` } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'e', name: 'Edit', input: { file_path: 'x' } }] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'r', name: 'Bash', input: { command: 'npm run check' } }] } },
+      { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'r', is_error: false, content: 'ok' }] } },
+    ].map((l) => JSON.stringify(l)).join('\n') + '\n');
+    spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(HOOKS, 'subagentstop.mjs')], {
+      input: JSON.stringify({ cwd: s.repo, agent_id: id, agent_type: 'nxy:implementer', agent_transcript_path: t }), encoding: 'utf8',
+      env: { ...process.env, NXY_HOME: join(s.dir, 'home'), CLAUDE_PROJECT_DIR: s.repo },
+    });
+  };
+  const status = () => readVerify(s.repo, taskKey(s.repo), planHash(plan)).batches['2']?.status;
+  stop('Batch 2 — fix R1 of review abc123: x', 'fix1');
+  assert.equal(status(), 'pass');
+  stop('Batch 2 — go', 'plain1');
+  stop('Batch 2 — go', 'plain2');
+  assert.equal(status(), 'not-run');
+});

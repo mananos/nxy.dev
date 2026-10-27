@@ -26,6 +26,13 @@ for (const file of ['implementer.md', 'documenter.md']) {
   });
 }
 
+test('implementer.md step 4 accepts appended test files and still forbids pipe, ; and ||', () => {
+  const rule = read('implementer.md').split(/\r?\n/).find((l) => /^4\.\s/.test(l));
+  assert.ok(rule, 'step 4 present');
+  assert.match(rule, /extra test file paths appended/);
+  for (const banned of ['pipe', '`;`', '`||`']) assert.ok(rule.includes(banned), `step 4 forbids ${banned}`);
+});
+
 test('reviewer.md explains (inventory) files and reads ## Coverage', () => {
   const text = read('reviewer.md');
   assert.match(text, /\(inventory\)/);

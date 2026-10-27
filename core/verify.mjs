@@ -34,6 +34,12 @@ export function batchOfPrompt(prompt) {
   return m ? Number(m[1]) : null;
 }
 
+/** The review fix a dispatch is for: "fix R2 of review abc123" outside nxy's context block. */
+export function reviewFixOfPrompt(prompt) {
+  const m = /\bfix (R\d+) of review ([0-9a-f]+)/.exec(stripContextBlock(prompt));
+  return m ? { finding: m[1], review: m[2] } : null;
+}
+
 const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
 /**
@@ -52,8 +58,9 @@ export function canonCommand(s) {
 
 /**
  * Whether a shell command ran the acceptance command in a way whose exit status is the command's
- * own. A prefix is fine (`cd api && …`, `rtk …`); after it only redirections or `&& …` are — a pipe,
- * `;` or `||` would report the exit status of something else, and a red test would read green.
+ * own. A prefix is fine (`cd api && …`, `rtk …`); after it only appended test file paths,
+ * redirections or `&& …` are — flags are not, and a pipe, `;` or `||` would report the exit status of
+ * something else, and a red test would read green.
  * @param {string} run
  * @param {string} accept
  * @param {string} [root] the project root (see `inspectRun`)
@@ -63,6 +70,9 @@ export function runMatches(run, accept, root) {
 }
 
 const REDIRECTIONS = /^\s*(?:\d?>>?&?\s*\S+\s*)*/;
+
+/** One appended path-like argument: not a flag, no pipe, `;`, `&`, redirection, group or substitution character. */
+const EXTRA_PATH = /^\s+(?=\S*(?:\/|\.\w))[^\s\-|;&<>()$`][^\s|;&<>()$`]*/;
 
 /** `<root>/` out of a canonical command (also the Git Bash `/c/...` form of a drive), case-insensitive. */
 function stripRoot(s, root) {
@@ -91,7 +101,19 @@ export function inspectRun(run, accept, root) {
   if (!a) return { match: false };
   const i = r.lastIndexOf(a);
   if (i < 0) return { match: false };
-  const tail = r.slice(i + a.length);
+  // A newline after the Accept separates commands: the exit status would be the last one's.
+  const lines = String(run || '').split(/\r\n|\n|\r/);
+  let at = -1;
+  lines.forEach((l, j) => {
+    if (stripRoot(canonCommand(l), root).includes(a)) at = j;
+  });
+  if (at >= 0 && lines.slice(at + 1).some((l) => l.trim())) {
+    return { match: false, why: 'followed by a newline: the exit code is the last command one' };
+  }
+  const full = r.slice(i + a.length);
+  let tail = full;
+  // Appended test files (a new test next to the Accept) are fine; flags and operators are not.
+  for (let m = EXTRA_PATH.exec(tail); m; m = EXTRA_PATH.exec(tail)) tail = tail.slice(m[0].length);
   if (/^\s*(?:\d?>>?&?\s*\S+\s*)*(?:&&.*)?$/.test(tail)) return { match: true };
   const rest = tail.replace(REDIRECTIONS, '');
   if (rest.startsWith('||')) return { match: false, why: 'followed by ||: a failure is hidden' };
@@ -100,7 +122,11 @@ export function inspectRun(run, accept, root) {
     return { match: false, why: `piped through ${word || 'another command'}: the exit code is hidden` };
   }
   if (rest.startsWith(';')) return { match: false, why: 'followed by ;: the exit code is the last command one' };
-  return { match: false };
+  if (rest.startsWith('&') && !rest.startsWith('&&')) {
+    return { match: false, why: 'run in the background: the exit code is hidden' };
+  }
+  const shown = full.trim();
+  return { match: false, why: `extra arguments after the command: ${shown.length > 60 ? `${shown.slice(0, 57)}...` : shown}` };
 }
 
 /**
@@ -138,17 +164,36 @@ export function batchVerdict(events, accept, root) {
 }
 
 /**
+ * The verdict of a review fix: the batch verdict, or any plan suite command green after the last edit.
+ * @param {Event[]} events
+ * @param {import('./plan.mjs').Accept} accept
+ * @param {string[]} suites
+ * @param {string} [root]
+ * @returns {Verdict}
+ */
+export function reviewFixVerdict(events, accept, suites, root) {
+  const v = batchVerdict(events, accept, root);
+  if (v.status === 'pass') return v;
+  for (const command of suites || []) {
+    if (batchVerdict(events, { kind: 'command', command }, root).status === 'pass') return { status: 'pass' };
+  }
+  return v;
+}
+
+/**
  * What the implementer is told when it tries to stop with its batch unproven. Said once: a second
  * stop goes through and the batch is recorded red.
  * @param {number} n @param {string} command @param {Verdict} verdict
+ * @param {string[]} [also] for a review fix: plan suite commands whose pass also counts
  */
-export function stopMessage(n, command, verdict) {
+export function stopMessage(n, command, verdict, also = []) {
   const why = verdict.status === 'fail'
     ? `it failed after your last edit${verdict.error ? ` (${verdict.error})` : ''}`
     : `it has not been run after your last edit${verdict.detail ? `: ${verdict.detail}` : ''}`;
   return [
     `nxy verify: batch ${n}'s acceptance command has not passed — ${why}.`,
     `Run it exactly as written, not piped and not in the background: \`${command}\``,
+    ...(also.length ? [`For a review fix, the plan suite passing after your last edit also counts: ${also.map((c) => `\`${c}\``).join(', ')}`] : []),
     'If it fails because of your change, fix it and run it again. If it was already failing before your change, say so in your Notes and stop.',
   ].join('\n');
 }
