@@ -176,9 +176,10 @@ func SilenceHookWarning(getenv func(string) string, now time.Time) bool {
 
 // Engine resolves which tool rewrites commands, with a cache file separate from the 1.x one.
 type Engine struct {
-	CachePath string // default <UserDir>/cache/engine-v2.json
-	Now       func() time.Time
-	Getenv    func(string) string
+	CachePath        string // default <UserDir>/cache/engine-v2.json
+	RewriteCachePath string // default <UserDir>/cache/rewrite-v2.json
+	Now              func() time.Time
+	Getenv           func(string) string
 }
 
 type engineCache struct {
@@ -188,6 +189,10 @@ type engineCache struct {
 	RtkHookDetected bool   `json:"rtkHookDetected"`
 	Reason          string `json:"reason"`
 	ResolvedAt      int64  `json:"resolvedAt"`
+	// What the verdict was resolved for: a change of either makes the entry stale (unlike 1.x,
+	// whose cached verdict beat a changed config or env for up to 6 h).
+	ConfigEngine string `json:"configEngine"`
+	RtkPathEnv   string `json:"rtkPathEnv"`
 }
 
 func (e Engine) now() time.Time {
@@ -215,7 +220,7 @@ func (e Engine) cachePath() string {
 	return filepath.Join(u, "cache", "engine-v2.json")
 }
 
-func (e Engine) readCache(path string) (filter.EngineInfo, bool) {
+func (e Engine) readCache(path string, s filter.Settings) (filter.EngineInfo, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return filter.EngineInfo{}, false
@@ -226,6 +231,9 @@ func (e Engine) readCache(path string) (filter.EngineInfo, bool) {
 		return filter.EngineInfo{}, false
 	}
 	if _, ok := raw["resolvedAt"]; !ok {
+		return filter.EngineInfo{}, false
+	}
+	if c.ConfigEngine != s.Engine || c.RtkPathEnv != e.getenv("NXY_RTK_PATH") {
 		return filter.EngineInfo{}, false
 	}
 	ttl := negativeTTL
@@ -239,20 +247,19 @@ func (e Engine) readCache(path string) (filter.EngineInfo, bool) {
 		Reason: c.Reason, RtkHookDetected: c.RtkHookDetected, ResolvedAt: c.ResolvedAt}, true
 }
 
-// Info returns the cached engine if still fresh, else resolves it (calling rtkHook once) and refreshes the cache.
+// Info returns the cached engine if still fresh and resolved for the same engine setting and
+// NXY_RTK_PATH, else resolves it (calling rtkHook once) and refreshes the cache.
 func (e Engine) Info(s filter.Settings, rtkHook func() bool) filter.EngineInfo {
 	path := e.cachePath()
 	info, ok := filter.EngineInfo{}, false
 	if path != "" {
-		info, ok = e.readCache(path)
+		info, ok = e.readCache(path, s)
 	}
 	if !ok {
 		info = e.resolve(s, rtkHook)
 		if path != "" {
-			if os.MkdirAll(filepath.Dir(path), 0o755) == nil {
-				data, _ := json.Marshal(engineCache{info.Engine, info.RtkPath, info.RtkVersion, info.RtkHookDetected, info.Reason, info.ResolvedAt})
-				_ = os.WriteFile(path, data, 0o644)
-			}
+			writeFileAtomic(path, engineCache{info.Engine, info.RtkPath, info.RtkVersion, info.RtkHookDetected,
+				info.Reason, info.ResolvedAt, s.Engine, e.getenv("NXY_RTK_PATH")})
 		}
 	}
 	if info.Engine == "rtk" {

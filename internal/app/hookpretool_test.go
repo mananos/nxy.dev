@@ -17,7 +17,7 @@ type fakeEngine struct {
 }
 
 func (f fakeEngine) Info(filter.Settings, string) filter.EngineInfo { return f.info }
-func (f fakeEngine) Rewrite(string, string) (filter.RewriteResult, error) {
+func (f fakeEngine) Rewrite(filter.EngineInfo, string) (filter.RewriteResult, error) {
 	return f.res, nil
 }
 

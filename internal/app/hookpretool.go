@@ -21,7 +21,7 @@ func (h Hooks) preToolBash(ev HookEvent) HookResponse {
 		OnlyCommands:    s.OnlyCommands,
 	}
 	if info.RtkPath != "" {
-		fctx.Rewrite = func(c string) (filter.RewriteResult, error) { return h.Engine.Rewrite(info.RtkPath, c) }
+		fctx.Rewrite = func(c string) (filter.RewriteResult, error) { return h.Engine.Rewrite(info, c) }
 	}
 	d := filter.Decide(ev.Command, fctx)
 	if d.Action != "rewrite" || d.Command == "" {

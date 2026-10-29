@@ -28,7 +28,7 @@ type FilterConfig interface {
 // FilterEngine resolves which tool rewrites commands and asks it to.
 type FilterEngine interface {
 	Info(s filter.Settings, projectDir string) filter.EngineInfo
-	Rewrite(rtkPath, cmd string) (filter.RewriteResult, error)
+	Rewrite(info filter.EngineInfo, cmd string) (filter.RewriteResult, error)
 }
 
 // PermissionRules gives the host's allow/deny rules for a project.

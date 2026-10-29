@@ -242,13 +242,16 @@ func TestEngineNegativeAndReasons(t *testing.T) {
 		t.Fatalf("rtk-missing: %+v", info)
 	}
 	now = now.Add(time.Minute)
-	e.Info(filter.Settings{Engine: "auto"}, hook)
+	e.Info(filter.Settings{Engine: "rtk"}, hook)
 	if calls != 1 {
 		t.Fatalf("negative entry fresh at 1 min, calls=%d", calls)
 	}
 	now = now.Add(61 * time.Second)
-	if info := e.Info(filter.Settings{Engine: "auto"}, hook); calls != 2 || info.Reason != "auto-no-rtk" {
+	if info := e.Info(filter.Settings{Engine: "rtk"}, hook); calls != 2 || info.Reason != "rtk-missing" {
 		t.Fatalf("negative entry expires after 2 min: %+v calls=%d", info, calls)
+	}
+	if info := e.Info(filter.Settings{Engine: "auto"}, hook); calls != 3 || info.Reason != "auto-no-rtk" {
+		t.Fatalf("auto without rtk: %+v calls=%d", info, calls)
 	}
 
 	e.CachePath = filepath.Join(t.TempDir(), "off.json")
@@ -264,29 +267,44 @@ func TestEngineNegativeAndReasons(t *testing.T) {
 	}
 }
 
-// 1.x quirk (engine.mjs:136-148): a fresh cached verdict beats a changed config.
-func TestEngineCacheBeatsConfig(t *testing.T) {
+// Unlike 1.x (engine.mjs:136-148), a cached verdict does not outlive a change of the engine
+// setting (config or NXY_ENGINE) or of NXY_RTK_PATH.
+func TestEngineCacheFollowsConfig(t *testing.T) {
 	stub := buildStub(t)
 	_, getenv := isolate(t)
 	now := time.Now()
-	hook := func() bool { return false }
+	calls := 0
+	hook := func() bool { calls++; return false }
 
 	e := Engine{CachePath: filepath.Join(t.TempDir(), "a.json"), Now: func() time.Time { return now },
 		Getenv: withEnv(getenv, map[string]string{"NXY_RTK_PATH": stub})}
 	if info := e.Info(filter.Settings{Engine: "auto"}, hook); info.Engine != "rtk" {
 		t.Fatalf("seed: %+v", info)
 	}
-	if info := e.Info(filter.Settings{Engine: "off"}, hook); info.Engine != "rtk" || info.RtkPath != stub {
-		t.Fatalf("cached rtk must beat engine off: %+v", info)
+	if info := e.Info(filter.Settings{Engine: "off"}, hook); info.Engine != "off" || info.Reason != "config" || calls != 2 {
+		t.Fatalf("engine off must win over cached rtk: %+v calls=%d", info, calls)
+	}
+	if info := e.Info(filter.Settings{Engine: "rtk"}, hook); info.Engine != "rtk" || calls != 3 {
+		t.Fatalf("engine rtk must win over cached off: %+v calls=%d", info, calls)
+	}
+	if e.Info(filter.Settings{Engine: "rtk"}, hook); calls != 3 {
+		t.Fatalf("same setting must hit the cache, calls=%d", calls)
 	}
 
-	e2 := Engine{CachePath: filepath.Join(t.TempDir(), "b.json"), Now: func() time.Time { return now },
-		Getenv: withEnv(getenv, map[string]string{"NXY_RTK_PATH": stub})}
-	if info := e2.Info(filter.Settings{Engine: "off"}, hook); info.Engine != "off" {
-		t.Fatalf("seed off: %+v", info)
+	e.Getenv = withEnv(getenv, map[string]string{"NXY_RTK_PATH": "/nope/rtk"})
+	if info := e.Info(filter.Settings{Engine: "rtk"}, hook); info.Engine != "off" || info.Reason != "rtk-missing" || calls != 4 {
+		t.Fatalf("a new NXY_RTK_PATH must resolve again: %+v calls=%d", info, calls)
 	}
-	if info := e2.Info(filter.Settings{Engine: "rtk"}, hook); info.Engine != "off" {
-		t.Fatalf("cached off must beat engine rtk: %+v", info)
+
+	// an entry written before these fields existed is stale
+	old := filepath.Join(t.TempDir(), "old.json")
+	data, _ := json.Marshal(map[string]any{"engine": "off", "reason": "config", "resolvedAt": now.UnixMilli()})
+	if err := os.WriteFile(old, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	e = Engine{CachePath: old, Now: func() time.Time { return now }, Getenv: withEnv(getenv, map[string]string{"NXY_RTK_PATH": stub})}
+	if info := e.Info(filter.Settings{Engine: "auto"}, hook); info.Engine != "rtk" {
+		t.Fatalf("old entry must be re-resolved: %+v", info)
 	}
 }
 

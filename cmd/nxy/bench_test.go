@@ -56,7 +56,7 @@ func TestBenchHook(t *testing.T) {
 		t.Fatalf("exit %d, stderr: %s", code, errb.String())
 	}
 	s := out.String()
-	for _, want := range []string{"filter off", "filter on", "threshold 50 ms (14.20)"} {
+	for _, want := range []string{"| filter off |", "| filter on, no cache |", "| filter on |", "threshold 50 ms (14.20)"} {
 		if !strings.Contains(s, want) {
 			t.Fatalf("missing %q in:\n%s", want, s)
 		}

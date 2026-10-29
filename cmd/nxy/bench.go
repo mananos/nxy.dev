@@ -80,15 +80,19 @@ func runBench(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		name string
 		make func() *exec.Cmd
 	}
-	rows := []row{
-		{"filter off", func() *exec.Cmd {
+	direct := func(env ...string) func() *exec.Cmd {
+		return func() *exec.Cmd {
 			c := exec.Command(*bin, "hook")
-			c.Env = append(os.Environ(), "NXY_FILTER=0")
+			c.Env = append(os.Environ(), env...)
 			return c
-		}},
-		{"filter on", func() *exec.Cmd {
-			return exec.Command(*bin, "hook")
-		}},
+		}
+	}
+	// `filter on` repeats one command, so after the first run rtk's answer comes from the rewrite
+	// cache; `no cache` is what a command seen for the first time pays.
+	rows := []row{
+		{"filter off", direct("NXY_FILTER=0")},
+		{"filter on, no cache", direct("NXY_REWRITE_CACHE=0")},
+		{"filter on", direct()},
 	}
 	if *shim != "" {
 		sh, err := exec.LookPath("bash")
@@ -99,11 +103,15 @@ func runBench(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "nxy bench: no bash or sh on PATH, skipping `via shim`")
 		} else {
 			abs, _ := filepath.Abs(*shim)
-			rows = append(rows, row{"via shim", func() *exec.Cmd {
-				c := exec.Command(sh, "-c", `. "$1"; exit $LASTEXITCODE`, "_", abs)
-				c.Env = append(os.Environ(), "NXY_BIN="+*bin)
-				return c
-			}})
+			viaShim := func(env ...string) func() *exec.Cmd {
+				return func() *exec.Cmd {
+					c := exec.Command(sh, "-c", `. "$1"; exit $LASTEXITCODE`, "_", abs)
+					c.Env = append(append(os.Environ(), "NXY_BIN="+*bin), env...)
+					return c
+				}
+			}
+			// `via shim, filter off` minus `filter off` is what the shell costs by itself.
+			rows = append(rows, row{"via shim, filter off", viaShim("NXY_FILTER=0")}, row{"via shim", viaShim()})
 		}
 	}
 

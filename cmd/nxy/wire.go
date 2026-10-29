@@ -35,8 +35,8 @@ func (f filterEngine) Info(s filter.Settings, projectDir string) filter.EngineIn
 	})
 }
 
-func (filterEngine) Rewrite(rtkPath, cmd string) (filter.RewriteResult, error) {
-	return tools.Rewrite(rtkPath, cmd)
+func (f filterEngine) Rewrite(info filter.EngineInfo, cmd string) (filter.RewriteResult, error) {
+	return f.e.Rewrite(info, cmd)
 }
 
 func newHooks() app.Hooks {

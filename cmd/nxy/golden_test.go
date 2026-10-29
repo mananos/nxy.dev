@@ -58,7 +58,7 @@ func (r replayEngine) Info(filter.Settings, string) filter.EngineInfo {
 	return info
 }
 
-func (r replayEngine) Rewrite(_, cmd string) (filter.RewriteResult, error) {
+func (r replayEngine) Rewrite(_ filter.EngineInfo, cmd string) (filter.RewriteResult, error) {
 	if a, ok := r.c.Input.Rtk[cmd]; ok {
 		return filter.RewriteResult{Code: a.Code, Stdout: a.Stdout}, nil
 	}
