@@ -1,0 +1,5 @@
+{
+  "name": "nxy2-dev",
+  "version": "2.0.0-dev",
+  "description": "Dev only: nxy 2.0 hooks through the Go binary. Answers nothing yet."
+}

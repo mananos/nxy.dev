@@ -9,6 +9,8 @@ docs/roadmap-debate.md
 
 # Tooling
 node_modules/
+# GoReleaser output
+dist/
 # API declarations Claude Code writes when a plugin is loaded from a folder (--plugin-dir)
 .claude-plugin/types/
 *.log

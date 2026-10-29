@@ -57,3 +57,91 @@ jobs:
           node hosts/claude-code/entries/locate.mjs "where is the filter engine resolved" | head -20
           test -s .nxy/local/index/repomap.tsv
           node hosts/claude-code/entries/gate.mjs status
+
+  go:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      NXY_HOME: ${{ runner.temp }}/nxy-home
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
+      - name: build the binary into the versioned folder
+        shell: bash
+        run: |
+          v=$(go run ./cmd/nxy version)
+          ext=""
+          if [ "$RUNNER_OS" = "Windows" ]; then ext=".exe"; fi
+          go build -o "$NXY_HOME/bin/$v/nxy$ext" ./cmd/nxy
+      - name: shim smoke test (every hook event answers nothing)
+        shell: bash
+        run: |
+          while IFS= read -r payload; do
+            out=$(printf '%s' "$payload" | bash -c '. "$1/bin/nxy.cmd"; exit $LASTEXITCODE' _ "$PWD" 2>"$RUNNER_TEMP/shim-stderr") || { echo "non-zero exit for: $payload"; exit 1; }
+            test -z "$out" || { echo "expected no output, got: $out (for: $payload)"; exit 1; }
+            ! grep -q '^nxy:' "$RUNNER_TEMP/shim-stderr" || { echo "the shim reported a failure:"; cat "$RUNNER_TEMP/shim-stderr"; exit 1; }
+          done <<'EOF'
+          {"hook_event_name":"SessionStart","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PreToolUse","tool_name":"Edit","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PreToolUse","tool_name":"Grep","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PreToolUse","tool_name":"Agent","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PreToolUse","tool_name":"AskUserQuestion","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"ci","cwd":"."}
+          {"hook_event_name":"PostToolUse","tool_name":"Agent","session_id":"ci","cwd":"."}
+          {"hook_event_name":"UserPromptSubmit","session_id":"ci","cwd":"."}
+          {"hook_event_name":"SubagentStop","session_id":"ci","cwd":"."}
+          {"hook_event_name":"Stop","session_id":"ci","cwd":"."}
+          EOF
+      - name: shim smoke test under Windows PowerShell
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $shim = Join-Path $PWD 'bin\nxy.cmd'
+          $line = ". '$shim'; exit `$LASTEXITCODE"
+          $payloads = @(
+            '{"hook_event_name":"SessionStart","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PreToolUse","tool_name":"Edit","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PreToolUse","tool_name":"Grep","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PreToolUse","tool_name":"Agent","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PreToolUse","tool_name":"AskUserQuestion","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"PostToolUse","tool_name":"Agent","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"UserPromptSubmit","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"SubagentStop","session_id":"ci","cwd":"."}',
+            '{"hook_event_name":"Stop","session_id":"ci","cwd":"."}'
+          )
+          foreach ($p in $payloads) {
+            $errFile = Join-Path $env:RUNNER_TEMP 'shim-stderr'
+            $out = $p | powershell -NoProfile -NonInteractive -Command $line 2>$errFile
+            if ($LASTEXITCODE -ne 0) { Write-Error "non-zero exit for: $p"; exit 1 }
+            if ($out) { Write-Error "expected no output, got: $out (for: $p)"; exit 1 }
+            if ((Test-Path $errFile) -and (Select-String -Path $errFile -Pattern '^nxy:' -Quiet)) { Write-Error "the shim reported a failure: $(Get-Content $errFile -Raw)"; exit 1 }
+          }
+
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "v2.18.3"
+          args: release --snapshot --clean
+      - name: asset names must match what the shim downloads
+        run: |
+          for pat in 'nxy_.*_linux_amd64$' 'nxy_.*_linux_arm64$' 'nxy_.*_windows_amd64\.exe$' 'nxy_.*_darwin_arm64$'; do
+            grep -Eq "$pat" dist/checksums.txt || { echo "dist/checksums.txt lacks an asset matching $pat"; cat dist/checksums.txt; exit 1; }
+          done
