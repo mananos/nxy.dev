@@ -36,6 +36,37 @@ func TestDecodeNewFields(t *testing.T) {
 	}
 }
 
+func TestDecodeAgentAsync(t *testing.T) {
+	post := func(tool, event, resp string) bool {
+		ev, err := Decode(strings.NewReader(`{"hook_event_name":"` + event + `","tool_name":"` + tool + `","tool_response":` + resp + `}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ev.AgentAsync
+	}
+	for _, r := range []string{
+		`{"status":"async_launched"}`,
+		`"Async agent launched successfully. agentId: x"`,
+		`[{"type":"text","text":"Async agent launched successfully."}]`,
+		`{"content":[{"type":"text","text":"Async agent launched successfully."}]}`,
+		`{"isAsync":true,"status":"async_launched","agentId":"x1"}`,
+	} {
+		if !post("Agent", "PostToolUse", r) {
+			t.Errorf("should be async: %s", r)
+		}
+	}
+	normal := `{"content":[{"type":"text","text":"plan r1 saved"}]}`
+	if post("Agent", "PostToolUse", normal) {
+		t.Error("normal result is not async")
+	}
+	if post("Agent", "PreToolUse", `{"status":"async_launched"}`) {
+		t.Error("PreToolUse is not async")
+	}
+	if post("Bash", "PostToolUse", `{"status":"async_launched"}`) {
+		t.Error("Bash is not async")
+	}
+}
+
 func TestDecodeFilePathNative(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", "")
 	ev, _ := Decode(strings.NewReader(`{"tool_name":"Edit","cwd":"/tmp/x","tool_input":{"file_path":"/c/repo/a.go"}}`))
@@ -119,6 +150,20 @@ func TestEncodeResponses(t *testing.T) {
 		if h["hookEventName"] != name || !strings.HasPrefix(h["additionalContext"].(string), "nxy: feature f1") || m["systemMessage"] != "aviso" {
 			t.Errorf("%s: %v", name, m)
 		}
+	}
+
+	m = encode(t, app.HookEvent{Name: "Stop"}, app.HookResponse{Next: &app.Next{Feature: f}})
+	if m["decision"] != "block" || !strings.Contains(m["reason"].(string), "nxy: feature") {
+		t.Errorf("stop: %v", m)
+	}
+	var b bytes.Buffer
+	if err := Encode(&b, app.HookEvent{Name: "Stop"}, app.HookResponse{}); err != nil || b.Len() != 0 {
+		t.Errorf("stop zero: %q %v", b.String(), err)
+	}
+	m = encode(t, app.HookEvent{Name: "PostToolUse"}, app.HookResponse{Context: "espera"})
+	h = m["hookSpecificOutput"].(map[string]any)
+	if h["additionalContext"] != "espera" {
+		t.Errorf("context: %v", m)
 	}
 }
 

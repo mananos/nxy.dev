@@ -1,6 +1,10 @@
 package app
 
-import "context"
+import (
+	"context"
+
+	"github.com/mananos/nxy.dev/internal/domain"
+)
 
 const legacyNotice = "nxy 1.x is still enabled: disable it while testing the v2 (both answer the same hooks)"
 
@@ -14,11 +18,41 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 	var r HookResponse
 	if h.Store != nil && h.Repos != nil {
 		if f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(dir)); err == nil && found {
-			r.Next = &Next{Feature: f}
+			fresh := ev.Source == "startup" || ev.Source == ""
+			if fresh && f.Background != "" {
+				// A new process cannot have a planner still running from the old one.
+				if g, ok, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+					if g.Background == "" {
+						return false
+					}
+					g.Background = ""
+					return true
+				}); err == nil && ok {
+					f = g
+				} else {
+					f.Background = ""
+				}
+			}
+			running := f.Background == rolePlanner && f.State.Phase == domain.PhasePlanning
+			if running {
+				r.Context = backgroundWait(f.ID)
+			} else {
+				r.Next = &Next{Feature: f}
+			}
+			if fresh || ev.Source == "clear" {
+				if running {
+					r.Notice = "nxy: feature " + f.ID + " — the planner is still running; its result arrives when it ends"
+				} else {
+					r.Notice = "nxy: feature " + f.ID + " pendiente (" + f.Next.Label() + ") — escribí cualquier cosa para seguir"
+				}
+			}
 		}
 	}
 	if h.Legacy != nil && h.Legacy.Active(dir) {
-		r.Notice = legacyNotice
+		if r.Notice != "" {
+			r.Notice += "\n"
+		}
+		r.Notice += legacyNotice
 	}
 	return r
 }

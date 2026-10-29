@@ -68,6 +68,7 @@ func TestPlannerPrompt(t *testing.T) {
 		"Where? -> internal/greet",
 		"split batch 1",
 		"Previous plan",
+		"your final reply is exactly the line `plan save` printed (plan rN saved...) and nothing else",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("prompt lacks %q", want)

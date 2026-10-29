@@ -40,7 +40,7 @@ func runPlan(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
-	fmt.Fprintf(stdout, "plan r%d saved; reply with one line\n", res.Rev)
+	fmt.Fprintf(stdout, "plan r%d saved; reply with exactly this line, nothing else\n", res.Rev)
 	return 0
 }
 

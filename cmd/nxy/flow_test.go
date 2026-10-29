@@ -2,11 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/internal/store/sqlite"
 )
 
 // flowRepo makes a temp repo, enters it and returns its directory as the process sees it.
@@ -144,6 +149,73 @@ func TestFeatureFlowEndToEnd(t *testing.T) {
 	}
 	if code, _, _ := runCmd(t, "", "feature", "stop"); code != 1 {
 		t.Fatalf("second stop exit %d", code)
+	}
+}
+
+func TestBackgroundPlannerEndToEnd(t *testing.T) {
+	repo := flowRepo(t)
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
+	id := featureID(t)
+
+	hookCall(t, map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Agent", "cwd": repo,
+		"tool_input": map[string]any{"subagent_type": "nxy:planner", "prompt": "feature " + id}})
+	out := hookCall(t, map[string]any{"hook_event_name": "PostToolUse", "tool_name": "Agent", "cwd": repo,
+		"tool_input":    map[string]any{"subagent_type": "nxy:planner", "prompt": "x"},
+		"tool_response": map[string]any{"isAsync": true, "status": "async_launched", "agentId": "a1"}})
+	if !strings.Contains(out, "background") {
+		t.Fatalf("launch does not say wait: %q", out)
+	}
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "state: Trabajando\nstep: Planificando\n") {
+		t.Fatalf("status after launch: %q", st)
+	}
+
+	if code, so, errb := runCmd(t, flowPlan, "plan", "save", "--feature", id); code != 0 || !strings.Contains(so, "plan r1 saved") {
+		t.Fatalf("plan save: code %d, out %q, err %q", code, so, errb)
+	}
+	if out := hookCall(t, map[string]any{"hook_event_name": "SubagentStop", "cwd": repo,
+		"agent_id": "a1", "agent_type": "nxy:planner"}); out != "" {
+		t.Fatalf("SubagentStop should print nothing: %q", out)
+	}
+	out = hookCall(t, map[string]any{"hook_event_name": "Stop", "cwd": repo})
+	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "verbatim") {
+		t.Fatalf("Stop did not deliver the checkpoint: %q", out)
+	}
+	if out := hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "sigo"}); out != "" {
+		t.Fatalf("checkpoint delivered twice: %q", out)
+	}
+}
+
+func TestPlanSaveOnStoppedFeature(t *testing.T) {
+	repo := flowRepo(t)
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
+	id := featureID(t)
+	if code, _, _ := runCmd(t, "", "feature", "stop"); code != 0 {
+		t.Fatalf("stop exit %d", code)
+	}
+	code, _, errb := runCmd(t, flowPlan, "plan", "save", "--feature", id)
+	if code != 1 || !strings.Contains(errb, "not planning") {
+		t.Fatalf("save on stopped: code %d, stderr %q", code, errb)
+	}
+	path, err := platform.DBPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	s, err := sqlite.Open(ctx, path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	f, err := s.Feature(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Plan != nil || f.PlanRev != 0 || f.State.Phase != domain.PhaseDone {
+		t.Fatalf("stopped feature changed: plan %v, rev %d, phase %s", f.Plan, f.PlanRev, f.State.Phase)
+	}
+	if out := hookCall(t, map[string]any{"hook_event_name": "SubagentStop", "cwd": repo,
+		"agent_id": "a1", "agent_type": "nxy:planner"}); out != "" {
+		t.Fatalf("SubagentStop of a stopped feature printed %q", out)
 	}
 }
 

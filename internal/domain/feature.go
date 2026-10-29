@@ -14,4 +14,8 @@ type Feature struct {
 	Answers    []Answer `json:"answers,omitempty"`
 	// ChangeNotes are the user's literal notes asking to change the plan.
 	ChangeNotes []string `json:"change_notes,omitempty"`
+	// Background is the role of the nxy agent launched in the background whose end has not been handled.
+	Background string `json:"background,omitempty"`
+	// Undelivered is true while Next still has to reach the main thread.
+	Undelivered bool `json:"undelivered,omitempty"`
 }

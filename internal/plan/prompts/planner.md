@@ -46,4 +46,4 @@ Save with one Bash call, the JSON on stdin:
 { ...your plan... }
 JSON
 
-If it prints problems, fix them and save again in the same turn. When it succeeds, reply with one line and nothing else.
+If it prints problems, fix them and save again in the same turn. When it succeeds, your final reply is exactly the line `plan save` printed (plan rN saved...) and nothing else. No rules, batches, questions or summary: nxy shows the plan to the user itself.

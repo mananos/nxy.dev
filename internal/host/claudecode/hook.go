@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
 	"github.com/mananos/nxy.dev/internal/platform"
@@ -84,6 +86,9 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 			ev.Answers = transcriptAnswers(in.TranscriptPath, in.ToolUseID)
 		}
 	}
+	if ev.Name == "PostToolUse" && (ev.Tool == "Agent" || ev.Tool == "Task") {
+		ev.AgentAsync = asyncLaunch(in.ToolResponse)
+	}
 	dir := os.Getenv("CLAUDE_PROJECT_DIR")
 	if dir == "" {
 		dir = in.Cwd
@@ -123,12 +128,21 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			"permissionDecisionReason": "nxy: prompt written by nxy",
 			"updatedInput":             fields,
 		}}
-	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != ""):
+	case ev.Name == "Stop" && resp.Next != nil:
+		out = map[string]any{"decision": "block", "reason": Instruction(resp.Next.Feature, resp.Next.Note)}
+	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != "" || resp.Context != ""):
 		out = map[string]any{}
-		if resp.Next != nil {
+		if resp.Next != nil || resp.Context != "" {
+			var parts []string
+			if resp.Next != nil {
+				parts = append(parts, Instruction(resp.Next.Feature, resp.Next.Note))
+			}
+			if resp.Context != "" {
+				parts = append(parts, resp.Context)
+			}
 			out["hookSpecificOutput"] = map[string]any{
 				"hookEventName":     ev.Name,
-				"additionalContext": Instruction(resp.Next.Feature, resp.Next.Note),
+				"additionalContext": strings.Join(parts, "\n\n"),
 			}
 		}
 		if resp.Notice != "" {
@@ -143,6 +157,49 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 	}
 	_, err = w.Write(b)
 	return err
+}
+
+var asyncText = regexp.MustCompile(`(?i)^\s*Async agent launched`)
+
+// asyncLaunch reports whether an Agent tool_response says the agent was launched in the background
+// (a string, an object or content blocks). It ports the 1.x isAsyncLaunch.
+func asyncLaunch(raw json.RawMessage) bool {
+	if len(raw) == 0 {
+		return false
+	}
+	var v any
+	if json.Unmarshal(raw, &v) != nil {
+		return false
+	}
+	return asyncValue(v)
+}
+
+func asyncValue(v any) bool {
+	switch r := v.(type) {
+	case string:
+		return asyncText.MatchString(r)
+	case []any:
+		for _, b := range r {
+			if asyncValue(b) {
+				return true
+			}
+		}
+	case map[string]any:
+		if b, _ := r["isAsync"].(bool); b {
+			return true
+		}
+		if s, _ := r["status"].(string); s == "async_launched" {
+			return true
+		}
+		if s, ok := r["text"].(string); ok && asyncText.MatchString(s) {
+			return true
+		}
+		switch c := r["content"].(type) {
+		case []any, string:
+			return asyncValue(c)
+		}
+	}
+	return false
 }
 
 func encodeRewrite(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {

@@ -38,6 +38,8 @@ type HookEvent struct {
 	InputHasAnswers bool
 	// Answers maps question to the user's answer (PostToolUse AskUserQuestion).
 	Answers map[string]string
+	// AgentAsync is true on PostToolUse Agent/Task when the agent was launched in the background.
+	AgentAsync bool
 }
 
 // Next is the step the main thread has to take; the host adapter words it.
@@ -63,6 +65,8 @@ type HookResponse struct {
 	Next *Next
 	// Notice is shown to the user.
 	Notice string
+	// Context is a plain line for the main thread, with no step attached.
+	Context string
 }
 
 // Hooks answers hook events with the ports it was given.
@@ -87,20 +91,24 @@ func (h Hooks) Handle(ctx context.Context, ev HookEvent) HookResponse {
 	case ev.Name == "PreToolUse" && isAgentTool(ev.Tool):
 		return h.preToolAgent(ctx, ev)
 	case ev.Name == "PostToolUse" && isAgentTool(ev.Tool):
-		return h.postToolAgent(ctx, ev)
+		return h.deliverPending(ctx, ev, h.postToolAgent(ctx, ev))
 	case ev.Name == "UserPromptSubmit":
 		if r, ok := h.changeNote(ctx, ev); ok {
-			return r
+			return h.deliverPending(ctx, ev, r)
 		}
-		return h.startFeature(ctx, ev)
+		return h.deliverPending(ctx, ev, h.startFeature(ctx, ev))
 	case ev.Name == "PreToolUse" && ev.Tool == toolAskUser:
 		return h.preToolAskUser(ctx, ev)
 	case ev.Name == "PostToolUse" && ev.Tool == toolAskUser:
-		return h.postToolAskUser(ctx, ev)
+		return h.deliverPending(ctx, ev, h.postToolAskUser(ctx, ev))
 	case ev.Name == "PreToolUse" && isEditTool(ev.Tool):
 		return h.preToolEdit(ctx, ev)
 	case ev.Name == "SessionStart":
-		return h.sessionStart(ctx, ev)
+		return h.deliverPending(ctx, ev, h.sessionStart(ctx, ev))
+	case ev.Name == "SubagentStop":
+		return h.subagentStop(ctx, ev)
+	case ev.Name == "Stop":
+		return h.deliverPending(ctx, ev, HookResponse{})
 	}
 	return HookResponse{}
 }

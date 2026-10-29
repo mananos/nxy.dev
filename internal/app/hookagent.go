@@ -24,6 +24,14 @@ var roleFor = map[domain.ActionKind]string{
 	domain.DispatchFixer:       roleImplementer,
 }
 
+// backgroundEnded marks that a planner's SubagentStop arrived before any background launch.
+const backgroundEnded = "ended"
+
+// backgroundWait is the line telling the main thread a background planner is still running.
+func backgroundWait(id string) string {
+	return "nxy: feature " + id + " — the planner is running in the background; wait for it and do not dispatch it again: nxy brings its result when it ends."
+}
+
 func isAgentTool(tool string) bool { return tool == "Agent" || tool == "Task" }
 
 // activeFeature is the active feature of the event's repo, if any.
@@ -73,12 +81,38 @@ func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	if !ok {
 		return HookResponse{}
 	}
+	ended := f.Background == backgroundEnded
+	if ev.AgentAsync && !ended && f.State.Phase == domain.PhasePlanning {
+		nf, _, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+			g.Background = rolePlanner
+			return true
+		})
+		if err != nil {
+			return HookResponse{}
+		}
+		return HookResponse{Context: backgroundWait(nf.ID)}
+	}
 	if f.State.Phase == domain.PhasePlanning {
-		nf, _, err := h.advance(ctx, f.ID, flow.Event{Kind: flow.PlannerReturned})
+		nf, _, err := h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.PlannerReturned}, func(g *domain.Feature) error {
+			if g.Background == backgroundEnded {
+				g.Background = ""
+			}
+			return nil
+		})
 		if err != nil {
 			return HookResponse{}
 		}
 		f = nf
+	} else if ended {
+		if nf, _, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+			if g.Background != backgroundEnded {
+				return false
+			}
+			g.Background = ""
+			return true
+		}); err == nil {
+			f = nf
+		}
 	}
 	return HookResponse{Next: &Next{Feature: f}}
 }

@@ -11,7 +11,7 @@ NXY_BIN=<dir>/nxy.exe claude --plugin-dir dev/plugin
 
 Outside a feature you should see nothing: no hook output, no blocked tool, no extra text in the session. A stderr line starting with `nxy:` means the shim could not find or fetch the binary.
 
-It sits beside the installed 1.x plugin (`nxy`, version 1.x): both load, both hooks run on every event. The 1.x plugin does the real work; this one only proves the binary starts. Since F2.1 its name is `nxy` (needed for `/nxy:feature`), so disable the installed 1.x plugin while you load it.
+Since F2.1 this plugin runs the feature flow and the filter itself, so it cannot sit beside the installed 1.x plugin: both would react to every event. Its name is `nxy` (needed for `/nxy:feature`), the same as 1.x, so disable the installed 1.x plugin while you load it.
 
 Download limits: the shim fetches at most 8 s in total (binary 6 s, checksums 2 s), under the 10 s hook timeout. Only one hook downloads at a time (lock folder `nxy.exe.lock` beside the target); the others print one `nxy:` line and do nothing. A lock older than a minute and temp files older than a day, left by dead runs, are removed on the next start.
 
@@ -50,6 +50,8 @@ Estados públicos (los de `nxy status`):
 - **Listo**: la feature terminó, o la paraste.
 
 Después de aprobar, F2.1 se detiene en **Lote 1**: la ejecución llega en F2.2. Mientras tanto el hilo principal no puede editar archivos del repo (los de fuera, como `~/.claude`, sí). `nxy status` te dice dónde está (por ejemplo "Lote 1"). Para terminar: `nxy feature stop`; libera las ediciones del repo y borra el plan .md.
+
+Planner en segundo plano: si Claude lanza el planner sin esperarlo, nxy le dice "esperá" al hilo principal (no lo relanza). El plan te llega al final de ese turno o en tu próximo mensaje, una sola vez. Si hacés `/clear` con una feature pendiente, ves una línea "nxy: feature … pendiente": escribí cualquier cosa para seguir.
 
 Dónde queda el plan: `~/.nxy/plans/<id>.md`, uno por feature, de unos 5 a 15 KB. Se pisa en cada Ver completo y se borra al parar.
 
