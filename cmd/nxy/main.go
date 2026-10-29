@@ -7,17 +7,22 @@ import (
 	"io"
 	"os"
 
-	"github.com/matyy-a/nxy.dev/internal/host/claudecode"
-	"github.com/matyy-a/nxy.dev/internal/version"
+	"github.com/mananos/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/internal/version"
 )
 
 type command func(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 
 var commands = map[string]command{
 	"bench":   runBench,
+	"feature": runFeature,
 	"hook":    runHook,
+	"plan":    runPlan,
+	"status":  runStatus,
 	"version": runVersion,
 }
+
+const usage = "usage: nxy <hook|bench|plan save|status|feature stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
@@ -25,12 +30,12 @@ func main() {
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: nxy <hook|bench|version>")
+		fmt.Fprintln(stderr, usage)
 		return 1
 	}
 	cmd, ok := commands[args[0]]
 	if !ok {
-		fmt.Fprintf(stderr, "nxy: unknown command %q\nusage: nxy <hook|bench|version>\n", args[0])
+		fmt.Fprintf(stderr, "nxy: unknown command %q\n%s\n", args[0], usage)
 		return 1
 	}
 	return cmd(args[1:], stdin, stdout, stderr)
@@ -54,7 +59,9 @@ func runHook(_ []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		fmt.Fprintf(stderr, "nxy hook: %v\n", err)
 		return 0
 	}
-	resp := newHooks().Handle(context.Background(), ev)
+	h, st := newHooksStore()
+	defer st.Close()
+	resp := h.Handle(context.Background(), ev)
 	if err := claudecode.Encode(stdout, ev, resp); err != nil {
 		fmt.Fprintf(stderr, "nxy hook: %v\n", err)
 	}

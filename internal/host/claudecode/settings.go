@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/matyy-a/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/filter"
 )
 
 // SettingsFiles are the Claude Code settings files that can carry hooks and permissions, in precedence order.
@@ -15,6 +16,43 @@ func SettingsFiles(home, projectDir string) []string {
 		filepath.Join(projectDir, ".claude", "settings.json"),
 		filepath.Join(projectDir, ".claude", "settings.local.json"),
 	}
+}
+
+// LegacyActive reports whether a 1.x nxy plugin is enabled in the settings files and
+// installed at version 1.x. Read-only; any error means false.
+func LegacyActive(home, projectDir string) bool {
+	enabled := map[string]bool{}
+	for _, f := range SettingsFiles(home, projectDir) {
+		ep, _ := readSettings(f)["enabledPlugins"].(map[string]any)
+		for k, v := range ep {
+			if on, ok := v.(bool); ok && strings.HasPrefix(k, "nxy@") {
+				enabled[k] = on
+			}
+		}
+	}
+	data, err := os.ReadFile(filepath.Join(home, ".claude", "plugins", "installed_plugins.json"))
+	if err != nil {
+		return false
+	}
+	var inst struct {
+		Plugins map[string][]struct {
+			Version string `json:"version"`
+		} `json:"plugins"`
+	}
+	if json.Unmarshal(data, &inst) != nil {
+		return false
+	}
+	for k, on := range enabled {
+		if !on {
+			continue
+		}
+		for _, e := range inst.Plugins[k] {
+			if strings.HasPrefix(e.Version, "1.") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // readSettings returns nil for a missing or broken file. Settings files are only ever read.

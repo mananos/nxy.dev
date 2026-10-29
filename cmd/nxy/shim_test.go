@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/matyy-a/nxy.dev/internal/version"
+	"github.com/mananos/nxy.dev/internal/version"
 )
 
 const (

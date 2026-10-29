@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/matyy-a/nxy.dev/internal/version"
+	"github.com/mananos/nxy.dev/internal/version"
 )
 
 // isolate keeps the real user config, settings and rtk out of a test.

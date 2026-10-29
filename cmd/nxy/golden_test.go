@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/matyy-a/nxy.dev/internal/filter"
-	"github.com/matyy-a/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/host/claudecode"
 )
 
 type goldenHookCase struct {
@@ -125,7 +125,8 @@ func TestGoldenHookPreToolUseBash(t *testing.T) {
 				if ev.Name == "" {
 					ev.Name = "PreToolUse" // the 1.x hook is registered for PreToolUse; the corpus payloads omit the name
 				}
-				h := newHooks()
+				h, st := newHooksStore()
+				defer st.Close()
 				h.Engine = replayEngine{c}
 				resp := h.Handle(context.Background(), ev)
 				var out bytes.Buffer

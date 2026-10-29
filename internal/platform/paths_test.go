@@ -13,6 +13,10 @@ func TestNativePath(t *testing.T) {
 		{"windows", "C:/Users/x", "C:/Users/x"},
 		{"windows", "/usr/bin", "/usr/bin"},
 		{"windows", "", ""},
+		{"windows", `\\?\C:\Repo\a.go`, `C:\Repo\a.go`},
+		{"windows", `\\?\UNC\srv\share\a.go`, `\\srv\share\a.go`},
+		{"windows", `\\srv\share\a.go`, `\\srv\share\a.go`},
+		{"linux", `\\?\C:\Repo`, `\\?\C:\Repo`},
 		{"linux", "/c/Users/x", "/c/Users/x"},
 		{"linux", "/home/x", "/home/x"},
 	}

@@ -1,0 +1,193 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/mananos/nxy.dev/internal/domain"
+)
+
+type discardViewer struct{ discarded []string }
+
+func (*discardViewer) Show(context.Context, domain.Feature) (string, error) { return "", nil }
+func (v *discardViewer) Discard(id string) error {
+	v.discarded = append(v.discarded, id)
+	return nil
+}
+
+func seed(t *testing.T, h Hooks, st *memStore, dir string, state domain.State, next domain.Action) string {
+	t.Helper()
+	id, err := st.CreateFeature(context.Background(), domain.Feature{
+		Repo: h.Repos.Key(dir), ProjectDir: dir, Request: "first line\nsecond", State: state, Next: next, PlanRev: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+var (
+	approvalState = domain.State{Phase: domain.PhaseApproval}
+	approvalNext  = domain.Action{Kind: domain.AskApproval}
+	runningState  = domain.State{Phase: domain.PhaseRunningBatch, Batch: 1, Batches: 2}
+	runningNext   = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
+)
+
+func TestPreToolEdit(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	edit := func(file, agent string) HookEvent {
+		return HookEvent{Name: "PreToolUse", Tool: "Write", FilePath: file, AgentID: agent, ProjectDir: root, Cwd: root}
+	}
+	cases := []struct {
+		name string
+		ev   HookEvent
+		deny bool
+	}{
+		{"inside", edit(filepath.Join(root, "a", "b.go"), ""), true},
+		{"outside", edit(filepath.Join(outside, "x.md"), ""), false},
+		{"relative inside", edit("a/b.go", ""), true},
+		{"relative escaping", edit("../elsewhere/x", ""), false},
+		{"subagent", edit(filepath.Join(root, "a.go"), "agent-1"), false},
+		{"sibling prefix", edit(root+"-other/a.go", ""), false},
+	}
+	for _, c := range cases {
+		h, st := flowHooks(false)
+		seed(t, h, st, root, approvalState, approvalNext)
+		r := h.Handle(context.Background(), c.ev)
+		if (r.Deny != "") != c.deny {
+			t.Errorf("%s: deny = %q, want deny=%v", c.name, r.Deny, c.deny)
+		}
+		if c.deny && (!strings.Contains(r.Deny, "`nxy feature stop`") || !strings.Contains(r.Deny, "Aprobar plan")) {
+			t.Errorf("%s: reason = %q", c.name, r.Deny)
+		}
+	}
+
+	t.Run("no feature", func(t *testing.T) {
+		h, _ := flowHooks(false)
+		if r := h.Handle(context.Background(), edit(filepath.Join(root, "a.go"), "")); r.Deny != "" {
+			t.Errorf("deny = %q", r.Deny)
+		}
+	})
+	t.Run("stopped feature", func(t *testing.T) {
+		h, st := flowHooks(false)
+		seed(t, h, st, root, domain.State{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}, domain.Action{})
+		if r := h.Handle(context.Background(), edit(filepath.Join(root, "a.go"), "")); r.Deny != "" {
+			t.Errorf("deny = %q", r.Deny)
+		}
+	})
+}
+
+func TestPreToolEditWindowsPaths(t *testing.T) {
+	old := goos
+	goos = "windows"
+	defer func() { goos = old }()
+	h, st := flowHooks(false)
+	root := `C:\Repo\Proj`
+	seed(t, h, st, root, approvalState, approvalNext)
+	for _, p := range []string{`c:\repo\proj\A.go`, `C:/Repo/Proj/sub/a.go`} {
+		ev := HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: p, ProjectDir: root, Cwd: root}
+		if r := h.Handle(context.Background(), ev); r.Deny == "" {
+			t.Errorf("%s: not denied", p)
+		}
+	}
+	ev := HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: `C:\Users\me\.claude\x.md`, ProjectDir: root, Cwd: root}
+	if r := h.Handle(context.Background(), ev); r.Deny != "" {
+		t.Errorf("outside denied: %q", r.Deny)
+	}
+}
+
+func TestNormPathUNC(t *testing.T) {
+	old := goos
+	goos = "windows"
+	defer func() { goos = old }()
+	root := normPath(`\\srv\Share\Proj`, "")
+	if !within(root, normPath(`\\SRV\share\proj\sub\a.go`, "")) {
+		t.Error("UNC file inside root not matched")
+	}
+	if within(root, normPath(`\\srv\share\other\a.go`, "")) {
+		t.Error("UNC file outside root matched")
+	}
+	if got := normPath(`C:\Repo\..\Repo\a.go`, ""); got != "c:/repo/a.go" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestStatus(t *testing.T) {
+	dir := t.TempDir()
+	h, st := flowHooks(false)
+	if v, err := h.Status(context.Background(), dir); err != nil || v != (StatusView{}) {
+		t.Fatalf("empty: %+v %v", v, err)
+	}
+	id := seed(t, h, st, dir, approvalState, approvalNext)
+	v, err := h.Status(context.Background(), dir)
+	if err != nil || v.FeatureID != id || v.Request != "first line" || v.Next != "Aprobar plan" || v.PlanRev != 1 {
+		t.Errorf("approval: %+v %v", v, err)
+	}
+	if v.Public == "" || v.Phase == "" {
+		t.Errorf("approval labels: %+v", v)
+	}
+
+	h, st = flowHooks(false)
+	seed(t, h, st, dir, runningState, runningNext)
+	if v, _ := h.Status(context.Background(), dir); v.Next != "Lote 1" {
+		t.Errorf("running: %+v", v)
+	}
+}
+
+func TestStopFeature(t *testing.T) {
+	dir := t.TempDir()
+	for name, c := range map[string]struct {
+		s domain.State
+		n domain.Action
+	}{"approval": {approvalState, approvalNext}, "running": {runningState, runningNext}} {
+		h, st := flowHooks(false)
+		v := &discardViewer{}
+		h.Viewer = v
+		id := seed(t, h, st, dir, c.s, c.n)
+		f, _, err := h.StopFeature(context.Background(), dir)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if f.ID != id || f.State.Phase != domain.PhaseDone || f.State.Outcome != domain.OutcomeStopped {
+			t.Errorf("%s: feature = %+v", name, f)
+		}
+		if _, ok, _ := st.ActiveFeature(context.Background(), h.Repos.Key(dir)); ok {
+			t.Errorf("%s: still active", name)
+		}
+		if len(v.discarded) != 1 || v.discarded[0] != id {
+			t.Errorf("%s: discarded = %v", name, v.discarded)
+		}
+		if _, _, err := h.StopFeature(context.Background(), dir); !errors.Is(err, ErrNoActiveFeature) {
+			t.Errorf("%s: second stop err = %v", name, err)
+		}
+	}
+	h, _ := flowHooks(false)
+	if _, _, err := h.StopFeature(context.Background(), dir); !errors.Is(err, ErrNoActiveFeature) {
+		t.Errorf("no feature: %v", err)
+	}
+}
+
+type failViewer struct{ discardViewer }
+
+func (*failViewer) Discard(string) error { return errors.New("locked") }
+
+func TestStopFeatureDiscardFailureIsWarning(t *testing.T) {
+	dir := t.TempDir()
+	h, st := flowHooks(false)
+	h.Viewer = &failViewer{}
+	seed(t, h, st, dir, approvalState, approvalNext)
+	f, warn, err := h.StopFeature(context.Background(), dir)
+	if err != nil || warn == nil {
+		t.Fatalf("err = %v, warning = %v", err, warn)
+	}
+	if f.State.Outcome != domain.OutcomeStopped {
+		t.Errorf("feature = %+v", f)
+	}
+	if _, ok, _ := st.ActiveFeature(context.Background(), h.Repos.Key(dir)); ok {
+		t.Error("still active")
+	}
+}

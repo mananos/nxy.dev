@@ -1,5 +1,5 @@
 {
-  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; answers nothing yet",
+  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; the binary runs the F2.1 flow (/nxy:feature, planner, plan save, approval) and the Bash filter",
   "hooks": {
     "SessionStart": [
       {
@@ -77,6 +77,16 @@
       },
       {
         "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd\"; exit $LASTEXITCODE",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
         "hooks": [
           {
             "type": "command",

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/matyy-a/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/domain"
 )
 
 var ctx = context.Background()
@@ -96,7 +96,7 @@ func phase(t *testing.T, s *Store, id string) string {
 	t.Helper()
 	var got string
 	err := s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
-		got = f.Phase
+		got = f.Request
 		return f, nil
 	})
 	if err != nil {
@@ -107,12 +107,12 @@ func phase(t *testing.T, s *Store, id string) string {
 
 func TestTransition(t *testing.T) {
 	s := mustOpen(t, dbPath(t))
-	id, err := s.CreateFeature(ctx, domain.Feature{Phase: "a"})
+	id, err := s.CreateFeature(ctx, domain.Feature{Request: "a"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
-		f.Phase += "b"
+		f.Request += "b"
 		return f, nil
 	}); err != nil {
 		t.Fatal(err)
@@ -134,19 +134,19 @@ func TestTransitionConflictRetries(t *testing.T) {
 	path := dbPath(t)
 	a := mustOpen(t, path)
 	b := mustOpen(t, path)
-	id, _ := a.CreateFeature(ctx, domain.Feature{Phase: ""})
+	id, _ := a.CreateFeature(ctx, domain.Feature{})
 	first := true
 	err := a.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
 		if first {
 			first = false
 			if err := b.Transition(ctx, id, func(g domain.Feature) (domain.Feature, error) {
-				g.Phase += "B"
+				g.Request += "B"
 				return g, nil
 			}); err != nil {
 				t.Fatal(err)
 			}
 		}
-		f.Phase += "A"
+		f.Request += "A"
 		return f, nil
 	})
 	if err != nil {
@@ -165,12 +165,12 @@ func TestTransitionConflictExhausted(t *testing.T) {
 	id, _ := a.CreateFeature(ctx, domain.Feature{})
 	err := a.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
 		if err := b.Transition(ctx, id, func(g domain.Feature) (domain.Feature, error) {
-			g.Phase += "B"
+			g.Request += "B"
 			return g, nil
 		}); err != nil {
 			t.Fatal(err)
 		}
-		f.Phase += "A"
+		f.Request += "A"
 		return f, nil
 	})
 	if !errors.Is(err, ErrConflict) {
@@ -178,6 +178,70 @@ func TestTransitionConflictExhausted(t *testing.T) {
 	}
 	if got := phase(t, a, id); got != "B" {
 		t.Errorf("phase %q", got)
+	}
+}
+
+func TestActiveFeaturePerRepo(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	if _, ok, err := s.ActiveFeature(ctx, "r1"); err != nil || ok {
+		t.Fatalf("empty: ok=%v err=%v", ok, err)
+	}
+	a, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r1", Request: "a"})
+	b, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r2", Request: "b"})
+	f, ok, err := s.ActiveFeature(ctx, "r1")
+	if err != nil || !ok || f.ID != a {
+		t.Fatalf("r1: %v %v %v", f.ID, ok, err)
+	}
+	f, ok, _ = s.ActiveFeature(ctx, "r2")
+	if !ok || f.ID != b {
+		t.Fatalf("r2: %v %v", f.ID, ok)
+	}
+	for _, out := range []domain.Outcome{domain.OutcomeSuccess, domain.OutcomeStopped} {
+		id, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r3"})
+		if err := s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
+			f.State = domain.State{Phase: domain.PhaseDone, Outcome: out}
+			return f, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if _, ok, _ := s.ActiveFeature(ctx, "r3"); ok {
+			t.Errorf("%s: still active", out)
+		}
+		if got, err := s.Feature(ctx, id); err != nil || got.State.Outcome != out {
+			t.Errorf("Feature: %+v %v", got.State, err)
+		}
+	}
+}
+
+func TestFeatureNotFound(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	if _, err := s.Feature(ctx, "missing"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestMigrate1To2(t *testing.T) {
+	path := dbPath(t)
+	migs, _ := embeddedMigrations()
+	s, err := openWith(ctx, path, time.Now, migs[:1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO features (id, version, state, created_at, updated_at, machine_id) VALUES ('old', 1, '{"request":"x"}', 1, 1, 'm')`); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s2 := mustOpen(t, path)
+	if _, err := os.Stat(path + ".bak"); err != nil {
+		t.Errorf("no backup: %v", err)
+	}
+	var repo string
+	var done int
+	if err := s2.db.QueryRow(`SELECT repo, done FROM features WHERE id='old'`).Scan(&repo, &done); err != nil || repo != "" || done != 0 {
+		t.Errorf("repo %q done %d err %v", repo, done, err)
+	}
+	if _, ok, _ := s2.ActiveFeature(ctx, ""); !ok {
+		t.Error("old row not readable as active for repo ''")
 	}
 }
 
@@ -206,8 +270,9 @@ func TestParallelOpen(t *testing.T) {
 			t.Errorf("machine id differs: %s vs %s", stores[i].MachineID(), stores[0].MachineID())
 		}
 	}
+	migs, _ := embeddedMigrations()
 	var rows int
-	if err := stores[0].db.QueryRow(`SELECT COUNT(*) FROM schema_version`).Scan(&rows); err != nil || rows != 1 {
+	if err := stores[0].db.QueryRow(`SELECT COUNT(*) FROM schema_version`).Scan(&rows); err != nil || rows != len(migs) {
 		t.Errorf("schema_version rows %d, %v", rows, err)
 	}
 	if _, err := os.Stat(path + ".bak"); err == nil {
@@ -225,7 +290,7 @@ func TestTransitionConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			err := stores[i%2].Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
-				f.Phase += "x"
+				f.Request += "x"
 				return f, nil
 			})
 			if err != nil {

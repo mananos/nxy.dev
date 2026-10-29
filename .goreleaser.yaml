@@ -11,7 +11,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/matyy-a/nxy.dev/internal/version.Version={{.Version}}
+      - -s -w -X github.com/mananos/nxy.dev/internal/version.Version={{.Version}}
     goos: [linux, windows, darwin]
     goarch: [amd64, arm64]
 
@@ -27,7 +27,7 @@ checksum:
 
 release:
   github:
-    owner: matyy-a
+    owner: mananos
     name: nxy.dev
   prerelease: auto
 

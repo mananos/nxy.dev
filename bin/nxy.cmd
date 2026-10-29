@@ -13,7 +13,7 @@ if defined NXY_BIN (set "NXY_RUN=%NXY_BIN%") else (set "NXY_RUN=%NXY_EXE%")
 set "NXY_ARCH=amd64"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "NXY_ARCH=arm64"
 set "NXY_ASSET=nxy_%NXY_VERSION%_windows_%NXY_ARCH%.exe"
-if defined NXY_RELEASE_URL (set "NXY_URL=%NXY_RELEASE_URL%") else (set "NXY_URL=https://github.com/matyy-a/nxy.dev/releases/download/v%NXY_VERSION%")
+if defined NXY_RELEASE_URL (set "NXY_URL=%NXY_RELEASE_URL%") else (set "NXY_URL=https://github.com/mananos/nxy.dev/releases/download/v%NXY_VERSION%")
 set "NXY_TMP=%NXY_EXE%.%RANDOM%%RANDOM%.tmp"
 set "NXY_SUMS=%NXY_EXE%.%RANDOM%%RANDOM%.sums"
 if not defined NXY_BIN if not exist "%NXY_EXE%" set "NXY_NEED=1"
@@ -108,7 +108,7 @@ nxy_main() {
     bin=$home/bin/$NXY_VERSION/nxy$ext
     if [ ! -f "$bin" ]; then
       command -v curl >/dev/null 2>&1 || { nxy_say "curl not found, cannot download the binary"; return 0; }
-      base=${NXY_RELEASE_URL:-https://github.com/matyy-a/nxy.dev/releases/download/v$NXY_VERSION}
+      base=${NXY_RELEASE_URL:-https://github.com/mananos/nxy.dev/releases/download/v$NXY_VERSION}
       asset=nxy_${NXY_VERSION}_${os}_${arch}$ext
       mkdir -p "$home/bin/$NXY_VERSION" 2>/dev/null || { nxy_say "cannot create $home/bin/$NXY_VERSION"; return 0; }
       tmp=$bin.$$.tmp

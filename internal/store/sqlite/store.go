@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/matyy-a/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/domain"
 	_ "modernc.org/sqlite"
 )
 
@@ -115,12 +115,53 @@ func (s *Store) CreateFeature(ctx context.Context, f domain.Feature) (string, er
 	}
 	ms := t.UTC().UnixMilli()
 	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO features (id, version, state, created_at, updated_at, machine_id) VALUES (?, 1, ?, ?, ?, ?)`,
-		f.ID, string(b), ms, ms, s.machineID)
+		`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done) VALUES (?, 1, ?, ?, ?, ?, ?, ?)`,
+		f.ID, string(b), ms, ms, s.machineID, f.Repo, isDone(f))
 	if err != nil {
 		return "", err
 	}
 	return f.ID, nil
+}
+
+func isDone(f domain.Feature) int {
+	if f.State.Phase == domain.PhaseDone {
+		return 1
+	}
+	return 0
+}
+
+// Feature reads one feature without changing it.
+func (s *Store) Feature(ctx context.Context, id string) (domain.Feature, error) {
+	return s.readOne(ctx, `SELECT state FROM features WHERE id=?`, id)
+}
+
+// ActiveFeature is the most recently updated feature of repo that is not done.
+func (s *Store) ActiveFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+	f, err := s.readOne(ctx,
+		`SELECT state FROM features WHERE repo=? AND done=0 ORDER BY updated_at DESC, id DESC LIMIT 1`, repo)
+	if errors.Is(err, ErrNotFound) {
+		return domain.Feature{}, false, nil
+	}
+	if err != nil {
+		return domain.Feature{}, false, err
+	}
+	return f, true, nil
+}
+
+func (s *Store) readOne(ctx context.Context, query string, args ...any) (domain.Feature, error) {
+	var state string
+	err := s.db.QueryRowContext(ctx, query, args...).Scan(&state)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Feature{}, ErrNotFound
+	}
+	if err != nil {
+		return domain.Feature{}, err
+	}
+	var f domain.Feature
+	if err := json.Unmarshal([]byte(state), &f); err != nil {
+		return domain.Feature{}, fmt.Errorf("sqlite: decode feature: %w", err)
+	}
+	return f, nil
 }
 
 // Transition applies fn to the stored feature with optimistic versioning, retrying when another
@@ -160,8 +201,8 @@ func (s *Store) Transition(ctx context.Context, id string, fn func(domain.Featur
 			return err
 		}
 		res, err := s.db.ExecContext(ctx,
-			`UPDATE features SET state=?, version=version+1, updated_at=? WHERE id=? AND version=?`,
-			string(b), s.now().UTC().UnixMilli(), id, version)
+			`UPDATE features SET state=?, version=version+1, updated_at=?, repo=?, done=? WHERE id=? AND version=?`,
+			string(b), s.now().UTC().UnixMilli(), nf.Repo, isDone(nf), id, version)
 		if err != nil {
 			return err
 		}

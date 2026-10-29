@@ -1,6 +1,6 @@
 package app
 
-import "github.com/matyy-a/nxy.dev/internal/filter"
+import "github.com/mananos/nxy.dev/internal/filter"
 
 // preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs (filter part): rewrite the
 // command through the engine, keeping the approval the original would have had.

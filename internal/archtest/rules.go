@@ -7,7 +7,7 @@ import (
 )
 
 // Module is the module path all internal packages live under.
-const Module = "github.com/matyy-a/nxy.dev"
+const Module = "github.com/mananos/nxy.dev"
 
 // Pkg is the subset of `go list -deps -json` output the rules need.
 type Pkg struct {

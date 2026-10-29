@@ -18,6 +18,12 @@ func nativePath(goos, p string) string {
 	if goos != "windows" {
 		return p
 	}
+	if rest, ok := strings.CutPrefix(p, `\\?\UNC\`); ok {
+		return `\\` + rest
+	}
+	if rest, ok := strings.CutPrefix(p, `\\?\`); ok {
+		return rest
+	}
 	m := msysPath.FindStringSubmatch(p)
 	if m == nil {
 		return p

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/matyy-a/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/filter"
 )
 
 type fakeConfig struct{ s filter.Settings }

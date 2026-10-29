@@ -1,5 +1,5 @@
 {
-  "name": "nxy2-dev",
+  "name": "nxy",
   "version": "2.0.0-dev",
-  "description": "Dev only: nxy 2.0 hooks through the Go binary. Answers nothing yet."
+  "description": "Dev only: nxy 2.0 F2.1. New flow: the Go binary runs the state machine, saves the plan and checks the user's approval."
 }
