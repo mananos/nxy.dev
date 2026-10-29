@@ -2,10 +2,12 @@ package claudecode
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/matyy-a/nxy.dev/internal/app"
+	"github.com/matyy-a/nxy.dev/internal/platform"
 )
 
 func TestDecodeRegistrations(t *testing.T) {
@@ -45,10 +47,65 @@ func TestDecodeErrors(t *testing.T) {
 
 func TestEncodeZeroWritesNothing(t *testing.T) {
 	var b bytes.Buffer
-	if err := Encode(&b, app.HookResponse{}); err != nil {
+	if err := Encode(&b, app.HookEvent{}, app.HookResponse{}); err != nil {
 		t.Fatal(err)
 	}
 	if b.Len() != 0 {
 		t.Fatalf("wrote %d bytes", b.Len())
+	}
+}
+
+func TestDecodeCommand(t *testing.T) {
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	ev, err := Decode(strings.NewReader(`{"tool_name":"Bash","cwd":"/tmp/x","tool_input":{"command":"git status"}}`))
+	if err != nil || !ev.HasCommand || ev.Command != "git status" {
+		t.Fatalf("got %+v, %v", ev, err)
+	}
+	for _, in := range []string{
+		`{"tool_input":{"command":5}}`,
+		`{"tool_input":{"command":null}}`,
+		`{"tool_input":{}}`,
+		`{"tool_input":"x"}`,
+		`{}`,
+	} {
+		ev, err := Decode(strings.NewReader(in))
+		if err != nil || ev.HasCommand {
+			t.Errorf("%s: got %+v, %v", in, ev, err)
+		}
+	}
+}
+
+func TestDecodeProjectDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	ev, _ := Decode(strings.NewReader(`{"cwd":"/elsewhere"}`))
+	if ev.ProjectDir != platform.NativePath(dir) {
+		t.Errorf("got %q", ev.ProjectDir)
+	}
+}
+
+func TestEncodeKeepsToolInput(t *testing.T) {
+	ev := app.HookEvent{ToolInput: []byte(`{"command":"a","description":"d","timeout":5,"run_in_background":true}`)}
+	var b bytes.Buffer
+	resp := app.HookResponse{Rewrite: &app.CommandRewrite{Command: `rtk "a" <&>`, Allow: true}}
+	if err := Encode(&b, ev, resp); err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		H struct {
+			Updated  map[string]any `json:"updatedInput"`
+			Decision string         `json:"permissionDecision"`
+		} `json:"hookSpecificOutput"`
+		Suppress bool `json:"suppressOutput"`
+	}
+	if err := json.Unmarshal(b.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	u := got.H.Updated
+	if u["command"] != `rtk "a" <&>` || u["description"] != "d" || u["timeout"] != float64(5) || u["run_in_background"] != true {
+		t.Errorf("updatedInput: %v", u)
+	}
+	if got.H.Decision != "allow" || !got.Suppress || strings.Contains(b.String(), "\\u003c") {
+		t.Errorf("output: %s", b.String())
 	}
 }

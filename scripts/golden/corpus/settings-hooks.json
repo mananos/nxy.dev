@@ -1,0 +1,14 @@
+[
+  { "name": "none", "settings": [] },
+  { "name": "null-and-empty", "settings": [null, {}, { "hooks": {} }] },
+  { "name": "rtk-hook", "settings": [{ "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "rtk hook claude" }] }] } }] },
+  { "name": "rtk-exe-hook-abs", "settings": [{ "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "\"C:/tools/bin/rtk.exe\" hook claude" }] }] } }] },
+  { "name": "rtk-hook-in-second-file", "settings": [{ "hooks": { "PreToolUse": [] } }, { "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": "~/.claude/hooks/rtk-rewrite.sh hook" }] }] } }] },
+  { "name": "other-hook", "settings": [{ "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-bash.mjs" }] }] } }] },
+  { "name": "rtk-without-hook-word", "settings": [{ "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": "rtk gain" }] }] } }] },
+  { "name": "hook-word-without-rtk", "settings": [{ "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": "node hook.js" }] }] } }] },
+  { "name": "rtk-hook-wrong-event", "settings": [{ "hooks": { "PostToolUse": [{ "hooks": [{ "type": "command", "command": "rtk hook claude" }] }] } }] },
+  { "name": "command-not-string", "settings": [{ "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": 5 }, null] }, null] } }] },
+  { "name": "rtk-multiline-command", "settings": [{ "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": "rtk\nhook" }] }] } }] },
+  { "name": "rtk-substring-word", "settings": [{ "hooks": { "PreToolUse": [{ "hooks": [{ "type": "command", "command": "myrtk hook" }] }] } }] }
+]

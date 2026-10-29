@@ -1,0 +1,7285 @@
+[
+  {
+    "name": "e01-tab",
+    "input": {
+      "command": "git\tstatus"
+    },
+    "output": {
+      "normalizeForRtk": "git\tstatus",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e02-trailing-tab",
+    "input": {
+      "command": "git status\t"
+    },
+    "output": {
+      "normalizeForRtk": "git status\t",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e03-npm-tab-test",
+    "input": {
+      "command": "npm\ttest"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e04-crlf-chain",
+    "input": {
+      "command": "mvn test\r\nls"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test\r\nls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e05-trailing-crlf",
+    "input": {
+      "command": "echo a\r\n"
+    },
+    "output": {
+      "normalizeForRtk": "echo a\r\n",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e06-nbsp-between",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e07-nbsp-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e08-nbsp-tail",
+    "input": {
+      "command": "ls -la | tail -n 150"
+    },
+    "output": {
+      "normalizeForRtk": "ls -la | tail -n 150",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e09-nbsp-edges",
+    "input": {
+      "command": " git status "
+    },
+    "output": {
+      "normalizeForRtk": " git status ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e10-em-space-trailing",
+    "input": {
+      "command": "git status "
+    },
+    "output": {
+      "normalizeForRtk": "git status ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e11-bom-leading",
+    "input": {
+      "command": "﻿git status"
+    },
+    "output": {
+      "normalizeForRtk": "﻿git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e12-line-separator",
+    "input": {
+      "command": "ls -la"
+    },
+    "output": {
+      "normalizeForRtk": "ls -la",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e13-ideographic-space",
+    "input": {
+      "command": "　ls"
+    },
+    "output": {
+      "normalizeForRtk": "　ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e14-zero-width-not-space",
+    "input": {
+      "command": "mvn​test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn​test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e15-only-nbsp",
+    "input": {
+      "command": " "
+    },
+    "output": {
+      "normalizeForRtk": " ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e16-only-tabs-newlines",
+    "input": {
+      "command": "\t\n"
+    },
+    "output": {
+      "normalizeForRtk": "\t\n",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e17-nel-and-vt",
+    "input": {
+      "command": "gitstatus\u000bgit"
+    },
+    "output": {
+      "normalizeForRtk": "gitstatus\u000bgit",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e18-escaped-quotes",
+    "input": {
+      "command": "echo \"a \\\"b\\\" > c\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"a \\\"b\\\" > c\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e19-single-quote-escape",
+    "input": {
+      "command": "echo 'it'\\''s' > x"
+    },
+    "output": {
+      "normalizeForRtk": "echo 'it'\\''s' > x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e20-escaped-gt",
+    "input": {
+      "command": "echo \\> not"
+    },
+    "output": {
+      "normalizeForRtk": "echo \\> not",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep",
+    "input": {
+      "command": "grep -rn \\\"x\\\" ."
+    },
+    "output": {
+      "normalizeForRtk": "grep -rn \\\"x\\\" .",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e22-unbalanced-double",
+    "input": {
+      "command": "echo \"abc > f"
+    },
+    "output": {
+      "normalizeForRtk": "echo \"abc > f",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e23-unbalanced-single",
+    "input": {
+      "command": "echo 'abc | def"
+    },
+    "output": {
+      "normalizeForRtk": "echo 'abc | def",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e24-trailing-backslash",
+    "input": {
+      "command": "echo a\\"
+    },
+    "output": {
+      "normalizeForRtk": "echo a\\",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e25-merge-stderr",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test 2>&1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test 2>&1 | tail -n 100",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e27-gt-amp-2",
+    "input": {
+      "command": "echo x >&2"
+    },
+    "output": {
+      "normalizeForRtk": "echo x >&2",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e28-1gt-amp-2",
+    "input": {
+      "command": "echo x 1>&2"
+    },
+    "output": {
+      "normalizeForRtk": "echo x 1>&2",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull",
+    "input": {
+      "command": "ls &>/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "ls &>/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e30-gt-devnull",
+    "input": {
+      "command": "ls >/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "ls >/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e31-append-devnull",
+    "input": {
+      "command": "ls >>/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "ls >>/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e32-gt-space-devnull",
+    "input": {
+      "command": "ls > /dev/null 2>&1"
+    },
+    "output": {
+      "normalizeForRtk": "ls > /dev/null 2>&1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e33-devnull-suffix",
+    "input": {
+      "command": "ls 2>/dev/nullx"
+    },
+    "output": {
+      "normalizeForRtk": "ls 2>/dev/nullx",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e34-devnull-semicolon",
+    "input": {
+      "command": "ls >/dev/null;ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls >/dev/null;ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e35-devnull-paren",
+    "input": {
+      "command": "(ls >/dev/null)"
+    },
+    "output": {
+      "normalizeForRtk": "(ls >/dev/null)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e36-devnull-andand",
+    "input": {
+      "command": "ls 2>/dev/null&&ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls 2>/dev/null&&ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e37-devnulls",
+    "input": {
+      "command": "ls > /dev/nulls"
+    },
+    "output": {
+      "normalizeForRtk": "ls > /dev/nulls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e38-gt-gt-file",
+    "input": {
+      "command": "echo a >> log.txt"
+    },
+    "output": {
+      "normalizeForRtk": "echo a >> log.txt",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e39-input-and-heredoc-mix",
+    "input": {
+      "command": "cat <in >out"
+    },
+    "output": {
+      "normalizeForRtk": "cat <in >out",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e40-process-subst",
+    "input": {
+      "command": "diff <(ls a) <(ls b)"
+    },
+    "output": {
+      "normalizeForRtk": "diff <(ls a) <(ls b)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e41-raw-env-ps-in-bash",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\"; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "$env:NXY_RAW=\"1\"; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e42-raw-env-single-quote",
+    "input": {
+      "command": "$env:NXY_RAW = '1'"
+    },
+    "output": {
+      "normalizeForRtk": "$env:NXY_RAW = '1'",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e43-raw-env-zero",
+    "input": {
+      "command": "NXY_RAW=0 mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "NXY_RAW=0 mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e44-raw-env-only",
+    "input": {
+      "command": "NXY_RAW=1"
+    },
+    "output": {
+      "normalizeForRtk": "NXY_RAW=1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e45-raw-env-second-assign",
+    "input": {
+      "command": "FOO=1 NXY_RAW=1 grep x f"
+    },
+    "output": {
+      "normalizeForRtk": "FOO=1 NXY_RAW=1 grep x f",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e46-raw-comment-alone",
+    "input": {
+      "command": "# raw"
+    },
+    "output": {
+      "normalizeForRtk": "# raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e47-nxy-raw-comment-echo",
+    "input": {
+      "command": "echo # nxy:raw"
+    },
+    "output": {
+      "normalizeForRtk": "echo # nxy:raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e48-raw-comment-no-space",
+    "input": {
+      "command": "echo #raw"
+    },
+    "output": {
+      "normalizeForRtk": "echo #raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e49-rawness-not-escape",
+    "input": {
+      "command": "echo # rawness"
+    },
+    "output": {
+      "normalizeForRtk": "echo # rawness",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e50-raw-in-quotes",
+    "input": {
+      "command": "echo \"# raw\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"# raw\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e51-hash-glued",
+    "input": {
+      "command": "echo a#raw"
+    },
+    "output": {
+      "normalizeForRtk": "echo a#raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e52-head-n-20",
+    "input": {
+      "command": "ls | head -n 20"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head -n 20",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e53-head-n-21",
+    "input": {
+      "command": "ls | head -n 21"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head -n 21",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e54-tail-minus-20",
+    "input": {
+      "command": "ls | tail -20"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -20",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e55-tail-minus-21",
+    "input": {
+      "command": "ls | tail -21"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -21",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e56-tail-lines-eq-21",
+    "input": {
+      "command": "ls | tail --lines=21"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail --lines=21",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e57-tail-lines-space-5",
+    "input": {
+      "command": "ls | tail --lines 5"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail --lines 5",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e58-bare-head",
+    "input": {
+      "command": "ls | head"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e59-head-n20-glued",
+    "input": {
+      "command": "ls | head -n20"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head -n20",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e60-tail-n-100",
+    "input": {
+      "command": "ls | tail -n 100"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -n 100",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e61-tail-trailing-space",
+    "input": {
+      "command": "ls | tail -n 150 "
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -n 150 ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e62-head-minus-100",
+    "input": {
+      "command": "ls | head -100"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head -100",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e63-tail-wide-spaces",
+    "input": {
+      "command": "ls | tail  -n  300"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail  -n  300",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e64-headx-not-a-limit",
+    "input": {
+      "command": "ls | headx"
+    },
+    "output": {
+      "normalizeForRtk": "ls | headx",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e65-tail-f",
+    "input": {
+      "command": "ls | tail -f"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -f",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e66-tight-pipe-tail",
+    "input": {
+      "command": "ls |tail -n 99"
+    },
+    "output": {
+      "normalizeForRtk": "ls |tail -n 99",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e67-head-then-other",
+    "input": {
+      "command": "ls | head -n 99 | wc -l"
+    },
+    "output": {
+      "normalizeForRtk": "ls | head -n 99 | wc -l",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e68-tail-n-0",
+    "input": {
+      "command": "ls | tail -n 0"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail -n 0",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e69-long-chain",
+    "input": {
+      "command": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    },
+    "output": {
+      "normalizeForRtk": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e70-gradlew-win",
+    "input": {
+      "command": ".\\gradlew.bat build"
+    },
+    "output": {
+      "normalizeForRtk": "gradlew.bat build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e71-gradlew-unix",
+    "input": {
+      "command": "./gradlew test"
+    },
+    "output": {
+      "normalizeForRtk": "gradlew test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e72-mvnw-no-ext",
+    "input": {
+      "command": ".\\mvnw clean"
+    },
+    "output": {
+      "normalizeForRtk": "mvnw clean",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e73-mvnw-bare-cmd",
+    "input": {
+      "command": "./mvnw.cmd"
+    },
+    "output": {
+      "normalizeForRtk": "mvnw.cmd",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e74-mvnw-exe-not-wrapper",
+    "input": {
+      "command": "./mvnw.exe test"
+    },
+    "output": {
+      "normalizeForRtk": "./mvnw.exe test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e75-pnpm-test",
+    "input": {
+      "command": "pnpm test"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e76-pnpm-lint-fix",
+    "input": {
+      "command": "pnpm lint --fix"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run lint --fix",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e77-pnpm-t",
+    "input": {
+      "command": "pnpm t"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e78-npm-t",
+    "input": {
+      "command": "npm t"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e79-npm-test-colon",
+    "input": {
+      "command": "npm test:unit"
+    },
+    "output": {
+      "normalizeForRtk": "npm test:unit",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e80-pnpm-builder",
+    "input": {
+      "command": "pnpm builder"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm builder",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e81-quoted-env-npm-test",
+    "input": {
+      "command": "FOO=\"a b\" npm test"
+    },
+    "output": {
+      "normalizeForRtk": "FOO=\"a b\" npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e82-two-env-pnpm-dev",
+    "input": {
+      "command": "A=1 B='x y' pnpm dev"
+    },
+    "output": {
+      "normalizeForRtk": "A=1 B='x y' pnpm run dev",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e83-semicolon-npm-twice",
+    "input": {
+      "command": "cd x; npm test; npm t"
+    },
+    "output": {
+      "normalizeForRtk": "cd x; npm test; npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e84-or-npm-test",
+    "input": {
+      "command": "ls || npm test"
+    },
+    "output": {
+      "normalizeForRtk": "ls || npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e85-npm-test-tab-arg",
+    "input": {
+      "command": "npm test\t--watch"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test\t--watch",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e86-pnpm-all-words",
+    "input": {
+      "command": "pnpm build && pnpm lint && pnpm start && pnpm dev && pnpm check && pnpm typecheck && pnpm format"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run build && pnpm run lint && pnpm run start && pnpm run dev && pnpm run check && pnpm run typecheck && pnpm run format",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e87-docker-run-no-it",
+    "input": {
+      "command": "docker run --rm alpine"
+    },
+    "output": {
+      "normalizeForRtk": "docker run --rm alpine",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e88-docker-exec-plain",
+    "input": {
+      "command": "docker exec web ls"
+    },
+    "output": {
+      "normalizeForRtk": "docker exec web ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e89-docker-exec-ti",
+    "input": {
+      "command": "docker exec -ti web sh"
+    },
+    "output": {
+      "normalizeForRtk": "docker exec -ti web sh",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e90-docker-exec-t",
+    "input": {
+      "command": "docker exec -t web ls"
+    },
+    "output": {
+      "normalizeForRtk": "docker exec -t web ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e91-git-c-config-status",
+    "input": {
+      "command": "git -c core.x=1 status"
+    },
+    "output": {
+      "normalizeForRtk": "git -c core.x=1 status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e92-git-C-log",
+    "input": {
+      "command": "git -C repo log"
+    },
+    "output": {
+      "normalizeForRtk": "git -C repo log",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e93-git-stash-list",
+    "input": {
+      "command": "git stash list"
+    },
+    "output": {
+      "normalizeForRtk": "git stash list",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e94-git-add-i",
+    "input": {
+      "command": "git add -i"
+    },
+    "output": {
+      "normalizeForRtk": "git add -i",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e95-git-add-patch",
+    "input": {
+      "command": "git add --patch"
+    },
+    "output": {
+      "normalizeForRtk": "git add --patch",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e96-git-add-dot",
+    "input": {
+      "command": "git add ."
+    },
+    "output": {
+      "normalizeForRtk": "git add .",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e97-bare-git",
+    "input": {
+      "command": "git"
+    },
+    "output": {
+      "normalizeForRtk": "git",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e98-git-dangling-C",
+    "input": {
+      "command": "git -C"
+    },
+    "output": {
+      "normalizeForRtk": "git -C",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "e99-git-tag-list",
+    "input": {
+      "command": "git tag -l"
+    },
+    "output": {
+      "normalizeForRtk": "git tag -l",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f01-git-switch",
+    "input": {
+      "command": "git switch x"
+    },
+    "output": {
+      "normalizeForRtk": "git switch x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f02-git-reset-hard",
+    "input": {
+      "command": "git reset --hard"
+    },
+    "output": {
+      "normalizeForRtk": "git reset --hard",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f03-git-cherry-pick",
+    "input": {
+      "command": "git cherry-pick abc"
+    },
+    "output": {
+      "normalizeForRtk": "git cherry-pick abc",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f04-time-npm-test",
+    "input": {
+      "command": "time npm test"
+    },
+    "output": {
+      "normalizeForRtk": "time npm test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f05-nice-make",
+    "input": {
+      "command": "nice -n 5 make"
+    },
+    "output": {
+      "normalizeForRtk": "nice -n 5 make",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f06-command-ls",
+    "input": {
+      "command": "command ls"
+    },
+    "output": {
+      "normalizeForRtk": "command ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f07-exec-bash",
+    "input": {
+      "command": "exec bash"
+    },
+    "output": {
+      "normalizeForRtk": "exec bash",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f08-env-time-vim",
+    "input": {
+      "command": "FOO=1 time vim x"
+    },
+    "output": {
+      "normalizeForRtk": "FOO=1 time vim x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f09-node-bin-jest",
+    "input": {
+      "command": "./node_modules/.bin/jest"
+    },
+    "output": {
+      "normalizeForRtk": "./node_modules/.bin/jest",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f10-windows-cmd-script",
+    "input": {
+      "command": ".\\script.cmd arg"
+    },
+    "output": {
+      "normalizeForRtk": ".\\script.cmd arg",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f11-windows-abs-exe",
+    "input": {
+      "command": "C:\\tools\\x.exe a"
+    },
+    "output": {
+      "normalizeForRtk": "C:\\tools\\x.exe a",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f12-sh-script",
+    "input": {
+      "command": "./a.sh"
+    },
+    "output": {
+      "normalizeForRtk": "./a.sh",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f13-heredoc-dash",
+    "input": {
+      "command": "cat <<-EOF\nhi\nEOF"
+    },
+    "output": {
+      "normalizeForRtk": "cat <<-EOF\nhi\nEOF",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f14-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo \"<<\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"<<\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f15-single-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo '<<x'"
+    },
+    "output": {
+      "normalizeForRtk": "echo '<<x'",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f16-input-redirect-glued",
+    "input": {
+      "command": "cat <in"
+    },
+    "output": {
+      "normalizeForRtk": "cat <in",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f17-herestring-bare",
+    "input": {
+      "command": "a <<< b"
+    },
+    "output": {
+      "normalizeForRtk": "a <<< b",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f18-single-quoted-subst",
+    "input": {
+      "command": "echo '$(x)'"
+    },
+    "output": {
+      "normalizeForRtk": "echo '$(x)'",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f19-double-quoted-subst",
+    "input": {
+      "command": "echo \"$(x)\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"$(x)\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f20-escaped-subst",
+    "input": {
+      "command": "echo \\$(x)"
+    },
+    "output": {
+      "normalizeForRtk": "echo \\$(x)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f21-plain-var",
+    "input": {
+      "command": "echo $HOME"
+    },
+    "output": {
+      "normalizeForRtk": "echo $HOME",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f22-brace-var",
+    "input": {
+      "command": "echo ${X}"
+    },
+    "output": {
+      "normalizeForRtk": "echo ${X}",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f23-lone-dollar",
+    "input": {
+      "command": "echo $"
+    },
+    "output": {
+      "normalizeForRtk": "echo $",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f24-escaped-backtick-in-dq",
+    "input": {
+      "command": "echo \"\\`x\\`\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"\\`x\\`\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f25-sleep-background",
+    "input": {
+      "command": "sleep 1 &"
+    },
+    "output": {
+      "normalizeForRtk": "sleep 1 &",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f26-chain-background",
+    "input": {
+      "command": "a && b &"
+    },
+    "output": {
+      "normalizeForRtk": "a && b &",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f27-trailing-andand",
+    "input": {
+      "command": "a &&"
+    },
+    "output": {
+      "normalizeForRtk": "a &&",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f28-single-amp-middle",
+    "input": {
+      "command": "a & b"
+    },
+    "output": {
+      "normalizeForRtk": "a & b",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f29-amp-word",
+    "input": {
+      "command": "a &amp"
+    },
+    "output": {
+      "normalizeForRtk": "a &amp",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f30-cd-cd",
+    "input": {
+      "command": "cd a && cd b"
+    },
+    "output": {
+      "normalizeForRtk": "cd a && cd b",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f31-cd-bare",
+    "input": {
+      "command": "cd"
+    },
+    "output": {
+      "normalizeForRtk": "cd",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f32-set-e",
+    "input": {
+      "command": "set -e"
+    },
+    "output": {
+      "normalizeForRtk": "set -e",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f33-source-only",
+    "input": {
+      "command": "source x"
+    },
+    "output": {
+      "normalizeForRtk": "source x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f34-unset-only",
+    "input": {
+      "command": "unset A"
+    },
+    "output": {
+      "normalizeForRtk": "unset A",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f35-env-bare-node",
+    "input": {
+      "command": "FOO=1 node"
+    },
+    "output": {
+      "normalizeForRtk": "FOO=1 node",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f36-node-version",
+    "input": {
+      "command": "node -v"
+    },
+    "output": {
+      "normalizeForRtk": "node -v",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f37-bare-python",
+    "input": {
+      "command": "python"
+    },
+    "output": {
+      "normalizeForRtk": "python",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f38-python-c",
+    "input": {
+      "command": "python -c \"x\""
+    },
+    "output": {
+      "normalizeForRtk": "python -c \"x\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f39-env-bare-python3",
+    "input": {
+      "command": "A=1 python3"
+    },
+    "output": {
+      "normalizeForRtk": "A=1 python3",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f40-node-and-python",
+    "input": {
+      "command": "node a.js && python3 b.py"
+    },
+    "output": {
+      "normalizeForRtk": "node a.js && python3 b.py",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f41-ls-nxy-dir",
+    "input": {
+      "command": "ls .nxy/"
+    },
+    "output": {
+      "normalizeForRtk": "ls .nxy/",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f42-nxy-backslash-quoted",
+    "input": {
+      "command": "cat '.nxy\\x'"
+    },
+    "output": {
+      "normalizeForRtk": "cat '.nxy\\x'",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f43-nxy-glued",
+    "input": {
+      "command": "echo a.nxy/x"
+    },
+    "output": {
+      "normalizeForRtk": "echo a.nxy/x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f44-nxy-dot-slash",
+    "input": {
+      "command": "cat ./.nxy/c"
+    },
+    "output": {
+      "normalizeForRtk": "cat ./.nxy/c",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f45-accented",
+    "input": {
+      "command": "echo héllo"
+    },
+    "output": {
+      "normalizeForRtk": "echo héllo",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f46-cjk-head-50",
+    "input": {
+      "command": "echo \"日本語\" | head -n 50"
+    },
+    "output": {
+      "normalizeForRtk": "echo \"日本語\" | head -n 50",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f47-grep-enye",
+    "input": {
+      "command": "grep -rn \"ñ\" src"
+    },
+    "output": {
+      "normalizeForRtk": "grep -rn \"ñ\" src",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f48-emoji",
+    "input": {
+      "command": "echo 😀 > f"
+    },
+    "output": {
+      "normalizeForRtk": "echo 😀 > f",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f49-rtk-quoted-abs",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status"
+    },
+    "output": {
+      "normalizeForRtk": "\"/opt/rtk/rtk\" git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f50-rtk-env-prefix",
+    "input": {
+      "command": "A=1 rtk git status"
+    },
+    "output": {
+      "normalizeForRtk": "A=1 rtk git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f51-rtk-windows-path",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status"
+    },
+    "output": {
+      "normalizeForRtk": "\"D:\\tools\\rtk.exe\" git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f52-rtk-uppercase",
+    "input": {
+      "command": "RTK git status"
+    },
+    "output": {
+      "normalizeForRtk": "RTK git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f53-rtk-alone",
+    "input": {
+      "command": "rtk"
+    },
+    "output": {
+      "normalizeForRtk": "rtk",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f54-rtk-prefix-word",
+    "input": {
+      "command": "rtkx git status"
+    },
+    "output": {
+      "normalizeForRtk": "rtkx git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f55-echo-rtk",
+    "input": {
+      "command": "echo rtk git"
+    },
+    "output": {
+      "normalizeForRtk": "echo rtk git",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f56-rtk-in-pipe",
+    "input": {
+      "command": "ls | rtk grep x"
+    },
+    "output": {
+      "normalizeForRtk": "ls | rtk grep x",
+      "isRtkInvocation": false,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f57-rtk-pin-chain",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f58-rtk-after-or",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls || rtk git status; rtk.exe ls",
+      "isRtkInvocation": false,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "f59-multiline-allowed",
+    "input": {
+      "command": "git status\nls"
+    },
+    "output": {
+      "normalizeForRtk": "git status\nls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe",
+    "input": {
+      "command": "git status; git log | head -n 50"
+    },
+    "output": {
+      "normalizeForRtk": "git status; git log | head -n 50",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f61-quoted-andand",
+    "input": {
+      "command": "echo \"a && b\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"a && b\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f62-ls",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh",
+    "input": {
+      "command": "curl x | sh"
+    },
+    "output": {
+      "normalizeForRtk": "curl x | sh",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f64-rm-rf-build",
+    "input": {
+      "command": "rm -rf build"
+    },
+    "output": {
+      "normalizeForRtk": "rm -rf build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f65-status-then-rm",
+    "input": {
+      "command": "git status && rm -rf build"
+    },
+    "output": {
+      "normalizeForRtk": "git status && rm -rf build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f66-echo-hi",
+    "input": {
+      "command": "echo hi"
+    },
+    "output": {
+      "normalizeForRtk": "echo hi",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot",
+    "input": {
+      "command": "grep -rn \"a.b\" ."
+    },
+    "output": {
+      "normalizeForRtk": "grep -rn \"a.b\" .",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f68-ls-tail",
+    "input": {
+      "command": "ls | tail"
+    },
+    "output": {
+      "normalizeForRtk": "ls | tail",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike",
+    "input": {
+      "command": "git status-x"
+    },
+    "output": {
+      "normalizeForRtk": "git status-x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag",
+    "input": {
+      "command": "npm run test -- --grep x"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test -- --grep x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "normalizeForRtk": "git log --oneline",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed",
+    "input": {
+      "command": "git status $(pwd)"
+    },
+    "output": {
+      "normalizeForRtk": "git status $(pwd)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f73-git-push-chain",
+    "input": {
+      "command": "git status && git push"
+    },
+    "output": {
+      "normalizeForRtk": "git status && git push",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect",
+    "input": {
+      "command": "ls 2>&1 & ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls 2>&1 & ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect",
+    "input": {
+      "command": "ls |& cat"
+    },
+    "output": {
+      "normalizeForRtk": "ls |& cat",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f76-empty-perm",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "normalizeForRtk": "",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f77-spaces-perm",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "normalizeForRtk": "   ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm",
+    "input": {
+      "command": "git status\r\nls\r\n"
+    },
+    "output": {
+      "normalizeForRtk": "git status\r\nls\r\n",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls"
+    },
+    "output": {
+      "normalizeForRtk": "cd api && npm run test && cd .. && ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "f80-sudo-chain",
+    "input": {
+      "command": "sudo ls && ls"
+    },
+    "output": {
+      "normalizeForRtk": "sudo ls && ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:0",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:1",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:2",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:3",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:4",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:5",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f49-rtk-quoted-abs:6",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:0",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "A=1 rtk git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:1",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "A=1 rtk git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:2",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "A=1 rtk git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:3",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "A=1 \"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:4",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "A=1 \"D:/tools/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:5",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "A=1 \"D:/tools/$rtk/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f50-rtk-env-prefix:6",
+    "input": {
+      "command": "A=1 rtk git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "A=1 \"/opt/$&/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:0",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:1",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:2",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:3",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:4",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:5",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f51-rtk-windows-path:6",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"D:\\tools\\rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:0",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:1",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:2",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:3",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:4",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:5",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f52-rtk-uppercase:6",
+    "input": {
+      "command": "RTK git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "RTK git status"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:0",
+    "input": {
+      "command": "rtk",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:1",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:2",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:3",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:4",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:5",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f53-rtk-alone:6",
+    "input": {
+      "command": "rtk",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtk"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:0",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:1",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:2",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:3",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:4",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:5",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f54-rtk-prefix-word:6",
+    "input": {
+      "command": "rtkx git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtkx git status"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:0",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:1",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:2",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:3",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:4",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:5",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f55-echo-rtk:6",
+    "input": {
+      "command": "echo rtk git",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "echo rtk git"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:0",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "ls | rtk grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:1",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls | rtk grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:2",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls | rtk grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:3",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls | \"/opt/rtk/rtk\" grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:4",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls | \"D:/tools/rtk.exe\" grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:5",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls | \"D:/tools/$rtk/rtk.exe\" grep x"
+    }
+  },
+  {
+    "name": "pin:f56-rtk-in-pipe:6",
+    "input": {
+      "command": "ls | rtk grep x",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls | \"/opt/$&/rtk\" grep x"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:0",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:1",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:2",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:3",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" \"/opt/rtk/rtk\" mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:4",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" \"D:/tools/rtk.exe\" mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:5",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" \"D:/tools/$rtk/rtk.exe\" mvn test"
+    }
+  },
+  {
+    "name": "pin:f57-rtk-pin-chain:6",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd x && JAVA_HOME=\"/j\" \"/opt/$&/rtk\" mvn test"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:0",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "ls || rtk git status; rtk.exe ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:1",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls || rtk git status; rtk.exe ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:2",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls || rtk git status; rtk.exe ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:3",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls || \"/opt/rtk/rtk\" git status; \"/opt/rtk/rtk\" ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:4",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls || \"D:/tools/rtk.exe\" git status; \"D:/tools/rtk.exe\" ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:5",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "ls || \"D:/tools/$rtk/rtk.exe\" git status; \"D:/tools/$rtk/rtk.exe\" ls"
+    }
+  },
+  {
+    "name": "pin:f58-rtk-after-or:6",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "ls || \"/opt/$&/rtk\" git status; \"/opt/$&/rtk\" ls"
+    }
+  },
+  {
+    "name": "pin:out:e01-tab:0",
+    "input": {
+      "command": "rtk git\tstatus",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git\tstatus"
+    }
+  },
+  {
+    "name": "pin:out:e01-tab:1",
+    "input": {
+      "command": "rtk git\tstatus",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git\tstatus"
+    }
+  },
+  {
+    "name": "pin:out:e01-tab:2",
+    "input": {
+      "command": "rtk git\tstatus",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git\tstatus"
+    }
+  },
+  {
+    "name": "pin:out:e04-crlf-chain:0",
+    "input": {
+      "command": "rtk mvn test\r\nls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvn test\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:e04-crlf-chain:1",
+    "input": {
+      "command": "rtk mvn test\r\nls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvn test\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:e04-crlf-chain:2",
+    "input": {
+      "command": "rtk mvn test\r\nls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvn test\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:e05-trailing-crlf:0",
+    "input": {
+      "command": "rtk echo a",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo a"
+    }
+  },
+  {
+    "name": "pin:out:e05-trailing-crlf:1",
+    "input": {
+      "command": "rtk echo a",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo a"
+    }
+  },
+  {
+    "name": "pin:out:e05-trailing-crlf:2",
+    "input": {
+      "command": "rtk echo a",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo a"
+    }
+  },
+  {
+    "name": "pin:out:e06-nbsp-between:0",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status"
+    }
+  },
+  {
+    "name": "pin:out:e06-nbsp-between:1",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:out:e06-nbsp-between:2",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:out:e08-nbsp-tail:0",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e08-nbsp-tail:1",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e08-nbsp-tail:2",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e12-line-separator:0",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e12-line-separator:1",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e12-line-separator:2",
+    "input": {
+      "command": "rtk ls -la",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls -la"
+    }
+  },
+  {
+    "name": "pin:out:e13-ideographic-space:0",
+    "input": {
+      "command": "rtk ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls"
+    }
+  },
+  {
+    "name": "pin:out:e13-ideographic-space:1",
+    "input": {
+      "command": "rtk ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls"
+    }
+  },
+  {
+    "name": "pin:out:e13-ideographic-space:2",
+    "input": {
+      "command": "rtk ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls"
+    }
+  },
+  {
+    "name": "pin:out:e14-zero-width-not-space:0",
+    "input": {
+      "command": "rtk mvn​test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvn​test"
+    }
+  },
+  {
+    "name": "pin:out:e14-zero-width-not-space:1",
+    "input": {
+      "command": "rtk mvn​test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvn​test"
+    }
+  },
+  {
+    "name": "pin:out:e14-zero-width-not-space:2",
+    "input": {
+      "command": "rtk mvn​test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvn​test"
+    }
+  },
+  {
+    "name": "pin:out:e18-escaped-quotes:0",
+    "input": {
+      "command": "rtk echo \"a \\\"b\\\" > c\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"a \\\"b\\\" > c\""
+    }
+  },
+  {
+    "name": "pin:out:e18-escaped-quotes:1",
+    "input": {
+      "command": "rtk echo \"a \\\"b\\\" > c\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"a \\\"b\\\" > c\""
+    }
+  },
+  {
+    "name": "pin:out:e18-escaped-quotes:2",
+    "input": {
+      "command": "rtk echo \"a \\\"b\\\" > c\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"a \\\"b\\\" > c\""
+    }
+  },
+  {
+    "name": "pin:out:e20-escaped-gt:0",
+    "input": {
+      "command": "rtk echo \\> not",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \\> not"
+    }
+  },
+  {
+    "name": "pin:out:e20-escaped-gt:1",
+    "input": {
+      "command": "rtk echo \\> not",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \\> not"
+    }
+  },
+  {
+    "name": "pin:out:e20-escaped-gt:2",
+    "input": {
+      "command": "rtk echo \\> not",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \\> not"
+    }
+  },
+  {
+    "name": "pin:out:e21-escaped-dquote-grep:0",
+    "input": {
+      "command": "rtk grep -rn \\\"x\\\" .",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk grep -rn \\\"x\\\" ."
+    }
+  },
+  {
+    "name": "pin:out:e21-escaped-dquote-grep:1",
+    "input": {
+      "command": "rtk grep -rn \\\"x\\\" .",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" grep -rn \\\"x\\\" ."
+    }
+  },
+  {
+    "name": "pin:out:e21-escaped-dquote-grep:2",
+    "input": {
+      "command": "rtk grep -rn \\\"x\\\" .",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" grep -rn \\\"x\\\" ."
+    }
+  },
+  {
+    "name": "pin:out:e22-unbalanced-double:0",
+    "input": {
+      "command": "rtk echo \"abc > f",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"abc > f"
+    }
+  },
+  {
+    "name": "pin:out:e22-unbalanced-double:1",
+    "input": {
+      "command": "rtk echo \"abc > f",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"abc > f"
+    }
+  },
+  {
+    "name": "pin:out:e22-unbalanced-double:2",
+    "input": {
+      "command": "rtk echo \"abc > f",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"abc > f"
+    }
+  },
+  {
+    "name": "pin:out:e23-unbalanced-single:0",
+    "input": {
+      "command": "rtk echo 'abc | def",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo 'abc | def"
+    }
+  },
+  {
+    "name": "pin:out:e23-unbalanced-single:1",
+    "input": {
+      "command": "rtk echo 'abc | def",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo 'abc | def"
+    }
+  },
+  {
+    "name": "pin:out:e23-unbalanced-single:2",
+    "input": {
+      "command": "rtk echo 'abc | def",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo 'abc | def"
+    }
+  },
+  {
+    "name": "pin:out:e24-trailing-backslash:0",
+    "input": {
+      "command": "rtk echo a\\",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo a\\"
+    }
+  },
+  {
+    "name": "pin:out:e24-trailing-backslash:1",
+    "input": {
+      "command": "rtk echo a\\",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo a\\"
+    }
+  },
+  {
+    "name": "pin:out:e24-trailing-backslash:2",
+    "input": {
+      "command": "rtk echo a\\",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo a\\"
+    }
+  },
+  {
+    "name": "pin:out:e29-amp-gt-devnull:0",
+    "input": {
+      "command": "rtk ls &>/dev/null",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls &>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e29-amp-gt-devnull:1",
+    "input": {
+      "command": "rtk ls &>/dev/null",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls &>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e29-amp-gt-devnull:2",
+    "input": {
+      "command": "rtk ls &>/dev/null",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls &>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e30-gt-devnull:0",
+    "input": {
+      "command": "rtk ls >/dev/null",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls >/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e30-gt-devnull:1",
+    "input": {
+      "command": "rtk ls >/dev/null",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls >/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e30-gt-devnull:2",
+    "input": {
+      "command": "rtk ls >/dev/null",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls >/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e31-append-devnull:0",
+    "input": {
+      "command": "rtk ls >>/dev/null",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls >>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e31-append-devnull:1",
+    "input": {
+      "command": "rtk ls >>/dev/null",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls >>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e31-append-devnull:2",
+    "input": {
+      "command": "rtk ls >>/dev/null",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls >>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:e32-gt-space-devnull:0",
+    "input": {
+      "command": "rtk ls > /dev/null 2>&1",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls > /dev/null 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:e32-gt-space-devnull:1",
+    "input": {
+      "command": "rtk ls > /dev/null 2>&1",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls > /dev/null 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:e32-gt-space-devnull:2",
+    "input": {
+      "command": "rtk ls > /dev/null 2>&1",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls > /dev/null 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:e34-devnull-semicolon:0",
+    "input": {
+      "command": "rtk ls >/dev/null;ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls >/dev/null;ls"
+    }
+  },
+  {
+    "name": "pin:out:e34-devnull-semicolon:1",
+    "input": {
+      "command": "rtk ls >/dev/null;ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls >/dev/null;ls"
+    }
+  },
+  {
+    "name": "pin:out:e34-devnull-semicolon:2",
+    "input": {
+      "command": "rtk ls >/dev/null;ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls >/dev/null;ls"
+    }
+  },
+  {
+    "name": "pin:out:e35-devnull-paren:0",
+    "input": {
+      "command": "rtk (ls >/dev/null)",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk (ls >/dev/null)"
+    }
+  },
+  {
+    "name": "pin:out:e35-devnull-paren:1",
+    "input": {
+      "command": "rtk (ls >/dev/null)",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" (ls >/dev/null)"
+    }
+  },
+  {
+    "name": "pin:out:e35-devnull-paren:2",
+    "input": {
+      "command": "rtk (ls >/dev/null)",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" (ls >/dev/null)"
+    }
+  },
+  {
+    "name": "pin:out:e36-devnull-andand:0",
+    "input": {
+      "command": "rtk ls 2>/dev/null&&ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls 2>/dev/null&&ls"
+    }
+  },
+  {
+    "name": "pin:out:e36-devnull-andand:1",
+    "input": {
+      "command": "rtk ls 2>/dev/null&&ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls 2>/dev/null&&ls"
+    }
+  },
+  {
+    "name": "pin:out:e36-devnull-andand:2",
+    "input": {
+      "command": "rtk ls 2>/dev/null&&ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls 2>/dev/null&&ls"
+    }
+  },
+  {
+    "name": "pin:out:e43-raw-env-zero:0",
+    "input": {
+      "command": "rtk NXY_RAW=0 mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk NXY_RAW=0 mvn test"
+    }
+  },
+  {
+    "name": "pin:out:e43-raw-env-zero:1",
+    "input": {
+      "command": "rtk NXY_RAW=0 mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" NXY_RAW=0 mvn test"
+    }
+  },
+  {
+    "name": "pin:out:e43-raw-env-zero:2",
+    "input": {
+      "command": "rtk NXY_RAW=0 mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" NXY_RAW=0 mvn test"
+    }
+  },
+  {
+    "name": "pin:out:e49-rawness-not-escape:0",
+    "input": {
+      "command": "rtk echo # rawness",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo # rawness"
+    }
+  },
+  {
+    "name": "pin:out:e49-rawness-not-escape:1",
+    "input": {
+      "command": "rtk echo # rawness",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo # rawness"
+    }
+  },
+  {
+    "name": "pin:out:e49-rawness-not-escape:2",
+    "input": {
+      "command": "rtk echo # rawness",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo # rawness"
+    }
+  },
+  {
+    "name": "pin:out:e50-raw-in-quotes:0",
+    "input": {
+      "command": "rtk echo \"# raw\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"# raw\""
+    }
+  },
+  {
+    "name": "pin:out:e50-raw-in-quotes:1",
+    "input": {
+      "command": "rtk echo \"# raw\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"# raw\""
+    }
+  },
+  {
+    "name": "pin:out:e50-raw-in-quotes:2",
+    "input": {
+      "command": "rtk echo \"# raw\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"# raw\""
+    }
+  },
+  {
+    "name": "pin:out:e51-hash-glued:0",
+    "input": {
+      "command": "rtk echo a#raw",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo a#raw"
+    }
+  },
+  {
+    "name": "pin:out:e51-hash-glued:1",
+    "input": {
+      "command": "rtk echo a#raw",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo a#raw"
+    }
+  },
+  {
+    "name": "pin:out:e51-hash-glued:2",
+    "input": {
+      "command": "rtk echo a#raw",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo a#raw"
+    }
+  },
+  {
+    "name": "pin:out:e69-long-chain:0",
+    "input": {
+      "command": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    }
+  },
+  {
+    "name": "pin:out:e69-long-chain:1",
+    "input": {
+      "command": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    }
+  },
+  {
+    "name": "pin:out:e69-long-chain:2",
+    "input": {
+      "command": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    }
+  },
+  {
+    "name": "pin:out:e71-gradlew-unix:0",
+    "input": {
+      "command": "rtk gradlew test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk gradlew test"
+    }
+  },
+  {
+    "name": "pin:out:e71-gradlew-unix:1",
+    "input": {
+      "command": "rtk gradlew test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" gradlew test"
+    }
+  },
+  {
+    "name": "pin:out:e71-gradlew-unix:2",
+    "input": {
+      "command": "rtk gradlew test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" gradlew test"
+    }
+  },
+  {
+    "name": "pin:out:e72-mvnw-no-ext:0",
+    "input": {
+      "command": "rtk mvnw clean",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvnw clean"
+    }
+  },
+  {
+    "name": "pin:out:e72-mvnw-no-ext:1",
+    "input": {
+      "command": "rtk mvnw clean",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvnw clean"
+    }
+  },
+  {
+    "name": "pin:out:e72-mvnw-no-ext:2",
+    "input": {
+      "command": "rtk mvnw clean",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvnw clean"
+    }
+  },
+  {
+    "name": "pin:out:e73-mvnw-bare-cmd:0",
+    "input": {
+      "command": "rtk mvnw.cmd",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvnw.cmd"
+    }
+  },
+  {
+    "name": "pin:out:e73-mvnw-bare-cmd:1",
+    "input": {
+      "command": "rtk mvnw.cmd",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvnw.cmd"
+    }
+  },
+  {
+    "name": "pin:out:e73-mvnw-bare-cmd:2",
+    "input": {
+      "command": "rtk mvnw.cmd",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvnw.cmd"
+    }
+  },
+  {
+    "name": "pin:out:e75-pnpm-test:0",
+    "input": {
+      "command": "rtk pnpm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk pnpm run test"
+    }
+  },
+  {
+    "name": "pin:out:e75-pnpm-test:1",
+    "input": {
+      "command": "rtk pnpm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" pnpm run test"
+    }
+  },
+  {
+    "name": "pin:out:e75-pnpm-test:2",
+    "input": {
+      "command": "rtk pnpm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" pnpm run test"
+    }
+  },
+  {
+    "name": "pin:out:e76-pnpm-lint-fix:0",
+    "input": {
+      "command": "rtk pnpm run lint --fix",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk pnpm run lint --fix"
+    }
+  },
+  {
+    "name": "pin:out:e76-pnpm-lint-fix:1",
+    "input": {
+      "command": "rtk pnpm run lint --fix",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" pnpm run lint --fix"
+    }
+  },
+  {
+    "name": "pin:out:e76-pnpm-lint-fix:2",
+    "input": {
+      "command": "rtk pnpm run lint --fix",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" pnpm run lint --fix"
+    }
+  },
+  {
+    "name": "pin:out:e79-npm-test-colon:0",
+    "input": {
+      "command": "rtk npm test:unit",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk npm test:unit"
+    }
+  },
+  {
+    "name": "pin:out:e79-npm-test-colon:1",
+    "input": {
+      "command": "rtk npm test:unit",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" npm test:unit"
+    }
+  },
+  {
+    "name": "pin:out:e79-npm-test-colon:2",
+    "input": {
+      "command": "rtk npm test:unit",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" npm test:unit"
+    }
+  },
+  {
+    "name": "pin:out:e81-quoted-env-npm-test:0",
+    "input": {
+      "command": "rtk FOO=\"a b\" npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk FOO=\"a b\" npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e81-quoted-env-npm-test:1",
+    "input": {
+      "command": "rtk FOO=\"a b\" npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" FOO=\"a b\" npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e81-quoted-env-npm-test:2",
+    "input": {
+      "command": "rtk FOO=\"a b\" npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" FOO=\"a b\" npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e82-two-env-pnpm-dev:0",
+    "input": {
+      "command": "rtk A=1 B='x y' pnpm run dev",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk A=1 B='x y' pnpm run dev"
+    }
+  },
+  {
+    "name": "pin:out:e82-two-env-pnpm-dev:1",
+    "input": {
+      "command": "rtk A=1 B='x y' pnpm run dev",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" A=1 B='x y' pnpm run dev"
+    }
+  },
+  {
+    "name": "pin:out:e82-two-env-pnpm-dev:2",
+    "input": {
+      "command": "rtk A=1 B='x y' pnpm run dev",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" A=1 B='x y' pnpm run dev"
+    }
+  },
+  {
+    "name": "pin:out:e83-semicolon-npm-twice:0",
+    "input": {
+      "command": "rtk cd x; npm run test; npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd x; npm run test; npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e83-semicolon-npm-twice:1",
+    "input": {
+      "command": "rtk cd x; npm run test; npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd x; npm run test; npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e83-semicolon-npm-twice:2",
+    "input": {
+      "command": "rtk cd x; npm run test; npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd x; npm run test; npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e84-or-npm-test:0",
+    "input": {
+      "command": "rtk ls || npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls || npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e84-or-npm-test:1",
+    "input": {
+      "command": "rtk ls || npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls || npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e84-or-npm-test:2",
+    "input": {
+      "command": "rtk ls || npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls || npm run test"
+    }
+  },
+  {
+    "name": "pin:out:e85-npm-test-tab-arg:0",
+    "input": {
+      "command": "rtk npm run test\t--watch",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk npm run test\t--watch"
+    }
+  },
+  {
+    "name": "pin:out:e85-npm-test-tab-arg:1",
+    "input": {
+      "command": "rtk npm run test\t--watch",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" npm run test\t--watch"
+    }
+  },
+  {
+    "name": "pin:out:e85-npm-test-tab-arg:2",
+    "input": {
+      "command": "rtk npm run test\t--watch",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" npm run test\t--watch"
+    }
+  },
+  {
+    "name": "pin:out:e87-docker-run-no-it:0",
+    "input": {
+      "command": "rtk docker run --rm alpine",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk docker run --rm alpine"
+    }
+  },
+  {
+    "name": "pin:out:e87-docker-run-no-it:1",
+    "input": {
+      "command": "rtk docker run --rm alpine",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" docker run --rm alpine"
+    }
+  },
+  {
+    "name": "pin:out:e87-docker-run-no-it:2",
+    "input": {
+      "command": "rtk docker run --rm alpine",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" docker run --rm alpine"
+    }
+  },
+  {
+    "name": "pin:out:e88-docker-exec-plain:0",
+    "input": {
+      "command": "rtk docker exec web ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk docker exec web ls"
+    }
+  },
+  {
+    "name": "pin:out:e88-docker-exec-plain:1",
+    "input": {
+      "command": "rtk docker exec web ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" docker exec web ls"
+    }
+  },
+  {
+    "name": "pin:out:e88-docker-exec-plain:2",
+    "input": {
+      "command": "rtk docker exec web ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" docker exec web ls"
+    }
+  },
+  {
+    "name": "pin:out:e90-docker-exec-t:0",
+    "input": {
+      "command": "rtk docker exec -t web ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk docker exec -t web ls"
+    }
+  },
+  {
+    "name": "pin:out:e90-docker-exec-t:1",
+    "input": {
+      "command": "rtk docker exec -t web ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" docker exec -t web ls"
+    }
+  },
+  {
+    "name": "pin:out:e90-docker-exec-t:2",
+    "input": {
+      "command": "rtk docker exec -t web ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" docker exec -t web ls"
+    }
+  },
+  {
+    "name": "pin:out:e91-git-c-config-status:0",
+    "input": {
+      "command": "rtk git -c core.x=1 status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git -c core.x=1 status"
+    }
+  },
+  {
+    "name": "pin:out:e91-git-c-config-status:1",
+    "input": {
+      "command": "rtk git -c core.x=1 status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git -c core.x=1 status"
+    }
+  },
+  {
+    "name": "pin:out:e91-git-c-config-status:2",
+    "input": {
+      "command": "rtk git -c core.x=1 status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git -c core.x=1 status"
+    }
+  },
+  {
+    "name": "pin:out:e92-git-C-log:0",
+    "input": {
+      "command": "rtk git -C repo log",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git -C repo log"
+    }
+  },
+  {
+    "name": "pin:out:e92-git-C-log:1",
+    "input": {
+      "command": "rtk git -C repo log",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git -C repo log"
+    }
+  },
+  {
+    "name": "pin:out:e92-git-C-log:2",
+    "input": {
+      "command": "rtk git -C repo log",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git -C repo log"
+    }
+  },
+  {
+    "name": "pin:out:e96-git-add-dot:0",
+    "input": {
+      "command": "rtk git add .",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git add ."
+    }
+  },
+  {
+    "name": "pin:out:e96-git-add-dot:1",
+    "input": {
+      "command": "rtk git add .",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git add ."
+    }
+  },
+  {
+    "name": "pin:out:e96-git-add-dot:2",
+    "input": {
+      "command": "rtk git add .",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git add ."
+    }
+  },
+  {
+    "name": "pin:out:f04-time-npm-test:0",
+    "input": {
+      "command": "rtk time npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk time npm run test"
+    }
+  },
+  {
+    "name": "pin:out:f04-time-npm-test:1",
+    "input": {
+      "command": "rtk time npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" time npm run test"
+    }
+  },
+  {
+    "name": "pin:out:f04-time-npm-test:2",
+    "input": {
+      "command": "rtk time npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" time npm run test"
+    }
+  },
+  {
+    "name": "pin:out:f05-nice-make:0",
+    "input": {
+      "command": "rtk nice -n 5 make",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk nice -n 5 make"
+    }
+  },
+  {
+    "name": "pin:out:f05-nice-make:1",
+    "input": {
+      "command": "rtk nice -n 5 make",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" nice -n 5 make"
+    }
+  },
+  {
+    "name": "pin:out:f05-nice-make:2",
+    "input": {
+      "command": "rtk nice -n 5 make",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" nice -n 5 make"
+    }
+  },
+  {
+    "name": "pin:out:f06-command-ls:0",
+    "input": {
+      "command": "rtk command ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk command ls"
+    }
+  },
+  {
+    "name": "pin:out:f06-command-ls:1",
+    "input": {
+      "command": "rtk command ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" command ls"
+    }
+  },
+  {
+    "name": "pin:out:f06-command-ls:2",
+    "input": {
+      "command": "rtk command ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" command ls"
+    }
+  },
+  {
+    "name": "pin:out:f07-exec-bash:0",
+    "input": {
+      "command": "rtk exec bash",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk exec bash"
+    }
+  },
+  {
+    "name": "pin:out:f07-exec-bash:1",
+    "input": {
+      "command": "rtk exec bash",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" exec bash"
+    }
+  },
+  {
+    "name": "pin:out:f07-exec-bash:2",
+    "input": {
+      "command": "rtk exec bash",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" exec bash"
+    }
+  },
+  {
+    "name": "pin:out:f09-node-bin-jest:0",
+    "input": {
+      "command": "rtk jest",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk jest"
+    }
+  },
+  {
+    "name": "pin:out:f09-node-bin-jest:1",
+    "input": {
+      "command": "rtk jest",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" jest"
+    }
+  },
+  {
+    "name": "pin:out:f09-node-bin-jest:2",
+    "input": {
+      "command": "rtk jest",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" jest"
+    }
+  },
+  {
+    "name": "pin:out:f10-windows-cmd-script:0",
+    "input": {
+      "command": "rtk script.cmd arg",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk script.cmd arg"
+    }
+  },
+  {
+    "name": "pin:out:f10-windows-cmd-script:1",
+    "input": {
+      "command": "rtk script.cmd arg",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" script.cmd arg"
+    }
+  },
+  {
+    "name": "pin:out:f10-windows-cmd-script:2",
+    "input": {
+      "command": "rtk script.cmd arg",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" script.cmd arg"
+    }
+  },
+  {
+    "name": "pin:out:f14-quoted-heredoc-lookalike:0",
+    "input": {
+      "command": "rtk echo \"<<\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"<<\""
+    }
+  },
+  {
+    "name": "pin:out:f14-quoted-heredoc-lookalike:1",
+    "input": {
+      "command": "rtk echo \"<<\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"<<\""
+    }
+  },
+  {
+    "name": "pin:out:f14-quoted-heredoc-lookalike:2",
+    "input": {
+      "command": "rtk echo \"<<\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"<<\""
+    }
+  },
+  {
+    "name": "pin:out:f15-single-quoted-heredoc-lookalike:0",
+    "input": {
+      "command": "rtk echo '<<x'",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo '<<x'"
+    }
+  },
+  {
+    "name": "pin:out:f15-single-quoted-heredoc-lookalike:1",
+    "input": {
+      "command": "rtk echo '<<x'",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo '<<x'"
+    }
+  },
+  {
+    "name": "pin:out:f15-single-quoted-heredoc-lookalike:2",
+    "input": {
+      "command": "rtk echo '<<x'",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo '<<x'"
+    }
+  },
+  {
+    "name": "pin:out:f18-single-quoted-subst:0",
+    "input": {
+      "command": "rtk echo '$(x)'",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo '$(x)'"
+    }
+  },
+  {
+    "name": "pin:out:f18-single-quoted-subst:1",
+    "input": {
+      "command": "rtk echo '$(x)'",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo '$(x)'"
+    }
+  },
+  {
+    "name": "pin:out:f18-single-quoted-subst:2",
+    "input": {
+      "command": "rtk echo '$(x)'",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo '$(x)'"
+    }
+  },
+  {
+    "name": "pin:out:f20-escaped-subst:0",
+    "input": {
+      "command": "rtk echo \\$(x)",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \\$(x)"
+    }
+  },
+  {
+    "name": "pin:out:f20-escaped-subst:1",
+    "input": {
+      "command": "rtk echo \\$(x)",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \\$(x)"
+    }
+  },
+  {
+    "name": "pin:out:f20-escaped-subst:2",
+    "input": {
+      "command": "rtk echo \\$(x)",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \\$(x)"
+    }
+  },
+  {
+    "name": "pin:out:f21-plain-var:0",
+    "input": {
+      "command": "rtk echo $HOME",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo $HOME"
+    }
+  },
+  {
+    "name": "pin:out:f21-plain-var:1",
+    "input": {
+      "command": "rtk echo $HOME",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo $HOME"
+    }
+  },
+  {
+    "name": "pin:out:f21-plain-var:2",
+    "input": {
+      "command": "rtk echo $HOME",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo $HOME"
+    }
+  },
+  {
+    "name": "pin:out:f23-lone-dollar:0",
+    "input": {
+      "command": "rtk echo $",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo $"
+    }
+  },
+  {
+    "name": "pin:out:f23-lone-dollar:1",
+    "input": {
+      "command": "rtk echo $",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo $"
+    }
+  },
+  {
+    "name": "pin:out:f23-lone-dollar:2",
+    "input": {
+      "command": "rtk echo $",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo $"
+    }
+  },
+  {
+    "name": "pin:out:f24-escaped-backtick-in-dq:0",
+    "input": {
+      "command": "rtk echo \"\\`x\\`\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"\\`x\\`\""
+    }
+  },
+  {
+    "name": "pin:out:f24-escaped-backtick-in-dq:1",
+    "input": {
+      "command": "rtk echo \"\\`x\\`\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"\\`x\\`\""
+    }
+  },
+  {
+    "name": "pin:out:f24-escaped-backtick-in-dq:2",
+    "input": {
+      "command": "rtk echo \"\\`x\\`\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"\\`x\\`\""
+    }
+  },
+  {
+    "name": "pin:out:f43-nxy-glued:0",
+    "input": {
+      "command": "rtk echo a.nxy/x",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo a.nxy/x"
+    }
+  },
+  {
+    "name": "pin:out:f43-nxy-glued:1",
+    "input": {
+      "command": "rtk echo a.nxy/x",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo a.nxy/x"
+    }
+  },
+  {
+    "name": "pin:out:f43-nxy-glued:2",
+    "input": {
+      "command": "rtk echo a.nxy/x",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo a.nxy/x"
+    }
+  },
+  {
+    "name": "pin:out:f45-accented:0",
+    "input": {
+      "command": "rtk echo héllo",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo héllo"
+    }
+  },
+  {
+    "name": "pin:out:f45-accented:1",
+    "input": {
+      "command": "rtk echo héllo",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo héllo"
+    }
+  },
+  {
+    "name": "pin:out:f45-accented:2",
+    "input": {
+      "command": "rtk echo héllo",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo héllo"
+    }
+  },
+  {
+    "name": "pin:out:f46-cjk-head-50:0",
+    "input": {
+      "command": "rtk echo \"日本語\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"日本語\""
+    }
+  },
+  {
+    "name": "pin:out:f46-cjk-head-50:1",
+    "input": {
+      "command": "rtk echo \"日本語\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"日本語\""
+    }
+  },
+  {
+    "name": "pin:out:f46-cjk-head-50:2",
+    "input": {
+      "command": "rtk echo \"日本語\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"日本語\""
+    }
+  },
+  {
+    "name": "pin:out:f47-grep-enye:0",
+    "input": {
+      "command": "rtk grep -rn \"ñ\" src",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk grep -rn \"ñ\" src"
+    }
+  },
+  {
+    "name": "pin:out:f47-grep-enye:1",
+    "input": {
+      "command": "rtk grep -rn \"ñ\" src",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" grep -rn \"ñ\" src"
+    }
+  },
+  {
+    "name": "pin:out:f47-grep-enye:2",
+    "input": {
+      "command": "rtk grep -rn \"ñ\" src",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" grep -rn \"ñ\" src"
+    }
+  },
+  {
+    "name": "pin:out:f55-echo-rtk:0",
+    "input": {
+      "command": "rtk echo rtk git",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo rtk git"
+    }
+  },
+  {
+    "name": "pin:out:f55-echo-rtk:1",
+    "input": {
+      "command": "rtk echo rtk git",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo rtk git"
+    }
+  },
+  {
+    "name": "pin:out:f55-echo-rtk:2",
+    "input": {
+      "command": "rtk echo rtk git",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo rtk git"
+    }
+  },
+  {
+    "name": "pin:out:f59-multiline-allowed:0",
+    "input": {
+      "command": "rtk git status\nls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status\nls"
+    }
+  },
+  {
+    "name": "pin:out:f59-multiline-allowed:1",
+    "input": {
+      "command": "rtk git status\nls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status\nls"
+    }
+  },
+  {
+    "name": "pin:out:f59-multiline-allowed:2",
+    "input": {
+      "command": "rtk git status\nls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status\nls"
+    }
+  },
+  {
+    "name": "pin:out:f60-semicolon-and-pipe:0",
+    "input": {
+      "command": "rtk git status; git log",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status; git log"
+    }
+  },
+  {
+    "name": "pin:out:f60-semicolon-and-pipe:1",
+    "input": {
+      "command": "rtk git status; git log",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status; git log"
+    }
+  },
+  {
+    "name": "pin:out:f60-semicolon-and-pipe:2",
+    "input": {
+      "command": "rtk git status; git log",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status; git log"
+    }
+  },
+  {
+    "name": "pin:out:f61-quoted-andand:0",
+    "input": {
+      "command": "rtk echo \"a && b\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"a && b\""
+    }
+  },
+  {
+    "name": "pin:out:f61-quoted-andand:1",
+    "input": {
+      "command": "rtk echo \"a && b\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"a && b\""
+    }
+  },
+  {
+    "name": "pin:out:f61-quoted-andand:2",
+    "input": {
+      "command": "rtk echo \"a && b\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"a && b\""
+    }
+  },
+  {
+    "name": "pin:out:f65-status-then-rm:0",
+    "input": {
+      "command": "rtk git status && rm -rf build",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status && rm -rf build"
+    }
+  },
+  {
+    "name": "pin:out:f65-status-then-rm:1",
+    "input": {
+      "command": "rtk git status && rm -rf build",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status && rm -rf build"
+    }
+  },
+  {
+    "name": "pin:out:f65-status-then-rm:2",
+    "input": {
+      "command": "rtk git status && rm -rf build",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status && rm -rf build"
+    }
+  },
+  {
+    "name": "pin:out:f66-echo-hi:0",
+    "input": {
+      "command": "rtk echo hi",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo hi"
+    }
+  },
+  {
+    "name": "pin:out:f66-echo-hi:1",
+    "input": {
+      "command": "rtk echo hi",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo hi"
+    }
+  },
+  {
+    "name": "pin:out:f66-echo-hi:2",
+    "input": {
+      "command": "rtk echo hi",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo hi"
+    }
+  },
+  {
+    "name": "pin:out:f67-grep-regex-dot:0",
+    "input": {
+      "command": "rtk grep -rn \"a.b\" .",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk grep -rn \"a.b\" ."
+    }
+  },
+  {
+    "name": "pin:out:f67-grep-regex-dot:1",
+    "input": {
+      "command": "rtk grep -rn \"a.b\" .",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" grep -rn \"a.b\" ."
+    }
+  },
+  {
+    "name": "pin:out:f67-grep-regex-dot:2",
+    "input": {
+      "command": "rtk grep -rn \"a.b\" .",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" grep -rn \"a.b\" ."
+    }
+  },
+  {
+    "name": "pin:out:f70-npm-run-test-flag:0",
+    "input": {
+      "command": "rtk npm run test -- --grep x",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk npm run test -- --grep x"
+    }
+  },
+  {
+    "name": "pin:out:f70-npm-run-test-flag:1",
+    "input": {
+      "command": "rtk npm run test -- --grep x",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" npm run test -- --grep x"
+    }
+  },
+  {
+    "name": "pin:out:f70-npm-run-test-flag:2",
+    "input": {
+      "command": "rtk npm run test -- --grep x",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" npm run test -- --grep x"
+    }
+  },
+  {
+    "name": "pin:out:f78-crlf-lines-perm:0",
+    "input": {
+      "command": "rtk git status\r\nls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:f78-crlf-lines-perm:1",
+    "input": {
+      "command": "rtk git status\r\nls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:f78-crlf-lines-perm:2",
+    "input": {
+      "command": "rtk git status\r\nls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status\r\nls"
+    }
+  },
+  {
+    "name": "pin:out:f79-cd-prefix-chain:0",
+    "input": {
+      "command": "rtk cd api && npm run test && cd .. && ls",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd api && npm run test && cd .. && ls"
+    }
+  },
+  {
+    "name": "pin:out:f79-cd-prefix-chain:1",
+    "input": {
+      "command": "rtk cd api && npm run test && cd .. && ls",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd api && npm run test && cd .. && ls"
+    }
+  },
+  {
+    "name": "pin:out:f79-cd-prefix-chain:2",
+    "input": {
+      "command": "rtk cd api && npm run test && cd .. && ls",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd api && npm run test && cd .. && ls"
+    }
+  },
+  {
+    "name": "pin:out:ps13-code-3:0",
+    "input": {
+      "command": "rtk git log",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git log"
+    }
+  },
+  {
+    "name": "pin:out:ps13-code-3:1",
+    "input": {
+      "command": "rtk git log",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git log"
+    }
+  },
+  {
+    "name": "pin:out:ps13-code-3:2",
+    "input": {
+      "command": "rtk git log",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git log"
+    }
+  },
+  {
+    "name": "pin:out:ps16-assign-eqeq:0",
+    "input": {
+      "command": "rtk echo $a == b",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo $a == b"
+    }
+  },
+  {
+    "name": "pin:out:ps16-assign-eqeq:1",
+    "input": {
+      "command": "rtk echo $a == b",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo $a == b"
+    }
+  },
+  {
+    "name": "pin:out:ps16-assign-eqeq:2",
+    "input": {
+      "command": "rtk echo $a == b",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo $a == b"
+    }
+  },
+  {
+    "name": "pin:out:ps38-unchanged:0",
+    "input": {
+      "command": "mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "mvn test"
+    }
+  },
+  {
+    "name": "pin:out:ps38-unchanged:1",
+    "input": {
+      "command": "mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "mvn test"
+    }
+  },
+  {
+    "name": "pin:out:ps38-unchanged:2",
+    "input": {
+      "command": "mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r01-git-status:0",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status"
+    }
+  },
+  {
+    "name": "pin:out:r01-git-status:1",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:out:r01-git-status:2",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:out:r02-mvn-test:0",
+    "input": {
+      "command": "rtk mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r02-mvn-test:1",
+    "input": {
+      "command": "rtk mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r02-mvn-test:2",
+    "input": {
+      "command": "rtk mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r03-env-prefix-npm-test:0",
+    "input": {
+      "command": "rtk FOO=1 npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk FOO=1 npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r03-env-prefix-npm-test:1",
+    "input": {
+      "command": "rtk FOO=1 npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" FOO=1 npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r03-env-prefix-npm-test:2",
+    "input": {
+      "command": "rtk FOO=1 npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" FOO=1 npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r04-cd-npm-test:0",
+    "input": {
+      "command": "rtk cd src && npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd src && npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r04-cd-npm-test:1",
+    "input": {
+      "command": "rtk cd src && npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd src && npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r04-cd-npm-test:2",
+    "input": {
+      "command": "rtk cd src && npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd src && npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r05-tail-50:0",
+    "input": {
+      "command": "rtk npm run test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r05-tail-50:1",
+    "input": {
+      "command": "rtk npm run test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r05-tail-50:2",
+    "input": {
+      "command": "rtk npm run test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" npm run test"
+    }
+  },
+  {
+    "name": "pin:out:r06-mvn-tail-150:0",
+    "input": {
+      "command": "rtk mvn test 2>&1",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvn test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r06-mvn-tail-150:1",
+    "input": {
+      "command": "rtk mvn test 2>&1",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvn test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r06-mvn-tail-150:2",
+    "input": {
+      "command": "rtk mvn test 2>&1",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvn test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r07-pipe-grep-tail-21:0",
+    "input": {
+      "command": "rtk git log | grep x",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git log | grep x"
+    }
+  },
+  {
+    "name": "pin:out:r07-pipe-grep-tail-21:1",
+    "input": {
+      "command": "rtk git log | grep x",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git log | grep x"
+    }
+  },
+  {
+    "name": "pin:out:r07-pipe-grep-tail-21:2",
+    "input": {
+      "command": "rtk git log | grep x",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git log | grep x"
+    }
+  },
+  {
+    "name": "pin:out:r08-windows-wrapper-chain:0",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r08-windows-wrapper-chain:1",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r08-windows-wrapper-chain:2",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1"
+    }
+  },
+  {
+    "name": "pin:out:r09-add-status:0",
+    "input": {
+      "command": "rtk git add . && git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git add . && git status"
+    }
+  },
+  {
+    "name": "pin:out:r09-add-status:1",
+    "input": {
+      "command": "rtk git add . && git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git add . && git status"
+    }
+  },
+  {
+    "name": "pin:out:r09-add-status:2",
+    "input": {
+      "command": "rtk git add . && git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git add . && git status"
+    }
+  },
+  {
+    "name": "pin:out:r10-quoted-gt:0",
+    "input": {
+      "command": "rtk echo \"a > b\"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk echo \"a > b\""
+    }
+  },
+  {
+    "name": "pin:out:r10-quoted-gt:1",
+    "input": {
+      "command": "rtk echo \"a > b\"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" echo \"a > b\""
+    }
+  },
+  {
+    "name": "pin:out:r10-quoted-gt:2",
+    "input": {
+      "command": "rtk echo \"a > b\"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" echo \"a > b\""
+    }
+  },
+  {
+    "name": "pin:out:r11-devnull-stderr:0",
+    "input": {
+      "command": "rtk ls -la 2>/dev/null",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk ls -la 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r11-devnull-stderr:1",
+    "input": {
+      "command": "rtk ls -la 2>/dev/null",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" ls -la 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r11-devnull-stderr:2",
+    "input": {
+      "command": "rtk ls -la 2>/dev/null",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" ls -la 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r12-where-java:0",
+    "input": {
+      "command": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r12-where-java:1",
+    "input": {
+      "command": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r12-where-java:2",
+    "input": {
+      "command": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    }
+  },
+  {
+    "name": "pin:out:r13-node-eval-then-grep:0",
+    "input": {
+      "command": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    }
+  },
+  {
+    "name": "pin:out:r13-node-eval-then-grep:1",
+    "input": {
+      "command": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    }
+  },
+  {
+    "name": "pin:out:r13-node-eval-then-grep:2",
+    "input": {
+      "command": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    }
+  },
+  {
+    "name": "pin:out:r14-python-in-chain:0",
+    "input": {
+      "command": "rtk cd api && python3 gen.py && git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd api && python3 gen.py && git status"
+    }
+  },
+  {
+    "name": "pin:out:r14-python-in-chain:1",
+    "input": {
+      "command": "rtk cd api && python3 gen.py && git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd api && python3 gen.py && git status"
+    }
+  },
+  {
+    "name": "pin:out:r14-python-in-chain:2",
+    "input": {
+      "command": "rtk cd api && python3 gen.py && git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd api && python3 gen.py && git status"
+    }
+  },
+  {
+    "name": "pin:out:r15-ask-code-3:0",
+    "input": {
+      "command": "rtk git log --oneline",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git log --oneline"
+    }
+  },
+  {
+    "name": "pin:out:r15-ask-code-3:1",
+    "input": {
+      "command": "rtk git log --oneline",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git log --oneline"
+    }
+  },
+  {
+    "name": "pin:out:r15-ask-code-3:2",
+    "input": {
+      "command": "rtk git log --oneline",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git log --oneline"
+    }
+  },
+  {
+    "name": "pin:out:r17-docker-ps:0",
+    "input": {
+      "command": "rtk docker ps",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk docker ps"
+    }
+  },
+  {
+    "name": "pin:out:r17-docker-ps:1",
+    "input": {
+      "command": "rtk docker ps",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" docker ps"
+    }
+  },
+  {
+    "name": "pin:out:r17-docker-ps:2",
+    "input": {
+      "command": "rtk docker ps",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" docker ps"
+    }
+  },
+  {
+    "name": "pin:out:r18-git-diff-exclude-curl:0",
+    "input": {
+      "command": "rtk git diff",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git diff"
+    }
+  },
+  {
+    "name": "pin:out:r18-git-diff-exclude-curl:1",
+    "input": {
+      "command": "rtk git diff",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git diff"
+    }
+  },
+  {
+    "name": "pin:out:r18-git-diff-exclude-curl:2",
+    "input": {
+      "command": "rtk git diff",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git diff"
+    }
+  },
+  {
+    "name": "pin:out:r19-mvnw-cmd-unix:0",
+    "input": {
+      "command": "rtk mvnw.cmd test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r19-mvnw-cmd-unix:1",
+    "input": {
+      "command": "rtk mvnw.cmd test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r19-mvnw-cmd-unix:2",
+    "input": {
+      "command": "rtk mvnw.cmd test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r21-env-then-mvnw:0",
+    "input": {
+      "command": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r21-env-then-mvnw:1",
+    "input": {
+      "command": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r21-env-then-mvnw:2",
+    "input": {
+      "command": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "pin:out:r22-gradlew-bat:0",
+    "input": {
+      "command": "rtk gradlew.bat build",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk gradlew.bat build"
+    }
+  },
+  {
+    "name": "pin:out:r22-gradlew-bat:1",
+    "input": {
+      "command": "rtk gradlew.bat build",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" gradlew.bat build"
+    }
+  },
+  {
+    "name": "pin:out:r22-gradlew-bat:2",
+    "input": {
+      "command": "rtk gradlew.bat build",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" gradlew.bat build"
+    }
+  },
+  {
+    "name": "pin:out:r24-pnpm-test-args:0",
+    "input": {
+      "command": "rtk pnpm run test -- --run",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk pnpm run test -- --run"
+    }
+  },
+  {
+    "name": "pin:out:r24-pnpm-test-args:1",
+    "input": {
+      "command": "rtk pnpm run test -- --run",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" pnpm run test -- --run"
+    }
+  },
+  {
+    "name": "pin:out:r24-pnpm-test-args:2",
+    "input": {
+      "command": "rtk pnpm run test -- --run",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" pnpm run test -- --run"
+    }
+  },
+  {
+    "name": "pin:out:r25-pnpm-build:0",
+    "input": {
+      "command": "rtk pnpm run build",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk pnpm run build"
+    }
+  },
+  {
+    "name": "pin:out:r25-pnpm-build:1",
+    "input": {
+      "command": "rtk pnpm run build",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" pnpm run build"
+    }
+  },
+  {
+    "name": "pin:out:r25-pnpm-build:2",
+    "input": {
+      "command": "rtk pnpm run build",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" pnpm run build"
+    }
+  },
+  {
+    "name": "pin:out:r26-npm-run-build:0",
+    "input": {
+      "command": "rtk npm run build",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk npm run build"
+    }
+  },
+  {
+    "name": "pin:out:r26-npm-run-build:1",
+    "input": {
+      "command": "rtk npm run build",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" npm run build"
+    }
+  },
+  {
+    "name": "pin:out:r26-npm-run-build:2",
+    "input": {
+      "command": "rtk npm run build",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" npm run build"
+    }
+  },
+  {
+    "name": "pin:out:r27-quoted-cd-mvnw:0",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test"
+    }
+  },
+  {
+    "name": "pin:out:r27-quoted-cd-mvnw:1",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test"
+    }
+  },
+  {
+    "name": "pin:out:r27-quoted-cd-mvnw:2",
+    "input": {
+      "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test"
+    }
+  },
+  {
+    "name": "pin:out:r28-source-then-mvn:0",
+    "input": {
+      "command": "rtk source ~/.bashrc && mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk source ~/.bashrc && mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r28-source-then-mvn:1",
+    "input": {
+      "command": "rtk source ~/.bashrc && mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" source ~/.bashrc && mvn test"
+    }
+  },
+  {
+    "name": "pin:out:r28-source-then-mvn:2",
+    "input": {
+      "command": "rtk source ~/.bashrc && mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" source ~/.bashrc && mvn test"
+    }
+  },
+  {
+    "name": "pin:out:s54-rtk-unchanged:0",
+    "input": {
+      "command": "git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "git status"
+    }
+  },
+  {
+    "name": "pin:out:s54-rtk-unchanged:1",
+    "input": {
+      "command": "git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "git status"
+    }
+  },
+  {
+    "name": "pin:out:s54-rtk-unchanged:2",
+    "input": {
+      "command": "git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "git status"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:0",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:1",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:2",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; rtk mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:3",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; \"/opt/rtk/rtk\" mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:4",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; \"D:/tools/rtk.exe\" mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:5",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; \"D:/tools/$rtk/rtk.exe\" mvn test"
+    }
+  },
+  {
+    "name": "pin:ps09-already-rtk:6",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "Set-Location \"C:/x\"; \"/opt/$&/rtk\" mvn test"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:0",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:1",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtk git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:2",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtk git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:3",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:4",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:5",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/$rtk/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:s08-already-rtk:6",
+    "input": {
+      "command": "rtk git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/$&/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:0",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "rtk.exe git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:1",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "rtk.exe git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:2",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "rtk.exe git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:3",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/rtk/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:4",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:5",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "\"D:/tools/$rtk/rtk.exe\" git status"
+    }
+  },
+  {
+    "name": "pin:s09-already-rtk-exe:6",
+    "input": {
+      "command": "rtk.exe git status",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "\"/opt/$&/rtk\" git status"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:0",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "cd src && rtk npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:1",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd src && rtk npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:2",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd src && rtk npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:3",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd src && \"/opt/rtk/rtk\" npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:4",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd src && \"D:/tools/rtk.exe\" npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:5",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "D:\\tools\\$rtk\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd src && \"D:/tools/$rtk/rtk.exe\" npm test"
+    }
+  },
+  {
+    "name": "pin:s10-already-rtk-chain:6",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "rtkPath": "/opt/$&/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd src && \"/opt/$&/rtk\" npm test"
+    }
+  },
+  {
+    "name": "ps01-mvnw",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location \"C:/x/api\"; mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps02-multiline-env",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps03-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps04-cd-npm-test",
+    "input": {
+      "command": "cd api; npm test"
+    },
+    "output": {
+      "normalizeForRtk": "cd api; npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps05-script-foreach",
+    "input": {
+      "command": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }"
+    },
+    "output": {
+      "normalizeForRtk": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps06-set-location-only",
+    "input": {
+      "command": "Set-Location \"C:/x\""
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location \"C:/x\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps07-env-only",
+    "input": {
+      "command": "$env:JAVA_HOME = \"C:/j\""
+    },
+    "output": {
+      "normalizeForRtk": "$env:JAVA_HOME = \"C:/j\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps08-pipe",
+    "input": {
+      "command": "Get-Content x | Select-Object -First 5"
+    },
+    "output": {
+      "normalizeForRtk": "Get-Content x | Select-Object -First 5",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps09-already-rtk",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location \"C:/x\"; rtk mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "ps10-raw-env",
+    "input": {
+      "command": "$env:NXY_RAW = \"1\"; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "$env:NXY_RAW = \"1\"; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps11-raw-env-middle",
+    "input": {
+      "command": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps12-redirect",
+    "input": {
+      "command": "mvn test > out.txt"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test > out.txt",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps13-code-3",
+    "input": {
+      "command": "Set-Location x; git log"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location x; git log",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps14-crlf",
+    "input": {
+      "command": "Set-Location x\r\n.\\gradlew.bat build\r\n"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location x\r\n.\\gradlew.bat build\r\n",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps15-tail-limit",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test 2>&1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps16-assign-eqeq",
+    "input": {
+      "command": "echo $a == b"
+    },
+    "output": {
+      "normalizeForRtk": "echo $a == b",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps17-assign-script",
+    "input": {
+      "command": "$a = 1; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "$a = 1; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps18-if",
+    "input": {
+      "command": "if ($a) { mvn test }"
+    },
+    "output": {
+      "normalizeForRtk": "if ($a) { mvn test }",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps19-try",
+    "input": {
+      "command": "try { mvn test } catch { }"
+    },
+    "output": {
+      "normalizeForRtk": "try { mvn test } catch { }",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps20-function",
+    "input": {
+      "command": "function f { mvn test }"
+    },
+    "output": {
+      "normalizeForRtk": "function f { mvn test }",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps21-subexpr",
+    "input": {
+      "command": "echo $(Get-Date)"
+    },
+    "output": {
+      "normalizeForRtk": "echo $(Get-Date)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps22-array",
+    "input": {
+      "command": "echo @(1,2)"
+    },
+    "output": {
+      "normalizeForRtk": "echo @(1,2)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps23-backtick",
+    "input": {
+      "command": "mvn `\n test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn `\n test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps24-empty-segment",
+    "input": {
+      "command": "Set-Location x;; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location x;; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps25-state-last",
+    "input": {
+      "command": "mvn test; Set-Location x"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test; Set-Location x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps26-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps27-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps28-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps29-raw-alone",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\""
+    },
+    "output": {
+      "normalizeForRtk": "$env:NXY_RAW=\"1\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps30-raw-lowercase-prefix",
+    "input": {
+      "command": "$env:nxy_raw = 1; ls"
+    },
+    "output": {
+      "normalizeForRtk": "$env:nxy_raw = 1; ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps31-upper-set-location",
+    "input": {
+      "command": "SET-LOCATION x; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "SET-LOCATION x; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps32-node-eval",
+    "input": {
+      "command": "node -e \"1\""
+    },
+    "output": {
+      "normalizeForRtk": "node -e \"1\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps33-bare-python",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "normalizeForRtk": "python3",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps34-pushd",
+    "input": {
+      "command": "pushd x\nmvn test"
+    },
+    "output": {
+      "normalizeForRtk": "pushd x\nmvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps35-push-location",
+    "input": {
+      "command": "Push-Location x; Get-ChildItem"
+    },
+    "output": {
+      "normalizeForRtk": "Push-Location x; Get-ChildItem",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps36-deny",
+    "input": {
+      "command": "rm -rf x"
+    },
+    "output": {
+      "normalizeForRtk": "rm -rf x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps37-throw",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps38-unchanged",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps39-nbsp",
+    "input": {
+      "command": "Set-Location x; mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "Set-Location x; mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps40-interactive-docker",
+    "input": {
+      "command": "docker run -it ubuntu"
+    },
+    "output": {
+      "normalizeForRtk": "docker run -it ubuntu",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "ps41-unknown-tool",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r01-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r02-mvn-test",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r03-env-prefix-npm-test",
+    "input": {
+      "command": "FOO=1 npm test"
+    },
+    "output": {
+      "normalizeForRtk": "FOO=1 npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r04-cd-npm-test",
+    "input": {
+      "command": "cd src && npm test"
+    },
+    "output": {
+      "normalizeForRtk": "cd src && npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r05-tail-50",
+    "input": {
+      "command": "npm test | tail -50"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test | tail -50",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test 2>&1 | tail -n 150",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r07-pipe-grep-tail-21",
+    "input": {
+      "command": "git log | grep x | tail -n 21"
+    },
+    "output": {
+      "normalizeForRtk": "git log | grep x | tail -n 21",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r08-windows-wrapper-chain",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && ./mvnw.cmd -B test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "normalizeForRtk": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1 | tail -n 150",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r09-add-status",
+    "input": {
+      "command": "git add . && git status"
+    },
+    "output": {
+      "normalizeForRtk": "git add . && git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r10-quoted-gt",
+    "input": {
+      "command": "echo \"a > b\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"a > b\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r11-devnull-stderr",
+    "input": {
+      "command": "ls -la 2>/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "ls -la 2>/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r12-where-java",
+    "input": {
+      "command": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r13-node-eval-then-grep",
+    "input": {
+      "command": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    },
+    "output": {
+      "normalizeForRtk": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r14-python-in-chain",
+    "input": {
+      "command": "cd api && python3 gen.py && git status"
+    },
+    "output": {
+      "normalizeForRtk": "cd api && python3 gen.py && git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r15-ask-code-3",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "normalizeForRtk": "git log --oneline",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r16-only-mvn",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r17-docker-ps",
+    "input": {
+      "command": "docker ps"
+    },
+    "output": {
+      "normalizeForRtk": "docker ps",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r18-git-diff-exclude-curl",
+    "input": {
+      "command": "git diff"
+    },
+    "output": {
+      "normalizeForRtk": "git diff",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r19-mvnw-cmd-unix",
+    "input": {
+      "command": "./mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r20-mvnw-cmd-win",
+    "input": {
+      "command": ".\\mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r21-env-then-mvnw",
+    "input": {
+      "command": "cd api && JAVA_HOME=\"/c/x\" ./mvnw.cmd test"
+    },
+    "output": {
+      "normalizeForRtk": "cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r22-gradlew-bat",
+    "input": {
+      "command": "./gradlew.bat build"
+    },
+    "output": {
+      "normalizeForRtk": "gradlew.bat build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r23-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r24-pnpm-test-args",
+    "input": {
+      "command": "pnpm test -- --run"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run test -- --run",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r25-pnpm-build",
+    "input": {
+      "command": "pnpm build"
+    },
+    "output": {
+      "normalizeForRtk": "pnpm run build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r26-npm-run-build",
+    "input": {
+      "command": "npm run build"
+    },
+    "output": {
+      "normalizeForRtk": "npm run build",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r27-quoted-cd-mvnw",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && ./mvnw test"
+    },
+    "output": {
+      "normalizeForRtk": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "r28-source-then-mvn",
+    "input": {
+      "command": "source ~/.bashrc && mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "source ~/.bashrc && mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s01-empty",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "normalizeForRtk": "",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s02-spaces",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "normalizeForRtk": "   ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s03-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s04-raw-env",
+    "input": {
+      "command": "NXY_RAW=1 mvn test"
+    },
+    "output": {
+      "normalizeForRtk": "NXY_RAW=1 mvn test",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s05-raw-env-in-chain",
+    "input": {
+      "command": "cd api && NXY_RAW=1 grep -n foo README.md"
+    },
+    "output": {
+      "normalizeForRtk": "cd api && NXY_RAW=1 grep -n foo README.md",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s06-raw-comment",
+    "input": {
+      "command": "mvn test # raw"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test # raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s07-raw-comment-nxy",
+    "input": {
+      "command": "mvn test #nxy:raw"
+    },
+    "output": {
+      "normalizeForRtk": "mvn test #nxy:raw",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s08-already-rtk",
+    "input": {
+      "command": "rtk git status"
+    },
+    "output": {
+      "normalizeForRtk": "rtk git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "s09-already-rtk-exe",
+    "input": {
+      "command": "rtk.exe git status"
+    },
+    "output": {
+      "normalizeForRtk": "rtk.exe git status",
+      "isRtkInvocation": true,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "s10-already-rtk-chain",
+    "input": {
+      "command": "cd src && rtk npm test"
+    },
+    "output": {
+      "normalizeForRtk": "cd src && rtk npm test",
+      "isRtkInvocation": false,
+      "usesRtk": true
+    }
+  },
+  {
+    "name": "s11-excluded",
+    "input": {
+      "command": "curl -s https://x"
+    },
+    "output": {
+      "normalizeForRtk": "curl -s https://x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s12-excluded-in-chain",
+    "input": {
+      "command": "npm test && curl x"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test && curl x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s13-not-in-only",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "normalizeForRtk": "ls",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s14-heredoc",
+    "input": {
+      "command": "cat <<'X'\nhi\nX"
+    },
+    "output": {
+      "normalizeForRtk": "cat <<'X'\nhi\nX",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s15-herestring",
+    "input": {
+      "command": "cat <<< \"hi\""
+    },
+    "output": {
+      "normalizeForRtk": "cat <<< \"hi\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s16-substitution-dollar",
+    "input": {
+      "command": "echo $(date)"
+    },
+    "output": {
+      "normalizeForRtk": "echo $(date)",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s17-substitution-backtick",
+    "input": {
+      "command": "echo `date`"
+    },
+    "output": {
+      "normalizeForRtk": "echo `date`",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s18-substitution-brace",
+    "input": {
+      "command": "echo \"${HOME}\""
+    },
+    "output": {
+      "normalizeForRtk": "echo \"${HOME}\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s19-redirect-file",
+    "input": {
+      "command": "ls > out.txt"
+    },
+    "output": {
+      "normalizeForRtk": "ls > out.txt",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s20-redirect-and-merge",
+    "input": {
+      "command": "npm test > out.log 2>&1"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test > out.log 2>&1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s21-redirect-input",
+    "input": {
+      "command": "sort < in.txt"
+    },
+    "output": {
+      "normalizeForRtk": "sort < in.txt",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s22-background",
+    "input": {
+      "command": "npm start &"
+    },
+    "output": {
+      "normalizeForRtk": "npm start &",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s23-capped-head-3",
+    "input": {
+      "command": "grep -rn \"nxy\" README.md | head -3"
+    },
+    "output": {
+      "normalizeForRtk": "grep -rn \"nxy\" README.md | head -3",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s24-capped-tail-20",
+    "input": {
+      "command": "npm test | tail -20"
+    },
+    "output": {
+      "normalizeForRtk": "npm run test | tail -20",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s25-capped-bare-tail",
+    "input": {
+      "command": "ls -la | tail"
+    },
+    "output": {
+      "normalizeForRtk": "ls -la | tail",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s26-capped-head-n-10",
+    "input": {
+      "command": "git log --oneline | head -n 10"
+    },
+    "output": {
+      "normalizeForRtk": "git log --oneline | head -n 10",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s27-cd-only",
+    "input": {
+      "command": "cd src"
+    },
+    "output": {
+      "normalizeForRtk": "cd src",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s28-export-only",
+    "input": {
+      "command": "export A=1"
+    },
+    "output": {
+      "normalizeForRtk": "export A=1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s29-state-chain",
+    "input": {
+      "command": "cd src && export A=1"
+    },
+    "output": {
+      "normalizeForRtk": "cd src && export A=1",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s30-sudo",
+    "input": {
+      "command": "sudo apt install x"
+    },
+    "output": {
+      "normalizeForRtk": "sudo apt install x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s31-vim",
+    "input": {
+      "command": "vim file.txt"
+    },
+    "output": {
+      "normalizeForRtk": "vim file.txt",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s32-ssh",
+    "input": {
+      "command": "ssh host"
+    },
+    "output": {
+      "normalizeForRtk": "ssh host",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s33-bare-node",
+    "input": {
+      "command": "node"
+    },
+    "output": {
+      "normalizeForRtk": "node",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s34-bare-python3",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "normalizeForRtk": "python3",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s35-cd-bare-node",
+    "input": {
+      "command": "cd src && node"
+    },
+    "output": {
+      "normalizeForRtk": "cd src && node",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s36-node-eval",
+    "input": {
+      "command": "node -e \"console.log(1)\""
+    },
+    "output": {
+      "normalizeForRtk": "node -e \"console.log(1)\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s37-node-test-after-cd",
+    "input": {
+      "command": "cd src && node --test tests/x.test.mjs"
+    },
+    "output": {
+      "normalizeForRtk": "cd src && node --test tests/x.test.mjs",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s38-python-script",
+    "input": {
+      "command": "python3 tool.py --flag"
+    },
+    "output": {
+      "normalizeForRtk": "python3 tool.py --flag",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s39-git-commit",
+    "input": {
+      "command": "git commit -m \"x\""
+    },
+    "output": {
+      "normalizeForRtk": "git commit -m \"x\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s40-git-C-commit",
+    "input": {
+      "command": "git -C . commit -m \"x\""
+    },
+    "output": {
+      "normalizeForRtk": "git -C . commit -m \"x\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s41-git-push",
+    "input": {
+      "command": "git push origin main"
+    },
+    "output": {
+      "normalizeForRtk": "git push origin main",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s42-git-rebase-i",
+    "input": {
+      "command": "git rebase -i HEAD~3"
+    },
+    "output": {
+      "normalizeForRtk": "git rebase -i HEAD~3",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s43-git-add-p",
+    "input": {
+      "command": "git add -p"
+    },
+    "output": {
+      "normalizeForRtk": "git add -p",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s44-git-checkout",
+    "input": {
+      "command": "git checkout main"
+    },
+    "output": {
+      "normalizeForRtk": "git checkout main",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s45-docker-exec-it",
+    "input": {
+      "command": "docker exec -it web sh"
+    },
+    "output": {
+      "normalizeForRtk": "docker exec -it web sh",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s46-chain-with-commit",
+    "input": {
+      "command": "ls && git commit -m x"
+    },
+    "output": {
+      "normalizeForRtk": "ls && git commit -m x",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s47-nxy-internal",
+    "input": {
+      "command": "cat .nxy/metrics/filter.jsonl"
+    },
+    "output": {
+      "normalizeForRtk": "cat .nxy/metrics/filter.jsonl",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s48-nxy-internal-quoted",
+    "input": {
+      "command": "cat \"./.nxy/config.json\""
+    },
+    "output": {
+      "normalizeForRtk": "cat \"./.nxy/config.json\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s49-rtk-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s50-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s51-rtk-none",
+    "input": {
+      "command": "weird-cmd"
+    },
+    "output": {
+      "normalizeForRtk": "weird-cmd",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s52-rtk-deny",
+    "input": {
+      "command": "rm -rf /"
+    },
+    "output": {
+      "normalizeForRtk": "rm -rf /",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s53-rtk-error",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s54-rtk-unchanged",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "s55-rtk-empty-stdout",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "normalizeForRtk": "git status",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  }
+]

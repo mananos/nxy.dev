@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/matyy-a/nxy.dev/internal/domain"
+	"github.com/matyy-a/nxy.dev/internal/filter"
 )
 
 // Store persists features. There is no Load/Save: changes go through Transition.
@@ -17,4 +18,20 @@ type Store interface {
 // Clock gives the current time.
 type Clock interface {
 	Now() time.Time
+}
+
+// FilterConfig gives the filter settings for a project.
+type FilterConfig interface {
+	Filter(projectDir string) filter.Settings
+}
+
+// FilterEngine resolves which tool rewrites commands and asks it to.
+type FilterEngine interface {
+	Info(s filter.Settings, projectDir string) filter.EngineInfo
+	Rewrite(rtkPath, cmd string) (filter.RewriteResult, error)
+}
+
+// PermissionRules gives the host's allow/deny rules for a project.
+type PermissionRules interface {
+	Rules(projectDir string) filter.Rules
 }

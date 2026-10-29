@@ -8,7 +8,18 @@ import (
 	"github.com/matyy-a/nxy.dev/internal/version"
 )
 
+// isolate keeps the real user config, settings and rtk out of a test.
+func isolate(t *testing.T) {
+	t.Helper()
+	d := t.TempDir()
+	t.Setenv("NXY_HOME", d)
+	t.Setenv("HOME", d)
+	t.Setenv("USERPROFILE", d)
+	t.Setenv("NXY_RTK_PATH", "")
+}
+
 func TestHookEvents(t *testing.T) {
+	isolate(t)
 	cases := []struct{ name, tool string }{
 		{"SessionStart", ""},
 		{"PreToolUse", "Bash"},
@@ -35,6 +46,7 @@ func TestHookEvents(t *testing.T) {
 }
 
 func TestHookGarbage(t *testing.T) {
+	isolate(t)
 	var out, errb bytes.Buffer
 	if code := run([]string{"hook"}, strings.NewReader("garbage"), &out, &errb); code != 0 {
 		t.Fatalf("exit %d", code)

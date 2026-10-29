@@ -124,7 +124,7 @@ export function pinRtkPath(rewritten, rtkPath) {
   if (!rtkPath || /^rtk(\.exe)?$/i.test(rtkPath)) return rewritten;
   const quoted = `"${rtkPath.replace(/\\/g, '/')}"`;
   // `rtk` can follow the start, an operator, or a VAR=value prefix (`JAVA_HOME="…" rtk mvn test`).
-  return rewritten.replace(/(^|&&\s*|\|\|\s*|;\s*|\|\s*|[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S+)\s+)rtk(\.exe)?(?=\s)/g, `$1${quoted}`);
+  return rewritten.replace(/(^|&&\s*|\|\|\s*|;\s*|\|\s*|[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S+)\s+)rtk(\.exe)?(?=\s)/g, (_m, lead) => `${lead}${quoted}`);
 }
 
 /** Extracts the recall hash RTK appends to filtered output (`rtk recall <hash>`), if present. */

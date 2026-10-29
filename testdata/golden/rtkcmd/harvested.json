@@ -1,0 +1,232 @@
+[
+  {
+    "name": "h-001",
+    "input": {
+      "command": "cd ~/.claude/projects; ls -d */ | head; find . -path '*subagents*' -name '*.jsonl' -mtime -20 | wc -l; ls ./.nxy/local 2>/dev/null"
+    },
+    "output": {
+      "normalizeForRtk": "cd ~/.claude/projects; ls -d */ | head; find . -path '*subagents*' -name '*.jsonl' -mtime -20 | wc -l; ls ./.nxy/local 2>/dev/null",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-002",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show"
+    },
+    "output": {
+      "normalizeForRtk": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-003",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"; node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\""
+    },
+    "output": {
+      "normalizeForRtk": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"; node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\"",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-004",
+    "input": {
+      "command": "codegraph --help 2>&1 | head -40"
+    },
+    "output": {
+      "normalizeForRtk": "codegraph --help 2>&1 | head -40",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-005",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1 | head -30; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1 | grep -c '^\\S'; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1 | grep '^  [^\\[]' | head"
+    },
+    "output": {
+      "normalizeForRtk": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1 | head -30; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1 | grep -c '^\\S'; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1 | grep '^  [^\\[]' | head",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-006",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \" "
+    },
+    "output": {
+      "normalizeForRtk": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \" ",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-007",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show"
+    },
+    "output": {
+      "normalizeForRtk": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-008",
+    "input": {
+      "command": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    },
+    "output": {
+      "normalizeForRtk": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-009",
+    "input": {
+      "command": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l"
+    },
+    "output": {
+      "normalizeForRtk": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "h-010",
+    "input": {
+      "command": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs | head -200"
+    },
+    "output": {
+      "normalizeForRtk": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs | head -200",
+      "isRtkInvocation": false,
+      "usesRtk": false
+    }
+  },
+  {
+    "name": "pin:out:h-006:0",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \"",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \""
+    }
+  },
+  {
+    "name": "pin:out:h-006:1",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \"",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | \"/opt/rtk/rtk\" grep -n \"^## \""
+    }
+  },
+  {
+    "name": "pin:out:h-006:2",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \"",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | \"D:/tools/rtk.exe\" grep -n \"^## \""
+    }
+  },
+  {
+    "name": "pin:out:h-008:0",
+    "input": {
+      "command": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    }
+  },
+  {
+    "name": "pin:out:h-008:1",
+    "input": {
+      "command": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && \"/opt/rtk/rtk\" wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    }
+  },
+  {
+    "name": "pin:out:h-008:2",
+    "input": {
+      "command": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && \"D:/tools/rtk.exe\" wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    }
+  },
+  {
+    "name": "pin:out:h-009:0",
+    "input": {
+      "command": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l"
+    }
+  },
+  {
+    "name": "pin:out:h-009:1",
+    "input": {
+      "command": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && git ls-files | \"/opt/rtk/rtk\" grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l"
+    }
+  },
+  {
+    "name": "pin:out:h-009:2",
+    "input": {
+      "command": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && git ls-files | \"D:/tools/rtk.exe\" grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l"
+    }
+  },
+  {
+    "name": "pin:out:h-010:0",
+    "input": {
+      "command": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs",
+      "rtkPath": ""
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs"
+    }
+  },
+  {
+    "name": "pin:out:h-010:1",
+    "input": {
+      "command": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs",
+      "rtkPath": "/opt/rtk/rtk"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && \"/opt/rtk/rtk\" wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && \"/opt/rtk/rtk\" grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs"
+    }
+  },
+  {
+    "name": "pin:out:h-010:2",
+    "input": {
+      "command": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs",
+      "rtkPath": "D:\\tools\\rtk.exe"
+    },
+    "output": {
+      "pinRtkPath": "cd \".\" && \"D:/tools/rtk.exe\" wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && \"D:/tools/rtk.exe\" grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs"
+    }
+  }
+]

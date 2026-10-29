@@ -1,0 +1,215 @@
+[
+  {
+    "name": "h-001",
+    "input": {
+      "command": "cd ~/.claude/projects; ls -d */ | head; find . -path '*subagents*' -name '*.jsonl' -mtime -20 | wc -l; ls ./.nxy/local 2>/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "h-002",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "h-003",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"; node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "h-004",
+    "input": {
+      "command": "codegraph --help 2>&1 | head -40",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "codegraph --help 2>&1"
+    }
+  },
+  {
+    "name": "h-005",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1 | head -30; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1 | grep -c '^\\S'; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1 | grep '^  [^\\[]' | head",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "h-006",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \" ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | rtk grep -n \"^## \"",
+        "allow": false
+      },
+      "asked": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \""
+    }
+  },
+  {
+    "name": "h-007",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "h-008",
+    "input": {
+      "command": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "cd \".\" && rtk wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+        "allow": false
+      },
+      "asked": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    }
+  },
+  {
+    "name": "h-009",
+    "input": {
+      "command": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "cd \".\" && git ls-files | rtk grep -iE 'driver|register|panel|view|raster'; git ls-files | wc -l",
+        "allow": false
+      },
+      "asked": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l"
+    }
+  },
+  {
+    "name": "h-010",
+    "input": {
+      "command": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs | head -200",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "cd \".\" && rtk wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && rtk grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs | head -200",
+        "allow": false
+      },
+      "asked": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs"
+    }
+  }
+]

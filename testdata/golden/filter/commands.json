@@ -1,0 +1,6525 @@
+[
+  {
+    "name": "e01-tab",
+    "input": {
+      "command": "git\tstatus",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git\tstatus"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git\tstatus",
+        "allow": true
+      },
+      "asked": "git\tstatus"
+    }
+  },
+  {
+    "name": "e02-trailing-tab",
+    "input": {
+      "command": "git status\t",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "e03-npm-tab-test",
+    "input": {
+      "command": "npm\ttest",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "e04-crlf-chain",
+    "input": {
+      "command": "mvn test\r\nls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test\r\nls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test\r\nls",
+        "allow": true
+      },
+      "asked": "mvn test\r\nls"
+    }
+  },
+  {
+    "name": "e05-trailing-crlf",
+    "input": {
+      "command": "echo a\r\n",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo a"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo a",
+        "allow": true
+      },
+      "asked": "echo a"
+    }
+  },
+  {
+    "name": "e06-nbsp-between",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "e07-nbsp-npm-test",
+    "input": {
+      "command": "npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "e08-nbsp-tail",
+    "input": {
+      "command": "ls -la | tail -n 150",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls -la"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls -la | tail -n 150",
+        "allow": true
+      },
+      "asked": "ls -la"
+    }
+  },
+  {
+    "name": "e09-nbsp-edges",
+    "input": {
+      "command": " git status ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "e10-em-space-trailing",
+    "input": {
+      "command": "git status ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "e11-bom-leading",
+    "input": {
+      "command": "﻿git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "e12-line-separator",
+    "input": {
+      "command": "ls -la",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls -la"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls -la",
+        "allow": true
+      },
+      "asked": "ls -la"
+    }
+  },
+  {
+    "name": "e13-ideographic-space",
+    "input": {
+      "command": "　ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e14-zero-width-not-space",
+    "input": {
+      "command": "mvn​test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn​test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn​test",
+        "allow": true
+      },
+      "asked": "mvn​test"
+    }
+  },
+  {
+    "name": "e15-only-nbsp",
+    "input": {
+      "command": " ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e16-only-tabs-newlines",
+    "input": {
+      "command": "\t\n",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e17-nel-and-vt",
+    "input": {
+      "command": "gitstatus\u000bgit",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "gitstatus\u000bgit"
+    }
+  },
+  {
+    "name": "e18-escaped-quotes",
+    "input": {
+      "command": "echo \"a \\\"b\\\" > c\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"a \\\"b\\\" > c\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"a \\\"b\\\" > c\"",
+        "allow": true
+      },
+      "asked": "echo \"a \\\"b\\\" > c\""
+    }
+  },
+  {
+    "name": "e19-single-quote-escape",
+    "input": {
+      "command": "echo 'it'\\''s' > x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e20-escaped-gt",
+    "input": {
+      "command": "echo \\> not",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \\> not"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \\> not",
+        "allow": true
+      },
+      "asked": "echo \\> not"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk grep -rn \\\"x\\\" ."
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk grep -rn \\\"x\\\" .",
+        "allow": true
+      },
+      "asked": "grep -rn \\\"x\\\" ."
+    }
+  },
+  {
+    "name": "e22-unbalanced-double",
+    "input": {
+      "command": "echo \"abc > f",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"abc > f"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"abc > f",
+        "allow": true
+      },
+      "asked": "echo \"abc > f"
+    }
+  },
+  {
+    "name": "e23-unbalanced-single",
+    "input": {
+      "command": "echo 'abc | def",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo 'abc | def"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo 'abc | def",
+        "allow": true
+      },
+      "asked": "echo 'abc | def"
+    }
+  },
+  {
+    "name": "e24-trailing-backslash",
+    "input": {
+      "command": "echo a\\",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo a\\"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo a\\",
+        "allow": true
+      },
+      "asked": "echo a\\"
+    }
+  },
+  {
+    "name": "e25-merge-stderr",
+    "input": {
+      "command": "mvn test 2>&1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test 2>&1",
+        "allow": true
+      },
+      "asked": "mvn test 2>&1"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test 2>&1 | tail -n 100",
+        "allow": true
+      },
+      "asked": "mvn test 2>&1"
+    }
+  },
+  {
+    "name": "e27-gt-amp-2",
+    "input": {
+      "command": "echo x >&2",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e28-1gt-amp-2",
+    "input": {
+      "command": "echo x 1>&2",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull",
+    "input": {
+      "command": "ls &>/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls &>/dev/null"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls &>/dev/null",
+        "allow": true
+      },
+      "asked": "ls &>/dev/null"
+    }
+  },
+  {
+    "name": "e30-gt-devnull",
+    "input": {
+      "command": "ls >/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls >/dev/null"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls >/dev/null",
+        "allow": true
+      },
+      "asked": "ls >/dev/null"
+    }
+  },
+  {
+    "name": "e31-append-devnull",
+    "input": {
+      "command": "ls >>/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls >>/dev/null"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls >>/dev/null",
+        "allow": true
+      },
+      "asked": "ls >>/dev/null"
+    }
+  },
+  {
+    "name": "e32-gt-space-devnull",
+    "input": {
+      "command": "ls > /dev/null 2>&1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls > /dev/null 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls > /dev/null 2>&1",
+        "allow": true
+      },
+      "asked": "ls > /dev/null 2>&1"
+    }
+  },
+  {
+    "name": "e33-devnull-suffix",
+    "input": {
+      "command": "ls 2>/dev/nullx",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e34-devnull-semicolon",
+    "input": {
+      "command": "ls >/dev/null;ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls >/dev/null;ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls >/dev/null;ls",
+        "allow": true
+      },
+      "asked": "ls >/dev/null;ls"
+    }
+  },
+  {
+    "name": "e35-devnull-paren",
+    "input": {
+      "command": "(ls >/dev/null)",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk (ls >/dev/null)"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk (ls >/dev/null)",
+        "allow": true
+      },
+      "asked": "(ls >/dev/null)"
+    }
+  },
+  {
+    "name": "e36-devnull-andand",
+    "input": {
+      "command": "ls 2>/dev/null&&ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls 2>/dev/null&&ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls 2>/dev/null&&ls",
+        "allow": true
+      },
+      "asked": "ls 2>/dev/null&&ls"
+    }
+  },
+  {
+    "name": "e37-devnulls",
+    "input": {
+      "command": "ls > /dev/nulls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e38-gt-gt-file",
+    "input": {
+      "command": "echo a >> log.txt",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e39-input-and-heredoc-mix",
+    "input": {
+      "command": "cat <in >out",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e40-process-subst",
+    "input": {
+      "command": "diff <(ls a) <(ls b)",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e41-raw-env-ps-in-bash",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\"; mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e42-raw-env-single-quote",
+    "input": {
+      "command": "$env:NXY_RAW = '1'",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e43-raw-env-zero",
+    "input": {
+      "command": "NXY_RAW=0 mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk NXY_RAW=0 mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk NXY_RAW=0 mvn test",
+        "allow": true
+      },
+      "asked": "NXY_RAW=0 mvn test"
+    }
+  },
+  {
+    "name": "e44-raw-env-only",
+    "input": {
+      "command": "NXY_RAW=1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e45-raw-env-second-assign",
+    "input": {
+      "command": "FOO=1 NXY_RAW=1 grep x f",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e46-raw-comment-alone",
+    "input": {
+      "command": "# raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-comment"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e47-nxy-raw-comment-echo",
+    "input": {
+      "command": "echo # nxy:raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-comment"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e48-raw-comment-no-space",
+    "input": {
+      "command": "echo #raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-comment"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e49-rawness-not-escape",
+    "input": {
+      "command": "echo # rawness",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo # rawness"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo # rawness",
+        "allow": true
+      },
+      "asked": "echo # rawness"
+    }
+  },
+  {
+    "name": "e50-raw-in-quotes",
+    "input": {
+      "command": "echo \"# raw\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"# raw\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"# raw\"",
+        "allow": true
+      },
+      "asked": "echo \"# raw\""
+    }
+  },
+  {
+    "name": "e51-hash-glued",
+    "input": {
+      "command": "echo a#raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo a#raw"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo a#raw",
+        "allow": true
+      },
+      "asked": "echo a#raw"
+    }
+  },
+  {
+    "name": "e52-head-n-20",
+    "input": {
+      "command": "ls | head -n 20",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e53-head-n-21",
+    "input": {
+      "command": "ls | head -n 21",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | head -n 21",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e54-tail-minus-20",
+    "input": {
+      "command": "ls | tail -20",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e55-tail-minus-21",
+    "input": {
+      "command": "ls | tail -21",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | tail -21",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e56-tail-lines-eq-21",
+    "input": {
+      "command": "ls | tail --lines=21",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | tail --lines=21",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e57-tail-lines-space-5",
+    "input": {
+      "command": "ls | tail --lines 5",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e58-bare-head",
+    "input": {
+      "command": "ls | head",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e59-head-n20-glued",
+    "input": {
+      "command": "ls | head -n20",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e60-tail-n-100",
+    "input": {
+      "command": "ls | tail -n 100",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | tail -n 100",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e61-tail-trailing-space",
+    "input": {
+      "command": "ls | tail -n 150 ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | tail -n 150",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e62-head-minus-100",
+    "input": {
+      "command": "ls | head -100",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | head -100",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e63-tail-wide-spaces",
+    "input": {
+      "command": "ls | tail  -n  300",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls | tail  -n  300",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e64-headx-not-a-limit",
+    "input": {
+      "command": "ls | headx",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "ls | headx"
+    }
+  },
+  {
+    "name": "e65-tail-f",
+    "input": {
+      "command": "ls | tail -f",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "ls | tail -f"
+    }
+  },
+  {
+    "name": "e66-tight-pipe-tail",
+    "input": {
+      "command": "ls |tail -n 99",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls |tail -n 99",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "e67-head-then-other",
+    "input": {
+      "command": "ls | head -n 99 | wc -l",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "ls | head -n 99 | wc -l"
+    }
+  },
+  {
+    "name": "e68-tail-n-0",
+    "input": {
+      "command": "ls | tail -n 0",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e69-long-chain",
+    "input": {
+      "command": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+        "allow": true
+      },
+      "asked": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    }
+  },
+  {
+    "name": "e70-gradlew-win",
+    "input": {
+      "command": ".\\gradlew.bat build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk gradlew.bat build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk gradlew.bat build",
+        "allow": true
+      },
+      "asked": "gradlew.bat build"
+    }
+  },
+  {
+    "name": "e71-gradlew-unix",
+    "input": {
+      "command": "./gradlew test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk gradlew test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk gradlew test",
+        "allow": true
+      },
+      "asked": "gradlew test"
+    }
+  },
+  {
+    "name": "e72-mvnw-no-ext",
+    "input": {
+      "command": ".\\mvnw clean",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw clean"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvnw clean",
+        "allow": true
+      },
+      "asked": "mvnw clean"
+    }
+  },
+  {
+    "name": "e73-mvnw-bare-cmd",
+    "input": {
+      "command": "./mvnw.cmd",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw.cmd"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvnw.cmd",
+        "allow": true
+      },
+      "asked": "mvnw.cmd"
+    }
+  },
+  {
+    "name": "e74-mvnw-exe-not-wrapper",
+    "input": {
+      "command": "./mvnw.exe test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "./mvnw.exe test"
+    }
+  },
+  {
+    "name": "e75-pnpm-test",
+    "input": {
+      "command": "pnpm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run test",
+        "allow": true
+      },
+      "asked": "pnpm run test"
+    }
+  },
+  {
+    "name": "e76-pnpm-lint-fix",
+    "input": {
+      "command": "pnpm lint --fix",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run lint --fix"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run lint --fix",
+        "allow": true
+      },
+      "asked": "pnpm run lint --fix"
+    }
+  },
+  {
+    "name": "e77-pnpm-t",
+    "input": {
+      "command": "pnpm t",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run test",
+        "allow": true
+      },
+      "asked": "pnpm run test"
+    }
+  },
+  {
+    "name": "e78-npm-t",
+    "input": {
+      "command": "npm t",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "e79-npm-test-colon",
+    "input": {
+      "command": "npm test:unit",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm test:unit"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm test:unit",
+        "allow": true
+      },
+      "asked": "npm test:unit"
+    }
+  },
+  {
+    "name": "e80-pnpm-builder",
+    "input": {
+      "command": "pnpm builder",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "pnpm builder"
+    }
+  },
+  {
+    "name": "e81-quoted-env-npm-test",
+    "input": {
+      "command": "FOO=\"a b\" npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk FOO=\"a b\" npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk FOO=\"a b\" npm run test",
+        "allow": true
+      },
+      "asked": "FOO=\"a b\" npm run test"
+    }
+  },
+  {
+    "name": "e82-two-env-pnpm-dev",
+    "input": {
+      "command": "A=1 B='x y' pnpm dev",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk A=1 B='x y' pnpm run dev"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk A=1 B='x y' pnpm run dev",
+        "allow": true
+      },
+      "asked": "A=1 B='x y' pnpm run dev"
+    }
+  },
+  {
+    "name": "e83-semicolon-npm-twice",
+    "input": {
+      "command": "cd x; npm test; npm t",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd x; npm run test; npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd x; npm run test; npm run test",
+        "allow": true
+      },
+      "asked": "cd x; npm test; npm run test"
+    }
+  },
+  {
+    "name": "e84-or-npm-test",
+    "input": {
+      "command": "ls || npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls || npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls || npm run test",
+        "allow": true
+      },
+      "asked": "ls || npm run test"
+    }
+  },
+  {
+    "name": "e85-npm-test-tab-arg",
+    "input": {
+      "command": "npm test\t--watch",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test\t--watch"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test\t--watch",
+        "allow": true
+      },
+      "asked": "npm run test\t--watch"
+    }
+  },
+  {
+    "name": "e86-pnpm-all-words",
+    "input": {
+      "command": "pnpm build && pnpm lint && pnpm start && pnpm dev && pnpm check && pnpm typecheck && pnpm format",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run build",
+        "allow": true
+      },
+      "asked": "pnpm run build && pnpm run lint && pnpm run start && pnpm run dev && pnpm run check && pnpm run typecheck && pnpm run format"
+    }
+  },
+  {
+    "name": "e87-docker-run-no-it",
+    "input": {
+      "command": "docker run --rm alpine",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk docker run --rm alpine"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk docker run --rm alpine",
+        "allow": true
+      },
+      "asked": "docker run --rm alpine"
+    }
+  },
+  {
+    "name": "e88-docker-exec-plain",
+    "input": {
+      "command": "docker exec web ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk docker exec web ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk docker exec web ls",
+        "allow": true
+      },
+      "asked": "docker exec web ls"
+    }
+  },
+  {
+    "name": "e89-docker-exec-ti",
+    "input": {
+      "command": "docker exec -ti web sh",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e90-docker-exec-t",
+    "input": {
+      "command": "docker exec -t web ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk docker exec -t web ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk docker exec -t web ls",
+        "allow": true
+      },
+      "asked": "docker exec -t web ls"
+    }
+  },
+  {
+    "name": "e91-git-c-config-status",
+    "input": {
+      "command": "git -c core.x=1 status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git -c core.x=1 status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git -c core.x=1 status",
+        "allow": true
+      },
+      "asked": "git -c core.x=1 status"
+    }
+  },
+  {
+    "name": "e92-git-C-log",
+    "input": {
+      "command": "git -C repo log",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git -C repo log"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git -C repo log",
+        "allow": true
+      },
+      "asked": "git -C repo log"
+    }
+  },
+  {
+    "name": "e93-git-stash-list",
+    "input": {
+      "command": "git stash list",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e94-git-add-i",
+    "input": {
+      "command": "git add -i",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e95-git-add-patch",
+    "input": {
+      "command": "git add --patch",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "e96-git-add-dot",
+    "input": {
+      "command": "git add .",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git add ."
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git add .",
+        "allow": true
+      },
+      "asked": "git add ."
+    }
+  },
+  {
+    "name": "e97-bare-git",
+    "input": {
+      "command": "git",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "git"
+    }
+  },
+  {
+    "name": "e98-git-dangling-C",
+    "input": {
+      "command": "git -C",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "git -C"
+    }
+  },
+  {
+    "name": "e99-git-tag-list",
+    "input": {
+      "command": "git tag -l",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f01-git-switch",
+    "input": {
+      "command": "git switch x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f02-git-reset-hard",
+    "input": {
+      "command": "git reset --hard",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f03-git-cherry-pick",
+    "input": {
+      "command": "git cherry-pick abc",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f04-time-npm-test",
+    "input": {
+      "command": "time npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk time npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk time npm run test",
+        "allow": true
+      },
+      "asked": "time npm test"
+    }
+  },
+  {
+    "name": "f05-nice-make",
+    "input": {
+      "command": "nice -n 5 make",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk nice -n 5 make"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk nice -n 5 make",
+        "allow": true
+      },
+      "asked": "nice -n 5 make"
+    }
+  },
+  {
+    "name": "f06-command-ls",
+    "input": {
+      "command": "command ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk command ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk command ls",
+        "allow": true
+      },
+      "asked": "command ls"
+    }
+  },
+  {
+    "name": "f07-exec-bash",
+    "input": {
+      "command": "exec bash",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk exec bash"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk exec bash",
+        "allow": true
+      },
+      "asked": "exec bash"
+    }
+  },
+  {
+    "name": "f08-env-time-vim",
+    "input": {
+      "command": "FOO=1 time vim x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f09-node-bin-jest",
+    "input": {
+      "command": "./node_modules/.bin/jest",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk jest"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk jest",
+        "allow": true
+      },
+      "asked": "./node_modules/.bin/jest"
+    }
+  },
+  {
+    "name": "f10-windows-cmd-script",
+    "input": {
+      "command": ".\\script.cmd arg",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk script.cmd arg"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk script.cmd arg",
+        "allow": true
+      },
+      "asked": ".\\script.cmd arg"
+    }
+  },
+  {
+    "name": "f11-windows-abs-exe",
+    "input": {
+      "command": "C:\\tools\\x.exe a",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "C:\\tools\\x.exe a"
+    }
+  },
+  {
+    "name": "f12-sh-script",
+    "input": {
+      "command": "./a.sh",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "./a.sh"
+    }
+  },
+  {
+    "name": "f13-heredoc-dash",
+    "input": {
+      "command": "cat <<-EOF\nhi\nEOF",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "heredoc"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f14-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo \"<<\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"<<\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"<<\"",
+        "allow": true
+      },
+      "asked": "echo \"<<\""
+    }
+  },
+  {
+    "name": "f15-single-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo '<<x'",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo '<<x'"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo '<<x'",
+        "allow": true
+      },
+      "asked": "echo '<<x'"
+    }
+  },
+  {
+    "name": "f16-input-redirect-glued",
+    "input": {
+      "command": "cat <in",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f17-herestring-bare",
+    "input": {
+      "command": "a <<< b",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "heredoc"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f18-single-quoted-subst",
+    "input": {
+      "command": "echo '$(x)'",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo '$(x)'"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo '$(x)'",
+        "allow": true
+      },
+      "asked": "echo '$(x)'"
+    }
+  },
+  {
+    "name": "f19-double-quoted-subst",
+    "input": {
+      "command": "echo \"$(x)\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f20-escaped-subst",
+    "input": {
+      "command": "echo \\$(x)",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \\$(x)"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \\$(x)",
+        "allow": true
+      },
+      "asked": "echo \\$(x)"
+    }
+  },
+  {
+    "name": "f21-plain-var",
+    "input": {
+      "command": "echo $HOME",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo $HOME"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo $HOME",
+        "allow": true
+      },
+      "asked": "echo $HOME"
+    }
+  },
+  {
+    "name": "f22-brace-var",
+    "input": {
+      "command": "echo ${X}",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f23-lone-dollar",
+    "input": {
+      "command": "echo $",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo $"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo $",
+        "allow": true
+      },
+      "asked": "echo $"
+    }
+  },
+  {
+    "name": "f24-escaped-backtick-in-dq",
+    "input": {
+      "command": "echo \"\\`x\\`\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"\\`x\\`\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"\\`x\\`\"",
+        "allow": true
+      },
+      "asked": "echo \"\\`x\\`\""
+    }
+  },
+  {
+    "name": "f25-sleep-background",
+    "input": {
+      "command": "sleep 1 &",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "background"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f26-chain-background",
+    "input": {
+      "command": "a && b &",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "background"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f27-trailing-andand",
+    "input": {
+      "command": "a &&",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "a &&"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle",
+    "input": {
+      "command": "a & b",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "a & b"
+    }
+  },
+  {
+    "name": "f29-amp-word",
+    "input": {
+      "command": "a &amp",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "a &amp"
+    }
+  },
+  {
+    "name": "f30-cd-cd",
+    "input": {
+      "command": "cd a && cd b",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f31-cd-bare",
+    "input": {
+      "command": "cd",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f32-set-e",
+    "input": {
+      "command": "set -e",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f33-source-only",
+    "input": {
+      "command": "source x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f34-unset-only",
+    "input": {
+      "command": "unset A",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f35-env-bare-node",
+    "input": {
+      "command": "FOO=1 node",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f36-node-version",
+    "input": {
+      "command": "node -v",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f37-bare-python",
+    "input": {
+      "command": "python",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f38-python-c",
+    "input": {
+      "command": "python -c \"x\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f39-env-bare-python3",
+    "input": {
+      "command": "A=1 python3",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f40-node-and-python",
+    "input": {
+      "command": "node a.js && python3 b.py",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f41-ls-nxy-dir",
+    "input": {
+      "command": "ls .nxy/",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f42-nxy-backslash-quoted",
+    "input": {
+      "command": "cat '.nxy\\x'",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f43-nxy-glued",
+    "input": {
+      "command": "echo a.nxy/x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo a.nxy/x"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo a.nxy/x",
+        "allow": true
+      },
+      "asked": "echo a.nxy/x"
+    }
+  },
+  {
+    "name": "f44-nxy-dot-slash",
+    "input": {
+      "command": "cat ./.nxy/c",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f45-accented",
+    "input": {
+      "command": "echo héllo",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo héllo"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo héllo",
+        "allow": true
+      },
+      "asked": "echo héllo"
+    }
+  },
+  {
+    "name": "f46-cjk-head-50",
+    "input": {
+      "command": "echo \"日本語\" | head -n 50",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"日本語\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"日本語\" | head -n 50",
+        "allow": true
+      },
+      "asked": "echo \"日本語\""
+    }
+  },
+  {
+    "name": "f47-grep-enye",
+    "input": {
+      "command": "grep -rn \"ñ\" src",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk grep -rn \"ñ\" src"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk grep -rn \"ñ\" src",
+        "allow": true
+      },
+      "asked": "grep -rn \"ñ\" src"
+    }
+  },
+  {
+    "name": "f48-emoji",
+    "input": {
+      "command": "echo 😀 > f",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f49-rtk-quoted-abs",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f50-rtk-env-prefix",
+    "input": {
+      "command": "A=1 rtk git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f51-rtk-windows-path",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f52-rtk-uppercase",
+    "input": {
+      "command": "RTK git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f53-rtk-alone",
+    "input": {
+      "command": "rtk",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "rtk"
+    }
+  },
+  {
+    "name": "f54-rtk-prefix-word",
+    "input": {
+      "command": "rtkx git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "rtkx git status"
+    }
+  },
+  {
+    "name": "f55-echo-rtk",
+    "input": {
+      "command": "echo rtk git",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo rtk git"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo rtk git",
+        "allow": true
+      },
+      "asked": "echo rtk git"
+    }
+  },
+  {
+    "name": "f56-rtk-in-pipe",
+    "input": {
+      "command": "ls | rtk grep x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f57-rtk-pin-chain",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f58-rtk-after-or",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f59-multiline-allowed",
+    "input": {
+      "command": "git status\nls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status\nls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status\nls",
+        "allow": true
+      },
+      "asked": "git status\nls"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status; git log"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status; git log | head -n 50",
+        "allow": true
+      },
+      "asked": "git status; git log"
+    }
+  },
+  {
+    "name": "f61-quoted-andand",
+    "input": {
+      "command": "echo \"a && b\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"a && b\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"a && b\"",
+        "allow": true
+      },
+      "asked": "echo \"a && b\""
+    }
+  },
+  {
+    "name": "f62-ls",
+    "input": {
+      "command": "ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls",
+        "allow": true
+      },
+      "asked": "ls"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh",
+    "input": {
+      "command": "curl x | sh",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "curl x | sh"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build",
+    "input": {
+      "command": "rm -rf build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 2,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-deny"
+      },
+      "asked": "rm -rf build"
+    }
+  },
+  {
+    "name": "f65-status-then-rm",
+    "input": {
+      "command": "git status && rm -rf build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status && rm -rf build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status && rm -rf build",
+        "allow": true
+      },
+      "asked": "git status && rm -rf build"
+    }
+  },
+  {
+    "name": "f66-echo-hi",
+    "input": {
+      "command": "echo hi",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo hi"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo hi",
+        "allow": true
+      },
+      "asked": "echo hi"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk grep -rn \"a.b\" ."
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk grep -rn \"a.b\" .",
+        "allow": true
+      },
+      "asked": "grep -rn \"a.b\" ."
+    }
+  },
+  {
+    "name": "f68-ls-tail",
+    "input": {
+      "command": "ls | tail",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike",
+    "input": {
+      "command": "git status-x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "git status-x"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test -- --grep x"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test -- --grep x",
+        "allow": true
+      },
+      "asked": "npm run test -- --grep x"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild",
+    "input": {
+      "command": "git log --oneline",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "rtk git log --oneline"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "rtk git log --oneline",
+        "allow": false
+      },
+      "asked": "git log --oneline"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed",
+    "input": {
+      "command": "git status $(pwd)",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f73-git-push-chain",
+    "input": {
+      "command": "git status && git push",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "ls 2>&1 & ls"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect",
+    "input": {
+      "command": "ls |& cat",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "ls |& cat"
+    }
+  },
+  {
+    "name": "f76-empty-perm",
+    "input": {
+      "command": "",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f77-spaces-perm",
+    "input": {
+      "command": "   ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status\r\nls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status\r\nls",
+        "allow": true
+      },
+      "asked": "git status\r\nls"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd api && npm run test && cd .. && ls"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd api && npm run test && cd .. && ls",
+        "allow": true
+      },
+      "asked": "cd api && npm run test && cd .. && ls"
+    }
+  },
+  {
+    "name": "f80-sudo-chain",
+    "input": {
+      "command": "sudo ls && ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps01-mvnw",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"; .\\mvnw.cmd test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw.cmd test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "Set-Location \"C:/x/api\"; rtk mvnw.cmd test",
+        "allow": true
+      },
+      "asked": "mvnw.cmd test"
+    }
+  },
+  {
+    "name": "ps02-multiline-env",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw.cmd test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "Set-Location \"C:/x/api\"; $env:JAVA_HOME = \"C:/j\"; rtk mvnw.cmd test",
+        "allow": true
+      },
+      "asked": "mvnw.cmd test"
+    }
+  },
+  {
+    "name": "ps03-git-status",
+    "input": {
+      "command": "git status",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "ps04-cd-npm-test",
+    "input": {
+      "command": "cd api; npm test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "cd api; rtk npm run test",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "ps05-script-foreach",
+    "input": {
+      "command": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps06-set-location-only",
+    "input": {
+      "command": "Set-Location \"C:/x\"",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps07-env-only",
+    "input": {
+      "command": "$env:JAVA_HOME = \"C:/j\"",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps08-pipe",
+    "input": {
+      "command": "Get-Content x | Select-Object -First 5",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps09-already-rtk",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps10-raw-env",
+    "input": {
+      "command": "$env:NXY_RAW = \"1\"; mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps11-raw-env-middle",
+    "input": {
+      "command": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; .\\mvnw.cmd test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps12-redirect",
+    "input": {
+      "command": "mvn test > out.txt",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps13-code-3",
+    "input": {
+      "command": "Set-Location x; git log",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "rtk git log"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "Set-Location x; rtk git log",
+        "allow": false
+      },
+      "asked": "git log"
+    }
+  },
+  {
+    "name": "ps14-crlf",
+    "input": {
+      "command": "Set-Location x\r\n.\\gradlew.bat build\r\n",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk gradlew.bat build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "Set-Location x; rtk gradlew.bat build",
+        "allow": true
+      },
+      "asked": "gradlew.bat build"
+    }
+  },
+  {
+    "name": "ps15-tail-limit",
+    "input": {
+      "command": "mvn test 2>&1",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test 2>&1",
+        "allow": true
+      },
+      "asked": "mvn test 2>&1"
+    }
+  },
+  {
+    "name": "ps16-assign-eqeq",
+    "input": {
+      "command": "echo $a == b",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo $a == b"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo $a == b",
+        "allow": true
+      },
+      "asked": "echo $a == b"
+    }
+  },
+  {
+    "name": "ps17-assign-script",
+    "input": {
+      "command": "$a = 1; mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps18-if",
+    "input": {
+      "command": "if ($a) { mvn test }",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps19-try",
+    "input": {
+      "command": "try { mvn test } catch { }",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps20-function",
+    "input": {
+      "command": "function f { mvn test }",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps21-subexpr",
+    "input": {
+      "command": "echo $(Get-Date)",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps22-array",
+    "input": {
+      "command": "echo @(1,2)",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps23-backtick",
+    "input": {
+      "command": "mvn `\n test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps24-empty-segment",
+    "input": {
+      "command": "Set-Location x;; mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "Set-Location x; rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps25-state-last",
+    "input": {
+      "command": "mvn test; Set-Location x",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "powershell-script"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps26-hook-present",
+    "input": {
+      "command": "git status",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk",
+        "rtkHookDetected": true
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-hook-present"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps27-engine-off",
+    "input": {
+      "command": "git status",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "off"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "engine-off"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps28-no-engine",
+    "input": {
+      "command": "git status",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": false,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "no-engine"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps29-raw-alone",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\"",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps30-raw-lowercase-prefix",
+    "input": {
+      "command": "$env:nxy_raw = 1; ls",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps31-upper-set-location",
+    "input": {
+      "command": "SET-LOCATION x; mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "SET-LOCATION x; rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps32-node-eval",
+    "input": {
+      "command": "node -e \"1\"",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps33-bare-python",
+    "input": {
+      "command": "python3",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps34-pushd",
+    "input": {
+      "command": "pushd x\nmvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "pushd x; rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps35-push-location",
+    "input": {
+      "command": "Push-Location x; Get-ChildItem",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "Get-ChildItem"
+    }
+  },
+  {
+    "name": "ps36-deny",
+    "input": {
+      "command": "rm -rf x",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 2,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-deny"
+      },
+      "asked": "rm -rf x"
+    }
+  },
+  {
+    "name": "ps37-throw",
+    "input": {
+      "command": "mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": "throw"
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-error"
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps38-unchanged",
+    "input": {
+      "command": "mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-unchanged"
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps39-nbsp",
+    "input": {
+      "command": "Set-Location x; mvn test",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "Set-Location x; rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "ps40-interactive-docker",
+    "input": {
+      "command": "docker run -it ubuntu",
+      "tool": "PowerShell",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "ps41-unknown-tool",
+    "input": {
+      "command": "git status",
+      "tool": "Other",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "r01-git-status",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git status",
+        "allow": true
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "r02-mvn-test",
+    "input": {
+      "command": "mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "r03-env-prefix-npm-test",
+    "input": {
+      "command": "FOO=1 npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk FOO=1 npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk FOO=1 npm run test",
+        "allow": true
+      },
+      "asked": "FOO=1 npm run test"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test",
+    "input": {
+      "command": "cd src && npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd src && npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd src && npm run test",
+        "allow": true
+      },
+      "asked": "cd src && npm run test"
+    }
+  },
+  {
+    "name": "r05-tail-50",
+    "input": {
+      "command": "npm test | tail -50",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test | tail -50",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test 2>&1 | tail -n 150",
+        "allow": true
+      },
+      "asked": "mvn test 2>&1"
+    }
+  },
+  {
+    "name": "r07-pipe-grep-tail-21",
+    "input": {
+      "command": "git log | grep x | tail -n 21",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git log | grep x"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git log | grep x | tail -n 21",
+        "allow": true
+      },
+      "asked": "git log | grep x"
+    }
+  },
+  {
+    "name": "r08-windows-wrapper-chain",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && ./mvnw.cmd -B test 2>&1 | tail -n 150",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1 | tail -n 150",
+        "allow": true
+      },
+      "asked": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && mvnw.cmd -B test 2>&1"
+    }
+  },
+  {
+    "name": "r09-add-status",
+    "input": {
+      "command": "git add . && git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git add . && git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git add . && git status",
+        "allow": true
+      },
+      "asked": "git add . && git status"
+    }
+  },
+  {
+    "name": "r10-quoted-gt",
+    "input": {
+      "command": "echo \"a > b\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk echo \"a > b\""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk echo \"a > b\"",
+        "allow": true
+      },
+      "asked": "echo \"a > b\""
+    }
+  },
+  {
+    "name": "r11-devnull-stderr",
+    "input": {
+      "command": "ls -la 2>/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk ls -la 2>/dev/null"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk ls -la 2>/dev/null",
+        "allow": true
+      },
+      "asked": "ls -la 2>/dev/null"
+    }
+  },
+  {
+    "name": "r12-where-java",
+    "input": {
+      "command": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+        "allow": true
+      },
+      "asked": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    }
+  },
+  {
+    "name": "r13-node-eval-then-grep",
+    "input": {
+      "command": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+        "allow": true
+      },
+      "asked": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    }
+  },
+  {
+    "name": "r14-python-in-chain",
+    "input": {
+      "command": "cd api && python3 gen.py && git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd api && python3 gen.py && git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd api && python3 gen.py && git status",
+        "allow": true
+      },
+      "asked": "cd api && python3 gen.py && git status"
+    }
+  },
+  {
+    "name": "r15-ask-code-3",
+    "input": {
+      "command": "git log --oneline",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 3,
+        "stdout": "rtk git log --oneline"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk-ask",
+        "command": "rtk git log --oneline",
+        "allow": false
+      },
+      "asked": "git log --oneline"
+    }
+  },
+  {
+    "name": "r16-only-mvn",
+    "input": {
+      "command": "mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "onlyCommands": [
+          "mvn"
+        ]
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvn test",
+        "allow": true
+      },
+      "asked": "mvn test"
+    }
+  },
+  {
+    "name": "r17-docker-ps",
+    "input": {
+      "command": "docker ps",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk docker ps"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk docker ps",
+        "allow": true
+      },
+      "asked": "docker ps"
+    }
+  },
+  {
+    "name": "r18-git-diff-exclude-curl",
+    "input": {
+      "command": "git diff",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "excludeCommands": [
+          "curl"
+        ]
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk git diff"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk git diff",
+        "allow": true
+      },
+      "asked": "git diff"
+    }
+  },
+  {
+    "name": "r19-mvnw-cmd-unix",
+    "input": {
+      "command": "./mvnw.cmd test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw.cmd test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvnw.cmd test",
+        "allow": true
+      },
+      "asked": "mvnw.cmd test"
+    }
+  },
+  {
+    "name": "r20-mvnw-cmd-win",
+    "input": {
+      "command": ".\\mvnw.cmd test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk mvnw.cmd test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk mvnw.cmd test",
+        "allow": true
+      },
+      "asked": "mvnw.cmd test"
+    }
+  },
+  {
+    "name": "r21-env-then-mvnw",
+    "input": {
+      "command": "cd api && JAVA_HOME=\"/c/x\" ./mvnw.cmd test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test",
+        "allow": true
+      },
+      "asked": "cd api && JAVA_HOME=\"/c/x\" mvnw.cmd test"
+    }
+  },
+  {
+    "name": "r22-gradlew-bat",
+    "input": {
+      "command": "./gradlew.bat build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk gradlew.bat build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk gradlew.bat build",
+        "allow": true
+      },
+      "asked": "gradlew.bat build"
+    }
+  },
+  {
+    "name": "r23-npm-test",
+    "input": {
+      "command": "npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run test",
+        "allow": true
+      },
+      "asked": "npm run test"
+    }
+  },
+  {
+    "name": "r24-pnpm-test-args",
+    "input": {
+      "command": "pnpm test -- --run",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run test -- --run"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run test -- --run",
+        "allow": true
+      },
+      "asked": "pnpm run test -- --run"
+    }
+  },
+  {
+    "name": "r25-pnpm-build",
+    "input": {
+      "command": "pnpm build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk pnpm run build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk pnpm run build",
+        "allow": true
+      },
+      "asked": "pnpm run build"
+    }
+  },
+  {
+    "name": "r26-npm-run-build",
+    "input": {
+      "command": "npm run build",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk npm run build"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk npm run build",
+        "allow": true
+      },
+      "asked": "npm run build"
+    }
+  },
+  {
+    "name": "r27-quoted-cd-mvnw",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && ./mvnw test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test",
+        "allow": true
+      },
+      "asked": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && mvnw test"
+    }
+  },
+  {
+    "name": "r28-source-then-mvn",
+    "input": {
+      "command": "source ~/.bashrc && mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "rtk source ~/.bashrc && mvn test"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "rewrite",
+        "reason": "rtk",
+        "command": "rtk source ~/.bashrc && mvn test",
+        "allow": true
+      },
+      "asked": "source ~/.bashrc && mvn test"
+    }
+  },
+  {
+    "name": "s01-empty",
+    "input": {
+      "command": "",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s02-spaces",
+    "input": {
+      "command": "   ",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "empty"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s03-engine-off",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "off"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "engine-off"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s04-raw-env",
+    "input": {
+      "command": "NXY_RAW=1 mvn test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s05-raw-env-in-chain",
+    "input": {
+      "command": "cd api && NXY_RAW=1 grep -n foo README.md",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-env"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s06-raw-comment",
+    "input": {
+      "command": "mvn test # raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-comment"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s07-raw-comment-nxy",
+    "input": {
+      "command": "mvn test #nxy:raw",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "escape-comment"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s08-already-rtk",
+    "input": {
+      "command": "rtk git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s09-already-rtk-exe",
+    "input": {
+      "command": "rtk.exe git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s10-already-rtk-chain",
+    "input": {
+      "command": "cd src && rtk npm test",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "already-wrapped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s11-excluded",
+    "input": {
+      "command": "curl -s https://x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "excludeCommands": [
+          "curl"
+        ]
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "excluded"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s12-excluded-in-chain",
+    "input": {
+      "command": "npm test && curl x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "excludeCommands": [
+          "curl"
+        ]
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "excluded"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s13-not-in-only",
+    "input": {
+      "command": "ls",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "onlyCommands": [
+          "npm",
+          "mvn"
+        ]
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "not-in-only"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s14-heredoc",
+    "input": {
+      "command": "cat <<'X'\nhi\nX",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "heredoc"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s15-herestring",
+    "input": {
+      "command": "cat <<< \"hi\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "heredoc"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s16-substitution-dollar",
+    "input": {
+      "command": "echo $(date)",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s17-substitution-backtick",
+    "input": {
+      "command": "echo `date`",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s18-substitution-brace",
+    "input": {
+      "command": "echo \"${HOME}\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "substitution"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s19-redirect-file",
+    "input": {
+      "command": "ls > out.txt",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s20-redirect-and-merge",
+    "input": {
+      "command": "npm test > out.log 2>&1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s21-redirect-input",
+    "input": {
+      "command": "sort < in.txt",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "redirect"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s22-background",
+    "input": {
+      "command": "npm start &",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "background"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s23-capped-head-3",
+    "input": {
+      "command": "grep -rn \"nxy\" README.md | head -3",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s24-capped-tail-20",
+    "input": {
+      "command": "npm test | tail -20",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s25-capped-bare-tail",
+    "input": {
+      "command": "ls -la | tail",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s26-capped-head-n-10",
+    "input": {
+      "command": "git log --oneline | head -n 10",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "capped"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s27-cd-only",
+    "input": {
+      "command": "cd src",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s28-export-only",
+    "input": {
+      "command": "export A=1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s29-state-chain",
+    "input": {
+      "command": "cd src && export A=1",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s30-sudo",
+    "input": {
+      "command": "sudo apt install x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s31-vim",
+    "input": {
+      "command": "vim file.txt",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s32-ssh",
+    "input": {
+      "command": "ssh host",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s33-bare-node",
+    "input": {
+      "command": "node",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s34-bare-python3",
+    "input": {
+      "command": "python3",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s35-cd-bare-node",
+    "input": {
+      "command": "cd src && node",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s36-node-eval",
+    "input": {
+      "command": "node -e \"console.log(1)\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s37-node-test-after-cd",
+    "input": {
+      "command": "cd src && node --test tests/x.test.mjs",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s38-python-script",
+    "input": {
+      "command": "python3 tool.py --flag",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "opaque"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s39-git-commit",
+    "input": {
+      "command": "git commit -m \"x\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s40-git-C-commit",
+    "input": {
+      "command": "git -C . commit -m \"x\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s41-git-push",
+    "input": {
+      "command": "git push origin main",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s42-git-rebase-i",
+    "input": {
+      "command": "git rebase -i HEAD~3",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s43-git-add-p",
+    "input": {
+      "command": "git add -p",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s44-git-checkout",
+    "input": {
+      "command": "git checkout main",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s45-docker-exec-it",
+    "input": {
+      "command": "docker exec -it web sh",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s46-chain-with-commit",
+    "input": {
+      "command": "ls && git commit -m x",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "interactive-or-stateful"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s47-nxy-internal",
+    "input": {
+      "command": "cat .nxy/metrics/filter.jsonl",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s48-nxy-internal-quoted",
+    "input": {
+      "command": "cat \"./.nxy/config.json\"",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "nxy-internal"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s49-rtk-hook-present",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk",
+        "rtkHookDetected": true
+      },
+      "engine": true,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-hook-present"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s50-no-engine",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": false,
+      "rtk": null
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "no-engine"
+      },
+      "asked": null
+    }
+  },
+  {
+    "name": "s51-rtk-none",
+    "input": {
+      "command": "weird-cmd",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 1,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-none"
+      },
+      "asked": "weird-cmd"
+    }
+  },
+  {
+    "name": "s52-rtk-deny",
+    "input": {
+      "command": "rm -rf /",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 2,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-deny"
+      },
+      "asked": "rm -rf /"
+    }
+  },
+  {
+    "name": "s53-rtk-error",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": "throw"
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-error"
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "s54-rtk-unchanged",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": "git status"
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-unchanged"
+      },
+      "asked": "git status"
+    }
+  },
+  {
+    "name": "s55-rtk-empty-stdout",
+    "input": {
+      "command": "git status",
+      "tool": "Bash",
+      "ctx": {
+        "engine": "rtk"
+      },
+      "engine": true,
+      "rtk": {
+        "code": 0,
+        "stdout": ""
+      }
+    },
+    "output": {
+      "decision": {
+        "action": "skip",
+        "reason": "rtk-unchanged"
+      },
+      "asked": "git status"
+    }
+  }
+]

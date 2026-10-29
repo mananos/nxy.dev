@@ -1,0 +1,268 @@
+[
+  {
+    "name": "h-001",
+    "input": {
+      "command": "cd ~/.claude/projects; ls -d */ | head; find . -path '*subagents*' -name '*.jsonl' -mtime -20 | wc -l; ls ./.nxy/local 2>/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd ~/.claude/projects",
+        "ls -d */",
+        "head",
+        "find . -path '*subagents*' -name '*.jsonl' -mtime -20",
+        "wc -l",
+        "ls ./.nxy/local 2>/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd ~/.claude/projects; ls -d */ | head; find . -path '*subagents*' -name '*.jsonl' -mtime -20 | wc -l; ls ./.nxy/local 2>/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "ls",
+        "head",
+        "find",
+        "wc",
+        "ls"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-002",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-003",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"; node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"",
+        "node --disable-warning=ExperimentalWarning \"$E\" handoff show",
+        "sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"",
+        "node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | sed -e '1,2d' -e 's/ Result not yet checked\\./ Verified: new bullets at lines 2087-2096, old bullet gone./' -e '/^- Check the implementer result/d' > \"$TEMP/h.md\"; node --disable-warning=ExperimentalWarning \"$E\" handoff save --file \"$TEMP/h.md\"",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "",
+        "node",
+        "sed",
+        "node"
+      ],
+      "leadingAssignments": {
+        "E": "\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\";"
+      }
+    }
+  },
+  {
+    "name": "h-004",
+    "input": {
+      "command": "codegraph --help 2>&1 | head -40"
+    },
+    "output": {
+      "splitTopLevel": [
+        "codegraph --help 2>&1",
+        "head -40"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "codegraph --help 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "codegraph",
+      "firstTokens": [
+        "codegraph",
+        "head"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-005",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1 | head -30; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1 | grep -c '^\\S'; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1 | grep '^  [^\\[]' | head"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1",
+        "head -30",
+        "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1",
+        "grep -c '^\\S'",
+        "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1",
+        "grep '^  [^\\[]'",
+        "head"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" status 2>&1 | head -30; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type decision 2>&1 | grep -c '^\\S'; node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\" list --type convention 2>&1 | grep '^  [^\\[]'",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node",
+        "head",
+        "node",
+        "grep",
+        "node",
+        "grep",
+        "head"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-006",
+    "input": {
+      "command": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \" "
+    },
+    "output": {
+      "splitTopLevel": [
+        "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"",
+        "node --disable-warning=ExperimentalWarning \"$E\" handoff show",
+        "grep -n \"^## \""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "E=\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\"; node --disable-warning=ExperimentalWarning \"$E\" handoff show | grep -n \"^## \" ",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "",
+        "node",
+        "grep"
+      ],
+      "leadingAssignments": {
+        "E": "\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\";"
+      }
+    }
+  },
+  {
+    "name": "h-007",
+    "input": {
+      "command": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node --disable-warning=ExperimentalWarning \"~/.claude/plugins/cache/nxy-dev/nxy/1.3.2/hosts/claude-code/entries/mem.mjs\" handoff show",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-008",
+    "input": {
+      "command": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd \".\"",
+        "wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null",
+        "sed -n 1,80p mod/driver.mjs"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd \".\" && wc -l mod/*.mjs mod/*.tsx core/panel.mjs 2>/dev/null; sed -n 1,80p mod/driver.mjs",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "wc",
+        "sed"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-009",
+    "input": {
+      "command": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd \".\"",
+        "git ls-files",
+        "grep -iE 'driver|register|panel|view|raster'",
+        "git ls-files",
+        "wc -l"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd \".\" && git ls-files | grep -iE 'driver|register|panel|view|raster' ; git ls-files | wc -l",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "git",
+        "grep",
+        "git",
+        "wc"
+      ],
+      "leadingAssignments": {}
+    }
+  },
+  {
+    "name": "h-010",
+    "input": {
+      "command": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs | head -200"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd \".\"",
+        "wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx",
+        "grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs",
+        "head -200"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd \".\" && wc -l hosts/claude-code/mod/driver.mjs hosts/claude-code/mod/register.tsx hooks/register.tsx && grep -nE \"^\\s*(async\\s+)?(function\\s+\\w+|const\\s+\\w+\\s*=\\s*(async\\s*)?\\(|\\w+\\s*:\\s*(async\\s*)?\\(|on\\w*\\s*\\(|case\\s+['\\\"])\" hosts/claude-code/mod/driver.mjs",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "wc",
+        "grep",
+        "head"
+      ],
+      "leadingAssignments": {}
+    }
+  }
+]

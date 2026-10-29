@@ -1,0 +1,238 @@
+[
+  {
+    "name": "rtk-allow-no-rule",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-allow-with-allow-rule",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)"] } } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-ask-no-rule",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "rtk": { "git status": { "code": 3, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-ask-allow-rule-user",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)"] } } },
+    "rtk": { "git status": { "code": 3, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-ask-allow-rule-project",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git diff" } },
+    "settings": { "project": { "permissions": { "allow": ["Bash(git diff)"] } } },
+    "rtk": { "git diff": { "code": 3, "stdout": "rtk git diff" } }
+  },
+  {
+    "name": "rtk-ask-allow-rule-bare-bash",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": { "local": { "permissions": { "allow": ["Bash"] } } },
+    "rtk": { "git status": { "code": 3, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "deny-rule-on-original",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)"], "deny": ["Bash(git status:*)"] } } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "deny-rule-local-beats-allow",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": {
+      "user": { "permissions": { "allow": ["Bash(git status:*)"] } },
+      "local": { "permissions": { "deny": ["Bash(git:*)"] } }
+    },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "chain-only-one-part-allowed",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status && git diff" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)"] } } },
+    "rtk": { "git status && git diff": { "code": 0, "stdout": "rtk git status && rtk git diff" } }
+  },
+  {
+    "name": "chain-all-parts-allowed",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status && git diff" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)", "Bash(git diff:*)"] } } },
+    "rtk": { "git status && git diff": { "code": 3, "stdout": "rtk git status && rtk git diff" } }
+  },
+  {
+    "name": "chain-rtk-allow-but-multiple-segments",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status && git diff" } },
+    "rtk": { "git status && git diff": { "code": 0, "stdout": "rtk git status && rtk git diff" } }
+  },
+  {
+    "name": "substitution-not-inherited",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git diff $(git rev-parse HEAD)" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git diff:*)"] } } },
+    "rtk": { "git diff $(git rev-parse HEAD)": { "code": 0, "stdout": "rtk git diff $(git rev-parse HEAD)" } }
+  },
+  {
+    "name": "auto-allow-disabled",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "filter": { "autoAllowWhenOriginalAllowed": false } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git status:*)"] } } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "filter-module-off-in-user-config",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "modules": { "filter": false } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "filter-module-off-in-project-config",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "projectConfig": { "modules": { "filter": false } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "project-config-turns-filter-back-on",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "modules": { "filter": false } },
+    "projectConfig": { "modules": { "filter": true } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "env-filter-off",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "env": { "NXY_FILTER": "0" },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "env-filter-on-over-user-config-off",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "env": { "NXY_FILTER": "1" },
+    "userConfig": { "modules": { "filter": false } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "engine-off-in-cache",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "engine": { "engine": "off", "rtkPath": "rtk", "rtkHookDetected": false },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "env-engine-off",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "env": { "NXY_ENGINE": "off" },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "config-engine-off",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "filter": { "engine": "off" } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-own-hook-detected",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "engine": { "engine": "rtk", "rtkPath": "rtk", "rtkHookDetected": true },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "powershell-tool",
+    "payload": { "tool_name": "PowerShell", "tool_input": { "command": "git status" } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "powershell-tool-allow-rule",
+    "payload": { "tool_name": "PowerShell", "tool_input": { "command": "git log" } },
+    "settings": { "user": { "permissions": { "allow": ["Bash(git log:*)"] } } },
+    "rtk": { "git log": { "code": 3, "stdout": "rtk git log" } }
+  },
+  {
+    "name": "non-bash-tool",
+    "payload": { "tool_name": "Read", "tool_input": { "command": "git status", "file_path": "README.md" } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "non-string-command",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": 42 } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "missing-command",
+    "payload": { "tool_name": "Bash", "tool_input": {} },
+    "rtk": {}
+  },
+  {
+    "name": "extra-tool-input-fields-kept",
+    "payload": {
+      "tool_name": "Bash",
+      "tool_input": { "command": "git status", "description": "Show status", "timeout": 30000, "run_in_background": false }
+    },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "rtk-no-equivalent",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "echo hi" } },
+    "rtk": { "echo hi": { "code": 1, "stdout": "" } }
+  },
+  {
+    "name": "rtk-denies",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git push --force" } },
+    "rtk": { "git push --force": { "code": 2, "stdout": "" } }
+  },
+  {
+    "name": "rtk-unknown-command-stub-exit-1",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "rtk": {}
+  },
+  {
+    "name": "exclude-commands-config",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "filter": { "excludeCommands": ["git"] } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "only-commands-config-matches",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "filter": { "onlyCommands": ["git"] } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "only-commands-config-no-match",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "userConfig": { "filter": { "onlyCommands": ["mvn"] } },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "npm-test-normalized-for-rtk",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "npm test" } },
+    "rtk": { "npm run test": { "code": 0, "stdout": "rtk npm run test" } }
+  },
+  {
+    "name": "env-prefix-and-chain",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "cd sub && NODE_ENV=test npm test" } },
+    "rtk": { "cd sub && NODE_ENV=test npm run test": { "code": 3, "stdout": "cd sub && NODE_ENV=test rtk npm run test" } }
+  },
+  {
+    "name": "abs-rtk-path-pinned",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "engine": { "engine": "rtk", "rtkPath": "abs", "rtkHookDetected": false },
+    "rtk": { "git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "abs-rtk-path-pinned-in-chain-and-prefix",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "cd sub && FOO=1 git status | head -5" } },
+    "engine": { "engine": "rtk", "rtkPath": "abs", "rtkHookDetected": false },
+    "settings": { "user": { "permissions": { "allow": ["Bash(cd:*)", "Bash(FOO=1 git status:*)", "Bash(head:*)"] } } },
+    "rtk": { "cd sub && FOO=1 git status": { "code": 3, "stdout": "cd sub && FOO=1 rtk git status" } }
+  },
+  {
+    "name": "already-rtk-invocation",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "rtk git status" } },
+    "rtk": { "rtk git status": { "code": 0, "stdout": "rtk git status" } }
+  },
+  {
+    "name": "broken-user-settings-ignored",
+    "payload": { "tool_name": "Bash", "tool_input": { "command": "git status" } },
+    "settings": { "user": "not an object" },
+    "rtk": { "git status": { "code": 3, "stdout": "rtk git status" } }
+  }
+]

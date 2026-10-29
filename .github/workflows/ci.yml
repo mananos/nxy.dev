@@ -80,6 +80,17 @@ jobs:
           ext=""
           if [ "$RUNNER_OS" = "Windows" ]; then ext=".exe"; fi
           go build -o "$NXY_HOME/bin/$v/nxy$ext" ./cmd/nxy
+      - name: hook startup time
+        shell: bash
+        run: |
+          v=$(go run ./cmd/nxy version)
+          ext=""
+          if [ "$RUNNER_OS" = "Windows" ]; then ext=".exe"; fi
+          {
+            echo "### Hook startup time ($RUNNER_OS)"
+            echo
+            "$NXY_HOME/bin/$v/nxy$ext" bench hook -n 20 -shim bin/nxy.cmd
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: shim smoke test (every hook event answers nothing)
         shell: bash
         run: |
