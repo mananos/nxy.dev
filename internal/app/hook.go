@@ -95,6 +95,12 @@ type Hooks struct {
 	Graph   TestGraph
 	Runners Runners
 	Trees   FileTrees
+	// Lenses, Diffs, ReviewLog and ReviewFiles serve the review; nil ones degrade to the embedded
+	// lenses only, no diff, no record and no review document.
+	Lenses      Lenses
+	Diffs       Diffs
+	ReviewLog   ReviewLog
+	ReviewFiles ReviewFiles
 }
 
 // Handle answers a hook event, one use case per event/tool.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -117,6 +118,104 @@ func GitChanged(ctx context.Context, dir, base string) ([]string, error) {
 		res = append(res, p)
 	}
 	return res, nil
+}
+
+// maxUntrackedDiff is the size above which an untracked file gets a header only.
+const maxUntrackedDiff = 256 * 1024
+
+// GitFileDiff is the unified diff of one file. Status is "M", "A" or "D".
+type GitFileDiff struct {
+	Path   string
+	Status string
+	Text   string
+}
+
+// GitDiff returns the per-file diff of the working tree against base, plus the
+// untracked files as new-file diffs, skipping .nxy/ and .codegraph/. Paths are
+// relative to dir. Binary files carry only a header.
+func GitDiff(ctx context.Context, dir, base string) ([]GitFileDiff, error) {
+	names, err := gitOut(ctx, dir, "diff", "--name-status", "--no-renames", "-z", "--relative", base, "--")
+	if err != nil {
+		return nil, err
+	}
+	text, err := gitOut(ctx, dir, "diff", "--no-color", "--no-ext-diff", "--no-renames", "--relative", "-U3", base, "--")
+	if err != nil {
+		return nil, err
+	}
+	var chunks []string
+	for _, line := range strings.SplitAfter(text, "\n") {
+		if strings.HasPrefix(line, "diff --git ") || len(chunks) == 0 {
+			if len(chunks) == 0 && !strings.HasPrefix(line, "diff --git ") {
+				continue
+			}
+			chunks = append(chunks, "")
+		}
+		chunks[len(chunks)-1] += line
+	}
+	fields := strings.Split(names, "\x00")
+	var res []GitFileDiff
+	ci := 0
+	for i := 0; i+1 < len(fields); i += 2 {
+		status, p := fields[i], filepath.ToSlash(fields[i+1])
+		if status == "" {
+			break
+		}
+		chunk := ""
+		if ci < len(chunks) {
+			chunk = chunks[ci]
+		}
+		ci++
+		if skipInternal(p) {
+			continue
+		}
+		res = append(res, GitFileDiff{Path: p, Status: status[:1], Text: chunk})
+	}
+	others, err := gitOut(ctx, dir, "ls-files", "--others", "--exclude-standard", "-z")
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range splitNUL(others) {
+		if skipInternal(p) {
+			continue
+		}
+		full := filepath.Join(NativePath(dir), filepath.FromSlash(p))
+		if st, err := os.Stat(full); err == nil && st.Size() > maxUntrackedDiff {
+			res = append(res, GitFileDiff{Path: p, Status: "A", Text: "diff --git a/" + p + " b/" + p + "\nnew file mode 100644\nFile too large to diff (" + strconv.FormatInt(st.Size(), 10) + " bytes)\n"})
+			continue
+		}
+		b, err := os.ReadFile(full)
+		if err != nil {
+			continue
+		}
+		res = append(res, GitFileDiff{Path: p, Status: "A", Text: newFileDiff(p, b)})
+	}
+	return res, nil
+}
+
+func newFileDiff(p string, b []byte) string {
+	head := "diff --git a/" + p + " b/" + p + "\nnew file mode 100644\n"
+	probe := b
+	if len(probe) > 8192 {
+		probe = probe[:8192]
+	}
+	if strings.IndexByte(string(probe), 0) >= 0 {
+		return head + "Binary files /dev/null and b/" + p + " differ\n"
+	}
+	if len(b) == 0 {
+		return head
+	}
+	s := string(b)
+	lines := strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	var sb strings.Builder
+	sb.WriteString(head)
+	fmt.Fprintf(&sb, "--- /dev/null\n+++ b/%s\n@@ -0,0 +1,%d @@\n", p, len(lines))
+	for _, l := range lines {
+		sb.WriteString("+" + l + "\n")
+	}
+	if !strings.HasSuffix(s, "\n") {
+		sb.WriteString("\\ No newline at end of file\n")
+	}
+	return sb.String()
 }
 
 // GitFiles lists the tracked and untracked-not-ignored files under dir (relative

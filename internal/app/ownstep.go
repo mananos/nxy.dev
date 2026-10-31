@@ -27,6 +27,10 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 		}
 	case ev.AgentType == rolePlanner:
 		id = h.parsePlanSave(cmd, ev.Tool == "PowerShell")
+	case ev.AgentType == roleReviewer || ev.AgentType == roleReviewerQuick:
+		id = h.parseSave(cmd, ev.Tool == "PowerShell", h.reviewSaveWords)
+	case ev.AgentType == roleRefuter:
+		id = h.parseSave(cmd, ev.Tool == "PowerShell", h.reviewRefuteWords)
 	}
 	if id == "" {
 		return HookResponse{}, false
@@ -86,6 +90,12 @@ func (h Hooks) parseAffectedStep(cmd string, ps bool) string {
 // (`"<exe>" plan save --feature <id> <<'JSON'` ... `JSON`) and the PowerShell here-string piped
 // into `& "<exe>" plan save --feature <id>`. The body is ignored but must end the command.
 func (h Hooks) parsePlanSave(cmd string, ps bool) string {
+	return h.parseSave(cmd, ps, h.planSaveWords)
+}
+
+// parseSave is parsePlanSave for any command that saves a JSON body: words judges the command
+// words (without the call operator) and returns the feature id, or "".
+func (h Hooks) parseSave(cmd string, ps bool, words func([]string) string) string {
 	lines := strings.Split(strings.ReplaceAll(cmd, "\r\n", "\n"), "\n")
 	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
 		lines = lines[:len(lines)-1]
@@ -103,7 +113,11 @@ func (h Hooks) parsePlanSave(cmd string, ps bool) string {
 				return ""
 			}
 		}
-		return h.planSaveHead(head)
+		toks, ok := shellWords(head)
+		if !ok {
+			return ""
+		}
+		return words(toks)
 	}
 	if len(lines) < 4 || strings.TrimSpace(lines[0]) != "$OutputEncoding = [System.Text.UTF8Encoding]::new($false)" || strings.TrimSpace(lines[1]) != "@'" {
 		return ""
@@ -121,15 +135,23 @@ func (h Hooks) parsePlanSave(cmd string, ps bool) string {
 	if !ok || len(toks) == 0 || toks[0] != "&" {
 		return ""
 	}
-	return h.planSaveWords(toks[1:])
+	return words(toks[1:])
 }
 
-func (h Hooks) planSaveHead(head string) string {
-	toks, ok := shellWords(head)
-	if !ok {
+// reviewSaveWords is `"<exe>" review save --feature <id> --lens <name>`; it returns the id.
+func (h Hooks) reviewSaveWords(toks []string) string {
+	if len(toks) != 7 || !h.isExe(toks[0]) || toks[1] != "review" || toks[2] != "save" || toks[3] != "--feature" || toks[5] != "--lens" || toks[6] == "" {
 		return ""
 	}
-	return h.planSaveWords(toks)
+	return toks[4]
+}
+
+// reviewRefuteWords is `"<exe>" review refute --feature <id>`; it returns the id.
+func (h Hooks) reviewRefuteWords(toks []string) string {
+	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "review" || toks[2] != "refute" || toks[3] != "--feature" {
+		return ""
+	}
+	return toks[4]
 }
 
 func (h Hooks) planSaveWords(toks []string) string {

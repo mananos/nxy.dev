@@ -17,6 +17,12 @@ func TestOwnStepAllow(t *testing.T) {
 	ps := func(id string) string {
 		return "$OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n@'\n{\"title\":\"x\"}\n'@ | & \"" + exe + "\" plan save --feature " + id
 	}
+	rsave := func(id, lens string) string {
+		return "\"" + exe + "\" review save --feature " + id + " --lens " + lens + " <<'JSON'\n{\"lens\":\"x\"}\nJSON"
+	}
+	rsavePS := func(id, lens string) string {
+		return "$OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n@'\n{}\n'@ | & \"" + exe + "\" review save --feature " + id + " --lens " + lens
+	}
 	cases := []struct {
 		name, tool, agent, cmd string
 		active                 bool
@@ -57,6 +63,20 @@ func TestOwnStepAllow(t *testing.T) {
 		{"plan save powershell other id", "PowerShell", rolePlanner, ps("other"), true, false},
 		{"plan save powershell extra command", "PowerShell", rolePlanner, ps("ID") + "; rm x", true, false},
 		{"plan save powershell no encoding", "PowerShell", rolePlanner, "@'\n{}\n'@ | & \"/opt/nxy/nxy\" plan save --feature ID", true, false},
+		{"review save heredoc", "Bash", roleReviewer, rsave("ID", "api"), true, true},
+		{"review save quick", "Bash", roleReviewerQuick, rsave("ID", "base"), true, true},
+		{"review save powershell", "PowerShell", roleReviewer, rsavePS("ID", "api"), true, true},
+		{"review save other id", "Bash", roleReviewer, rsave("other", "api"), true, false},
+		{"review save planner", "Bash", rolePlanner, rsave("ID", "api"), true, false},
+		{"review save main thread", "Bash", "", rsave("ID", "api"), true, false},
+		{"review save refuter", "Bash", roleRefuter, rsave("ID", "api"), true, false},
+		{"review save no lens", "Bash", roleReviewer, "\"/opt/nxy/nxy\" review save --feature ID <<'JSON'\n{}\nJSON", true, false},
+		{"review save chained", "Bash", roleReviewer, rsave("ID", "api") + "\nrm x", true, false},
+		{"review save chained head", "Bash", roleReviewer, "\"/opt/nxy/nxy\" review save --feature ID --lens api && rm x <<'JSON'\n{}\nJSON", true, false},
+		{"review refute heredoc", "Bash", roleRefuter, "\"/opt/nxy/nxy\" review refute --feature ID <<'JSON'\n{}\nJSON", true, true},
+		{"review refute powershell", "PowerShell", roleRefuter, "$OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n@'\n{}\n'@ | & \"/opt/nxy/nxy\" review refute --feature ID", true, true},
+		{"review refute reviewer", "Bash", roleReviewer, "\"/opt/nxy/nxy\" review refute --feature ID <<'JSON'\n{}\nJSON", true, false},
+		{"review refute other id", "Bash", roleRefuter, "\"/opt/nxy/nxy\" review refute --feature other <<'JSON'\n{}\nJSON", true, false},
 		{"plain command", "Bash", "", `git status`, true, false},
 	}
 	for _, c := range cases {

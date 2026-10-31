@@ -1,0 +1,86 @@
+package domain
+
+// Severity is how bad a finding is.
+type Severity string
+
+const (
+	SeverityHigh   Severity = "high"
+	SeverityMedium Severity = "medium"
+	SeverityLow    Severity = "low"
+)
+
+// Cause says whether the change introduced the finding or it was already there.
+type Cause string
+
+const (
+	CauseChange      Cause = "change"
+	CausePreexisting Cause = "preexisting"
+)
+
+// Verdict is the refuter's conclusion about a finding.
+type Verdict string
+
+const (
+	VerdictConfirmed    Verdict = "confirmed"
+	VerdictRefuted      Verdict = "refuted"
+	VerdictInconclusive Verdict = "inconclusive"
+)
+
+// Finding is one problem a reviewer found.
+type Finding struct {
+	ID         string   `json:"id"` // "H1"
+	Lens       string   `json:"lens"`
+	Severity   Severity `json:"severity"`
+	File       string   `json:"file,omitempty"`
+	Line       int      `json:"line,omitempty"`
+	Title      string   `json:"title"`
+	Scenario   string   `json:"scenario,omitempty"`
+	Evidence   string   `json:"evidence,omitempty"`
+	Fix        string   `json:"fix,omitempty"`
+	Cause      Cause    `json:"cause,omitempty"`
+	Rule       string   `json:"rule,omitempty"`    // set when it comes from a failed rule check
+	Dropped    string   `json:"dropped,omitempty"` // why the precision filter dropped it
+	Verdict    Verdict  `json:"verdict,omitempty"`
+	VerdictWhy string   `json:"verdict_why,omitempty"`
+}
+
+// RuleCheck is the reviewer's answer for one rule of the plan.
+type RuleCheck struct {
+	ID   string `json:"id"` // "R1"
+	OK   bool   `json:"ok"`
+	Why  string `json:"why,omitempty"`
+	File string `json:"file,omitempty"`
+	Line int    `json:"line,omitempty"`
+}
+
+// LensRun is one lens selected for the review and where it stands.
+type LensRun struct {
+	Name       string   `json:"name"`
+	Title      string   `json:"title,omitempty"`
+	Files      []string `json:"files,omitempty"`
+	Dispatched bool     `json:"dispatched,omitempty"`
+	Saved      bool     `json:"saved,omitempty"`
+}
+
+// Review is the review of a finished feature.
+type Review struct {
+	Risk     Risk        `json:"risk"`
+	RiskWhy  string      `json:"risk_why,omitempty"`
+	Quick    bool        `json:"quick,omitempty"`
+	Lenses   []LensRun   `json:"lenses,omitempty"`
+	Returned []string    `json:"returned,omitempty"` // agent ids that already stopped
+	Rules    []RuleCheck `json:"rules,omitempty"`
+	Findings []Finding   `json:"findings,omitempty"`
+	Refuted  bool        `json:"refuted,omitempty"`
+	Chosen   []string    `json:"chosen,omitempty"`
+	FullPath string      `json:"full_path,omitempty"`
+	Warning  string      `json:"warning,omitempty"` // invalid user/repo lens files, ignored
+}
+
+// Pick records whether the user chose to fix one offered finding.
+type Pick struct {
+	Finding  string   `json:"finding"`
+	Lens     string   `json:"lens"`
+	Severity Severity `json:"severity"`
+	Chosen   bool     `json:"chosen"`
+}

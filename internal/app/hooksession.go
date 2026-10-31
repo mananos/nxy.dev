@@ -34,16 +34,40 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 					f.Background = ""
 				}
 			}
+			f = h.ensureReview(ctx, f)
+			if fresh && f.State.Phase == domain.PhaseReviewing && f.Review != nil {
+				// The reviewers of the old process are gone: the lenses go out again.
+				if g, ok, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+					if g.State.Phase != domain.PhaseReviewing || g.Review == nil {
+						return false
+					}
+					changed := len(g.Review.Returned) > 0
+					g.Review.Returned = nil
+					for i := range g.Review.Lenses {
+						if l := &g.Review.Lenses[i]; !l.Saved && l.Dispatched {
+							l.Dispatched, changed = false, true
+						}
+					}
+					return changed
+				}); err == nil && ok {
+					f = g
+				}
+			}
 			role, known := roles[f.Background]
 			_, inPhase := role[f.State.Phase]
-			running := known && inPhase
-			if running {
+			reviewing := reviewInFlight(f)
+			running := (known && inPhase) || reviewing
+			if reviewing {
+				r.Context = reviewWait(f)
+			} else if running {
 				r.Context = backgroundWait(f.ID, f.Background)
 			} else {
 				r.Next = &Next{Feature: f}
 			}
 			if fresh || ev.Source == "clear" {
-				if running {
+				if reviewing {
+					r.Notice = "nxy: feature " + f.ID + " — the reviewers are still running; their result arrives when they end"
+				} else if running {
 					r.Notice = "nxy: feature " + f.ID + " — the " + strings.TrimPrefix(f.Background, "nxy:") + " is still running; its result arrives when it ends"
 				} else {
 					r.Notice = "nxy: feature " + f.ID + " pendiente (" + f.Next.Label() + ") — escribí cualquier cosa para seguir"

@@ -157,6 +157,42 @@ func (s *Store) ActiveFeature(ctx context.Context, repo string) (domain.Feature,
 	return f, true, nil
 }
 
+// LatestFeature is the most recently updated feature of repo, done or not.
+func (s *Store) LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+	f, err := s.readOne(ctx,
+		`SELECT state FROM features WHERE repo=? ORDER BY updated_at DESC, id DESC LIMIT 1`, repo)
+	if errors.Is(err, ErrNotFound) {
+		return domain.Feature{}, false, nil
+	}
+	if err != nil {
+		return domain.Feature{}, false, err
+	}
+	return f, true, nil
+}
+
+// RecordPicks stores which review findings were offered and which were chosen, in one transaction.
+// It is idempotent: recording the same finding again replaces its row.
+func (s *Store) RecordPicks(ctx context.Context, featureID, repo string, picks []domain.Pick) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	ms := s.now().UTC().UnixMilli()
+	for _, p := range picks {
+		chosen := 0
+		if p.Chosen {
+			chosen = 1
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR REPLACE INTO review_picks (feature_id, finding, repo, lens, severity, chosen, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			featureID, p.Finding, repo, p.Lens, string(p.Severity), chosen, ms); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func (s *Store) readOne(ctx context.Context, query string, args ...any) (domain.Feature, error) {
 	var state string
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(&state)

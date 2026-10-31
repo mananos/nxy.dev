@@ -1,0 +1,42 @@
+[
+  { "name": "only-docs", "files": [{ "path": "README.md", "content": "password" }, { "path": "docs/auth/guide.md", "content": "secret" }] },
+  { "name": "no-files", "files": [] },
+  { "name": "plain-go", "files": [{ "path": "internal/foo/bar.go", "content": "package foo" }] },
+  { "name": "path-auth-dir", "files": [{ "path": "internal/auth/login.go", "content": "package auth" }] },
+  { "name": "path-auth-name", "files": [{ "path": "src/AuthService.java", "content": "class A {}" }] },
+  { "name": "path-controller", "files": [{ "path": "src/main/UserController.java", "content": "class U {}" }] },
+  { "name": "path-routes-ts", "files": [{ "path": "app/users.routes.ts", "content": "export {}" }] },
+  { "name": "path-sql", "files": [{ "path": "db/schema.sql", "content": "select 1" }] },
+  { "name": "path-migration", "files": [{ "path": "db/migrations/0001_init.txt", "content": "x" }, { "path": "db/migrations/0002_add.go", "content": "package db" }] },
+  { "name": "path-repository", "files": [{ "path": "src/UserRepository.java", "content": "interface U {}" }] },
+  { "name": "path-entity-dir", "files": [{ "path": "src/Entity/User.kt", "content": "class U" }] },
+  { "name": "path-component-tsx", "files": [{ "path": "web/Button.tsx", "content": "export const B = 1" }] },
+  { "name": "path-uppercase", "files": [{ "path": "SRC/AUTH/Login.go", "content": "package a" }] },
+  { "name": "content-restcontroller", "files": [{ "path": "src/Hello.java", "content": "@RestController\nclass Hello {}" }] },
+  { "name": "content-password", "files": [{ "path": "src/util.go", "content": "var password = \"x\"" }] },
+  { "name": "content-create-table", "files": [{ "path": "tools/init.go", "content": "db.Exec(\"CREATE TABLE t (id int)\")" }] },
+  { "name": "content-in-doc-ignored", "files": [{ "path": "NOTES.md", "content": "@RestController password" }, { "path": "main.go", "content": "package main" }] },
+  { "name": "deleted-file-by-path", "files": [{ "path": "internal/auth/old.go", "content": null }] },
+  { "name": "deleted-file-no-content", "files": [{ "path": "src/util.go", "content": null }] },
+  { "name": "many-lenses", "files": [{ "path": "src/auth/UserController.java", "content": "@Entity" }, { "path": "db/migrations/1.sql", "content": "ALTER TABLE t" }] },
+  {
+    "name": "repo-replaces-security",
+    "repo": [{ "name": "security", "text": "---\nname: security\ntitle: Mine\npaths: **/vault/**\n---\n- check the vault\n" }],
+    "files": [{ "path": "internal/auth/login.go", "content": "package auth" }, { "path": "src/vault/keys.go", "content": "package v" }]
+  },
+  {
+    "name": "repo-disables-database",
+    "repo": [{ "name": "database", "text": "---\nname: database\nenabled: false\n---\n" }],
+    "files": [{ "path": "db/migrations/1.sql", "content": "CREATE TABLE t" }, { "path": "db/schema.sql", "content": "x" }]
+  },
+  {
+    "name": "repo-new-lens-by-content",
+    "repo": [{ "name": "billing", "text": "---\r\nname: billing\r\ntitle: Billing\r\ncontent: invoice, ledger\r\n---\r\n- totals add up\r\n" }],
+    "files": [{ "path": "src/pay.go", "content": "func invoice() {}" }]
+  },
+  {
+    "name": "repo-always-lens",
+    "repo": [{ "name": "house", "text": "---\nname: house\nalways: true\n---\n- house rules\n" }],
+    "files": [{ "path": "src/x.go", "content": "package x" }]
+  }
+]

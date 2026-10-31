@@ -46,7 +46,7 @@ func affectedFeature(t *testing.T, suite string) (repo, id string) {
 func TestAffectedGreenWithSuite(t *testing.T) {
 	_, id := affectedFeature(t, "test -f done.txt")
 	code, out, errb := runCmd(t, "", "affected", "--feature", id)
-	if code != 0 || !strings.Contains(out, "verde") || !strings.Contains(out, "F2.4") {
+	if code != 0 || !strings.Contains(out, "verde") || !strings.Contains(out, "nxy:reviewer-quick") {
 		t.Fatalf("affected: code %d, out %q, err %q", code, out, errb)
 	}
 }
@@ -58,7 +58,7 @@ func TestAffectedUnverifiedWithoutSuite(t *testing.T) {
 		t.Fatalf("affected: code %d, out %q, err %q", code, out, errb)
 	}
 	out = answer(t, repo, "nxy feature "+id+": the affected tests could not be verified — what now?", "Seguir")
-	if !strings.Contains(out, "F2.4") {
+	if !strings.Contains(out, "nxy:reviewer-quick") {
 		t.Fatalf("Seguir does not go to review: %s", out)
 	}
 }

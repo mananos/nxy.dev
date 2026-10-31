@@ -25,10 +25,31 @@ func Checkpoint(p domain.Plan) string {
 		if bt.Test.Accept != "" {
 			fmt.Fprintf(&b, "- Accept: `%s`\n", bt.Test.Accept)
 		}
-		fmt.Fprintf(&b, "- Riesgo: %s\n", bt.Risk)
+		b.WriteString(riskLine(bt))
 	}
 	writeSuite(&b, p)
 	return b.String()
+}
+
+// riskLine is the risk of a batch, with why nxy raised it when it did.
+func riskLine(bt domain.Batch) string {
+	r := riskEs(bt.Risk)
+	if bt.RiskWhy != "" {
+		return fmt.Sprintf("- Riesgo: %s (subido por nxy: %s)\n", r, bt.RiskWhy)
+	}
+	return fmt.Sprintf("- Riesgo: %s\n", r)
+}
+
+func riskEs(r domain.Risk) string {
+	switch r {
+	case domain.RiskLow:
+		return "bajo"
+	case domain.RiskMedium:
+		return "medio"
+	case domain.RiskHigh:
+		return "alto"
+	}
+	return string(r)
 }
 
 func writeSuite(b *strings.Builder, p domain.Plan) {
@@ -87,7 +108,7 @@ func Markdown(f domain.Feature) string {
 		if bt.Test.Accept != "" {
 			fmt.Fprintf(&b, "- Accept: `%s`\n", bt.Test.Accept)
 		}
-		fmt.Fprintf(&b, "- Riesgo: %s\n", bt.Risk)
+		b.WriteString(riskLine(bt))
 	}
 	writeSuite(&b, p)
 	if len(p.Risks) > 0 {

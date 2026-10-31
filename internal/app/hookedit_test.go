@@ -216,11 +216,11 @@ func TestNoMainThreadStepIsNeverEmpty(t *testing.T) {
 	h, st := flowHooks(false)
 	seed(t, h, st, dir, domain.State{Phase: domain.PhaseReviewing}, domain.Action{})
 	r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Write", FilePath: filepath.Join(dir, "a.go"), ProjectDir: dir, Cwd: dir})
-	if r.Deny == "" || strings.Contains(r.Deny, "next step .") || !strings.Contains(r.Deny, "F2.4") || !strings.Contains(r.Deny, "`nxy feature stop`") {
+	if r.Deny == "" || strings.Contains(r.Deny, "next step .") || !strings.Contains(r.Deny, "`nxy feature stop`") {
 		t.Errorf("deny = %q", r.Deny)
 	}
 	v, _ := h.Status(context.Background(), dir)
-	if v.Next == "" || !strings.Contains(v.Next, "F2.4") {
+	if v.Next == "" || !strings.Contains(v.Next, "Revisando") {
 		t.Errorf("status next = %q", v.Next)
 	}
 

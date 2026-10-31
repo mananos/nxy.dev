@@ -1,6 +1,6 @@
 # nxy 2.0 dev plugin
 
-Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1 flow (`/nxy:feature` → planner → `nxy plan save` → approval) and the Bash filter from F1; other events answer nothing.
+Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1–F2.4 flow (`/nxy:feature` → planner → `nxy plan save` → approval → batches → affected tests → review) and the Bash filter from F1; other events answer nothing.
 
 Try it:
 
@@ -49,7 +49,7 @@ Estados públicos (los de `nxy status`):
 - **Necesita tu decisión**: te toca a vos (responder, aprobar, reintentar o parar).
 - **Listo**: la feature terminó, o la paraste.
 
-Después de aprobar, la feature ejecuta los lotes (ver F2.2 abajo). Mientras hay una feature sin terminar el hilo principal no puede editar archivos del repo (los de fuera, como `~/.claude`, sí). `nxy status` te dice dónde está (por ejemplo "Lote 1"). Para terminar: `nxy feature stop`; libera las ediciones del repo y borra el plan .md.
+Después de aprobar, la feature ejecuta los lotes (ver F2.2 abajo). Mientras hay una feature sin terminar el hilo principal no puede editar archivos del repo (los de fuera, como `~/.claude`, sí). `nxy status` te dice dónde está (por ejemplo "Lote 1"). Para terminar: `nxy feature stop`; libera las ediciones del repo y borra el plan .md y la review .md.
 
 Planner en segundo plano: si Claude lanza el planner sin esperarlo, nxy le dice "esperá" al hilo principal (no lo relanza). El plan te llega al final de ese turno o en tu próximo mensaje, una sola vez. Si hacés `/clear` con una feature pendiente, ves una línea "nxy: feature … pendiente": escribí cualquier cosa para seguir.
 
@@ -66,7 +66,7 @@ Qué ves:
 - **Reintento automático**: si el lote queda en rojo, nxy lo despacha una vez más con la falla en el prompt. No te pregunta.
 - **Lote fallido**: si falla de nuevo, ves "Lote n fallido" con la causa y la cola de la salida, y una pregunta con **Reintentar** (lo corre otra vez), **Seguir** (lo acepta así y pasa al siguiente) o **Parar** (termina la feature).
 - Si el planner termina sin guardar un plan, la pregunta es **Reintentar** o **Parar**.
-- Después del último lote verde la feature se detiene: sigue la corrida de los tests afectados (ver F2.3 abajo); la review llega en F2.4. Para terminar: `nxy feature stop`.
+- Después del último lote verde la feature se detiene: sigue la corrida de los tests afectados (ver F2.3 abajo); después viene la review (ver F2.4 abajo). Para terminar: `nxy feature stop`.
 
 Permisos:
 
@@ -126,12 +126,40 @@ Una fila con el mismo `name` que una embebida (por ejemplo `go`) la reemplaza. L
 
 Resultados:
 
-- **Verde**: pasa a la review (F2.4, todavía no existe: nxy te lo dice y la feature se detiene; `nxy feature stop` la termina).
+- **Verde**: pasa a la review (ver F2.4 abajo).
 - **Rojo**: nxy despacha un `nxy:implementer` una vez para arreglar el código (cambia un test sólo si el test está mal, y lo dice) y vuelve a correr `nxy affected`. Durante el arreglo ese comando sólo informa, no registra nada. Si sigue rojo ves **Afectados fallidos** con la causa y la cola, y **Reintentar** (otro intento de arreglo), **Seguir** (aceptar así e ir a la review) o **Parar**.
 - **Sin verificar**: no hay tests ni `Suite:`, o ningún runner conocido. Ves **Afectados sin verificar** con el motivo y **Reintentar** (corre `nxy affected` otra vez, por ejemplo después de agregar `.nxy/runners.json` o un suite), **Seguir** (sin verificar) o **Parar**. Nunca cuenta como verde.
 
 Costo: un `sync` sin cambios tardó 0,85 s y la consulta 0,44 s en este repo (medido); el resto es el tiempo de tus tests. Tope total del comando: 9 min 30 s.
 
 A validar en vivo: los comandos por defecto de cada stack (`./mvnw` y `./gradlew` necesitan `sh`; `python -m pytest` vs `python3`) y que en Maven multi-módulo el marcador más cercano gana (un `mvnw` en la raíz con `pom.xml` en el módulo usa `mvn` simple).
+
+## F2.4: review
+
+Después de los afectados en verde (o de elegir **Seguir**), la feature pasa por una review. Se hace siempre, también si el cambio es sólo docs o sólo tests.
+
+**Riesgo subido por nxy.** Qué ves: en el checkpoint del plan, `Riesgo: alto (subido por nxy: lente security: internal/auth/x.go)`. Qué significa: nxy mira los archivos de cada lote y sube el riesgo que puso el planner: security, database o una migración → alto; API → medio. Nunca lo baja. Qué hacer: si no estás de acuerdo con la profundidad, pedí un cambio al plan; no hay nada que configurar.
+
+**Profundidad por riesgo.**
+
+- Bajo: un solo `nxy:reviewer-quick` con la lente base y las reglas del pedido, una por una.
+- Medio: un `nxy:reviewer` por lente seleccionada, todos en paralelo.
+- Alto: lo mismo, y además un `nxy:refuter` que intenta refutar los hallazgos de severidad alta leyendo el código.
+
+Mientras corren no tenés nada que hacer; el checkpoint llega solo cuando vuelven todos.
+
+**Lentes.** Vienen embebidas las de la 1.x (base, api, database, frontend, persistence, security). Para cambiarlas: `~/.nxy/lenses/<name>.md` (tuyas) o `<repo>/.nxy/lenses/<name>.md` (del repo, gana). Un archivo con el mismo `name` reemplaza a la lente; con `enabled: false` en el frontmatter la quita. Un archivo inválido no frena nada: ves "Aviso:" con el motivo y se usa la lente anterior.
+
+**Filtro de precisión.** Qué significa: nxy descarta sin preguntarle a ningún modelo los hallazgos sin `path:línea` o sin un escenario `entrada → resultado`. Qué hacer: nada; los descartados figuran en "Ver completo".
+
+**Checkpoint 2.** Qué ves: arriba la línea de reglas (`R1 ✔ · R2 ✘`), después los hallazgos con su escenario y su arreglo (H1, H2, …), los preexistentes sólo como información, y un conteo de descartados y refutados. Se elige con casillas (multiSelect), hasta 16 hallazgos en 4 preguntas de 4; un grupo de uno suma "Ninguno"; si hay más de 16, nxy te dice cuántos quedan fuera. Qué hacer: marcá los que querés arreglar o elegí "Ninguno". Los refutados y descartados no se ofrecen: están en **Ver completo**, `~/.nxy/reviews/<id>.md`.
+
+**Arreglos.** Qué ves: un único `nxy:implementer` recibe todos los hallazgos elegidos y después nxy corre `nxy affected` de nuevo. Verde: la feature cierra. Rojo: un reintento; si sigue rojo (o queda sin verificar) ves **Arreglos fallidos** con la causa y **Reintentar**, **Seguir** (aceptar así) o **Parar**.
+
+**Listo.** Qué ves: el cierre con `R1 ✔ <test>` por regla y los arreglos aplicados. Se muestra una sola vez. Si hubo un "Aviso:" de lentes inválidas, se repite acá. Si los afectados quedaron en rojo (aceptados con Seguir) o sin verificar, lo dice, y los arreglos figuran como "Arreglos pedidos (sin verificar)" en vez de "Arreglos aplicados". Si la review no corrió, las reglas quedan con `?`. Qué hacer: si ves "sin verificar", corré tus tests a mano.
+
+**Qué se guarda.** Por lente, cuáles hallazgos elegiste y cuáles ignoraste, en la db (`~/.nxy`); se van a ver en `/nxy:trend` en F3.
+
+**Costo** (estimación): N reviewers (uno por lente; típicamente 2–4 en riesgo medio o alto, 1 en bajo), cada uno con un paquete que incluye el diff cortado a 3000 líneas como máximo (un archivo nuevo sin trackear de más de 256 KB entra sólo con la cabecera, sin contenido; el reviewer lo lee por su cuenta); un diff de unas 1.000 líneas pesa ≈ 15k tokens por reviewer. El refutador se suma sólo en riesgo alto. La review completa son unos KB y se borra al cerrar con éxito o con `nxy feature stop`.
 
 `NXY_BIN` wins over everything. To test the download path (binary under `~/.nxy/bin/2.0.0-dev/`, fetched from the GitHub release), unset it first: a leftover `NXY_BIN` silently runs a stale build.

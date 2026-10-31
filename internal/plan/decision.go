@@ -24,6 +24,11 @@ func UnverifiedQuestion(featureID string) string {
 	return fmt.Sprintf("nxy feature %s: the affected tests could not be verified — what now?", featureID)
 }
 
+// FixesFailedQuestion is the exact text asked when the review fixes could not be verified.
+func FixesFailedQuestion(featureID string) string {
+	return fmt.Sprintf("nxy feature %s: the review fixes failed — what now?", featureID)
+}
+
 // PlannerFailedQuestion is the exact text asked when the planner ended without saving a plan.
 func PlannerFailedQuestion(featureID string) string {
 	return fmt.Sprintf("nxy feature %s: the planner did not save a plan — what now?", featureID)

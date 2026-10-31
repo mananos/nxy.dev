@@ -7,11 +7,15 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/internal/review"
 )
 
 const (
-	rolePlanner     = "nxy:planner"
-	roleImplementer = "nxy:implementer"
+	rolePlanner       = "nxy:planner"
+	roleImplementer   = "nxy:implementer"
+	roleReviewer      = "nxy:reviewer"
+	roleReviewerQuick = "nxy:reviewer-quick"
+	roleRefuter       = "nxy:refuter"
 )
 
 // roleFor is the nxy subagent each dispatch action expects.
@@ -19,8 +23,8 @@ var roleFor = map[domain.ActionKind]string{
 	domain.DispatchPlanner:     rolePlanner,
 	domain.DispatchImplementer: roleImplementer,
 	domain.DispatchAffectedFix: roleImplementer,
-	domain.DispatchReviewer:    "nxy:reviewer",
-	domain.DispatchRefuter:     "nxy:refuter",
+	domain.DispatchReviewer:    roleReviewer,
+	domain.DispatchRefuter:     roleRefuter,
 	domain.DispatchFixer:       roleImplementer,
 }
 
@@ -37,7 +41,11 @@ var roles = map[string]roleInfo{
 		domain.PhaseAffectedFix: func(*domain.Feature) []flow.Event {
 			return []flow.Event{{Kind: flow.FixesReturned}}
 		},
+		domain.PhaseFixing: func(*domain.Feature) []flow.Event {
+			return []flow.Event{{Kind: flow.FixesReturned}}
+		},
 	},
+	roleRefuter: {domain.PhaseRefuting: refuterReturned},
 }
 
 // batchReturned judges the batch from the proof the binary recorded: BatchReturned, then Green
@@ -108,7 +116,7 @@ func (h Hooks) activeFeature(ctx context.Context, ev HookEvent) (domain.Feature,
 	if err != nil || !found {
 		return domain.Feature{}, false
 	}
-	return f, true
+	return h.ensureReview(ctx, f), true
 }
 
 // preToolAgent handles PreToolUse Agent/Task from the main thread: it injects the planner's
@@ -121,11 +129,18 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	if !ok {
 		return HookResponse{}
 	}
+	if isReviewerRole(ev.Subagent) {
+		return h.preReviewer(ctx, ev, f)
+	}
 	switch {
 	case f.Background == ev.Subagent:
 		return HookResponse{Deny: backgroundWait(f.ID, ev.Subagent)}
 	case ev.Subagent == rolePlanner && f.State.Phase == domain.PhasePlanning:
 		return HookResponse{Prompt: plan.PlannerPrompt(f, h.Exe)}
+	case ev.Subagent == roleRefuter && f.State.Phase == domain.PhaseRefuting:
+		return HookResponse{Prompt: review.RefuterPrompt(f, h.Exe)}
+	case ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseFixing:
+		return HookResponse{Prompt: review.FixPrompt(f, h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:
 		return HookResponse{Deny: "plan not approved; next step " + f.Next.Label()}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchImplementer:
@@ -152,6 +167,9 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 // background launch waits for SubagentStop; otherwise the return is judged (the planner
 // without a saved plan retries or gives up, a batch is verified) and the stored step repeated.
 func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
+	if isReviewerRole(ev.Subagent) {
+		return h.postReviewer(ctx, ev)
+	}
 	role, known := roles[ev.Subagent]
 	if ev.AgentID != "" || !known {
 		return HookResponse{}

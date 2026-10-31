@@ -68,14 +68,16 @@ type Rule struct {
 
 // Batch is one unit of behavior to implement and verify.
 type Batch struct {
-	N       int       `json:"n"`
-	Title   string    `json:"title"`
-	Covers  []string  `json:"covers"`
-	Read    []string  `json:"read,omitempty"`
-	Change  []Change  `json:"change"`
-	Test    BatchTest `json:"test"`
-	Risk    Risk      `json:"risk"`
-	Depends []int     `json:"depends,omitempty"`
+	N      int       `json:"n"`
+	Title  string    `json:"title"`
+	Covers []string  `json:"covers"`
+	Read   []string  `json:"read,omitempty"`
+	Change []Change  `json:"change"`
+	Test   BatchTest `json:"test"`
+	Risk   Risk      `json:"risk"`
+	// RiskWhy is why nxy raised Risk; nxy sets it, not the planner.
+	RiskWhy string `json:"risk_why,omitempty"`
+	Depends []int  `json:"depends,omitempty"`
 }
 
 // Change is one edit, located as path:line.

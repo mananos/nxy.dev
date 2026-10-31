@@ -18,6 +18,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/host/claudecode"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/internal/review"
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
 	"github.com/mananos/nxy.dev/internal/tools"
 )
@@ -113,6 +114,22 @@ func (l *lazyStore) ActiveFeature(ctx context.Context, repo string) (domain.Feat
 		return domain.Feature{}, false, err
 	}
 	return s.ActiveFeature(ctx, repo)
+}
+
+func (l *lazyStore) LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return domain.Feature{}, false, err
+	}
+	return s.LatestFeature(ctx, repo)
+}
+
+func (l *lazyStore) RecordPicks(ctx context.Context, featureID, repo string, picks []domain.Pick) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.RecordPicks(ctx, featureID, repo, picks)
 }
 
 func (l *lazyStore) Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error {
@@ -267,6 +284,115 @@ func (fileProbe) IsDir(path string) bool {
 	return err == nil && fi.IsDir()
 }
 
+// lensDirs reads the lens files of a folder; an invalid one is skipped and named in the warning.
+type lensDirs struct{}
+
+func readLensDir(dir, label string) ([]review.Lens, string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, ""
+	}
+	var out []review.Lens
+	var bad []string
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			bad = append(bad, e.Name())
+			continue
+		}
+		l, ok := review.ParseLens(string(raw), strings.TrimSuffix(e.Name(), ".md"))
+		if !ok {
+			bad = append(bad, e.Name())
+			continue
+		}
+		out = append(out, l)
+	}
+	if len(bad) == 0 {
+		return out, ""
+	}
+	return out, fmt.Sprintf("lente inválida en %s, se ignora: %s", label, strings.Join(bad, ", "))
+}
+
+func (lensDirs) User() ([]review.Lens, string) {
+	u, err := platform.UserDir()
+	if err != nil {
+		return nil, ""
+	}
+	return readLensDir(filepath.Join(u, "lenses"), "~/.nxy/lenses")
+}
+
+func (lensDirs) Repo(dir string) ([]review.Lens, string) {
+	return readLensDir(filepath.Join(platform.NativePath(dir), ".nxy", "lenses"), ".nxy/lenses")
+}
+
+// gitDiffs gives the diff since the approved base.
+// Each hook is its own process, so the result is cached per process by dir+base:
+// N reviewers in one hook run git once.
+type gitDiffs struct{}
+
+var diffCache = struct {
+	sync.Mutex
+	m map[string][]review.FileDiff
+}{m: map[string][]review.FileDiff{}}
+
+func (gitDiffs) Diff(ctx context.Context, dir, base string) ([]review.FileDiff, error) {
+	key := dir + "\x00" + base
+	diffCache.Lock()
+	defer diffCache.Unlock()
+	if out, ok := diffCache.m[key]; ok {
+		return out, nil
+	}
+	ds, err := platform.GitDiff(ctx, dir, base)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]review.FileDiff, len(ds))
+	for i, d := range ds {
+		out[i] = review.FileDiff{Path: d.Path, Status: d.Status, Text: d.Text}
+	}
+	diffCache.m[key] = out
+	return out, nil
+}
+
+// reviewDocs keeps the full review at <UserDir>/reviews/<id>.md while the feature is open.
+type reviewDocs struct{}
+
+func reviewPath(id string) (string, error) {
+	u, err := platform.UserDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(u, "reviews", id+".md"), nil
+}
+
+func (reviewDocs) Write(id, markdown string) (string, error) {
+	p, err := reviewPath(id)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(p, []byte(markdown), 0o644); err != nil {
+		return "", err
+	}
+	return p, nil
+}
+
+func (reviewDocs) Discard(id string) error {
+	p, err := reviewPath(id)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
 func exePath() string {
 	e, err := os.Executable()
 	if err != nil {
@@ -282,5 +408,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{},
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
+		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{},
 	}, st
 }

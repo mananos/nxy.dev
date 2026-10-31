@@ -20,6 +20,8 @@ type Feature struct {
 	Base string `json:"base,omitempty"`
 	// Affected is the last run of the affected tests.
 	Affected *AffectedRun `json:"affected,omitempty"`
+	// Review is the state of the review of the finished feature.
+	Review *Review `json:"review,omitempty"`
 	// Background is the role of the nxy agent launched in the background whose end has not been handled.
 	Background string `json:"background,omitempty"`
 	// Undelivered is true while Next still has to reach the main thread.

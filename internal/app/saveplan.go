@@ -49,6 +49,8 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 			}
 		}
 	}
+	// nxy raises each batch's risk by what its files show (security, database, API).
+	h.raisePlanRisk(f.ProjectDir, &p)
 	ev := flow.Event{Kind: flow.PlanSaved, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches)}
 	nf, _, err := h.advanceWith(ctx, featureID, ev, func(f *domain.Feature) error {
 		if f.State.Phase != domain.PhasePlanning {

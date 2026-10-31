@@ -213,6 +213,72 @@ func TestActiveFeaturePerRepo(t *testing.T) {
 	}
 }
 
+func TestLatestFeatureReturnsDone(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	if _, ok, err := s.LatestFeature(ctx, "r"); err != nil || ok {
+		t.Fatalf("empty: ok=%v err=%v", ok, err)
+	}
+	id, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r", Request: "a"})
+	if err := s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
+		f.State = domain.State{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}
+		return f, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.ActiveFeature(ctx, "r"); ok {
+		t.Fatal("still active")
+	}
+	f, ok, err := s.LatestFeature(ctx, "r")
+	if err != nil || !ok || f.ID != id || f.State.Phase != domain.PhaseDone {
+		t.Fatalf("latest: %+v %v %v", f.State, ok, err)
+	}
+	if _, ok, _ := s.LatestFeature(ctx, "other"); ok {
+		t.Error("other repo has a latest")
+	}
+}
+
+func TestRecordPicksIdempotent(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	picks := []domain.Pick{
+		{Finding: "H1", Lens: "base", Severity: domain.Severity("high"), Chosen: true},
+		{Finding: "H2", Lens: "api", Severity: domain.Severity("low"), Chosen: false},
+	}
+	for range 2 {
+		if err := s.RecordPicks(ctx, "f1", "r", picks); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var n, chosen int
+	if err := s.db.QueryRow(`SELECT COUNT(*), COALESCE(SUM(chosen),0) FROM review_picks WHERE feature_id='f1'`).Scan(&n, &chosen); err != nil {
+		t.Fatal(err)
+	}
+	if n != 2 || chosen != 1 {
+		t.Errorf("rows %d chosen %d", n, chosen)
+	}
+}
+
+func TestMigrate3To4KeepsFeatures(t *testing.T) {
+	path := dbPath(t)
+	migs, _ := embeddedMigrations()
+	s, err := openWith(ctx, path, time.Now, migs[:3])
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Request: "keep"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s2 := mustOpen(t, path)
+	f, err := s2.Feature(ctx, id)
+	if err != nil || f.Request != "keep" {
+		t.Fatalf("feature: %+v %v", f, err)
+	}
+	if err := s2.RecordPicks(ctx, id, "r", []domain.Pick{{Finding: "H1", Lens: "base"}}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestOneActiveFeaturePerRepo(t *testing.T) {
 	s := mustOpen(t, dbPath(t))
 	a, err := s.CreateFeature(ctx, domain.Feature{Repo: "r1"})

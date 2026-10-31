@@ -57,12 +57,23 @@ func TestFeatureJSONRoundTrip(t *testing.T) {
 				Change:  []Change{{At: "a.go:1", What: "w"}},
 				Test:    BatchTest{Kind: BatchTestNew, Name: "TestX", Accept: "go test ./..."},
 				Risk:    RiskHigh,
+				RiskWhy: "lente security: auth/x.go",
 				Depends: []int{},
 			}},
 			Risks: []string{"r"},
 			Questions: []Question{{Question: "q", Header: "h",
 				Options: []Option{{Label: "l", Description: "d", Recommended: true}}}},
 			NoTests: true,
+		},
+		Review: &Review{
+			Risk: RiskHigh, RiskWhy: "w", Quick: true,
+			Lenses:   []LensRun{{Name: "base", Title: "Base", Files: []string{"a.go"}, Dispatched: true, Saved: true}},
+			Returned: []string{"ag1"},
+			Rules:    []RuleCheck{{ID: "R1", OK: false, Why: "y", File: "a.go", Line: 3}},
+			Findings: []Finding{{ID: "H1", Lens: "base", Severity: SeverityHigh, File: "a.go", Line: 3,
+				Title: "t", Scenario: "a -> b", Evidence: "e", Fix: "f", Cause: CauseChange, Rule: "R1",
+				Dropped: "d", Verdict: VerdictRefuted, VerdictWhy: "v"}},
+			Refuted: true, Chosen: []string{"H1"}, FullPath: "/tmp/r.md",
 		},
 	}
 	b, err := json.Marshal(f)

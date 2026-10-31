@@ -89,6 +89,13 @@ func reverify(s state, _ Event) (state, []action) {
 	return s, acts(domain.RunAffected)
 }
 
+// verifyFixes runs the affected tests after the review fixes, keeping the
+// attempt: a second red must reach fixes_failed.
+func verifyFixes(s state, _ Event) (state, []action) {
+	s.Phase = domain.PhaseFixVerify
+	return s, acts(domain.RunAffected)
+}
+
 func retryBatch(s state, _ Event) (state, []action) { return startBatch(s, s.Batch, false) }
 
 func planSaved(s state, ev Event) (state, []action) {
@@ -230,7 +237,18 @@ var table = map[domain.Phase][]row{
 		{Chosen, always, chosen},
 	},
 	domain.PhaseFixing: {
-		{FixesReturned, always, finish(domain.OutcomeSuccess)},
+		{FixesReturned, always, verifyFixes},
+	},
+	domain.PhaseFixVerify: {
+		{Green, always, finish(domain.OutcomeSuccess)},
+		{Red, attempt(0), retryAs(domain.PhaseFixing, domain.DispatchFixer, false)},
+		{Red, attempt(1), failTo(domain.PhaseFixesFailed)},
+		{Unverified, always, failTo(domain.PhaseFixesFailed)},
+	},
+	domain.PhaseFixesFailed: {
+		{Decided, decided(DecisionRetry), to(domain.PhaseFixing, domain.DispatchFixer)},
+		{Decided, decided(DecisionContinue), finish(domain.OutcomeSuccess)},
+		{Decided, decided(DecisionStop), stop},
 	},
 }
 

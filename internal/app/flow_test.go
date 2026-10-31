@@ -49,6 +49,17 @@ func (m *memStore) ActiveFeature(_ context.Context, repo string) (domain.Feature
 	return best, found, nil
 }
 
+func (m *memStore) LatestFeature(_ context.Context, repo string) (domain.Feature, bool, error) {
+	var best domain.Feature
+	found := false
+	for _, f := range m.feats {
+		if f.Repo == repo && (!found || f.ID > best.ID) {
+			best, found = f, true
+		}
+	}
+	return best, found, nil
+}
+
 func (m *memStore) Transition(_ context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error {
 	for range 3 {
 		f, ok := m.feats[id]

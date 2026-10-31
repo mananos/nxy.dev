@@ -12,6 +12,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/internal/review"
 )
 
 func TestDecodeNewFields(t *testing.T) {
@@ -263,13 +264,59 @@ func TestInstructionPerAction(t *testing.T) {
 	}
 	f.Next = domain.Action{Kind: domain.DispatchReviewer}
 	f.State = domain.State{Phase: domain.PhaseReviewing}
-	if s := Instruction(f, ""); !strings.Contains(s, "F2.4") || !strings.Contains(s, "`nxy feature stop`") {
-		t.Errorf("reviewing: %s", s)
+	f.Review = &domain.Review{Lenses: []domain.LensRun{{Name: "api"}, {Name: "base", Dispatched: true}, {Name: "security"}}}
+	s = Instruction(f, "")
+	if !strings.Contains(s, "2 Agent tool calls in ONE single response") || !strings.Contains(s, "`nxy:reviewer`") || !strings.Contains(s, "feature f1 review api") || !strings.Contains(s, "feature f1 review security") || strings.Contains(s, "review base") {
+		t.Errorf("reviewers: %s", s)
 	}
-	f.Next = domain.Action{Kind: domain.DispatchFixer}
-	f.State = domain.State{Phase: domain.PhaseReviewing}
-	if s := Instruction(f, ""); !strings.Contains(s, "F2.4") {
-		t.Errorf("default: %s", s)
+	f.Review = &domain.Review{Lenses: []domain.LensRun{{Name: "base", Dispatched: true}}}
+	if s := Instruction(f, ""); !strings.Contains(s, "running") || strings.Contains(s, "Agent tool calls") {
+		t.Errorf("reviewers waiting: %s", s)
+	}
+	f.Review = &domain.Review{Quick: true, Lenses: []domain.LensRun{{Name: "base"}}}
+	if s := Instruction(f, ""); !strings.Contains(s, "`nxy:reviewer-quick`") {
+		t.Errorf("quick: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.DispatchRefuter}
+	f.State = domain.State{Phase: domain.PhaseRefuting}
+	if s := Instruction(f, ""); !strings.Contains(s, "`nxy:refuter`") || !strings.Contains(s, "feature f1 refute") {
+		t.Errorf("refuter: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.AskFindings}
+	f.State = domain.State{Phase: domain.PhaseChoosingFindings}
+	f.Review = &domain.Review{Risk: domain.RiskMedium, Findings: []domain.Finding{
+		{ID: "H1", Lens: "api", Severity: domain.SeverityHigh, File: "a.go", Line: 3, Title: "uno", Cause: domain.CauseChange},
+		{ID: "H2", Lens: "api", Severity: domain.SeverityLow, File: "b.go", Line: 4, Title: "dos", Cause: domain.CauseChange},
+	}}
+	s = Instruction(f, "")
+	if !strings.Contains(s, "## Review") || !strings.Contains(s, review.FixQuestion("f1", 1, 1)) || !strings.Contains(s, `"multiSelect":true`) || !strings.Contains(s, "verbatim") {
+		t.Errorf("findings: %s", s)
+	}
+	st = StopInstruction(f, "", "")
+	if strings.Count(st, "## Review") != 1 || !strings.Contains(st, "do not repeat it") || strings.Contains(st, "verbatim") {
+		t.Errorf("stop findings: %s", st)
+	}
+	f.Next = domain.Action{Kind: domain.DispatchFixer, Retry: true}
+	f.State = domain.State{Phase: domain.PhaseFixing}
+	if s := Instruction(f, ""); !strings.Contains(s, "feature f1 review fix") || !strings.Contains(s, "ONE Agent tool call") || !strings.Contains(s, "retries once") {
+		t.Errorf("fixer: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.RunAffected}
+	f.State = domain.State{Phase: domain.PhaseFixVerify}
+	if s := InstructionFor(f, "", "/bin/nxy"); !strings.Contains(s, "the fixes came back") || !strings.Contains(s, `"/bin/nxy" affected --feature f1`) {
+		t.Errorf("fix verify: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.AskDecision}
+	f.State = domain.State{Phase: domain.PhaseFixesFailed}
+	f.Affected = &domain.AffectedRun{Failure: "`go test` (exit 1):\nboom"}
+	if s := Instruction(f, ""); !strings.Contains(s, "--- Arreglos fallidos ---") || !strings.Contains(s, "boom") || !strings.Contains(s, plan.FixesFailedQuestion("f1")) || !strings.Contains(s, plan.Continue) {
+		t.Errorf("fixes failed: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.Close}
+	f.State = domain.State{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}
+	f.Review = &domain.Review{}
+	if s := Instruction(f, ""); !strings.Contains(s, "Listo") || !strings.Contains(s, review.Summary(f)) {
+		t.Errorf("done: %s", s)
 	}
 }
 

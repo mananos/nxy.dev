@@ -42,7 +42,8 @@ type emptyTree struct{}
 func (emptyTree) Read(string) ([]byte, bool) { return nil, false }
 
 // RunAffected works out the tests the feature affects, runs them and records the verdict. In
-// PhaseAffectedFix it only checks: it runs and reports, and records nothing.
+// PhaseAffectedFix or PhaseFixing it only checks: it runs and reports, and records nothing. In
+// PhaseFixVerify (after the review fixes) it records like in PhaseAffected.
 func (h Hooks) RunAffected(ctx context.Context, id string) (AffectedResult, error) {
 	if h.Store == nil {
 		return AffectedResult{}, errors.New("no store")
@@ -54,8 +55,8 @@ func (h Hooks) RunAffected(ctx context.Context, id string) (AffectedResult, erro
 	if err != nil {
 		return AffectedResult{}, fmt.Errorf("feature %s: %w", id, err)
 	}
-	check := f.State.Phase == domain.PhaseAffectedFix
-	if (f.State.Phase != domain.PhaseAffected && !check) || f.Plan == nil {
+	check := f.State.Phase == domain.PhaseAffectedFix || f.State.Phase == domain.PhaseFixing
+	if (f.State.Phase != domain.PhaseAffected && f.State.Phase != domain.PhaseFixVerify && !check) || f.Plan == nil {
 		return AffectedResult{}, fmt.Errorf("feature %s is not at the affected tests (state %s); next step %s", f.ID, f.State.Phase, f.Next.Label())
 	}
 	dir := f.ProjectDir
@@ -184,7 +185,7 @@ func (h Hooks) RunAffected(ctx context.Context, id string) (AffectedResult, erro
 		kind = flow.Unverified
 	}
 	nf, _, err := h.advanceWith(ctx, id, flow.Event{Kind: kind}, func(x *domain.Feature) error {
-		if x.State.Phase != domain.PhaseAffected {
+		if x.State.Phase != domain.PhaseAffected && x.State.Phase != domain.PhaseFixVerify {
 			return errNoChange
 		}
 		r := rec

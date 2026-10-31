@@ -28,5 +28,10 @@ func (h Hooks) StopFeature(ctx context.Context, dir string) (f domain.Feature, w
 	if h.Viewer != nil {
 		warning = h.Viewer.Discard(f.ID)
 	}
+	if h.ReviewFiles != nil {
+		if err := h.ReviewFiles.Discard(f.ID); err != nil && warning == nil {
+			warning = err
+		}
+	}
 	return nf, warning, nil
 }

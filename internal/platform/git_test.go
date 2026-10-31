@@ -129,6 +129,58 @@ func TestGitChangedAndFiles(t *testing.T) {
 	}
 }
 
+func TestGitDiff(t *testing.T) {
+	d := gitRepo(t)
+	base := GitHead(d)
+	if err := os.Remove(filepath.Join(d, "sub", "b.txt")); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(d, "a.txt"), "changed")
+	writeFile(t, filepath.Join(d, "new.txt"), "one\ntwo\n")
+	writeFile(t, filepath.Join(d, "bin.dat"), "ab\x00cd")
+	writeFile(t, filepath.Join(d, ".nxy", "x.json"), "{}")
+	writeFile(t, filepath.Join(d, ".codegraph", "db"), "x")
+	got, err := GitDiff(context.Background(), d, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]GitFileDiff{}
+	for _, g := range got {
+		by[g.Path] = g
+	}
+	if len(got) != 4 {
+		t.Fatalf("diffs %v", got)
+	}
+	if g := by["a.txt"]; g.Status != "M" || !strings.Contains(g.Text, "+changed") || strings.Contains(g.Text, "b.txt") {
+		t.Fatalf("a.txt %+v", g)
+	}
+	if g := by["sub/b.txt"]; g.Status != "D" || !strings.Contains(g.Text, "-b") {
+		t.Fatalf("b.txt %+v", g)
+	}
+	if g := by["new.txt"]; g.Status != "A" || !strings.Contains(g.Text, "@@ -0,0 +1,2 @@") || !strings.Contains(g.Text, "+two") {
+		t.Fatalf("new.txt %+v", g)
+	}
+	if g := by["bin.dat"]; g.Status != "A" || !strings.Contains(g.Text, "Binary files") || strings.Contains(g.Text, "@@") {
+		t.Fatalf("bin.dat %+v", g)
+	}
+}
+
+func TestGitDiffHugeUntrackedHeaderOnly(t *testing.T) {
+	d := gitRepo(t)
+	base := GitHead(d)
+	writeFile(t, filepath.Join(d, "huge.txt"), strings.Repeat("line\n", 60000))
+	got, err := GitDiff(context.Background(), d, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Path != "huge.txt" || got[0].Status != "A" {
+		t.Fatalf("diffs %v", got)
+	}
+	if strings.Contains(got[0].Text, "@@") || len(got[0].Text) > 1024 {
+		t.Fatalf("huge untracked file must carry only a header, got %d bytes", len(got[0].Text))
+	}
+}
+
 func TestGitChangedSkipsDeleted(t *testing.T) {
 	d := gitRepo(t)
 	base := GitHead(d)

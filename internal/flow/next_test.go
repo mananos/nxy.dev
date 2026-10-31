@@ -118,8 +118,22 @@ func TestNextTable(t *testing.T) {
 			st{Phase: domain.PhaseFixing}, acs(domain.DispatchFixer)},
 		{"chosen none", st{Phase: domain.PhaseChoosingFindings}, Event{Kind: Chosen},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
-		{"fixes returned", st{Phase: domain.PhaseFixing}, Event{Kind: FixesReturned},
+		{"fixes returned", st{Phase: domain.PhaseFixing, Attempt: 1}, Event{Kind: FixesReturned},
+			st{Phase: domain.PhaseFixVerify, Attempt: 1}, acs(domain.RunAffected)},
+		{"fix verify green", st{Phase: domain.PhaseFixVerify}, Event{Kind: Green},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
+		{"fix verify red first", st{Phase: domain.PhaseFixVerify}, Event{Kind: Red},
+			st{Phase: domain.PhaseFixing, Attempt: 1}, one(domain.Action{Kind: domain.DispatchFixer, Retry: true})},
+		{"fix verify red second", st{Phase: domain.PhaseFixVerify, Attempt: 1}, Event{Kind: Red},
+			st{Phase: domain.PhaseFixesFailed}, acs(domain.AskDecision, domain.Notify)},
+		{"fix verify unverified", st{Phase: domain.PhaseFixVerify}, Event{Kind: Unverified},
+			st{Phase: domain.PhaseFixesFailed}, acs(domain.AskDecision, domain.Notify)},
+		{"fixes failed retry", st{Phase: domain.PhaseFixesFailed}, Event{Kind: Decided, Decision: DecisionRetry},
+			st{Phase: domain.PhaseFixing}, acs(domain.DispatchFixer)},
+		{"fixes failed continue", st{Phase: domain.PhaseFixesFailed}, Event{Kind: Decided, Decision: DecisionContinue},
+			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
+		{"fixes failed stop", st{Phase: domain.PhaseFixesFailed}, Event{Kind: Decided, Decision: DecisionStop},
+			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}, acs(domain.Close)},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -149,6 +163,8 @@ func TestRetryAttemptCarriesOver(t *testing.T) {
 			[]EventKind{BatchReturned, Red, BatchReturned, Red}, domain.PhaseBatchFailed},
 		{"affected", st{Phase: domain.PhaseAffected, Batches: 2},
 			[]EventKind{Red, FixesReturned, Red}, domain.PhaseAffectedFailed},
+		{"fixes", st{Phase: domain.PhaseFixing},
+			[]EventKind{FixesReturned, Red, FixesReturned, Red}, domain.PhaseFixesFailed},
 	}
 	for _, l := range loops {
 		t.Run(l.name, func(t *testing.T) {
@@ -216,6 +232,8 @@ func TestOutOfOrderIsExhaustive(t *testing.T) {
 		domain.PhaseRefuting:           {RefuterDone},
 		domain.PhaseChoosingFindings:   {Chosen},
 		domain.PhaseFixing:             {FixesReturned},
+		domain.PhaseFixVerify:          {Green, Red, Unverified},
+		domain.PhaseFixesFailed:        {Decided},
 	}
 	phases := append([]domain.Phase{domain.PhaseNone}, domain.Phases...)
 	for _, p := range phases {

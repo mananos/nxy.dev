@@ -8,6 +8,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/review"
 )
 
 // ErrActiveFeature is what CreateFeature returns when the repo already has a feature that is not done.
@@ -20,6 +21,8 @@ type Store interface {
 	Feature(ctx context.Context, id string) (domain.Feature, error)
 	// ActiveFeature is the most recent feature of the repo that is not done.
 	ActiveFeature(ctx context.Context, repo string) (domain.Feature, bool, error)
+	// LatestFeature is the most recent feature of the repo, done or not.
+	LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error)
 	// Transition applies fn to the stored feature. fn must be pure: it can run more than once.
 	Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error
 }
@@ -122,6 +125,29 @@ type TestGraph interface {
 // The string is a Spanish warning when the repo's table is invalid ("" otherwise).
 type Runners interface {
 	Rows(dir string) ([]affected.Runner, string)
+}
+
+// Lenses gives the review lenses of the user and of the repo (the embedded ones are in the
+// review package). The string is a Spanish warning when a lens file is invalid ("" otherwise).
+type Lenses interface {
+	User() ([]review.Lens, string)
+	Repo(dir string) ([]review.Lens, string)
+}
+
+// Diffs gives the diff of a project since a base, one entry per changed file.
+type Diffs interface {
+	Diff(ctx context.Context, dir, base string) ([]review.FileDiff, error)
+}
+
+// ReviewLog records which offered findings the user chose and which they ignored.
+type ReviewLog interface {
+	RecordPicks(ctx context.Context, featureID, repo string, picks []domain.Pick) error
+}
+
+// ReviewFiles keeps the full review document of a feature while it is open.
+type ReviewFiles interface {
+	Write(id, markdown string) (string, error)
+	Discard(id string) error
 }
 
 // FileTrees reads files of a project by repo-relative path.

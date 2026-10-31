@@ -22,6 +22,8 @@ const (
 	PhaseRefuting           Phase = "refuting"
 	PhaseChoosingFindings   Phase = "choosing_findings"
 	PhaseFixing             Phase = "fixing"
+	PhaseFixVerify          Phase = "fix_verify"
+	PhaseFixesFailed        Phase = "fixes_failed"
 	PhaseDone               Phase = "done"
 )
 
@@ -30,7 +32,8 @@ var Phases = []Phase{
 	PhasePlanning, PhaseQuestions, PhaseNoTests, PhaseApproval, PhaseChangeNote,
 	PhasePlannerFailed, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
 	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseAffectedUnverified, PhaseReviewing,
-	PhaseRefuting, PhaseChoosingFindings, PhaseFixing, PhaseDone,
+	PhaseRefuting, PhaseChoosingFindings, PhaseFixing,
+	PhaseFixVerify, PhaseFixesFailed, PhaseDone,
 }
 
 // Public is the status the user sees.
@@ -66,6 +69,8 @@ var phaseTable = map[Phase]phaseInfo{
 	PhaseRefuting:           {Verifying, "Refutando hallazgos"},
 	PhaseChoosingFindings:   {NeedsYou, "Elegir hallazgos"},
 	PhaseFixing:             {Working, "Arreglando hallazgos"},
+	PhaseFixVerify:          {Verifying, "Verificando arreglos"},
+	PhaseFixesFailed:        {NeedsYou, "Arreglos fallidos"},
 	PhaseDone:               {Finished, "Listo"},
 }
 

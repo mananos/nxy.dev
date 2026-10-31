@@ -8,6 +8,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/internal/review"
 )
 
 const toolAskUser = "AskUserQuestion"
@@ -19,7 +20,8 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 		return true
 	}
 	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
-		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) {
+		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) ||
+		q == plan.FixesFailedQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) {
 		return true
 	}
 	if f.Plan != nil {
@@ -44,6 +46,8 @@ func decisionAnswer(f domain.Feature, answers map[string]string) (string, bool) 
 		q = plan.AffectedFailedQuestion(f.ID)
 	case domain.PhaseAffectedUnverified:
 		q = plan.UnverifiedQuestion(f.ID)
+	case domain.PhaseFixesFailed:
+		q = plan.FixesFailedQuestion(f.ID)
 	default:
 		return "", false
 	}
@@ -58,7 +62,7 @@ func (h Hooks) answerDecision(ctx context.Context, f domain.Feature, answer stri
 		d = flow.DecisionRetry
 	case plan.Continue:
 		switch f.State.Phase {
-		case domain.PhaseBatchFailed, domain.PhaseAffectedFailed, domain.PhaseAffectedUnverified:
+		case domain.PhaseBatchFailed, domain.PhaseAffectedFailed, domain.PhaseAffectedUnverified, domain.PhaseFixesFailed:
 			d = flow.DecisionContinue
 		}
 	case plan.Stop:
@@ -109,7 +113,62 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if f.State.Phase == domain.PhaseQuestions && f.Plan != nil {
 		return h.answerQuestions(ctx, f, ev.Answers)
 	}
+	if f.State.Phase == domain.PhaseChoosingFindings && f.Review != nil {
+		return h.answerFindings(ctx, f, ev.Answers)
+	}
 	return HookResponse{}
+}
+
+// answerFindings reads which offered findings the user picked (the ids H<n> in every answer of
+// the findings questions), moves the flow and records the picks. An answer with free text and no
+// id asks again.
+func (h Hooks) answerFindings(ctx context.Context, f domain.Feature, answers map[string]string) HookResponse {
+	prefix := review.FixQuestionPrefix(f.ID)
+	seen, free := false, false
+	picked := map[string]bool{}
+	for q, a := range answers {
+		if !strings.HasPrefix(q, prefix) {
+			continue
+		}
+		seen = true
+		ids := review.ChosenIDs(a)
+		for _, id := range ids {
+			picked[id] = true
+		}
+		if len(ids) == 0 && strings.TrimSpace(a) != "" && !strings.Contains(strings.ToLower(a), strings.ToLower(review.NoneLabel)) {
+			free = true
+		}
+	}
+	if !seen {
+		return HookResponse{}
+	}
+	if free {
+		return HookResponse{Next: &Next{Feature: f, Note: "pick findings by their H number (or Ninguno); free text is not an answer"}}
+	}
+	// Only the findings that appeared in the question count as picked or ignored.
+	offered, _ := review.Shown(review.Offered(*f.Review))
+	var chosen []string
+	var picks []domain.Pick
+	for _, fd := range offered {
+		picks = append(picks, domain.Pick{Finding: fd.ID, Lens: fd.Lens, Severity: fd.Severity, Chosen: picked[fd.ID]})
+		if picked[fd.ID] {
+			chosen = append(chosen, fd.ID)
+		}
+	}
+	nf, _, err := h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.Chosen, Findings: len(chosen) > 0}, func(x *domain.Feature) error {
+		if x.State.Phase != domain.PhaseChoosingFindings || x.Review == nil {
+			return errNoChange
+		}
+		x.Review.Chosen = chosen
+		return nil
+	})
+	if err != nil {
+		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
+	}
+	if h.ReviewLog != nil && len(picks) > 0 {
+		_ = h.ReviewLog.RecordPicks(ctx, f.ID, f.Repo, picks)
+	}
+	return HookResponse{Next: &Next{Feature: nf}}
 }
 
 // approvalAnswer finds the answer to an approval question of this feature and its revision.

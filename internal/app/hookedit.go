@@ -44,6 +44,9 @@ func (h Hooks) preToolEdit(ctx context.Context, ev HookEvent) HookResponse {
 				return HookResponse{AllowReason: "nxy: batch " + strconv.Itoa(f.State.Batch) + " of feature " + f.ID + " names this file"}
 			}
 		}
+		if f.State.Phase == domain.PhaseFixing && ev.AgentType == roleImplementer && h.fixNamesFile(f, ev) {
+			return HookResponse{AllowReason: "nxy: feature " + f.ID + " fixes a finding in this file"}
+		}
 		return HookResponse{}
 	}
 	return HookResponse{Deny: mainThreadWriteDeny(f)}
@@ -65,6 +68,35 @@ func (h Hooks) batchNamesFile(f domain.Feature, ev HookEvent) bool {
 		if p == "" {
 			continue
 		}
+		if h.Files != nil {
+			p = h.Files.NativePath(p)
+		}
+		if normPath(p, f.ProjectDir) == target {
+			return true
+		}
+	}
+	return false
+}
+
+// fixNamesFile reports whether the edited file is the file of a finding the user chose to fix.
+func (h Hooks) fixNamesFile(f domain.Feature, ev HookEvent) bool {
+	if f.Review == nil {
+		return false
+	}
+	root := normPath(f.ProjectDir, "")
+	target := normPath(ev.FilePath, ev.Cwd)
+	if !within(root, target) {
+		return false
+	}
+	chosen := map[string]bool{}
+	for _, id := range f.Review.Chosen {
+		chosen[id] = true
+	}
+	for _, fd := range f.Review.Findings {
+		if !chosen[fd.ID] || fd.File == "" {
+			continue
+		}
+		p := fd.File
 		if h.Files != nil {
 			p = h.Files.NativePath(p)
 		}

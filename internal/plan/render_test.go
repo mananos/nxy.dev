@@ -31,7 +31,7 @@ func TestCheckpointOmitsMachineFields(t *testing.T) {
 			t.Errorf("checkpoint contains %q:\n%s", bad, cp)
 		}
 	}
-	for _, want := range []string{"R1", "Lote 1", "Cubre: R1, R2", "internal/greet/greet.go:12 — ", "TestGreet (nuevo)", "Accept: `go test ./internal/greet/`", "Riesgo: low", "mirar: README usage section"} {
+	for _, want := range []string{"R1", "Lote 1", "Cubre: R1, R2", "internal/greet/greet.go:12 — ", "TestGreet (nuevo)", "Accept: `go test ./internal/greet/`", "Riesgo: bajo", "mirar: README usage section"} {
 		if !strings.Contains(cp, want) {
 			t.Errorf("checkpoint lacks %q:\n%s", want, cp)
 		}
@@ -48,6 +48,19 @@ func TestMarkdownHasEverything(t *testing.T) {
 	}
 	if md != Markdown(f) {
 		t.Error("markdown is not deterministic")
+	}
+}
+
+func TestRiskLineShowsWhyNxyRaisedIt(t *testing.T) {
+	f := sampleFeature(t)
+	f.Plan.Batches[0].Risk = domain.RiskHigh
+	f.Plan.Batches[0].RiskWhy = "lente security: auth/x.go"
+	want := "Riesgo: alto (subido por nxy: lente security: auth/x.go)"
+	if cp := Checkpoint(*f.Plan); !strings.Contains(cp, want) {
+		t.Errorf("checkpoint lacks %q:\n%s", want, cp)
+	}
+	if md := Markdown(f); !strings.Contains(md, want) {
+		t.Errorf("markdown lacks %q", want)
 	}
 }
 
