@@ -8,6 +8,12 @@ set "NXY_FAIL="
 set "NXY_NEED="
 set "NXY_GOT="
 set "NXY_WANT="
+set "NXY_HINT="
+set "NXY_IN="
+set "NXY_T="
+set "NXY_EV="
+set "NXY_X1="
+set "NXY_X2="
 if defined NXY_HOME (set "NXY_DIR=%NXY_HOME%") else (set "NXY_DIR=%USERPROFILE%\.nxy")
 set "NXY_EXE=%NXY_DIR%\bin\%NXY_VERSION%\nxy.exe"
 if defined NXY_BIN (set "NXY_RUN=%NXY_BIN%") else (set "NXY_RUN=%NXY_EXE%")
@@ -45,13 +51,23 @@ if defined NXY_NEED if not defined NXY_FAIL if not exist "%NXY_EXE%" move /y "%N
 if defined NXY_NEED if not defined NXY_FAIL if not exist "%NXY_EXE%" set "NXY_FAIL=cannot install %NXY_EXE%"
 if defined NXY_NEED del "%NXY_TMP%" "%NXY_SUMS%" 2>nul
 if defined NXY_OWN rmdir "%NXY_LOCK%" 2>nul
-if not defined NXY_FAIL if not exist "%NXY_RUN%" set "NXY_FAIL=binary not found at %NXY_RUN%"
+if not defined NXY_FAIL if not exist "%NXY_RUN%" set "NXY_HINT=1" & set "NXY_FAIL=binary not found at %NXY_RUN%"
 rem Failures must be visible: stdout JSON {"systemMessage"} is shown to the user (stderr is not). Delayed expansion keeps & and ) in paths harmless.
 if defined NXY_FAIL setlocal EnableDelayedExpansion
 if defined NXY_FAIL echo nxy: !NXY_FAIL! 1>&2
 if defined NXY_FAIL set "NXY_FAIL=!NXY_FAIL:\=/!"
 if defined NXY_FAIL if defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL!"}
-if defined NXY_FAIL if not defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL! - nxy hooks do nothing until this is fixed"}
+rem Hard failure: tell the model too (SessionStart / UserPromptSubmit / PostToolUse only). Needs compact one-line JSON; otherwise systemMessage only.
+rem set /p blocks on a console, so it runs only when stdin is redirected (PowerShell check; no PowerShell means no read).
+if defined NXY_FAIL if not defined NXY_SOFT powershell -NoProfile -NonInteractive -Command "exit ([int](-not [Console]::IsInputRedirected))" && set /p NXY_IN=
+if defined NXY_FAIL if defined NXY_IN set "NXY_T=!NXY_IN:*hook_event_name=!"
+if defined NXY_T if "!NXY_T:~3,11!"=="PostToolUse" set "NXY_EV=PostToolUse"
+if defined NXY_T if "!NXY_T:~3,12!"=="SessionStart" set "NXY_EV=SessionStart"
+if defined NXY_T if "!NXY_T:~3,16!"=="UserPromptSubmit" set "NXY_EV=UserPromptSubmit"
+rem Constant texts are ASCII JSON with \u escapes so no console codepage can mangle them.
+if defined NXY_HINT set "NXY_X1= Si en Windows el binario no corre o desaparece, puede que un antivirus (Windows Defender) lo haya puesto en cuarentena: volv\u00e9 a compilarlo o bajarlo, o exclu\u00ed su carpeta del antivirus."
+if defined NXY_EV set NXY_X2=,"hookSpecificOutput":{"hookEventName":"!NXY_EV!","additionalContext":"nxy no est\u00e1 corriendo (!NXY_FAIL!): sus hooks no hacen nada. Dec\u00edselo al usuario y no sigas ni diagnostiques pasos de nxy hasta que lo arregle."}
+if defined NXY_FAIL if not defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL! - nxy hooks do nothing until this is fixed!NXY_X1!"!NXY_X2!}
 if defined NXY_FAIL exit /b 0
 "%NXY_RUN%" hook
 set "NXY_CODE=%ERRORLEVEL%"
@@ -62,8 +78,17 @@ if "%NXY_CODE%"=="193" set "NXY_BAD=1"
 if "%NXY_CODE%"=="216" set "NXY_BAD=1"
 if defined NXY_BAD setlocal EnableDelayedExpansion
 if defined NXY_BAD set "NXY_RUN=!NXY_RUN:\=/!"
-if defined NXY_BAD echo nxy: could not run !NXY_RUN! (exit %NXY_CODE%) 1>&2
-if defined NXY_BAD echo {"systemMessage":"nxy: could not run !NXY_RUN! (exit %NXY_CODE%) - nxy hooks do nothing until this is fixed"}
+if defined NXY_BAD set "NXY_FAIL=could not run !NXY_RUN! (exit %NXY_CODE%)"
+if defined NXY_BAD set "NXY_HINT=1"
+if defined NXY_BAD echo nxy: !NXY_FAIL! 1>&2
+if defined NXY_BAD powershell -NoProfile -NonInteractive -Command "exit ([int](-not [Console]::IsInputRedirected))" && set /p NXY_IN=
+if defined NXY_BAD if defined NXY_IN set "NXY_T=!NXY_IN:*hook_event_name=!"
+if defined NXY_T if "!NXY_T:~3,11!"=="PostToolUse" set "NXY_EV=PostToolUse"
+if defined NXY_T if "!NXY_T:~3,12!"=="SessionStart" set "NXY_EV=SessionStart"
+if defined NXY_T if "!NXY_T:~3,16!"=="UserPromptSubmit" set "NXY_EV=UserPromptSubmit"
+if defined NXY_BAD set "NXY_X1= Si en Windows el binario no corre o desaparece, puede que un antivirus (Windows Defender) lo haya puesto en cuarentena: volv\u00e9 a compilarlo o bajarlo, o exclu\u00ed su carpeta del antivirus."
+if defined NXY_EV set NXY_X2=,"hookSpecificOutput":{"hookEventName":"!NXY_EV!","additionalContext":"nxy no est\u00e1 corriendo (!NXY_FAIL!): sus hooks no hacen nada. Dec\u00edselo al usuario y no sigas ni diagnostiques pasos de nxy hasta que lo arregle."}
+if defined NXY_BAD echo {"systemMessage":"nxy: !NXY_FAIL! - nxy hooks do nothing until this is fixed!NXY_X1!"!NXY_X2!}
 if defined NXY_BAD exit /b 0
 exit /b %NXY_CODE%
 BATCH
@@ -75,7 +100,32 @@ NXY_VERSION=2.0.0-dev
 nxy_say() {
   echo "nxy: $*" >&2
   msg=$(printf '%s' "$*" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
-  printf '{"systemMessage":"nxy: %s - nxy hooks do nothing until this is fixed"}\n' "$msg"
+  # The model is told too, but only on the events the Go encoder answers with additionalContext.
+  # stdin is read only here (the binary never ran, so it is untouched), 2 KB at most: the event name is near the start.
+  # Constant texts are ASCII JSON with \u escapes, passed to printf as %s arguments.
+  in=
+  [ -t 0 ] || in=$(dd bs=2048 count=1 2>/dev/null)
+  ev=
+  case "$in" in
+    *'"hook_event_name"'*)
+      r=${in#*\"hook_event_name\"}
+      r=${r#*\"}
+      ev=${r%%\"*}
+      ;;
+  esac
+  extra=
+  case "$ev" in
+    SessionStart|UserPromptSubmit|PostToolUse)
+      extra=',"hookSpecificOutput":{"hookEventName":"'"$ev"'","additionalContext":"nxy no est\u00e1 corriendo ('"$msg"'): sus hooks no hacen nada. Dec\u00edselo al usuario y no sigas ni diagnostiques pasos de nxy hasta que lo arregle."}'
+      ;;
+  esac
+  note=
+  if [ -n "${hint:-}" ]; then
+    case "$(uname -s)" in
+      MINGW*|MSYS*|CYGWIN*) note=' Si en Windows el binario no corre o desaparece, puede que un antivirus (Windows Defender) lo haya puesto en cuarentena: volv\u00e9 a compilarlo o bajarlo, o exclu\u00ed su carpeta del antivirus.' ;;
+    esac
+  fi
+  printf '{"systemMessage":"nxy: %s - nxy hooks do nothing until this is fixed%s"%s}\n' "$msg" "$note" "$extra"
 }
 
 # A held download lock is transient (another hook is fetching the binary), not a broken install.
@@ -162,6 +212,7 @@ nxy_main() {
     fi
   fi
   if [ ! -f "$bin" ]; then
+    hint=1
     nxy_say "binary not found at $bin"
     return 0
   fi
@@ -169,6 +220,7 @@ nxy_main() {
   rc=$?
   # 126 / 127: the binary could not run at all (not executable, wrong format, not found).
   if [ "$rc" = 126 ] || [ "$rc" = 127 ]; then
+    hint=1
     nxy_say "could not run $bin (exit $rc)"
     return 0
   fi

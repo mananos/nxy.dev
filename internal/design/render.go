@@ -6,12 +6,19 @@ import (
 	"fmt"
 	"strings"
 	"text/template"
+	"unicode/utf8"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
 //go:embed prompts/engineer.md
 var engineerTemplate string
+
+// Caps for the user's messages the guide carries after a /clear.
+const (
+	maxRefs     = 10
+	maxRefRunes = 300
+)
 
 var engineerTmpl = template.Must(template.New("engineer").Parse(engineerTemplate))
 
@@ -45,6 +52,20 @@ func pendingState(d *domain.Design) string {
 			if x.Dissent != "" {
 				fmt.Fprintf(&b, " (Claude mantiene su desacuerdo: %s)", x.Dissent)
 			}
+		}
+	}
+	if len(d.Refs) > 0 {
+		refs := d.Refs
+		if len(refs) > maxRefs {
+			refs = refs[len(refs)-maxRefs:]
+		}
+		b.WriteString("\n\nÚltimos mensajes del usuario en este diseño (referencia, no los vuelvas a pedir)")
+		for _, r := range refs {
+			r = strings.Join(strings.Fields(r), " ")
+			if utf8.RuneCountInString(r) > maxRefRunes {
+				r = string([]rune(r)[:maxRefRunes]) + "…"
+			}
+			b.WriteString("\n- " + r)
 		}
 	}
 	if d.Pending != nil {

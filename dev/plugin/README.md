@@ -39,7 +39,7 @@ Cómo probar: `claude --plugin-dir dev/plugin` con la 1.x desactivada (ambas se 
 Qué ves:
 
 1. Escribís `/nxy:feature <pedido>`. nxy guarda el pedido literal y le da al hilo principal una instrucción que empieza con `nxy:` (despachar al planner). El planner arma el plan y lo guarda con `nxy plan save`; si el plan no valida, ve los problemas y lo corrige.
-2. El hilo principal copia el checkpoint tal cual (reglas con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta: **Approve**, **Change** o **Ver completo**. Ver completo abre el plan entero en tu editor. Change te pide una nota y el planner replanifica con ella.
+2. El hilo principal copia el checkpoint tal cual (reglas con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta: **Approve**, **Change** o **Ver completo**. Ver completo abre el plan entero en tu editor y Claude te confirma en el chat que lo abrió, con la ruta. Change te pide una nota y el planner replanifica con ella.
 3. Si el planner tiene preguntas, las respondés antes del checkpoint.
 
 Estados públicos (los de `nxy status`):
@@ -78,7 +78,9 @@ Qué cambia para el hilo principal:
 - Tampoco puede escribir el repo por el shell: `echo x > archivo`, `sed -i`, `tee`, `cp`, `mv` y similares sobre archivos del proyecto se rechazan mientras hay una feature sin terminar. Fuera del repo y sobre `.git` o `.nxy` no pasa nada.
 - Hay una sola feature sin terminar por repo. Si ya hay una, `/nxy:feature` te dice cuál es; usá `nxy feature stop` para liberarla. Si tenías duplicados de antes, la actualización deja viva sólo la más nueva.
 
-Si ves una línea del shim con "nxy hooks do nothing until this is fixed" es que el binario no está o no se puede ejecutar: los hooks no hacen nada hasta que lo arregles (bajalo de nuevo o apuntá `NXY_BIN` a un build válido).
+**Stop hook error.** Qué ves: cuando un paso pendiente (un checkpoint) llega justo al terminar el turno, Claude Code lo rotula "Stop hook error". Qué significa: el rótulo es de Claude Code, no es un error; nxy usa ese camino para que Claude siga. Qué hacer: nada.
+
+**Si nxy no corre.** Qué ves: un mensaje `nxy:` del shim con "nxy hooks do nothing until this is fixed". Qué significa: el binario no está o no se puede ejecutar, y los hooks no hacen nada. Además Claude se entera (al iniciar la sesión, con tu prompt o después de una herramienta) para frenar en vez de diagnosticar pasos de nxy. Qué hacer: bajalo o compilalo de nuevo, o apuntá `NXY_BIN` a un build válido. En Windows puede ser que Defender haya puesto el binario en cuarentena (por ejemplo Bearfoos.A!ml): recompilalo y excluí la carpeta del antivirus.
 
 Límite conocido: el `Accept` lo escribe el planner para `sh`. En Windows sin `sh` se usa `cmd /c`, y un `Accept` tipo `test -f x` falla ahí; lo ves como una falla con la salida, no escondida.
 
@@ -156,7 +158,7 @@ Mientras corren no tenés nada que hacer; el checkpoint llega solo cuando vuelve
 
 **Arreglos.** Qué ves: un único `nxy:implementer` recibe todos los hallazgos elegidos y después nxy corre `nxy affected` de nuevo. Verde: la feature cierra. Rojo: un reintento; si sigue rojo (o queda sin verificar) ves **Arreglos fallidos** con la causa y **Reintentar**, **Seguir** (aceptar así) o **Parar**.
 
-**Listo.** Qué ves: el cierre con `R1 ✔ <test>` por regla y los arreglos aplicados. Se muestra una sola vez. Si hubo un "Aviso:" de lentes inválidas, se repite acá. Si los afectados quedaron en rojo (aceptados con Seguir) o sin verificar, lo dice, y los arreglos figuran como "Arreglos pedidos (sin verificar)" en vez de "Arreglos aplicados". Si la review no corrió, las reglas quedan con `?`. Qué hacer: si ves "sin verificar", corré tus tests a mano.
+**Listo.** Qué ves: el cierre, que empieza con la palabra (`Listo · R1 ✔ <test> · …`), con `R1 ✔ <test>` por regla y los arreglos aplicados. Se muestra una sola vez. Si hubo un "Aviso:" de lentes inválidas, se repite acá. Si los afectados quedaron en rojo (aceptados con Seguir) o sin verificar, lo dice, y los arreglos figuran como "Arreglos pedidos (sin verificar)" en vez de "Arreglos aplicados". Si la review no corrió, las reglas quedan con `?`. Qué hacer: si ves "sin verificar", corré tus tests a mano.
 
 **Qué se guarda.** Por lente, cuáles hallazgos elegiste y cuáles ignoraste, en la db (`~/.nxy`); se van a ver en `/nxy:trend` en F3.
 
@@ -176,7 +178,7 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 
 **Cerrar.** Cuando están todas decididas, Claude propone cerrar: ves las decisiones, las reglas R1…Rn y el diagrama D2 como fuente. **Cerrar y planificar** aprueba las reglas y arranca el planner; **Seguir diseñando** vuelve. Si decís "decidí vos el resto", las bifurcaciones abiertas quedan delegadas al planner y el plan las marca como "las eligió el planner".
 
-**/clear es seguro.** Las decisiones ya están en la db: después de un `/clear` la guía vuelve sola con la agenda y lo decidido.
+**/clear es seguro.** Las decisiones ya están en la db: después de un `/clear` la guía vuelve sola con la agenda, lo decidido y tus últimos 10 mensajes de este diseño (cada uno cortado si es largo). La propuesta de decisión y el resumen del cierre aparecen una sola vez en el chat.
 
 **Planner y huecos.** El planner sólo baja tu diseño a lotes, copia las reglas tal cual y no hace preguntas. Si encuentra un hueco de diseño, frena con `nxy plan gaps` y volvés a Diseñando con una bifurcación nueva. El checkpoint del plan muestra sólo los lotes (las reglas ya las aprobaste) y el plan .md suma una sección `### Diseño`.
 

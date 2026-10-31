@@ -11,6 +11,8 @@ docs/roadmap-debate.md
 node_modules/
 # GoReleaser output
 dist/
+# codegraph index (nxy affected creates and syncs it on its own)
+.codegraph/
 # API declarations Claude Code writes when a plugin is loaded from a folder (--plugin-dir)
 .claude-plugin/types/
 *.log

@@ -121,8 +121,17 @@ type result struct {
 	stdout, stderr string
 }
 
+// postJSON is a realistic PostToolUse payload; tool_input carries a later "hook_event_name":"Stop"
+// to prove the first occurrence wins.
+const postJSON = `{"session_id":"s1","transcript_path":"t.jsonl","cwd":".","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"echo \"hook_event_name\":\"Stop\""}}`
+
 // runShim runs the exact hook line under sh with a PreToolUse payload on stdin.
 func runShim(t *testing.T, sh shellSpec, env map[string]string) result {
+	t.Helper()
+	return runShimIn(t, sh, env, hookJSON)
+}
+
+func runShimIn(t *testing.T, sh shellSpec, env map[string]string, stdin string) result {
 	t.Helper()
 	shim := filepath.Join(repoRoot(t), "bin", "nxy.cmd")
 	if !sh.ps {
@@ -138,7 +147,7 @@ func runShim(t *testing.T, sh shellSpec, env map[string]string) result {
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
-	cmd.Stdin = strings.NewReader(hookJSON)
+	cmd.Stdin = strings.NewReader(stdin)
 	var so, se bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &so, &se
 	err := cmd.Run()
@@ -199,6 +208,121 @@ func assertWarned(t *testing.T, r result, want string) {
 	}
 	if !strings.HasPrefix(m.SystemMessage, "nxy: ") || !strings.Contains(m.SystemMessage, want) {
 		t.Fatalf("systemMessage %q lacks %q", m.SystemMessage, want)
+	}
+}
+
+// assertTold checks the model-facing text: hookSpecificOutput for the event, with the reason in it.
+func assertTold(t *testing.T, r result, event, reason string) {
+	t.Helper()
+	var m struct {
+		HSO struct {
+			Event   string `json:"hookEventName"`
+			Context string `json:"additionalContext"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(r.stdout)), &m); err != nil {
+		t.Fatalf("stdout is not valid JSON: %v (%q)", err, r.stdout)
+	}
+	if m.HSO.Event != event {
+		t.Fatalf("hookEventName=%q want %q (stdout %q)", m.HSO.Event, event, r.stdout)
+	}
+	if !strings.Contains(m.HSO.Context, "nxy no está corriendo") || !strings.Contains(m.HSO.Context, reason) {
+		t.Fatalf("additionalContext %q lacks the notice or %q", m.HSO.Context, reason)
+	}
+}
+
+// assertAntivirus checks the Windows-only quarantine hint in the systemMessage.
+func assertAntivirus(t *testing.T, r result) {
+	t.Helper()
+	has := strings.Contains(r.stdout, "antivirus")
+	if has != (runtime.GOOS == "windows") {
+		t.Fatalf("antivirus hint present=%v on %s: %q", has, runtime.GOOS, r.stdout)
+	}
+}
+
+func assertNotTold(t *testing.T, r result) {
+	t.Helper()
+	if strings.Contains(r.stdout, "hookSpecificOutput") {
+		t.Fatalf("model text on an event that must get systemMessage only: %q", r.stdout)
+	}
+}
+
+// checkEvents runs the failing shim over the payload table: events the model is told about, and
+// payloads that must degrade to the systemMessage only (valid JSON, no hookSpecificOutput).
+func checkEvents(t *testing.T, sh shellSpec, env map[string]string, reason string) {
+	t.Helper()
+	for _, ev := range []string{"SessionStart", "UserPromptSubmit"} {
+		r := runShimIn(t, sh, env, `{"session_id":"s1","cwd":".","hook_event_name":"`+ev+`","prompt":"hi"}`)
+		assertWarned(t, r, reason)
+		assertTold(t, r, ev, reason)
+	}
+	for _, in := range []string{
+		"",
+		`{"session_id":"s1","hook_event_name":"Stop"}`,
+		"not json at all",
+	} {
+		r := runShimIn(t, sh, env, in)
+		assertWarned(t, r, reason)
+		assertNotTold(t, r)
+	}
+	// Spaced JSON: the sh half still parses it, the batch half falls back; either way valid JSON.
+	r := runShimIn(t, sh, env, `{ "session_id": "s1", "hook_event_name": "PostToolUse" }`)
+	assertWarned(t, r, reason)
+}
+
+func TestShimMissingBinaryTellsModel(t *testing.T) {
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			h := t.TempDir()
+			env := map[string]string{"NXY_HOME": home(sh, h), "NXY_BIN": home(sh, filepath.Join(h, "missing"))}
+			r := runShimIn(t, sh, env, postJSON)
+			assertWarned(t, r, "binary not found")
+			assertTold(t, r, "PostToolUse", "binary not found")
+			assertAntivirus(t, r)
+			r = runShim(t, sh, env)
+			assertWarned(t, r, "binary not found")
+			assertNotTold(t, r)
+			checkEvents(t, sh, env, "binary not found")
+			// Metacharacters in the path must round-trip into valid JSON.
+			odd := "a&b)c!d"
+			env["NXY_BIN"] = home(sh, filepath.Join(h, odd, "missing"))
+			r = runShimIn(t, sh, env, postJSON)
+			assertWarned(t, r, odd)
+			assertTold(t, r, "PostToolUse", odd)
+		})
+	}
+}
+
+func TestShimUnrunnableBinaryTellsModel(t *testing.T) {
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			h := t.TempDir()
+			bad := filepath.Join(h, exeName("bad"))
+			if err := os.WriteFile(bad, []byte("this is not an executable\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			env := map[string]string{"NXY_HOME": home(sh, h), "NXY_BIN": home(sh, bad)}
+			r := runShimIn(t, sh, env, postJSON)
+			assertWarned(t, r, "could not run")
+			assertTold(t, r, "PostToolUse", "could not run")
+			assertAntivirus(t, r)
+			r = runShim(t, sh, env)
+			assertWarned(t, r, "could not run")
+			assertNotTold(t, r)
+			checkEvents(t, sh, env, "could not run")
+			odd := filepath.Join(h, "a&b)c!d")
+			if err := os.MkdirAll(odd, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			bad2 := filepath.Join(odd, exeName("bad"))
+			if err := os.WriteFile(bad2, []byte("this is not an executable\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			env["NXY_BIN"] = home(sh, bad2)
+			r = runShimIn(t, sh, env, postJSON)
+			assertWarned(t, r, "a&b)c!d")
+			assertTold(t, r, "PostToolUse", "a&b)c!d")
+		})
 	}
 }
 

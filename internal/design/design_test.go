@@ -1,6 +1,7 @@
 package design
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -130,10 +131,29 @@ func TestGuideCarriesDecisionsAndPending(t *testing.T) {
 	}
 }
 
+func TestGuideCarriesLastRefs(t *testing.T) {
+	d := &domain.Design{}
+	for i := 1; i <= 12; i++ {
+		d.Refs = append(d.Refs, fmt.Sprintf("mensaje-%02d-fin", i))
+	}
+	d.Refs = append(d.Refs, strings.Repeat("ñ", 500))
+	g := Guide(domain.Feature{ID: "f1", Design: d}, "nxy")
+	for _, w := range []string{"mensaje-04-fin", "mensaje-12-fin", strings.Repeat("ñ", 300) + "…"} {
+		if !strings.Contains(g, w) {
+			t.Errorf("guide lacks %q", w)
+		}
+	}
+	for _, w := range []string{"mensaje-01-fin", "mensaje-03-fin", strings.Repeat("ñ", 301)} {
+		if strings.Contains(g, w) {
+			t.Errorf("guide has %q", w)
+		}
+	}
+}
+
 func TestGuideHasCommands(t *testing.T) {
 	f := domain.Feature{ID: "f1", Request: "hacer x", Design: &domain.Design{}}
 	g := Guide(f, `C:\bin\nxy.exe`)
-	for _, w := range []string{"design agenda --feature f1", "design propose --feature f1", "design close --feature f1", "salvo que", "C:/bin/nxy.exe"} {
+	for _, w := range []string{"design agenda --feature f1", "design propose --feature f1", "design close --feature f1", "salvo que", "C:/bin/nxy.exe", "una sola vez"} {
 		if !strings.Contains(g, w) {
 			t.Errorf("guide lacks %q", w)
 		}

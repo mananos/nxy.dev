@@ -223,6 +223,8 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 				if path != "" {
 					note += " (" + path + ")"
 				}
+			} else if path != "" {
+				note = "the full plan was opened in the user's editor: " + path + ". Tell the user that in one line, then ask again."
 			}
 		}
 		nf, _, err = h.advance(ctx, f.ID, flow.Event{Kind: flow.ViewFull})

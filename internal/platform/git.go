@@ -237,11 +237,13 @@ func GitFiles(ctx context.Context, dir string) ([]string, error) {
 }
 
 // GitExcludeLocal makes git ignore pattern through .git/info/exclude (local, never
-// committed). It does nothing when .codegraph/ is already ignored.
+// committed). It does nothing when the pattern is already ignored by the repo's own rules. For a
+// directory pattern the probe is its .gitignore: a tool's nested `*` + `!.gitignore` makes the
+// directory look ignored while that file still shows up as untracked.
 func GitExcludeLocal(ctx context.Context, dir, pattern string) error {
 	probe := strings.Trim(pattern, "/")
 	if strings.HasSuffix(pattern, "/") {
-		probe += "/"
+		probe += "/.gitignore"
 	}
 	if exit, err := runProc(ctx, NativePath(dir), []string{"git", "check-ignore", "-q", probe}, "", "", &tailWriter{keep: 0}, &tailWriter{keep: 0}); err == nil && exit == 0 {
 		return nil

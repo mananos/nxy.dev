@@ -158,7 +158,7 @@ func TestRuleLineAndSummary(t *testing.T) {
 	f.Review.Findings = []domain.Finding{{ID: "H1", Title: "boom"}}
 	f.Review.Chosen = []string{"H1"}
 	s := Summary(f)
-	if !strings.HasPrefix(s, "R1 ✔ TestGreet · R2 ✔ manual") || !strings.Contains(s, "H1 boom") {
+	if !strings.HasPrefix(s, "Listo · R1 ✔ TestGreet · R2 ✔ manual") || !strings.Contains(s, "H1 boom") {
 		t.Errorf("Summary = %q", s)
 	}
 }

@@ -130,6 +130,9 @@ func TestViewFullShowsAndAsksAgain(t *testing.T) {
 	if r.Next == nil || r.Next.Feature.Next.Kind != domain.AskApproval || st.feats[f.ID].State.Phase != domain.PhaseApproval {
 		t.Errorf("response = %+v", r)
 	}
+	if r.Next != nil && (!strings.Contains(r.Next.Note, "/plans/"+f.ID+".md") || !strings.Contains(r.Next.Note, "editor")) {
+		t.Errorf("note = %q", r.Next.Note)
+	}
 }
 
 func TestPrefilledNxyAnswersDenied(t *testing.T) {

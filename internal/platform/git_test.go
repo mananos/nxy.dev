@@ -215,6 +215,38 @@ func TestGitExcludeLocalOtherPattern(t *testing.T) {
 	}
 }
 
+func TestGitExcludeLocalNestedGitignore(t *testing.T) {
+	d := gitRepo(t)
+	ctx := context.Background()
+	writeFile(t, filepath.Join(d, ".codegraph", ".gitignore"), "*\n!.gitignore\n")
+	writeFile(t, filepath.Join(d, ".codegraph", "db"), "x")
+	if err := GitExcludeLocal(ctx, d, "/.codegraph/"); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(d, ".git", "info", "exclude"))
+	if n := strings.Count(string(b), "/.codegraph/"); n != 1 {
+		t.Fatalf("pattern appears %d times:\n%s", n, b)
+	}
+	out, err := exec.Command("git", "-C", d, "status", "--porcelain", "--", ".codegraph").Output()
+	if err != nil || strings.TrimSpace(string(out)) != "" {
+		t.Fatalf("status not clean: %q %v", out, err)
+	}
+}
+
+func TestGitExcludeLocalRepoAlreadyIgnores(t *testing.T) {
+	d := gitRepo(t)
+	ctx := context.Background()
+	writeFile(t, filepath.Join(d, ".gitignore"), ".codegraph/\n")
+	writeFile(t, filepath.Join(d, ".codegraph", ".gitignore"), "*\n!.gitignore\n")
+	if err := GitExcludeLocal(ctx, d, "/.codegraph/"); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(d, ".git", "info", "exclude"))
+	if strings.Contains(string(b), "/.codegraph/") {
+		t.Fatalf("info/exclude must stay untouched:\n%s", b)
+	}
+}
+
 func TestGitExcludeLocal(t *testing.T) {
 	d := gitRepo(t)
 	ctx := context.Background()

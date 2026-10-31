@@ -352,7 +352,7 @@ func ruleProof(p *domain.Plan, r domain.Rule) string {
 	return string(r.Test)
 }
 
-// Summary is the "Listo" line: the rules that held with how each was proved,
+// Summary is the "Listo" line, which starts with the word "Listo": the rules that held with how each was proved,
 // the rules that did not, and the fixes applied from the review.
 func Summary(f domain.Feature) string {
 	rv := domain.Review{}
@@ -382,7 +382,7 @@ func Summary(f domain.Feature) string {
 		}
 		b.WriteString(s)
 	}
-	b.WriteString(strings.Join(parts, " · "))
+	b.WriteString(strings.Join(append([]string{"Listo"}, parts...), " · "))
 	if f.Review == nil || len(rv.Rules) == 0 {
 		line("La review no corrió: las reglas quedan sin chequear (?).")
 	}
