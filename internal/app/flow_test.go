@@ -152,6 +152,40 @@ func TestStartFeatureSecondIsRejected(t *testing.T) {
 	}
 }
 
+// racingStore hides the active feature from the first ActiveFeature call and refuses CreateFeature,
+// like a second prompt that lost the unique index race.
+type racingStore struct {
+	*memStore
+	hidden bool
+}
+
+func (r *racingStore) ActiveFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+	if !r.hidden {
+		r.hidden = true
+		return domain.Feature{}, false, nil
+	}
+	return r.memStore.ActiveFeature(ctx, repo)
+}
+
+func (r *racingStore) CreateFeature(context.Context, domain.Feature) (string, error) {
+	return "", ErrActiveFeature
+}
+
+func TestStartFeatureRaceIsRejected(t *testing.T) {
+	h, st := flowHooks(false)
+	first := h.Handle(context.Background(), prompt("/nxy:feature one"))
+	h.Store = &racingStore{memStore: st}
+	r := h.Handle(context.Background(), prompt("/nxy:feature two"))
+	for _, want := range []string{first.Next.Feature.ID, "in progress", "`nxy feature stop`"} {
+		if !strings.Contains(r.Deny, want) {
+			t.Errorf("deny %q lacks %q", r.Deny, want)
+		}
+	}
+	if len(st.feats) != 1 {
+		t.Errorf("features = %d, want 1", len(st.feats))
+	}
+}
+
 func TestOtherPromptsCreateNothing(t *testing.T) {
 	for _, p := range []string{"hello", "/nxy:featurex y", "/nxy:status", " /nxy:feature a", ""} {
 		h, st := flowHooks(false)
@@ -214,11 +248,11 @@ func TestSessionStartBackgroundPlannerWaits(t *testing.T) {
 	f.Background = rolePlanner
 	st.feats[id] = f
 	r := h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "clear", ProjectDir: "/p", Cwd: "/p"})
-	if r.Next != nil || r.Context != backgroundWait(id) || !strings.Contains(r.Notice, "still running") || strings.Contains(r.Notice, "pendiente") {
+	if r.Next != nil || r.Context != backgroundWait(id, rolePlanner) || !strings.Contains(r.Notice, "planner is still running") || strings.Contains(r.Notice, "pendiente") {
 		t.Errorf("response = %+v", r)
 	}
 	r = h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "resume", ProjectDir: "/p", Cwd: "/p"})
-	if r.Next != nil || r.Context != backgroundWait(id) || r.Notice != "" {
+	if r.Next != nil || r.Context != backgroundWait(id, rolePlanner) || r.Notice != "" {
 		t.Errorf("resume = %+v", r)
 	}
 }

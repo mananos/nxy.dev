@@ -40,10 +40,17 @@ Example of a valid plan:
 
 ## How to save
 
-Save with one Bash call, the JSON on stdin:
+Save with one Bash call, the JSON on stdin. Run the command exactly as written, without `cd` or anything chained: nxy runs it in the project folder itself.
 
 "{{.Exe}}" plan save --feature {{.Feature.ID}} <<'JSON'
 { ...your plan... }
 JSON
+
+On Windows without a POSIX shell (PowerShell), set the encoding first (5.1 pipes ASCII by default and would break accents), then pipe a single-quoted here-string:
+
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+@'
+{ ...your plan... }
+'@ | & "{{.Exe}}" plan save --feature {{.Feature.ID}}
 
 If it prints problems, fix them and save again in the same turn. When it succeeds, your final reply is exactly the line `plan save` printed (plan rN saved...) and nothing else. No rules, batches, questions or summary: nxy shows the plan to the user itself.

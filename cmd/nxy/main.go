@@ -14,6 +14,7 @@ import (
 type command func(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 
 var commands = map[string]command{
+	"batch":   runBatch,
 	"bench":   runBench,
 	"feature": runFeature,
 	"hook":    runHook,
@@ -22,7 +23,7 @@ var commands = map[string]command{
 	"version": runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|plan save|status|feature stop|version>"
+const usage = "usage: nxy <hook|bench|plan save|batch red|green|status|feature stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))

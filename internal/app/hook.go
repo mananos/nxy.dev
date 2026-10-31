@@ -59,6 +59,8 @@ type HookResponse struct {
 	Rewrite *CommandRewrite
 	// Deny is the reason to refuse the call or prompt; empty means no.
 	Deny string
+	// AllowReason pre-approves the call (PreToolUse) with this reason; empty means no decision.
+	AllowReason string
 	// Prompt replaces tool_input.prompt (PreToolUse Agent), keeping the rest of the input.
 	Prompt string
 	// Next is the instruction for the main thread.
@@ -79,6 +81,10 @@ type Hooks struct {
 	Repos  Repos
 	Legacy Legacy
 	Viewer Viewer
+	// Shell runs the Accept command of a batch.
+	Shell Shell
+	// Files serves the Bash write parser; nil reads paths as they are.
+	Files Files
 	// Exe is the path of the nxy binary, with forward slashes.
 	Exe string
 }
@@ -87,7 +93,7 @@ type Hooks struct {
 func (h Hooks) Handle(ctx context.Context, ev HookEvent) HookResponse {
 	switch {
 	case ev.Name == "PreToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
-		return h.preToolBash(ev)
+		return h.preToolBash(ctx, ev)
 	case ev.Name == "PreToolUse" && isAgentTool(ev.Tool):
 		return h.preToolAgent(ctx, ev)
 	case ev.Name == "PostToolUse" && isAgentTool(ev.Tool):

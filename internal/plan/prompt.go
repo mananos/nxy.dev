@@ -14,6 +14,11 @@ var plannerTemplate string
 
 var plannerTmpl = template.Must(template.New("planner").Parse(plannerTemplate))
 
+//go:embed prompts/implementer.md
+var implementerTemplate string
+
+var implementerTmpl = template.Must(template.New("implementer").Parse(implementerTemplate))
+
 // plannerExample is the example plan of the prompt; the tests check it is valid.
 const plannerExample = `{
   "title": "Greet by name",
@@ -74,6 +79,54 @@ func PlannerPrompt(f domain.Feature, exe string) string {
 	var b strings.Builder
 	if err := plannerTmpl.Execute(&b, d); err != nil {
 		return "nxy: could not build the planner prompt: " + err.Error()
+	}
+	return b.String()
+}
+
+type implementerData struct {
+	Feature   domain.Feature
+	Exe       string
+	Batch     domain.Batch
+	Total     int
+	Decisions []domain.Decision
+	Rules     []domain.Rule
+	Accept    string
+	Need      Need
+	Failure   string
+	RedDone   bool
+}
+
+// ImplementerPrompt builds the full prompt of the implementer for the batch
+// the feature is on (f.Next.Batch).
+func ImplementerPrompt(f domain.Feature, exe string) string {
+	if f.Plan == nil || f.Next.Batch < 1 || f.Next.Batch > len(f.Plan.Batches) {
+		return "nxy: could not build the implementer prompt: no batch to implement"
+	}
+	n := f.Next.Batch
+	p := *f.Plan
+	d := implementerData{
+		Feature:   f,
+		Exe:       strings.ReplaceAll(exe, `\`, "/"),
+		Batch:     p.Batches[n-1],
+		Total:     len(p.Batches),
+		Decisions: p.Decisions,
+		Accept:    p.Batches[n-1].Test.Accept,
+		Need:      NeedOf(p, n),
+	}
+	for _, id := range d.Batch.Covers {
+		for _, r := range p.Rules {
+			if r.ID == id {
+				d.Rules = append(d.Rules, r)
+			}
+		}
+	}
+	if f.Proof != nil && f.Proof.Batch == n {
+		d.Failure = f.Proof.Failure
+		d.RedDone = f.Proof.Red != nil && f.Proof.Red.Exit != 0
+	}
+	var b strings.Builder
+	if err := implementerTmpl.Execute(&b, d); err != nil {
+		return "nxy: could not build the implementer prompt: " + err.Error()
 	}
 	return b.String()
 }

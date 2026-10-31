@@ -109,6 +109,50 @@ func TestPrefilledNxyAnswersDenied(t *testing.T) {
 	}
 }
 
+func failedBatchFeature(t *testing.T, h Hooks, st *memStore) domain.Feature {
+	t.Helper()
+	f := approvalFeature(t, h, validPlan())
+	f = st.feats[f.ID]
+	f.State = domain.State{Phase: domain.PhaseBatchFailed, Batch: 1, Batches: 1, Attempt: 1}
+	f.Next = domain.Action{Kind: domain.AskDecision}
+	st.feats[f.ID] = f
+	return f
+}
+
+func TestDecisionAnswersMoveTheFlow(t *testing.T) {
+	for _, c := range []struct {
+		answer string
+		phase  domain.Phase
+		out    domain.Outcome
+	}{
+		{plan.Retry, domain.PhaseRunningBatch, domain.OutcomeNone},
+		{plan.Continue, domain.PhaseAffected, domain.OutcomeNone},
+		{plan.Stop, domain.PhaseDone, domain.OutcomeStopped},
+	} {
+		h, st := flowHooks(false)
+		f := failedBatchFeature(t, h, st)
+		r := h.Handle(context.Background(), askPost(f, plan.DecisionQuestion(f.ID, 1), c.answer))
+		got := st.feats[f.ID].State
+		if r.Next == nil || got.Phase != c.phase || got.Outcome != c.out || (c.answer == plan.Retry && got.Attempt != 0) {
+			t.Errorf("%s: state = %+v response = %+v", c.answer, got, r)
+		}
+	}
+}
+
+func TestDecisionFreeTextAsksAgain(t *testing.T) {
+	h, st := flowHooks(false)
+	f := failedBatchFeature(t, h, st)
+	r := h.Handle(context.Background(), askPost(f, plan.DecisionQuestion(f.ID, 1), "no se"))
+	if r.Next == nil || !strings.Contains(r.Next.Note, "pick one of the options") || st.feats[f.ID].State.Phase != domain.PhaseBatchFailed {
+		t.Errorf("response = %+v state = %+v", r, st.feats[f.ID].State)
+	}
+	ev := HookEvent{Name: "PreToolUse", Tool: "AskUserQuestion", ProjectDir: "/p", Cwd: "/p",
+		Questions: []string{plan.DecisionQuestion(f.ID, 1)}, InputHasAnswers: true}
+	if r := h.Handle(context.Background(), ev); r.Deny == "" {
+		t.Errorf("pre-filled decision should be denied: %+v", r)
+	}
+}
+
 func TestSubagentAnswerDoesNotCount(t *testing.T) {
 	h, st := flowHooks(false)
 	f := approvalFeature(t, h, validPlan())

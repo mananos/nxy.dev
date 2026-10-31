@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -177,7 +178,7 @@ func TestBackgroundPlannerEndToEnd(t *testing.T) {
 		t.Fatalf("SubagentStop should print nothing: %q", out)
 	}
 	out = hookCall(t, map[string]any{"hook_event_name": "Stop", "cwd": repo})
-	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "verbatim") {
+	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "do not repeat it") || !strings.Contains(out, "AskUserQuestion") {
 		t.Fatalf("Stop did not deliver the checkpoint: %q", out)
 	}
 	if out := hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "sigo"}); out != "" {
@@ -216,6 +217,177 @@ func TestPlanSaveOnStoppedFeature(t *testing.T) {
 	if out := hookCall(t, map[string]any{"hook_event_name": "SubagentStop", "cwd": repo,
 		"agent_id": "a1", "agent_type": "nxy:planner"}); out != "" {
 		t.Fatalf("SubagentStop of a stopped feature printed %q", out)
+	}
+}
+
+func batchPlan(accept string) string {
+	return `{"title":"Flag","rules":[{"id":"R1","text":"adds the flag","test":"tdd"}],` +
+		`"batches":[{"n":1,"title":"flag","covers":["R1"],"change":[{"at":"cmd/main.go:10","what":"parse the flag"}],` +
+		`"test":{"kind":"new","name":"TestFlag","accept":` + strconvQuote(accept) + `},"risk":"low"}]}`
+}
+
+func strconvQuote(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func needSh(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no sh")
+	}
+}
+
+func agentPre(t *testing.T, repo, role, prompt string) string {
+	t.Helper()
+	return hookCall(t, map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Agent", "cwd": repo,
+		"tool_input": map[string]any{"subagent_type": role, "prompt": prompt}})
+}
+
+func agentPost(t *testing.T, repo, role string, resp map[string]any) string {
+	t.Helper()
+	p := map[string]any{"hook_event_name": "PostToolUse", "tool_name": "Agent", "cwd": repo,
+		"tool_input": map[string]any{"subagent_type": role, "prompt": "x"}}
+	if resp != nil {
+		p["tool_response"] = resp
+	}
+	return hookCall(t, p)
+}
+
+func answer(t *testing.T, repo, question, label string) string {
+	t.Helper()
+	return hookCall(t, map[string]any{"hook_event_name": "PostToolUse", "tool_name": "AskUserQuestion", "cwd": repo,
+		"tool_response": map[string]any{"answers": map[string]any{question: label}}})
+}
+
+func subagentWrite(t *testing.T, repo, name string) string {
+	t.Helper()
+	return hookCall(t, map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Write", "cwd": repo,
+		"agent_id": "a1", "agent_type": "nxy:implementer",
+		"tool_input": map[string]any{"file_path": filepath.Join(repo, name)}})
+}
+
+// approvedBatchFeature takes a feature through planning and approval; returns its id.
+func approvedBatchFeature(t *testing.T, repo, accept string) string {
+	t.Helper()
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
+	id := featureID(t)
+	agentPre(t, repo, "nxy:planner", "feature "+id)
+	if code, out, errb := runCmd(t, batchPlan(accept), "plan", "save", "--feature", id); code != 0 {
+		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
+	}
+	agentPost(t, repo, "nxy:planner", nil)
+	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	return id
+}
+
+func TestBatchFlowEndToEnd(t *testing.T) {
+	needSh(t)
+	repo := flowRepo(t)
+	id := approvedBatchFeature(t, repo, "test -f done.txt")
+
+	out := agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
+	if !strings.Contains(out, "updatedInput") || !strings.Contains(out, "test -f done.txt") || !strings.Contains(out, "add a flag") {
+		t.Fatalf("implementer prompt not injected: %s", out)
+	}
+	if code, out, errb := runCmd(t, "", "batch", "green", "--feature", id); code != 1 {
+		t.Fatalf("green before red: code %d, out %q, err %q", code, out, errb)
+	}
+	if code, out, errb := runCmd(t, "", "batch", "red", "--feature", id); code != 0 || !strings.Contains(out, "red recorded") {
+		t.Fatalf("red: code %d, out %q, err %q", code, out, errb)
+	}
+	if out := subagentWrite(t, repo, "done.txt"); strings.Contains(out, "deny") {
+		t.Fatalf("subagent write denied: %s", out)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "done.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, errb := runCmd(t, "", "batch", "green", "--feature", id); code != 0 || !strings.Contains(out, "green recorded") {
+		t.Fatalf("green: code %d, out %q, err %q", code, out, errb)
+	}
+	out = agentPost(t, repo, "nxy:implementer", nil)
+	if !strings.Contains(out, "all batches are green") {
+		t.Fatalf("no next step after the last green batch: %s", out)
+	}
+}
+
+func TestBatchRedRefusedWhenAcceptPasses(t *testing.T) {
+	needSh(t)
+	repo := flowRepo(t)
+	id := approvedBatchFeature(t, repo, "exit 0")
+	agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
+	if code, out, errb := runCmd(t, "", "batch", "red", "--feature", id); code != 1 || strings.Contains(out, "red recorded") {
+		t.Fatalf("red with a passing Accept: code %d, out %q, err %q", code, out, errb)
+	}
+}
+
+func TestBatchRetryAndDecision(t *testing.T) {
+	needSh(t)
+	repo := flowRepo(t)
+	id := approvedBatchFeature(t, repo, "test -f done.txt")
+
+	agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
+	if code, _, _ := runCmd(t, "", "batch", "red", "--feature", id); code != 0 {
+		t.Fatalf("red exit %d", code)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "done.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, _ := runCmd(t, "", "batch", "green", "--feature", id); code != 0 {
+		t.Fatalf("green exit %d", code)
+	}
+	subagentWrite(t, repo, "late.txt") // a write after the green voids it
+	if out := agentPost(t, repo, "nxy:implementer", nil); !strings.Contains(out, "failed verification") {
+		t.Fatalf("no retry after a voided green: %s", out)
+	}
+
+	out := agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
+	if !strings.Contains(out, "Previous attempt failed") {
+		t.Fatalf("retry prompt without the failure: %s", out)
+	}
+	// the second attempt returns without proving anything
+	out = agentPost(t, repo, "nxy:implementer", nil)
+	if !strings.Contains(out, "Lote 1 fallido") {
+		t.Fatalf("no batch_failed question: %s", out)
+	}
+	answer(t, repo, "nxy feature "+id+": batch 1 failed twice — what now?", "Parar")
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no active feature") {
+		t.Fatalf("status after Parar: %q", st)
+	}
+}
+
+func TestBackgroundImplementerEndToEnd(t *testing.T) {
+	needSh(t)
+	repo := flowRepo(t)
+	id := approvedBatchFeature(t, repo, "test -f done.txt")
+
+	agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
+	out := agentPost(t, repo, "nxy:implementer", map[string]any{"isAsync": true, "status": "async_launched", "agentId": "a1"})
+	if !strings.Contains(out, "background") {
+		t.Fatalf("launch does not say wait: %q", out)
+	}
+	if out := agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1"); !strings.Contains(out, "deny") {
+		t.Fatalf("second dispatch while in the background not denied: %q", out)
+	}
+	if code, _, _ := runCmd(t, "", "batch", "red", "--feature", id); code != 0 {
+		t.Fatalf("red exit %d", code)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "done.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, _ := runCmd(t, "", "batch", "green", "--feature", id); code != 0 {
+		t.Fatalf("green exit %d", code)
+	}
+	if out := hookCall(t, map[string]any{"hook_event_name": "SubagentStop", "cwd": repo,
+		"agent_id": "a1", "agent_type": "nxy:implementer"}); out != "" {
+		t.Fatalf("SubagentStop should print nothing: %q", out)
+	}
+	out = hookCall(t, map[string]any{"hook_event_name": "Stop", "cwd": repo})
+	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "all batches are green") {
+		t.Fatalf("Stop did not deliver the result: %q", out)
+	}
+	if out := hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "sigo"}); out != "" {
+		t.Fatalf("result delivered twice: %q", out)
 	}
 }
 

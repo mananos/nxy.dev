@@ -64,7 +64,7 @@ func TestNextTable(t *testing.T) {
 		{"planner failed stop", st{Phase: domain.PhasePlannerFailed}, Event{Kind: Decided, Decision: DecisionStop},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}, acs(domain.Close)},
 		{"batch returned", st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Attempt: 1}, Event{Kind: BatchReturned},
-			st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 3},
+			st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 3, Attempt: 1},
 			one(domain.Action{Kind: domain.VerifyBatch, Batch: 2})},
 		{"green next batch", st{Phase: domain.PhaseVerifyingBatch, Batch: 1, Batches: 2}, Event{Kind: Green},
 			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 2}, impl(2, false)},
@@ -89,7 +89,7 @@ func TestNextTable(t *testing.T) {
 		{"affected red second", st{Phase: domain.PhaseAffected, Attempt: 1}, Event{Kind: Red},
 			st{Phase: domain.PhaseAffectedFailed}, acs(domain.AskDecision, domain.Notify)},
 		{"affected fix returned", st{Phase: domain.PhaseAffectedFix, Attempt: 1}, Event{Kind: FixesReturned},
-			st{Phase: domain.PhaseAffected}, acs(domain.RunAffected)},
+			st{Phase: domain.PhaseAffected, Attempt: 1}, acs(domain.RunAffected)},
 		{"affected failed retry", st{Phase: domain.PhaseAffectedFailed}, Event{Kind: Decided, Decision: DecisionRetry},
 			st{Phase: domain.PhaseAffectedFix}, acs(domain.DispatchAffectedFix)},
 		{"affected failed continue", st{Phase: domain.PhaseAffectedFailed}, Event{Kind: Decided, Decision: DecisionContinue},
@@ -124,6 +124,35 @@ func TestNextTable(t *testing.T) {
 			}
 			if !reflect.DeepEqual(acts, c.want) {
 				t.Errorf("actions = %+v, want %+v", acts, c.want)
+			}
+		})
+	}
+}
+
+// The retry is counted across the whole loop: a second red ends in *_failed.
+func TestRetryAttemptCarriesOver(t *testing.T) {
+	loops := []struct {
+		name   string
+		start  st
+		events []EventKind
+		want   domain.Phase
+	}{
+		{"batch", st{Phase: domain.PhaseRunningBatch, Batch: 1, Batches: 2},
+			[]EventKind{BatchReturned, Red, BatchReturned, Red}, domain.PhaseBatchFailed},
+		{"affected", st{Phase: domain.PhaseAffected, Batches: 2},
+			[]EventKind{Red, FixesReturned, Red}, domain.PhaseAffectedFailed},
+	}
+	for _, l := range loops {
+		t.Run(l.name, func(t *testing.T) {
+			s := l.start
+			for i, k := range l.events {
+				var err error
+				if s, _, err = Next(s, Event{Kind: k}); err != nil {
+					t.Fatalf("step %d (%v): %v", i, k, err)
+				}
+			}
+			if s.Phase != l.want {
+				t.Errorf("phase = %v, want %v", s.Phase, l.want)
 			}
 		})
 	}

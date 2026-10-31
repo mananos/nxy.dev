@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -55,6 +56,14 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	f := domain.Feature{Repo: repo, ProjectDir: dir, Request: request, State: s, Next: mainThreadAction(as)}
 	id, err := h.Store.CreateFeature(ctx, f)
+	if errors.Is(err, ErrActiveFeature) {
+		// two prompts raced: the other one created the feature first
+		if cur, found, err := h.Store.ActiveFeature(ctx, repo); err == nil && found {
+			return HookResponse{Deny: "feature " + cur.ID + " in progress (" + string(cur.State.Phase.Public()) +
+				"); next step " + cur.Next.Label() + "; to end it: `nxy feature stop`"}
+		}
+		return HookResponse{}
+	}
 	if err != nil {
 		return HookResponse{}
 	}

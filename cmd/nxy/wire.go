@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/mananos/nxy.dev/internal/app"
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -88,7 +91,11 @@ func (l *lazyStore) CreateFeature(ctx context.Context, f domain.Feature) (string
 	if err != nil {
 		return "", err
 	}
-	return s.CreateFeature(ctx, f)
+	id, err := s.CreateFeature(ctx, f)
+	if errors.Is(err, sqlite.ErrActiveFeature) {
+		return "", app.ErrActiveFeature
+	}
+	return id, err
 }
 
 func (l *lazyStore) Feature(ctx context.Context, id string) (domain.Feature, error) {
@@ -164,6 +171,34 @@ func (planViewer) Discard(id string) error {
 	return nil
 }
 
+const (
+	// acceptTimeout stays under the 10 minute maximum of a host Bash call, so nxy records a
+	// failure instead of being killed mid-run.
+	acceptTimeout = 9*time.Minute + 30*time.Second
+	acceptKeep    = 64 << 10
+)
+
+type shellRunner struct{}
+
+func (shellRunner) Run(ctx context.Context, dir, command string) (app.ShellResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, acceptTimeout)
+	defer cancel()
+	exit, out, err := platform.RunShell(ctx, dir, command, acceptKeep)
+	if errors.Is(err, context.DeadlineExceeded) {
+		out = strings.TrimRight(out, "\r\n") + fmt.Sprintf("\nnxy: Accept timed out after %s and was killed", acceptTimeout)
+		return app.ShellResult{Exit: -1, Output: out, TimedOut: true}, nil
+	}
+	return app.ShellResult{Exit: exit, Output: out}, err
+}
+
+type fileProbe struct{}
+
+func (fileProbe) NativePath(p string) string { return platform.NativePath(p) }
+func (fileProbe) IsDir(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.IsDir()
+}
+
 func exePath() string {
 	e, err := os.Executable()
 	if err != nil {
@@ -177,6 +212,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 	st := &lazyStore{}
 	return app.Hooks{
 		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{},
-		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Exe: exePath(),
+		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 	}, st
 }

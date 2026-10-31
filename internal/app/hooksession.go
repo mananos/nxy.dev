@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 )
@@ -33,15 +34,16 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 					f.Background = ""
 				}
 			}
-			running := f.Background == rolePlanner && f.State.Phase == domain.PhasePlanning
+			role, known := roles[f.Background]
+			running := known && f.State.Phase == role.phase
 			if running {
-				r.Context = backgroundWait(f.ID)
+				r.Context = backgroundWait(f.ID, f.Background)
 			} else {
 				r.Next = &Next{Feature: f}
 			}
 			if fresh || ev.Source == "clear" {
 				if running {
-					r.Notice = "nxy: feature " + f.ID + " — the planner is still running; its result arrives when it ends"
+					r.Notice = "nxy: feature " + f.ID + " — the " + strings.TrimPrefix(f.Background, "nxy:") + " is still running; its result arrives when it ends"
 				} else {
 					r.Notice = "nxy: feature " + f.ID + " pendiente (" + f.Next.Label() + ") — escribí cualquier cosa para seguir"
 				}

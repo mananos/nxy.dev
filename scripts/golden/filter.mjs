@@ -9,8 +9,9 @@
  * The Go port (internal/filter) must reproduce every file exactly.
  */
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeTargets } from '../../core/shellwrites.mjs';
 import { decide } from '../../core/filter/decide.mjs';
 import { detectRtkHook, findRtk } from '../../core/filter/engine.mjs';
 import { isRtkInvocation, normalizeForRtk, pinRtkPath, usesRtk } from '../../core/filter/rtk.mjs';
@@ -23,7 +24,7 @@ import {
 } from './lib.mjs';
 import { HOOK_AREA, generateHookCases } from './hook.mjs';
 
-export const AREAS = ['shell', 'rtkcmd', 'permissions', 'filter'];
+export const AREAS = ['shell', 'rtkcmd', 'permissions', 'filter', 'shellwrites'];
 const COMMAND_SETS = ['commands', 'harvested'];
 const PIN_PATHS = ['', 'rtk', 'rtk.exe', '/opt/rtk/rtk', 'D:\\tools\\rtk.exe', 'D:\\tools\\$rtk\\rtk.exe', '/opt/$&/rtk'];
 const PIN_PATHS_FOR_OUTPUT = ['', '/opt/rtk/rtk', 'D:\\tools\\rtk.exe'];
@@ -76,6 +77,27 @@ function rtkcmdArea(cases) {
     }
   }
   return out;
+}
+
+// A directory that does not exist, so `cp`/`mv` never find a directory on disk; outputs are
+// relative to it with forward slashes (the same on Windows and Linux).
+const WRITES_CWD = resolve('/nxy-golden-cwd/work');
+
+/** @param {any[]} cases */
+function shellwritesArea(cases) {
+  /** @param {string[]} paths */
+  const rel = (paths) => paths.map((p) => relative(WRITES_CWD, p).replace(/\\/g, '/'));
+  return cases.map((c) => {
+    const tool = c.tool || 'Bash';
+    return {
+      name: c.name,
+      input: { command: c.command, tool },
+      output: {
+        targets: rel(writeTargets(c.command, WRITES_CWD, tool)),
+        contentTargets: rel(writeTargets(c.command, WRITES_CWD, tool, { content: true })),
+      },
+    };
+  });
 }
 
 /** @param {any[]} cases @param {any[]} ruleSets */
@@ -174,6 +196,7 @@ export function generate({ check = false, record = false } = {}) {
     produced.permissions.push([set, permissionsArea(cases, ruleSets)]);
     produced.filter.push([set, f.cases]);
   }
+  produced.shellwrites.push(['cases', shellwritesArea(loadCorpus('shellwrites'))]);
   produced.rtkcmd.push([
     'settings-hooks',
     settings.map((/** @type {any} */ s) => ({ name: s.name, input: { settings: s.settings }, output: { detectRtkHook: detectRtkHook(s.settings) } })),

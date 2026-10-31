@@ -185,11 +185,78 @@ func assertMark(t *testing.T, mark string) {
 	}
 }
 
+// assertWarned checks the visible failure: exit 0 and a valid systemMessage JSON on stdout.
+func assertWarned(t *testing.T, r result, want string) {
+	t.Helper()
+	if r.code != 0 {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	var m struct {
+		SystemMessage string `json:"systemMessage"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(r.stdout)), &m); err != nil {
+		t.Fatalf("stdout is not valid JSON: %v (%q)", err, r.stdout)
+	}
+	if !strings.HasPrefix(m.SystemMessage, "nxy: ") || !strings.Contains(m.SystemMessage, want) {
+		t.Fatalf("systemMessage %q lacks %q", m.SystemMessage, want)
+	}
+}
+
+func TestShimMissingBinaryWarns(t *testing.T) {
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			h := t.TempDir()
+			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_BIN": home(sh, filepath.Join(h, "missing"))})
+			assertWarned(t, r, "binary not found")
+			if !strings.Contains(r.stderr, "nxy:") {
+				t.Fatalf("stderr line missing: %q", r.stderr)
+			}
+		})
+	}
+}
+
+func TestShimUnrunnableBinaryWarns(t *testing.T) {
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			h := t.TempDir()
+			bad := filepath.Join(h, exeName("bad"))
+			if err := os.WriteFile(bad, []byte("this is not an executable\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_BIN": home(sh, bad)})
+			assertWarned(t, r, "could not run")
+		})
+	}
+}
+
 func TestShimInstalledBinary(t *testing.T) {
 	fake := buildFake(t)
 	for _, sh := range shells(t) {
 		t.Run(sh.name, func(t *testing.T) {
 			h := t.TempDir()
+			mark := filepath.Join(t.TempDir(), "mark")
+			copyFile(t, fake, filepath.Join(h, "bin", version.Version, exeName("nxy")))
+			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_MARK": mark})
+			if r.code != 0 || r.stdout != "" {
+				t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+			}
+			assertMark(t, mark)
+		})
+	}
+}
+
+// A ! in the install path must survive the batch half (delayed expansion would eat it).
+func TestShimBangInPath(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("batch half only")
+	}
+	fake := buildFake(t)
+	for _, sh := range shells(t) {
+		if !sh.ps {
+			continue
+		}
+		t.Run(sh.name, func(t *testing.T) {
+			h := filepath.Join(t.TempDir(), "hi!there")
 			mark := filepath.Join(t.TempDir(), "mark")
 			copyFile(t, fake, filepath.Join(h, "bin", version.Version, exeName("nxy")))
 			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_MARK": mark})
@@ -249,9 +316,7 @@ func TestShimNXYBinWins(t *testing.T) {
 			assertMark(t, mark)
 			// With NXY_BIN pointing nowhere, the versioned binary must NOT be used.
 			r = runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_BIN": home(sh, filepath.Join(h, "missing")), "NXY_MARK": mark + "2"})
-			if r.code != 0 || r.stdout != "" {
-				t.Fatalf("missing override: code=%d stdout=%q", r.code, r.stdout)
-			}
+			assertWarned(t, r, "binary not found")
 			if _, err := os.Stat(mark + "2"); err == nil {
 				t.Fatal("versioned binary ran although NXY_BIN was set")
 			}
@@ -333,9 +398,7 @@ func TestShimBadChecksum(t *testing.T) {
 			h := t.TempDir()
 			mark := filepath.Join(t.TempDir(), "mark")
 			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_RELEASE_URL": fileURL(rel), "NXY_MARK": mark})
-			if r.code != 0 || r.stdout != "" {
-				t.Fatalf("code=%d stdout=%q", r.code, r.stdout)
-			}
+			assertWarned(t, r, "checksum")
 			if !strings.Contains(r.stderr, "checksum") {
 				t.Fatalf("stderr does not name the checksum: %q", r.stderr)
 			}
@@ -380,8 +443,14 @@ func TestShimConcurrentDownload(t *testing.T) {
 			}
 			wg.Wait()
 			for i, r := range res {
-				if r.code != 0 || r.stdout != "" {
-					t.Fatalf("hook %d: code=%d stdout=%q stderr=%q", i, r.code, r.stdout, r.stderr)
+				// The runs that lose the race skip with a visible warning; the winner is silent.
+				if r.stdout != "" {
+					assertWarned(t, r, "in another hook")
+					if strings.Contains(r.stdout, "until this is fixed") {
+						t.Fatalf("transient lock reported as broken: %q", r.stdout)
+					}
+				} else if r.code != 0 {
+					t.Fatalf("hook %d: code=%d stderr=%q", i, r.code, r.stderr)
 				}
 			}
 			if got := atomic.LoadInt32(&hits); got != 1 {
@@ -457,8 +526,9 @@ func TestShimFreshLockSkips(t *testing.T) {
 			}
 			mark := filepath.Join(t.TempDir(), "mark")
 			r := runShim(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_RELEASE_URL": fileURL(rel), "NXY_MARK": mark})
-			if r.code != 0 || r.stdout != "" || !strings.Contains(r.stderr, "nxy:") {
-				t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+			assertWarned(t, r, "in another hook")
+			if !strings.Contains(r.stderr, "nxy:") {
+				t.Fatalf("stderr line missing: %q", r.stderr)
 			}
 			if _, err := os.Stat(filepath.Join(dir, exeName("nxy"))); err == nil {
 				t.Fatal("downloaded despite a fresh lock")

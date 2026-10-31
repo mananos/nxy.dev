@@ -18,6 +18,9 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 	if strings.HasPrefix(q, "Approve nxy plan "+f.ID+" r") {
 		return true
 	}
+	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) {
+		return true
+	}
 	if f.Plan != nil {
 		for _, pq := range f.Plan.Questions {
 			if pq.Question == q {
@@ -26,6 +29,43 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 		}
 	}
 	return false
+}
+
+// decisionAnswer finds the answer to the decision question of the current phase.
+func decisionAnswer(f domain.Feature, answers map[string]string) (string, bool) {
+	var q string
+	switch f.State.Phase {
+	case domain.PhaseBatchFailed:
+		q = plan.DecisionQuestion(f.ID, f.State.Batch)
+	case domain.PhasePlannerFailed:
+		q = plan.PlannerFailedQuestion(f.ID)
+	default:
+		return "", false
+	}
+	a, ok := answers[q]
+	return a, ok
+}
+
+func (h Hooks) answerDecision(ctx context.Context, f domain.Feature, answer string) HookResponse {
+	var d flow.Decision
+	switch answer {
+	case plan.Retry:
+		d = flow.DecisionRetry
+	case plan.Continue:
+		if f.State.Phase == domain.PhaseBatchFailed {
+			d = flow.DecisionContinue
+		}
+	case plan.Stop:
+		d = flow.DecisionStop
+	}
+	if d == flow.DecisionNone {
+		return HookResponse{Next: &Next{Feature: f, Note: "pick one of the options"}}
+	}
+	nf, _, err := h.advance(ctx, f.ID, flow.Event{Kind: flow.Decided, Decision: d})
+	if err != nil {
+		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
+	}
+	return HookResponse{Next: &Next{Feature: nf}}
 }
 
 // preToolAskUser refuses nxy questions that arrive with answers the model filled in.
@@ -56,6 +96,9 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	if ans, rev, found := approvalAnswer(f, ev.Answers); found {
 		return h.answerApproval(ctx, f, ans, rev)
+	}
+	if ans, found := decisionAnswer(f, ev.Answers); found {
+		return h.answerDecision(ctx, f, ans)
 	}
 	if f.State.Phase == domain.PhaseQuestions && f.Plan != nil {
 		return h.answerQuestions(ctx, f, ev.Answers)

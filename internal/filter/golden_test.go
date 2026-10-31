@@ -113,6 +113,33 @@ func TestGoldenShell(t *testing.T) {
 	}
 }
 
+func TestGoldenShellwrites(t *testing.T) {
+	cwd, err := filepath.Abs("/nxy-golden-cwd/work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := func(paths []string) []string {
+		out := []string{}
+		for _, p := range paths {
+			r, err := filepath.Rel(cwd, p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out = append(out, filepath.ToSlash(r))
+		}
+		return out
+	}
+	for _, c := range loadGolden(t, "shellwrites") {
+		t.Run(c.File+"/"+c.Name, func(t *testing.T) {
+			cmd, tool := c.str(t, "command"), c.str(t, "tool")
+			checkOutput(t, c, map[string]any{
+				"targets":        rel(WriteTargets(cmd, cwd, WriteOptions{Tool: tool})),
+				"contentTargets": rel(WriteTargets(cmd, cwd, WriteOptions{Tool: tool, ContentOnly: true})),
+			})
+		})
+	}
+}
+
 func TestGoldenRtkCmd(t *testing.T) {
 	for _, c := range loadGolden(t, "rtkcmd") {
 		t.Run(c.File+"/"+c.Name, func(t *testing.T) {

@@ -213,6 +213,64 @@ func TestActiveFeaturePerRepo(t *testing.T) {
 	}
 }
 
+func TestOneActiveFeaturePerRepo(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	a, err := s.CreateFeature(ctx, domain.Feature{Repo: "r1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateFeature(ctx, domain.Feature{Repo: "r1"}); !errors.Is(err, ErrActiveFeature) {
+		t.Fatalf("second in same repo: err = %v", err)
+	}
+	if _, err := s.CreateFeature(ctx, domain.Feature{Repo: "r2"}); err != nil {
+		t.Fatalf("other repo: %v", err)
+	}
+	if err := s.Transition(ctx, a, func(f domain.Feature) (domain.Feature, error) {
+		f.State = domain.State{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}
+		return f, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateFeature(ctx, domain.Feature{Repo: "r1"}); err != nil {
+		t.Fatalf("after done: %v", err)
+	}
+}
+
+func TestMigrate2To3KeepsNewestActive(t *testing.T) {
+	path := dbPath(t)
+	migs, _ := embeddedMigrations()
+	s, err := openWith(ctx, path, time.Now, migs[:2])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []struct {
+		id   string
+		upd  int
+		repo string
+	}{{"a", 1, "r"}, {"b", 3, "r"}, {"c", 2, "r"}, {"d", 1, "other"}} {
+		if _, err := s.db.Exec(`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done) VALUES (?, 1, '{}', 1, ?, 'm', ?, 0)`,
+			r.id, r.upd, r.repo); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s.Close()
+	s2 := mustOpen(t, path)
+	rows, err := s2.db.Query(`SELECT id FROM features WHERE done=0 ORDER BY id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		got = append(got, id)
+	}
+	if len(got) != 2 || got[0] != "b" || got[1] != "d" {
+		t.Errorf("active after migration = %v, want [b d]", got)
+	}
+}
+
 func TestFeatureNotFound(t *testing.T) {
 	s := mustOpen(t, dbPath(t))
 	if _, err := s.Feature(ctx, "missing"); !errors.Is(err, ErrNotFound) {

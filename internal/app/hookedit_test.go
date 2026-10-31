@@ -100,6 +100,79 @@ func TestPreToolEditWindowsPaths(t *testing.T) {
 	}
 }
 
+func TestPreToolEditImplementerAllow(t *testing.T) {
+	root := t.TempDir()
+	plan := &domain.Plan{Batches: []domain.Batch{{N: 1, Change: []domain.Change{{At: "calc.go:5", What: "x"}, {At: "sub/b.go", What: "y"}}}}}
+	setup := func(state domain.State) (Hooks, *memStore) {
+		h, st := flowHooks(false)
+		if _, err := st.CreateFeature(context.Background(), domain.Feature{
+			Repo: h.Repos.Key(root), ProjectDir: root, Request: "r", State: state, Next: runningNext, PlanRev: 1, Plan: plan,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return h, st
+	}
+	ev := func(file, agentType string) HookEvent {
+		id := "agent-1"
+		if agentType == "" {
+			id = ""
+		}
+		return HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: file, AgentID: id, AgentType: agentType, ProjectDir: root, Cwd: root}
+	}
+	edits := func(h Hooks, st *memStore) int {
+		f, _, _ := st.ActiveFeature(context.Background(), h.Repos.Key(root))
+		if f.Proof == nil {
+			return 0
+		}
+		return f.Proof.Edits
+	}
+	cases := []struct {
+		name  string
+		state domain.State
+		ev    HookEvent
+		allow bool
+		edits int
+	}{
+		{"listed", runningState, ev(filepath.Join(root, "calc.go"), roleImplementer), true, 1},
+		{"listed relative", runningState, ev("sub/b.go", roleImplementer), true, 1},
+		{"unlisted", runningState, ev(filepath.Join(root, "other.go"), roleImplementer), false, 1},
+		{"escapes", runningState, ev(root+"/sub/../../calc.go", roleImplementer), false, 0},
+		{"other subagent", runningState, ev(filepath.Join(root, "calc.go"), "other:agent"), false, 0},
+		{"other phase", domain.State{Phase: domain.PhaseApproval}, ev(filepath.Join(root, "calc.go"), roleImplementer), false, 0},
+	}
+	for _, c := range cases {
+		h, st := setup(c.state)
+		r := h.Handle(context.Background(), c.ev)
+		if (r.AllowReason != "") != c.allow || r.Deny != "" {
+			t.Errorf("%s: allow = %q deny = %q, want allow=%v", c.name, r.AllowReason, r.Deny, c.allow)
+		}
+		if got := edits(h, st); got != c.edits {
+			t.Errorf("%s: edits = %d, want %d", c.name, got, c.edits)
+		}
+	}
+	h, _ := setup(runningState)
+	if r := h.Handle(context.Background(), ev(filepath.Join(root, "calc.go"), "")); r.Deny == "" || r.AllowReason != "" {
+		t.Errorf("main thread: %+v", r)
+	}
+
+	old := goos
+	goos = "windows"
+	defer func() { goos = old }()
+	wroot := `C:\Repo\Proj`
+	h, st := flowHooks(false)
+	if _, err := st.CreateFeature(context.Background(), domain.Feature{
+		Repo: h.Repos.Key(wroot), ProjectDir: wroot, Request: "r", State: runningState, Next: runningNext, PlanRev: 1, Plan: plan,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{`c:\repo\proj\CALC.go`, `C:/Repo/Proj/calc.go`, `C:\Repo\Proj\sub\b.go`} {
+		e := HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: p, AgentID: "a", AgentType: roleImplementer, ProjectDir: wroot, Cwd: wroot}
+		if r := h.Handle(context.Background(), e); r.AllowReason == "" {
+			t.Errorf("%s: not allowed", p)
+		}
+	}
+}
+
 func TestNormPathUNC(t *testing.T) {
 	old := goos
 	goos = "windows"
@@ -135,6 +208,26 @@ func TestStatus(t *testing.T) {
 	seed(t, h, st, dir, runningState, runningNext)
 	if v, _ := h.Status(context.Background(), dir); v.Next != "Lote 1" {
 		t.Errorf("running: %+v", v)
+	}
+}
+
+func TestNoMainThreadStepIsNeverEmpty(t *testing.T) {
+	dir := t.TempDir()
+	h, st := flowHooks(false)
+	seed(t, h, st, dir, domain.State{Phase: domain.PhaseAffected}, domain.Action{})
+	r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Write", FilePath: filepath.Join(dir, "a.go"), ProjectDir: dir, Cwd: dir})
+	if r.Deny == "" || strings.Contains(r.Deny, "next step .") || !strings.Contains(r.Deny, "F2.3") || !strings.Contains(r.Deny, "`nxy feature stop`") {
+		t.Errorf("deny = %q", r.Deny)
+	}
+	v, _ := h.Status(context.Background(), dir)
+	if v.Next == "" || !strings.Contains(v.Next, "F2.3") {
+		t.Errorf("status next = %q", v.Next)
+	}
+
+	h, st = flowHooks(false)
+	seed(t, h, st, dir, domain.State{Phase: domain.PhaseVerifyingBatch}, domain.Action{})
+	if v, _ := h.Status(context.Background(), dir); !strings.Contains(v.Next, "Verificando lote") {
+		t.Errorf("verifying status next = %q", v.Next)
 	}
 }
 

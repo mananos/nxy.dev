@@ -22,20 +22,40 @@ type askQuestion struct {
 
 // Instruction words the step f.Next as one instruction for the main thread, starting with "nxy:".
 func Instruction(f domain.Feature, note string) string {
+	return instruction(f, note, false)
+}
+
+// StopInstruction is Instruction for the Stop hook: its text is the block reason, which the user
+// already sees, so the checkpoint or failure goes once and the model is told not to repeat it.
+func StopInstruction(f domain.Feature, note string) string {
+	return instruction(f, note, true)
+}
+
+func instruction(f domain.Feature, note string, stop bool) string {
 	var s string
 	switch a := f.Next; a.Kind {
 	case domain.DispatchPlanner:
 		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:planner`, prompt `feature %s`; nothing else, nxy writes its prompt.", f.ID, f.ID)
 	case domain.AskQuestions:
-		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, questionsInput(f))
+		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, questionsInput(f), stop)
 	case domain.AskApproval:
-		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, approvalInput(f))
+		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, approvalInput(f), stop)
 	case domain.AskChangeNote:
 		s = "nxy: feature " + f.ID + " — Next: tell the user to write what to change in the plan in their next message; do nothing else until they do."
 	case domain.DispatchImplementer:
-		s = fmt.Sprintf("nxy: feature %s — Lote %d aprobado; la ejecución llega en F2.2: stop here. To end the feature: `nxy feature stop`.", f.ID, a.Batch)
+		if a.Retry {
+			s = fmt.Sprintf("nxy: feature %s — batch %d failed verification; nxy retries once — dispatch it again the same way: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, a.Batch, f.ID, a.Batch)
+		} else {
+			s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, f.ID, a.Batch)
+		}
+	case domain.AskDecision:
+		s = "nxy: feature " + f.ID + " — " + decisionAndAsk(f, stop)
 	default:
-		s = "nxy: feature " + f.ID + " — " + a.Label() + ": not available yet in this build; stop here. To end the feature: `nxy feature stop`."
+		if f.State.Phase == domain.PhaseAffected {
+			s = "nxy: feature " + f.ID + " — all batches are green; affected tests and review arrive in F2.3: stop here. To end the feature: `nxy feature stop`."
+		} else {
+			s = "nxy: feature " + f.ID + " — " + a.Label() + ": not available yet in this build; stop here. To end the feature: `nxy feature stop`."
+		}
 	}
 	if note != "" {
 		s += "\n" + note
@@ -43,17 +63,70 @@ func Instruction(f domain.Feature, note string) string {
 	return s
 }
 
-func checkpointAndAsk(f domain.Feature, input string) string {
+func checkpointAndAsk(f domain.Feature, input string, stop bool) string {
 	var b strings.Builder
-	b.WriteString("Next: show this checkpoint to the user verbatim, without summarizing or reformatting.\n")
+	if stop {
+		b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
+	} else {
+		b.WriteString("Next: show this checkpoint to the user verbatim, without summarizing or reformatting.\n")
+	}
 	b.WriteString("--- checkpoint ---\n")
 	if f.Plan != nil {
 		b.WriteString(plan.Checkpoint(*f.Plan))
 	}
 	b.WriteString("\n--- end checkpoint ---\n")
-	b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
+	if stop {
+		b.WriteString("Input:\n")
+	} else {
+		b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
+	}
 	b.WriteString(input)
 	return b.String()
+}
+
+// decisionAndAsk words the AskDecision step: the failure, then the question to ask.
+func decisionAndAsk(f domain.Feature, stop bool) string {
+	var b strings.Builder
+	var input string
+	switch f.State.Phase {
+	case domain.PhaseBatchFailed:
+		if stop {
+			b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
+		} else {
+			b.WriteString("Next: show this failure to the user verbatim, without summarizing or reformatting.\n")
+		}
+		fmt.Fprintf(&b, "--- Lote %d fallido ---\n", f.State.Batch)
+		if f.Proof != nil {
+			b.WriteString(f.Proof.Failure)
+		}
+		b.WriteString("\n--- fin ---\n")
+		input = decisionInput(plan.DecisionQuestion(f.ID, f.State.Batch), "Batch", []askOption{
+			{plan.Retry, "Run the batch again"},
+			{plan.Continue, "Accept it as is and go to the next batch"},
+			{plan.Stop, "End the feature"},
+		})
+	case domain.PhasePlannerFailed:
+		b.WriteString("Next: the planner ended without saving a plan; ask with AskUserQuestion, with exactly this input.\n")
+		input = decisionInput(plan.PlannerFailedQuestion(f.ID), "Planner", []askOption{
+			{plan.Retry, "Plan again"},
+			{plan.Stop, "End the feature"},
+		})
+	default:
+		return f.Next.Label() + ": not available yet in this build; stop here. To end the feature: `nxy feature stop`."
+	}
+	if f.State.Phase == domain.PhaseBatchFailed {
+		if stop {
+			b.WriteString("Input:\n")
+		} else {
+			b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
+		}
+	}
+	b.WriteString(input)
+	return b.String()
+}
+
+func decisionInput(question, header string, opts []askOption) string {
+	return askInput([]askQuestion{{Question: question, Header: header, Options: opts}})
 }
 
 func approvalInput(f domain.Feature) string {

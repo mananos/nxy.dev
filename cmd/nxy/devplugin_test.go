@@ -56,6 +56,12 @@ func TestDevPluginAgentAndCommand(t *testing.T) {
 			t.Errorf("agents/planner.md frontmatter misses %q", want)
 		}
 	}
+	impl := frontmatter(t, filepath.Join(dir, "agents", "implementer.md"))
+	for _, want := range []string{"name: implementer", "description:", "tools:", "model:"} {
+		if !strings.Contains(impl, want) {
+			t.Errorf("agents/implementer.md frontmatter misses %q", want)
+		}
+	}
 	cmd := frontmatter(t, filepath.Join(dir, "commands", "feature.md"))
 	if !strings.Contains(cmd, "description:") {
 		t.Error("commands/feature.md frontmatter misses description")

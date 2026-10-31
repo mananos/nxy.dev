@@ -8,8 +8,8 @@ import (
 )
 
 // Checkpoint is what the user needs to decide: rules and batches with what
-// changes, the test and the risk. It leaves out the request, Read and Accept.
-// The main thread copies it verbatim into the chat.
+// changes, the test, the command nxy runs for it (Accept) and the risk. It leaves
+// out the request and Read. The main thread copies it verbatim into the chat.
 func Checkpoint(p domain.Plan) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## %s\n\n", p.Title)
@@ -22,6 +22,9 @@ func Checkpoint(p domain.Plan) string {
 			fmt.Fprintf(&b, "  - %s — %s\n", c.At, c.What)
 		}
 		fmt.Fprintf(&b, "- Test: %s\n", testLine(bt.Test))
+		if bt.Test.Accept != "" {
+			fmt.Fprintf(&b, "- Accept: `%s`\n", bt.Test.Accept)
+		}
 		fmt.Fprintf(&b, "- Riesgo: %s\n", bt.Risk)
 	}
 	return b.String()

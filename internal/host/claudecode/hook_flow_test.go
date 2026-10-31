@@ -211,11 +211,42 @@ func TestInstructionPerAction(t *testing.T) {
 	if s := Instruction(f, ""); !strings.HasPrefix(s, "nxy:") || !strings.Contains(s, "next message") {
 		t.Errorf("change note: %s", s)
 	}
-	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
-	if s := Instruction(f, "nota final"); !strings.Contains(s, "`nxy feature stop`") || !strings.Contains(s, "Lote 1") || !strings.HasSuffix(s, "nota final") {
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 2}
+	if s := Instruction(f, "nota final"); !strings.Contains(s, "`nxy:implementer`") || !strings.Contains(s, "feature f1 batch 2") || !strings.Contains(s, "background") || !strings.HasSuffix(s, "nota final") {
 		t.Errorf("implementer: %s", s)
 	}
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 2, Retry: true}
+	if s := Instruction(f, ""); !strings.Contains(s, "batch 2 failed verification") || !strings.Contains(s, "retries once") {
+		t.Errorf("retry: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.AskDecision}
+	f.State = domain.State{Phase: domain.PhaseBatchFailed, Batch: 2}
+	f.Proof = &domain.Proof{Batch: 2, Failure: "green never passed: boom"}
+	s = Instruction(f, "")
+	for _, want := range []string{"--- Lote 2 fallido ---", "green never passed: boom", plan.DecisionQuestion("f1", 2), plan.Retry, plan.Continue, plan.Stop} {
+		if !strings.Contains(s, want) {
+			t.Errorf("batch_failed missing %q in:\n%s", want, s)
+		}
+	}
+	st := StopInstruction(f, "")
+	if strings.Count(st, "green never passed: boom") != 1 || !strings.Contains(st, "do not repeat it") {
+		t.Errorf("stop batch_failed: %s", st)
+	}
+	f.State = domain.State{Phase: domain.PhasePlannerFailed}
+	if s := Instruction(f, ""); !strings.Contains(s, plan.PlannerFailedQuestion("f1")) || !strings.Contains(s, plan.Retry) || strings.Contains(s, plan.Continue) {
+		t.Errorf("planner_failed: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.RunAffected}
+	f.State = domain.State{Phase: domain.PhaseAffected}
+	if s := Instruction(f, ""); !strings.Contains(s, "all batches are green") || !strings.Contains(s, "`nxy feature stop`") {
+		t.Errorf("affected: %s", s)
+	}
+	af := approvalFeature()
+	if s := StopInstruction(af, ""); strings.Count(s, plan.Checkpoint(*af.Plan)) != 1 || !strings.Contains(s, "do not repeat it") || strings.Contains(s, "verbatim") {
+		t.Errorf("stop approval: %s", s)
+	}
 	f.Next = domain.Action{Kind: domain.DispatchReviewer}
+	f.State = domain.State{Phase: domain.PhaseReviewing}
 	if s := Instruction(f, ""); !strings.Contains(s, "not available yet") {
 		t.Errorf("default: %s", s)
 	}

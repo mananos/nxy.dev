@@ -82,6 +82,13 @@ func nextBatch(s state, _ Event) (state, []action) {
 	return s, acts(domain.RunAffected)
 }
 
+// reverify runs the affected tests again after a fix, keeping the attempt: a
+// second red must reach affected_failed, not retry forever.
+func reverify(s state, _ Event) (state, []action) {
+	s.Phase = domain.PhaseAffected
+	return s, acts(domain.RunAffected)
+}
+
 func retryBatch(s state, _ Event) (state, []action) { return startBatch(s, s.Batch, false) }
 
 func planSaved(s state, ev Event) (state, []action) {
@@ -103,8 +110,11 @@ func approved(s state, _ Event) (state, []action) {
 	return startBatch(s, 1, false)
 }
 
+// verifyBatch keeps the attempt on purpose: the automatic retry is counted
+// across running_batch -> verifying_batch, so a second red reaches batch_failed
+// instead of retrying forever.
 func verifyBatch(s state, _ Event) (state, []action) {
-	s.Phase, s.Attempt = domain.PhaseVerifyingBatch, 0
+	s.Phase = domain.PhaseVerifyingBatch
 	return s, []action{{Kind: domain.VerifyBatch, Batch: s.Batch}}
 }
 
@@ -197,7 +207,7 @@ var table = map[domain.Phase][]row{
 		{Red, attempt(1), failTo(domain.PhaseAffectedFailed)},
 	},
 	domain.PhaseAffectedFix: {
-		{FixesReturned, always, to(domain.PhaseAffected, domain.RunAffected)},
+		{FixesReturned, always, reverify},
 	},
 	domain.PhaseAffectedFailed: {
 		{Decided, decided(DecisionRetry), to(domain.PhaseAffectedFix, domain.DispatchAffectedFix)},

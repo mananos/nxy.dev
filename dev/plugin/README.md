@@ -49,10 +49,37 @@ Estados públicos (los de `nxy status`):
 - **Necesita tu decisión**: te toca a vos (responder, aprobar, reintentar o parar).
 - **Listo**: la feature terminó, o la paraste.
 
-Después de aprobar, F2.1 se detiene en **Lote 1**: la ejecución llega en F2.2. Mientras tanto el hilo principal no puede editar archivos del repo (los de fuera, como `~/.claude`, sí). `nxy status` te dice dónde está (por ejemplo "Lote 1"). Para terminar: `nxy feature stop`; libera las ediciones del repo y borra el plan .md.
+Después de aprobar, la feature ejecuta los lotes (ver F2.2 abajo). Mientras hay una feature sin terminar el hilo principal no puede editar archivos del repo (los de fuera, como `~/.claude`, sí). `nxy status` te dice dónde está (por ejemplo "Lote 1"). Para terminar: `nxy feature stop`; libera las ediciones del repo y borra el plan .md.
 
 Planner en segundo plano: si Claude lanza el planner sin esperarlo, nxy le dice "esperá" al hilo principal (no lo relanza). El plan te llega al final de ese turno o en tu próximo mensaje, una sola vez. Si hacés `/clear` con una feature pendiente, ves una línea "nxy: feature … pendiente": escribí cualquier cosa para seguir.
 
 Dónde queda el plan: `~/.nxy/plans/<id>.md`, uno por feature, de unos 5 a 15 KB. Se pisa en cada Ver completo y se borra al parar.
+
+## F2.2: los lotes
+
+Al aprobar el plan, nxy ejecuta los lotes de a uno, solo: el hilo principal despacha un `nxy:implementer` por lote y nxy le escribe el prompt (el pedido, las reglas que cubre el lote, qué cambiar y cómo probarlo). No tenés que hacer nada mientras tanto.
+
+Qué ves:
+
+- **Trabajando / Verificando**: el implementer escribe la prueba y el código, y prueba con `nxy batch red` y `nxy batch green`. Esos comandos corren el `Accept` del plan por vos (con `sh`, o `cmd /c` en Windows sin `sh`) y nxy guarda el resultado; el implementer no corre el `Accept` por su cuenta. Un lote con regla `tdd` necesita un rojo (la prueba nueva falla) y después un verde. Si el `Accept` ya pasa antes de escribir código, el rojo se rechaza: la prueba no prueba nada.
+- Cuando el implementer vuelve (en primer plano o en segundo plano), nxy decide verde o rojo en ese mismo momento. Si escribió algo después del verde, ese verde ya no vale y el lote queda en rojo.
+- **Reintento automático**: si el lote queda en rojo, nxy lo despacha una vez más con la falla en el prompt. No te pregunta.
+- **Lote fallido**: si falla de nuevo, ves "Lote n fallido" con la causa y la cola de la salida, y una pregunta con **Reintentar** (lo corre otra vez), **Seguir** (lo acepta así y pasa al siguiente) o **Parar** (termina la feature).
+- Si el planner termina sin guardar un plan, la pregunta es **Reintentar** o **Parar**.
+- Después del último lote verde la feature se detiene: las pruebas afectadas y la review llegan en F2.3. Para terminar: `nxy feature stop`.
+
+Permisos:
+
+- **Qué ves**: el checkpoint muestra el `Accept:` de cada lote. Qué significa: aprobar el plan aprueba esos comandos, que nxy corre por el implementer. Qué hacer: leelos antes de aprobar; si alguno no te gusta, pedí el cambio.
+- **Qué ves**: los comandos propios de nxy (`nxy batch red|green`, `nxy plan save`) corren sin pedirte permiso, incluso en modo default. Qué hacer: nada. Los Edit/Write del implementer sobre los archivos que su lote nombra en el checkpoint ("Cambiar: calc.go:5 — …") pasan sin preguntar; un edit a cualquier otro archivo pregunta como siempre, así notás cuándo se sale del plan. Las demás llamadas de los agentes siguen preguntando como siempre, y el pedido de un agente en segundo plano aparece en tu sesión "from the nxy:implementer agent": respondelo ahí.
+
+Qué cambia para el hilo principal:
+
+- Tampoco puede escribir el repo por el shell: `echo x > archivo`, `sed -i`, `tee`, `cp`, `mv` y similares sobre archivos del proyecto se rechazan mientras hay una feature sin terminar. Fuera del repo y sobre `.git` o `.nxy` no pasa nada.
+- Hay una sola feature sin terminar por repo. Si ya hay una, `/nxy:feature` te dice cuál es; usá `nxy feature stop` para liberarla. Si tenías duplicados de antes, la actualización deja viva sólo la más nueva.
+
+Si ves una línea del shim con "nxy hooks do nothing until this is fixed" es que el binario no está o no se puede ejecutar: los hooks no hacen nada hasta que lo arregles (bajalo de nuevo o apuntá `NXY_BIN` a un build válido).
+
+Límite conocido: el `Accept` lo escribe el planner para `sh`. En Windows sin `sh` se usa `cmd /c`, y un `Accept` tipo `test -f x` falla ahí; lo ves como una falla con la salida, no escondida.
 
 `NXY_BIN` wins over everything. To test the download path (binary under `~/.nxy/bin/2.0.0-dev/`, fetched from the GitHub release), unset it first: a leftover `NXY_BIN` silently runs a stale build.

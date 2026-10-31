@@ -202,6 +202,8 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 - **Plan activo.** Con el plan aprobado el principal no edita: cada lote va a un implementer, que es lo que se verifica. `/nxy:gate once` es la salida para algo fuera del plan.
 - **Dependencias.** `Depends: 1` (o `none`) permite lotes en paralelo; un lote en rojo frena sólo a los que dependen de él.
 
+> **Nota 2.0 (dev, `dev/plugin`).** En la v2 el plan es JSON (`nxy plan save`) y cada lote declara qué reglas cubre y con qué prueba. Una regla `tdd` pide rojo y después verde: el implementer corre `nxy batch red` (la prueba nueva tiene que fallar; si el `Accept` pasa sin ella, se rechaza) y `nxy batch green`. Un lote con prueba existente o de build pide sólo el verde. Quien corre el `Accept` es el binario, no el implementer: con `sh -c` si hay `sh` (o `bash`), y con `cmd /d /s /c` en Windows si no; guarda el exit y las últimas 40 líneas. Un verde sólo vale si no hubo escrituras del subagente después. Los lotes `manual` sin `Accept` no piden nada.
+
 ## La verificación de cada lote
 
 - Cada `Accept:` es un comando en backticks: el test más chico que prueba el lote (una clase o un archivo, no la suite), o `manual — <qué mirar>`.
@@ -279,6 +281,8 @@ Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
 | `PostToolUse` Agent | Veredicto del lote, siguiente paso (tester, reviewer), sugerencia de corte | Una o dos líneas |
 | `SubagentStop` | Verifica el `Accept:` del lote en el transcript del implementer | 0 salvo que lo mande de vuelta |
 | `Stop` | Handoff viejo al terminar el turno | 0 salvo que frene |
+
+> **Nota 2.0 (dev, `dev/plugin`).** Los hooks de la v2 son el binario Go, y en F2.2 hacen esto: `PreToolUse` Agent inyecta el prompt del implementer (`updatedInput`) a partir del plan guardado, con la falla anterior si es un reintento; el veredicto del lote se decide en el mismo hook en que el implementer vuelve (`PostToolUse` Agent, o `SubagentStop` + entrega única si corrió en segundo plano: el modo Background vale para cualquier rol, no sólo el planner); un rojo reintenta una vez y el segundo pregunta Reintentar / Seguir / Parar. `PreToolUse` Edit/Write cuenta las escrituras del implementer y frena las del hilo principal; `PreToolUse` Bash frena también las escrituras del hilo principal por shell (`>`, `sed -i`, `tee`, `cp`, `mv`...) dentro del repo, con las mismas reglas que el filtro. Una feature sin terminar por repo (índice único en la base).
 
 Todos fallan abiertos: ante cualquier error dejan pasar lo que Claude iba a hacer. `NXY_DEBUG=1` muestra la causa en stderr.
 

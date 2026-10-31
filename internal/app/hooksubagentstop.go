@@ -7,23 +7,24 @@ import (
 	"github.com/mananos/nxy.dev/internal/flow"
 )
 
-// subagentStop handles SubagentStop of a planner launched in the background: it clears the
-// mark, leaves the result to be delivered to the main thread and, if the planner ended
-// without a saved plan, applies PlannerReturned (retry or give up). A foreground planner is
-// ignored: its PostToolUse follows. It never blocks the subagent.
+// subagentStop handles SubagentStop of a planner or implementer launched in the background: it
+// clears the mark, leaves the result to be delivered to the main thread and applies what the
+// return means (a planner without a saved plan retries or gives up; a batch is verified). A
+// foreground subagent is ignored: its PostToolUse follows. It never blocks the subagent.
 func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
-	if ev.AgentType != rolePlanner {
+	role, known := roles[ev.AgentType]
+	if !known {
 		return HookResponse{}
 	}
 	f, ok := h.activeFeature(ctx, ev)
 	if !ok {
 		return HookResponse{}
 	}
-	if f.Background == "" && f.State.Phase == domain.PhasePlanning {
-		// The planner ended before its launch hook ran (or it is a foreground one, whose
+	if f.Background == "" && f.State.Phase == role.phase {
+		// It ended before its launch hook ran (or it is a foreground one, whose
 		// PostToolUse clears this): remember it so a later async launch does not wait.
 		_, _, _ = h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
-			if g.Background != "" || g.State.Phase != domain.PhasePlanning {
+			if g.Background != "" || g.State.Phase != role.phase {
 				return false
 			}
 			g.Background = backgroundEnded
@@ -31,19 +32,19 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 		})
 		return HookResponse{}
 	}
-	if f.Background != rolePlanner {
+	if f.Background != ev.AgentType {
 		return HookResponse{}
 	}
-	_, _, _ = h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.PlannerReturned}, func(g *domain.Feature) error {
-		if g.Background != rolePlanner {
-			return errSkipEvent // another hook handled it
+	_, _, _ = h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
+		if g.Background != ev.AgentType {
+			return nil, errSkipEvent // another hook handled it
 		}
 		g.Background = ""
 		g.Undelivered = true
-		if g.State.Phase != domain.PhasePlanning {
-			return errSkipEvent
+		if g.State.Phase != role.phase {
+			return nil, errSkipEvent
 		}
-		return nil
+		return role.returned(g), nil
 	})
 	return HookResponse{}
 }

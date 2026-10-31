@@ -23,7 +23,12 @@ var (
 	ErrConflict = errors.New("sqlite: feature changed concurrently")
 	// ErrNotFound means no feature has that id.
 	ErrNotFound = errors.New("sqlite: feature not found")
+	// ErrActiveFeature means the repo already has a feature that is not done.
+	ErrActiveFeature = errors.New("sqlite: repo already has an active feature")
 )
+
+// sqliteConstraintUnique is the extended result code SQLITE_CONSTRAINT_UNIQUE.
+const sqliteConstraintUnique = 2067
 
 // Store is the SQLite-backed feature store.
 type Store struct {
@@ -117,6 +122,10 @@ func (s *Store) CreateFeature(ctx context.Context, f domain.Feature) (string, er
 	_, err = s.db.ExecContext(ctx,
 		`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done) VALUES (?, 1, ?, ?, ?, ?, ?, ?)`,
 		f.ID, string(b), ms, ms, s.machineID, f.Repo, isDone(f))
+	var coded interface{ Code() int }
+	if errors.As(err, &coded) && coded.Code() == sqliteConstraintUnique {
+		return "", ErrActiveFeature
+	}
 	if err != nil {
 		return "", err
 	}

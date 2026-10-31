@@ -1,7 +1,8 @@
 : <<'BATCH'
 @echo off
 rem nxy shim, batch half (PowerShell / cmd on Windows). No labels, no goto: cmd mis-parses them in LF files.
-setlocal
+rem Delayed expansion stays off until a failure echo (a ! in a path would be eaten).
+setlocal DisableDelayedExpansion
 set "NXY_VERSION=2.0.0-dev"
 set "NXY_FAIL="
 set "NXY_NEED="
@@ -28,7 +29,8 @@ if defined NXY_NEED if not defined NXY_FAIL forfiles /p "%NXY_DIR%\bin\%NXY_VERS
 rem A lock older than a minute belongs to a dead run (the download itself is capped at 8 s).
 if defined NXY_NEED if not defined NXY_FAIL if exist "%NXY_LOCK%" powershell -NoProfile -NonInteractive -Command "if (((Get-Date) - (Get-Item -LiteralPath $env:NXY_LOCK).LastWriteTime).TotalSeconds -gt 60) { Remove-Item -LiteralPath $env:NXY_LOCK -Force -Recurse }" <nul >nul 2>nul
 if defined NXY_NEED if not defined NXY_FAIL mkdir "%NXY_LOCK%" 2>nul && set "NXY_OWN=1"
-if defined NXY_NEED if not defined NXY_FAIL if not defined NXY_OWN set "NXY_FAIL=another download of %NXY_VERSION% is in progress, skipping this hook"
+if defined NXY_NEED if not defined NXY_FAIL if not defined NXY_OWN set "NXY_FAIL=downloading its binary in another hook - this hook was skipped"
+if defined NXY_FAIL if not defined NXY_OWN set "NXY_SOFT=1"
 if defined NXY_OWN if exist "%NXY_EXE%" set "NXY_NEED="
 rem 8 s in total (6 + 2), well under the 10 s hook timeout.
 if defined NXY_NEED if not defined NXY_FAIL curl -fsSL --connect-timeout 3 --max-time 6 -o "%NXY_TMP%" "%NXY_URL%/%NXY_ASSET%" <nul || set "NXY_FAIL=download of %NXY_ASSET% failed"
@@ -44,16 +46,44 @@ if defined NXY_NEED if not defined NXY_FAIL if not exist "%NXY_EXE%" set "NXY_FA
 if defined NXY_NEED del "%NXY_TMP%" "%NXY_SUMS%" 2>nul
 if defined NXY_OWN rmdir "%NXY_LOCK%" 2>nul
 if not defined NXY_FAIL if not exist "%NXY_RUN%" set "NXY_FAIL=binary not found at %NXY_RUN%"
-if defined NXY_FAIL echo nxy: %NXY_FAIL% 1>&2
+rem Failures must be visible: stdout JSON {"systemMessage"} is shown to the user (stderr is not). Delayed expansion keeps & and ) in paths harmless.
+if defined NXY_FAIL setlocal EnableDelayedExpansion
+if defined NXY_FAIL echo nxy: !NXY_FAIL! 1>&2
+if defined NXY_FAIL set "NXY_FAIL=!NXY_FAIL:\=/!"
+if defined NXY_FAIL if defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL!"}
+if defined NXY_FAIL if not defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL! - nxy hooks do nothing until this is fixed"}
 if defined NXY_FAIL exit /b 0
 "%NXY_RUN%" hook
-exit /b %ERRORLEVEL%
+set "NXY_CODE=%ERRORLEVEL%"
+rem 9009 not found, 193 / 216 not a valid executable for this Windows: the binary could not run at all.
+set "NXY_BAD="
+if "%NXY_CODE%"=="9009" set "NXY_BAD=1"
+if "%NXY_CODE%"=="193" set "NXY_BAD=1"
+if "%NXY_CODE%"=="216" set "NXY_BAD=1"
+if defined NXY_BAD setlocal EnableDelayedExpansion
+if defined NXY_BAD set "NXY_RUN=!NXY_RUN:\=/!"
+if defined NXY_BAD echo nxy: could not run !NXY_RUN! (exit %NXY_CODE%) 1>&2
+if defined NXY_BAD echo {"systemMessage":"nxy: could not run !NXY_RUN! (exit %NXY_CODE%) - nxy hooks do nothing until this is fixed"}
+if defined NXY_BAD exit /b 0
+exit /b %NXY_CODE%
 BATCH
 
 # nxy shim, sh half (Linux, macOS, Git Bash). Sourced with `.`: the last line exits the shell.
 NXY_VERSION=2.0.0-dev
 
-nxy_say() { echo "nxy: $*" >&2; }
+# A failure must be visible: the stdout JSON is shown to the user by Claude Code, stderr is not.
+nxy_say() {
+  echo "nxy: $*" >&2
+  msg=$(printf '%s' "$*" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+  printf '{"systemMessage":"nxy: %s - nxy hooks do nothing until this is fixed"}\n' "$msg"
+}
+
+# A held download lock is transient (another hook is fetching the binary), not a broken install.
+nxy_skip() {
+  echo "nxy: $*" >&2
+  msg=$(printf '%s' "$*" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+  printf '{"systemMessage":"nxy: %s"}\n' "$msg"
+}
 
 # Download $asset into $tmp and install it as $bin. Uses the caller's variables; the caller cleans up.
 # 8 s in total (6 + 2), well under the 10 s hook timeout.
@@ -121,7 +151,7 @@ nxy_main() {
         rmdir "$lock" 2>/dev/null
       fi
       if ! mkdir "$lock" 2>/dev/null; then
-        nxy_say "another download of $NXY_VERSION is in progress, skipping this hook"; return 0
+        nxy_skip "downloading its binary in another hook - this hook was skipped"; return 0
       fi
       ok=0
       if [ ! -f "$bin" ]; then
@@ -136,6 +166,13 @@ nxy_main() {
     return 0
   fi
   "$bin" hook
+  rc=$?
+  # 126 / 127: the binary could not run at all (not executable, wrong format, not found).
+  if [ "$rc" = 126 ] || [ "$rc" = 127 ]; then
+    nxy_say "could not run $bin (exit $rc)"
+    return 0
+  fi
+  return $rc
 }
 
 nxy_main

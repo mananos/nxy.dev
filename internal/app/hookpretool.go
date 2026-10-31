@@ -1,12 +1,60 @@
 package app
 
-import "github.com/mananos/nxy.dev/internal/filter"
+import (
+	"context"
 
-// preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs (filter part): rewrite the
-// command through the engine, keeping the approval the original would have had.
-func (h Hooks) preToolBash(ev HookEvent) HookResponse {
+	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/filter"
+)
+
+// shellWrites reports whether the command writes inside the repo (outside .git and .nxy). Pure
+// string work: commands without such targets never open the store.
+func (h Hooks) shellWrites(ev HookEvent) bool {
+	root := ev.ProjectDir
+	if root == "" {
+		return false
+	}
+	cwd := ev.Cwd
+	if cwd == "" {
+		cwd = root
+	}
+	o := filter.WriteOptions{Tool: ev.Tool}
+	if h.Files != nil {
+		o.Native, o.IsDir = h.Files.NativePath, h.Files.IsDir
+	}
+	targets := filter.WriteTargets(ev.Command, cwd, o)
+	if len(targets) == 0 {
+		return false
+	}
+	r := normPath(root, "")
+	for _, t := range targets {
+		p := normPath(t, "")
+		if within(r, p) && !within(r+"/.git", p) && !within(r+"/.nxy", p) {
+			return true
+		}
+	}
+	return false
+}
+
+// preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs: while a feature is active the
+// main thread does not write the repo through the shell either (an implementer's writes are
+// counted), then the command goes through the engine, keeping the approval the original would have had.
+func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	if !ev.HasCommand {
 		return HookResponse{}
+	}
+	if r, ok := h.ownStep(ctx, ev); ok {
+		return r
+	}
+	if (ev.AgentID == "" || ev.AgentType == roleImplementer) && h.shellWrites(ev) {
+		if f, ok := h.activeFeature(ctx, ev); ok && f.ProjectDir != "" {
+			if ev.AgentID == "" {
+				return HookResponse{Deny: mainThreadWriteDeny(f)}
+			}
+			if f.State.Phase == domain.PhaseRunningBatch {
+				h.noteWrite(ctx, f.ID)
+			}
+		}
 	}
 	s := h.Config.Filter(ev.ProjectDir)
 	if !s.Enabled {

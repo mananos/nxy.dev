@@ -29,9 +29,24 @@ func (h Hooks) Status(ctx context.Context, dir string) (StatusView, error) {
 		Request:   strings.TrimSpace(first),
 		Public:    f.State.Phase.Public(),
 		Phase:     f.State.Phase.Label(),
-		Next:      f.Next.Label(),
+		Next:      nextSituation(f),
 		PlanRev:   f.PlanRev,
 	}, nil
+}
+
+// nextSituation says what comes next for the user: the main-thread step when there is one,
+// otherwise what the feature is doing, never an empty string.
+func nextSituation(f domain.Feature) string {
+	if l := f.Next.Label(); l != "" && f.Next.MainThread() {
+		return l
+	}
+	if f.State.Phase == domain.PhaseAffected {
+		return "nothing for the main thread: affected tests and review arrive in F2.3; `nxy feature stop` ends the feature"
+	}
+	if l := f.State.Phase.Label(); l != "" {
+		return "nothing for the main thread (" + l + ")"
+	}
+	return "nothing for the main thread"
 }
 
 // activeIn is the active feature of the repo dir belongs to.
