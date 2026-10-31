@@ -23,6 +23,9 @@ const (
 	Chosen          EventKind = "chosen"
 	FixesReturned   EventKind = "fixes_returned"
 	Stop            EventKind = "stop"
+	DesignClosed    EventKind = "design_closed"
+	GapsFound       EventKind = "gaps_found"
+	ToEngineer      EventKind = "to_engineer"
 )
 
 // Kinds lists every event kind.
@@ -30,6 +33,7 @@ var Kinds = []EventKind{
 	Requested, PlanSaved, PlannerReturned, Answered, NoTestsAnswered, Approved,
 	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Unverified, Decided,
 	ReviewDone, RefuterDone, Chosen, FixesReturned, Stop,
+	DesignClosed, GapsFound, ToEngineer,
 }
 
 // Decision is what the user picks after a step failed.
@@ -45,6 +49,7 @@ const (
 // Event is a fact plus the few details the flow needs to branch on.
 type Event struct {
 	Kind         EventKind
+	Engineer     bool     // Requested: the request came through /nxy:engineer
 	Questions    bool     // PlanSaved: the plan has questions for the user
 	NoTests      bool     // PlanSaved: the plan has rules without tests to confirm
 	Batches      int      // PlanSaved: number of batches in the plan

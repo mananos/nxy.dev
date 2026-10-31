@@ -7,6 +7,50 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
+func TestEngineerExampleValid(t *testing.T) {
+	p, err := Decode(strings.NewReader(engineerExample))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if probs := Validate(p); len(probs) != 0 {
+		t.Errorf("problems = %v", probs)
+	}
+}
+
+func TestValidateRejectsDesignOwnedFields(t *testing.T) {
+	p, _ := Decode(strings.NewReader(engineerExample))
+	p.Decisions = []domain.Decision{{ID: "D1", Scope: domain.ScopeTask, Text: "x"}}
+	if probs := Validate(p); len(probs) == 0 {
+		t.Error("decision id accepted")
+	}
+}
+
+func TestPlannerPromptEngineerUsesDesignTemplate(t *testing.T) {
+	f := domain.Feature{ID: "f1", Request: "r", Mode: domain.ModeEngineer, Design: &domain.Design{
+		Decisions: []domain.Decision{{ID: "D1", Scope: domain.ScopeTask, Text: "x", Why: "y"}},
+		Rules:     []domain.Rule{{ID: "R1", Text: "rule"}},
+	}}
+	p := PlannerPrompt(f, "nxy")
+	if !strings.Contains(p, "D1 [task] x -- why: y") || !strings.Contains(p, "plan gaps") {
+		t.Errorf("prompt = %s", p)
+	}
+}
+
+func TestPlannerPromptEngineerPrevPlanUsesDesignRules(t *testing.T) {
+	f := sampleFeature(t)
+	f.Mode = domain.ModeEngineer
+	f.Plan.Questions = []domain.Question{{Question: "ZZQUESTIONZZ", Header: "h"}}
+	f.Plan.Rules = []domain.Rule{{ID: "R1", Text: "ZZDELEGATERULEZZ"}}
+	f.Design = &domain.Design{Rules: []domain.Rule{{ID: "R1", Text: "ZZDESIGNRULEZZ"}}}
+	p := PlannerPrompt(f, "nxy")
+	if strings.Contains(p, "ZZQUESTIONZZ") || strings.Contains(p, "ZZDELEGATERULEZZ") {
+		t.Errorf("prev plan leaks delegate rules/questions:\n%s", p)
+	}
+	if !strings.Contains(p, "ZZDESIGNRULEZZ") {
+		t.Errorf("prompt lacks design rules:\n%s", p)
+	}
+}
+
 func sampleFeature(t *testing.T) domain.Feature {
 	t.Helper()
 	p, err := Decode(strings.NewReader(plannerExample))
@@ -48,6 +92,49 @@ func TestMarkdownHasEverything(t *testing.T) {
 	}
 	if md != Markdown(f) {
 		t.Error("markdown is not deterministic")
+	}
+}
+
+func engineerSample(t *testing.T) domain.Feature {
+	f := sampleFeature(t)
+	f.Mode = domain.ModeEngineer
+	f.Plan.Decisions = []domain.Decision{
+		{ID: "D1", Scope: domain.ScopeTask, Text: "usar cola", Why: "evita carrera", Dissent: "sigo creyendo que un lock alcanza"},
+		{ID: "D2", Scope: domain.ScopeTask, Text: "nombre del campo", By: domain.ByPlanner, Fork: "B2"},
+	}
+	f.Design = &domain.Design{
+		D2:     "a -> b",
+		Agenda: []domain.Fork{{ID: "B2", Title: "nombre del campo", Status: domain.ForkDelegated}},
+	}
+	return f
+}
+
+func TestCheckpointOfEngineerOmitsRules(t *testing.T) {
+	f := engineerSample(t)
+	cp := CheckpointOf(f)
+	if strings.Contains(cp, "### Reglas") {
+		t.Errorf("engineer checkpoint has rules:\n%s", cp)
+	}
+	for _, want := range []string{"Decisiones que eligió el planner", "D2 nombre del campo", "Lote 1"} {
+		if !strings.Contains(cp, want) {
+			t.Errorf("checkpoint lacks %q:\n%s", want, cp)
+		}
+	}
+	d := sampleFeature(t)
+	if CheckpointOf(d) != Checkpoint(*d.Plan) {
+		t.Error("delegate checkpoint changed")
+	}
+}
+
+func TestMarkdownEngineerHasDesign(t *testing.T) {
+	md := Markdown(engineerSample(t))
+	for _, want := range []string{"### Diseño", "D1 usar cola — evita carrera", "Claude mantiene su desacuerdo: sigo creyendo", "(la eligió el planner)", "```d2\na -> b\n```"} {
+		if !strings.Contains(md, want) {
+			t.Errorf("markdown lacks %q:\n%s", want, md)
+		}
+	}
+	if strings.Contains(md, "B2 nombre del campo") {
+		t.Errorf("fork resolved by the planner listed twice:\n%s", md)
 	}
 }
 

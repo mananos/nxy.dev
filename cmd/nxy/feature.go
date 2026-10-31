@@ -12,9 +12,13 @@ import (
 )
 
 // runPlan is `nxy plan save --feature <id>`: the plan JSON comes on stdin.
+// `nxy plan gaps --feature <id>` sends design holes back to the design.
 func runPlan(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "gaps" {
+		return runPlanGaps(args[1:], stdin, stdout, stderr)
+	}
 	if len(args) == 0 || args[0] != "save" {
-		fmt.Fprintln(stderr, "usage: nxy plan save --feature <id>  (plan JSON on stdin)")
+		fmt.Fprintln(stderr, "usage: nxy plan save|gaps --feature <id>  (JSON on stdin)")
 		return 1
 	}
 	fs := flag.NewFlagSet("plan save", flag.ContinueOnError)

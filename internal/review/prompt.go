@@ -47,6 +47,35 @@ const reviewerBaseExample = `{
   "findings": []
 }`
 
+const reviewerEngineerExample = `{
+  "lens": "api",
+  "findings": [
+    {
+      "severity": "high",
+      "file": "internal/greet/greet.go",
+      "line": 14,
+      "title": "Empty name panics",
+      "scenario": "greet(\"\") -> index out of range at line 14",
+      "evidence": "name[0] is read before the length check",
+      "fix": "check len(name) before reading name[0]",
+      "why": "a caller that passes user input crashes the whole request",
+      "lesson": "validate the length of a value before indexing it"
+    }
+  ]
+}`
+
+const reviewerEngineerBaseExample = `{
+  "lens": "base",
+  "rules": [
+    {"id": "R1", "ok": true}
+  ],
+  "decisions": [
+    {"id": "D1", "file": "internal/greet/greet.go", "line": 12, "how": "the greeting is built here"},
+    {"id": "D2", "how": "nothing in the diff: it only constrains the next step"}
+  ],
+  "findings": []
+}`
+
 const refuterExample = `{
   "verdicts": [
     {"id": "H1", "verdict": "confirmed", "why": "greet(\"\") reaches line 14 with no check before it"},
@@ -64,6 +93,8 @@ type reviewerData struct {
 	Diffs       []FileDiff
 	Cut         []string
 	Example     string
+	Engineer    bool
+	Decisions   []domain.Decision
 }
 
 // ReviewerPrompt builds the prompt of the reviewer of one lens. Only the base
@@ -85,6 +116,18 @@ func ReviewerPrompt(f domain.Feature, lens Lens, diffs []FileDiff, exe string) s
 		if lens.Name == BaseLens {
 			d.Rules = f.Plan.Rules
 			d.Example = reviewerBaseExample
+		}
+	}
+	if f.Mode == domain.ModeEngineer {
+		d.Engineer = true
+		d.Example = reviewerEngineerExample
+		if lens.Name == BaseLens {
+			d.Decisions = DesignDecisions(f)
+			if len(d.Decisions) > 0 {
+				d.Example = reviewerEngineerBaseExample
+			} else {
+				d.Example = reviewerBaseExample
+			}
 		}
 	}
 	d.Diffs, d.Cut = Cut(diffs, MaxDiffLines)

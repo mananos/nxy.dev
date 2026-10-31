@@ -42,6 +42,17 @@ type Finding struct {
 	Dropped    string   `json:"dropped,omitempty"` // why the precision filter dropped it
 	Verdict    Verdict  `json:"verdict,omitempty"`
 	VerdictWhy string   `json:"verdict_why,omitempty"`
+	Why        string   `json:"why,omitempty"`    // engineer: why it matters
+	Lesson     string   `json:"lesson,omitempty"` // engineer: the general rule behind it
+}
+
+// DecisionCheck is the base pass's answer for one decision of the design: where
+// the diff carries it, or how (without a file) it is not in the diff.
+type DecisionCheck struct {
+	ID   string `json:"id"` // "D1"
+	File string `json:"file,omitempty"`
+	Line int    `json:"line,omitempty"`
+	How  string `json:"how,omitempty"`
 }
 
 // RuleCheck is the reviewer's answer for one rule of the plan.
@@ -64,17 +75,18 @@ type LensRun struct {
 
 // Review is the review of a finished feature.
 type Review struct {
-	Risk     Risk        `json:"risk"`
-	RiskWhy  string      `json:"risk_why,omitempty"`
-	Quick    bool        `json:"quick,omitempty"`
-	Lenses   []LensRun   `json:"lenses,omitempty"`
-	Returned []string    `json:"returned,omitempty"` // agent ids that already stopped
-	Rules    []RuleCheck `json:"rules,omitempty"`
-	Findings []Finding   `json:"findings,omitempty"`
-	Refuted  bool        `json:"refuted,omitempty"`
-	Chosen   []string    `json:"chosen,omitempty"`
-	FullPath string      `json:"full_path,omitempty"`
-	Warning  string      `json:"warning,omitempty"` // invalid user/repo lens files, ignored
+	Risk      Risk            `json:"risk"`
+	RiskWhy   string          `json:"risk_why,omitempty"`
+	Quick     bool            `json:"quick,omitempty"`
+	Lenses    []LensRun       `json:"lenses,omitempty"`
+	Returned  []string        `json:"returned,omitempty"` // agent ids that already stopped
+	Rules     []RuleCheck     `json:"rules,omitempty"`
+	Decisions []DecisionCheck `json:"decisions,omitempty"`
+	Findings  []Finding       `json:"findings,omitempty"`
+	Refuted   bool            `json:"refuted,omitempty"`
+	Chosen    []string        `json:"chosen,omitempty"`
+	FullPath  string          `json:"full_path,omitempty"`
+	Warning   string          `json:"warning,omitempty"` // invalid user/repo lens files, ignored
 }
 
 // Pick records whether the user chose to fix one offered finding.

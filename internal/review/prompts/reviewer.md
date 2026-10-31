@@ -10,6 +10,13 @@ You are the base pass: answer every rule, rule by rule, ok true or false. A rule
 {{range .Rules}}
 - {{.ID}}: {{.Text}} ({{.Test}}{{if .Check}}; look at: {{.Check}}{{end}}){{end}}
 {{end}}
+{{if .Decisions}}
+## Decisiones del diseño (decí dónde quedó cada una)
+
+Also answer every decision below, once each, in "decisions": the file and line of the new code that carries it, plus a short "how". A decision that is not in the diff (it only constrains, or was left out) has no file: its "how" says why it is not there.
+{{range .Decisions}}
+- {{.ID}}: {{.Text}}{{if .Why}} (why: {{.Why}}){{end}}{{end}}
+{{end}}
 ## Lens: {{.Lens.Title}}
 
 {{.Lens.Body}}
@@ -43,10 +50,12 @@ You are the base pass: answer every rule, rule by rule, ok true or false. A rule
 - severity: high (wrong result, data loss, security hole), medium (breaks in a real but less common case), low (minor).
 - fix: one line saying what to change. evidence: what you read that proves it.
 - Zero findings is a valid answer.
+{{if .Engineer}}- This review teaches: every finding also has "why" (why it matters here, one or two sentences) and "lesson" (the general rule behind it, one line a developer can reuse elsewhere). A finding without both is rejected.
+{{end}}
 
 ## Response format (JSON)
 
-Fields: lens{{if .Rules}}, rules[{id, ok, why, file, line}]{{end}}, findings[{severity high|medium|low, file, line, title, scenario, evidence, fix}]. Unknown fields are rejected. "lens" must be "{{.Lens.Name}}".
+Fields: lens{{if .Rules}}, rules[{id, ok, why, file, line}]{{end}}{{if .Decisions}}, decisions[{id, file, line, how}]{{end}}, findings[{severity high|medium|low, file, line, title, scenario, evidence, fix{{if .Engineer}}, why, lesson{{end}}}]. Unknown fields are rejected. "lens" must be "{{.Lens.Name}}".
 
 Example:
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
@@ -397,5 +398,76 @@ func TestBashHookDoesNotOpenDB(t *testing.T) {
 		"tool_input": map[string]any{"command": "git status"}})
 	if _, err := os.Stat(filepath.Join(os.Getenv("NXY_HOME"), "nxy.db")); !os.IsNotExist(err) {
 		t.Fatalf("db opened by a Bash hook: %v", err)
+	}
+}
+
+// engineerToPlanning drives /nxy:engineer up to the planner dispatch, with one decided fork.
+func engineerToPlanning(t *testing.T, repo string) string {
+	t.Helper()
+	out := hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:engineer add a flag\nwith  two lines"})
+	if !strings.Contains(out, "nxy:") {
+		t.Fatalf("no nxy instruction: %s", out)
+	}
+	id := featureID(t)
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "Diseñando") {
+		t.Fatalf("not designing: %q", st)
+	}
+	if code, so, errb := runCmd(t, `{"forks":["where the flag lives"]}`, "design", "agenda", "--feature", id); code != 0 || !strings.Contains(so, "B1") {
+		t.Fatalf("agenda: code %d, out %q, err %q", code, so, errb)
+	}
+	if code, _, errb := runCmd(t, `{"fork":"B9","text":"x","why":"y","scope":"task"}`, "design", "propose", "--feature", id); code != 1 || errb == "" {
+		t.Fatalf("bad proposal accepted: code %d, err %q", code, errb)
+	}
+	code, so, errb := runCmd(t, `{"fork":"B1","text":"flag in cmd/main.go","why":"one place","dissent":"a config key would be better","scope":"task"}`, "design", "propose", "--feature", id)
+	if code != 0 || !strings.Contains(so, "AskUserQuestion") {
+		t.Fatalf("propose: code %d, out %q, err %q", code, so, errb)
+	}
+	answer(t, repo, design.ProposeQuestion(id, 1), design.LabelSave)
+
+	code, so, errb = runCmd(t, `{"rules":[{"id":"R1","text":"adds the flag"}],"d2":"a -> b"}`, "design", "close", "--feature", id)
+	if code != 0 || !strings.Contains(so, "a -> b") {
+		t.Fatalf("close: code %d, out %q, err %q", code, so, errb)
+	}
+	out = answer(t, repo, design.CloseQuestion(id), design.LabelClose)
+	if !strings.Contains(out, "nxy:planner") {
+		t.Fatalf("no planner after close: %s", out)
+	}
+	out = agentPre(t, repo, "nxy:planner", "feature "+id)
+	if !strings.Contains(out, "updatedInput") || !strings.Contains(out, "flag in cmd/main.go") || !strings.Contains(out, "a -> b") {
+		t.Fatalf("engineer prompt misses the design: %s", out)
+	}
+	return id
+}
+
+func TestEngineerFlowEndToEnd(t *testing.T) {
+	repo := flowRepo(t)
+	id := engineerToPlanning(t, repo)
+
+	code, so, errb := runCmd(t, flowPlan, "plan", "save", "--feature", id)
+	if code != 0 || !strings.Contains(so, "plan r1 saved") {
+		t.Fatalf("plan save: code %d, out %q, err %q", code, so, errb)
+	}
+	out := agentPost(t, repo, "nxy:planner", nil)
+	if !strings.Contains(out, "Approve nxy plan "+id) {
+		t.Fatalf("no checkpoint to approve: %s", out)
+	}
+	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "Lote 1") {
+		t.Fatalf("status after approve: %q", st)
+	}
+}
+
+func TestEngineerPlanGapsBackToDesign(t *testing.T) {
+	repo := flowRepo(t)
+	id := engineerToPlanning(t, repo)
+
+	if code, _, errb := runCmd(t, `{"gaps":[]}`, "plan", "gaps", "--feature", id); code != 1 || errb == "" {
+		t.Fatalf("empty gaps accepted: code %d, err %q", code, errb)
+	}
+	if code, _, errb := runCmd(t, `{"gaps":["what happens with an unknown flag"]}`, "plan", "gaps", "--feature", id); code != 0 {
+		t.Fatalf("gaps: code %d, err %q", code, errb)
+	}
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "Diseñando") {
+		t.Fatalf("not back in the design: %q", st)
 	}
 }

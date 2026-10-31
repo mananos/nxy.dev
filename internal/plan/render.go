@@ -11,9 +11,42 @@ import (
 // changes, the test, the command nxy runs for it (Accept) and the risk. It leaves
 // out the request and Read. The main thread copies it verbatim into the chat.
 func Checkpoint(p domain.Plan) string {
+	return checkpoint(p, true)
+}
+
+// CheckpointOf is the checkpoint of a feature: in engineer mode the rules were
+// already approved when the design closed, so it shows only the batches (and what
+// the planner chose on its own); in delegate mode it is Checkpoint.
+func CheckpointOf(f domain.Feature) string {
+	p := domain.Plan{}
+	if f.Plan != nil {
+		p = *f.Plan
+	}
+	if f.Mode != domain.ModeEngineer {
+		return checkpoint(p, true)
+	}
+	return checkpoint(p, false)
+}
+
+func checkpoint(p domain.Plan, withRules bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## %s\n\n", p.Title)
-	writeRules(&b, p.Rules)
+	if withRules {
+		writeRules(&b, p.Rules)
+	} else {
+		var chosen []domain.Decision
+		for _, d := range p.Decisions {
+			if d.By == domain.ByPlanner {
+				chosen = append(chosen, d)
+			}
+		}
+		if len(chosen) > 0 {
+			b.WriteString("### Decisiones que eligió el planner\n\n")
+			for _, d := range chosen {
+				fmt.Fprintf(&b, "- %s %s\n", d.ID, d.Text)
+			}
+		}
+	}
 	for _, bt := range p.Batches {
 		fmt.Fprintf(&b, "\n### Lote %d — %s\n", bt.N, bt.Title)
 		fmt.Fprintf(&b, "- Cubre: %s\n", strings.Join(bt.Covers, ", "))
@@ -79,7 +112,9 @@ func Markdown(f domain.Feature) string {
 	for _, ln := range strings.Split(strings.ReplaceAll(f.Request, "\r\n", "\n"), "\n") {
 		b.WriteString("> " + ln + "\n")
 	}
-	if len(p.Decisions) > 0 {
+	if f.Mode == domain.ModeEngineer {
+		writeDesign(&b, f, p)
+	} else if len(p.Decisions) > 0 {
 		b.WriteString("\n### Decisiones\n\n")
 		for _, d := range p.Decisions {
 			fmt.Fprintf(&b, "- [%s] %s\n", d.Scope, d.Text)
@@ -118,6 +153,48 @@ func Markdown(f domain.Feature) string {
 		}
 	}
 	return b.String()
+}
+
+// writeDesign is the "Diseño" section of an engineer plan document. It uses only
+// domain types (design imports plan, not the other way around). D2 is source only.
+func writeDesign(b *strings.Builder, f domain.Feature, p domain.Plan) {
+	if len(p.Decisions) == 0 && (f.Design == nil || (f.Design.D2 == "" && len(f.Design.Agenda) == 0)) {
+		return
+	}
+	b.WriteString("\n### Diseño\n\n")
+	for _, d := range p.Decisions {
+		fmt.Fprintf(b, "- %s %s", d.ID, d.Text)
+		if d.Why != "" {
+			fmt.Fprintf(b, " — %s", d.Why)
+		}
+		if d.By == domain.ByPlanner {
+			b.WriteString(" (la eligió el planner)")
+		}
+		b.WriteString("\n")
+		if d.Dissent != "" {
+			fmt.Fprintf(b, "  - Claude mantiene su desacuerdo: %s\n", d.Dissent)
+		}
+	}
+	if f.Design == nil {
+		return
+	}
+	for _, fk := range f.Design.Agenda {
+		if fk.Status == domain.ForkDelegated && !plannerChose(p, fk.ID) {
+			fmt.Fprintf(b, "- %s %s — la eligió el planner\n", fk.ID, fk.Title)
+		}
+	}
+	if f.Design.D2 != "" {
+		b.WriteString("\n```d2\n" + strings.TrimRight(f.Design.D2, "\r\n") + "\n```\n")
+	}
+}
+
+func plannerChose(p domain.Plan, fork string) bool {
+	for _, d := range p.Decisions {
+		if d.Fork == fork && d.By == domain.ByPlanner {
+			return true
+		}
+	}
+	return false
 }
 
 func writeRules(b *strings.Builder, rules []domain.Rule) {

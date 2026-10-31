@@ -9,12 +9,20 @@ import (
 	"github.com/mananos/nxy.dev/internal/flow"
 )
 
-const featureCommand = "/nxy:feature"
+const (
+	featureCommand  = "/nxy:feature"
+	engineerCommand = "/nxy:engineer"
+)
 
 // featureRequest returns what follows /nxy:feature, untouched except for the separator, and
 // whether the prompt is that command at all.
 func featureRequest(prompt string) (string, bool) {
-	rest, ok := strings.CutPrefix(prompt, featureCommand)
+	return commandRequest(prompt, featureCommand)
+}
+
+// commandRequest is featureRequest for any of the commands that start a feature.
+func commandRequest(prompt, cmd string) (string, bool) {
+	rest, ok := strings.CutPrefix(prompt, cmd)
 	if !ok {
 		return "", false
 	}
@@ -32,13 +40,19 @@ func featureRequest(prompt string) (string, bool) {
 // startFeature handles UserPromptSubmit: `/nxy:feature <request>` captures the request verbatim
 // and starts a feature; any other prompt is not its business.
 func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
+	cmd := featureCommand
 	request, ok := featureRequest(ev.Prompt)
+	if !ok {
+		cmd = engineerCommand
+		request, ok = commandRequest(ev.Prompt, cmd)
+	}
 	if !ok || h.Store == nil || h.Repos == nil {
 		return HookResponse{}
 	}
 	if strings.TrimSpace(request) == "" {
-		return HookResponse{Deny: "usage: /nxy:feature <what you want>"}
+		return HookResponse{Deny: "usage: " + cmd + " <what you want>"}
 	}
+	engineer := cmd == engineerCommand
 	dir := ev.ProjectDir
 	if dir == "" {
 		dir = ev.Cwd
@@ -50,11 +64,15 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{Deny: "feature " + f.ID + " in progress (" + string(f.State.Phase.Public()) +
 			"); next step " + f.Next.Label() + "; to end it: `nxy feature stop`"}
 	}
-	s, as, err := flow.Next(domain.State{}, flow.Event{Kind: flow.Requested})
+	s, as, err := flow.Next(domain.State{}, flow.Event{Kind: flow.Requested, Engineer: engineer})
 	if err != nil {
 		return HookResponse{}
 	}
 	f := domain.Feature{Repo: repo, ProjectDir: dir, Request: request, State: s, Next: mainThreadAction(as)}
+	if engineer {
+		f.Mode = domain.ModeEngineer
+		f.Design = &domain.Design{}
+	}
 	id, err := h.Store.CreateFeature(ctx, f)
 	if errors.Is(err, ErrActiveFeature) {
 		// two prompts raced: the other one created the feature first

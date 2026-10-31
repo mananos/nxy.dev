@@ -189,6 +189,44 @@ func TestQuestionsInputFallsBackToAskingAgain(t *testing.T) {
 	}
 }
 
+func TestOfferInQuestions(t *testing.T) {
+	f := approvalFeature()
+	f.Plan.Questions = []domain.Question{{Question: "Cual?", Header: "H", Options: []domain.Option{{Label: "A", Description: "a"}, {Label: "B", Description: "b"}}}}
+	f.Next = domain.Action{Kind: domain.AskQuestions}
+	if s := Instruction(f, ""); !strings.Contains(s, "Pasar a engineer") {
+		t.Errorf("offer missing: %s", s)
+	}
+	f.OfferAnswered = true
+	if s := Instruction(f, ""); strings.Contains(s, "Pasar a engineer") {
+		t.Errorf("offer after answered: %s", s)
+	}
+	f.OfferAnswered = false
+	f.Plan.Questions = nil
+	if s := questionsInput(f); strings.Contains(s, "Pasar a engineer") {
+		t.Errorf("offer without questions: %s", s)
+	}
+}
+
+func TestDesignInstructions(t *testing.T) {
+	f := domain.Feature{ID: "f1", Mode: domain.ModeEngineer, Design: &domain.Design{
+		Pending: &domain.Decision{Fork: "B1", Text: "usar X", Why: "porque si"},
+	}, Next: domain.Action{Kind: domain.DesignDebate}}
+	if s := Instruction(f, ""); !strings.Contains(s, "nxy: feature f1") || !strings.Contains(s, "salvo que") {
+		t.Errorf("guide: %s", s)
+	}
+	if s := ProposalInstruction(f); !strings.Contains(s, "usar X") || !strings.Contains(s, "D1") || !strings.Contains(s, "OK, guardar") {
+		t.Errorf("proposal: %s", s)
+	}
+	if s := CloseInstruction(f); !strings.Contains(s, "Cerrar y planificar") {
+		t.Errorf("close: %s", s)
+	}
+	f.Plan = &domain.Plan{Title: "T", Rules: []domain.Rule{{ID: "R1", Text: "regla", Test: "tdd"}}}
+	f.Next = domain.Action{Kind: domain.AskApproval}
+	if s := Instruction(f, ""); strings.Contains(s, "R1") {
+		t.Errorf("engineer checkpoint should omit rules: %s", s)
+	}
+}
+
 func TestInstructionPerAction(t *testing.T) {
 	f := approvalFeature()
 	s := Instruction(f, "")

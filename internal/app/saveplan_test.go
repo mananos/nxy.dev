@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/plan"
 )
 
 func validPlan() domain.Plan {
@@ -43,6 +45,104 @@ func startedFeature(t *testing.T, h Hooks, request string) domain.Feature {
 
 func agentEv(name, sub string) HookEvent {
 	return HookEvent{Name: name, Tool: "Agent", Subagent: sub, ProjectDir: "/p", Cwd: "/p"}
+}
+
+// planningEngineer returns an engineer feature whose design is closed (rule R1 "r", one decision,
+// one delegated fork) and that waits for the planner.
+func planningEngineer(t *testing.T) (Hooks, *memStore, string) {
+	t.Helper()
+	h, st, id := engineerFeature(t)
+	ctx := context.Background()
+	_, _ = h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["a","b"]}`))
+	_, _ = h.ProposeDecision(ctx, id, strings.NewReader(`{"fork":"B1","text":"x","why":"y","scope":"task"}`))
+	answer(h, design.ProposeQuestion(id, 1), design.LabelSave)
+	if res, err := h.ProposeClose(ctx, id, strings.NewReader(`{"rules":[{"id":"R1","text":"r"}],"delegate":true}`)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("close: %+v %v", res, err)
+	}
+	answer(h, design.CloseQuestion(id), design.LabelClose)
+	if st.feats[id].State.Phase != domain.PhasePlanning {
+		t.Fatalf("phase = %s", st.feats[id].State.Phase)
+	}
+	return h, st, id
+}
+
+func TestSavePlanEngineerMergesDecisions(t *testing.T) {
+	h, st, id := planningEngineer(t)
+	p := validPlan()
+	p.Rules[0].Text = "r"
+	p.Decisions = []domain.Decision{{Scope: domain.ScopeTask, Text: "pick z", Fork: "B2"}}
+	res, err := h.SavePlan(context.Background(), id, planReader(t, p))
+	if err != nil || len(res.Problems) != 0 {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	ds := st.feats[id].Plan.Decisions
+	if len(ds) != 2 || ds[0].ID != "D1" || ds[0].Why != "y" || ds[1].By != domain.ByPlanner || ds[1].ID != "D2" {
+		t.Errorf("decisions = %+v", ds)
+	}
+}
+
+func TestSavePlanEngineerRejects(t *testing.T) {
+	h, st, id := planningEngineer(t)
+	changed := validPlan()
+	changed.Rules[0].Text = "other"
+	if res, _ := h.SavePlan(context.Background(), id, planReader(t, changed)); len(res.Problems) == 0 {
+		t.Error("changed rule accepted")
+	}
+	asks := validPlan()
+	asks.Rules[0].Text = "r"
+	asks.Questions = []domain.Question{{Question: "q?", Header: "h", Options: []domain.Option{{Label: "a", Recommended: true}, {Label: "b"}}}}
+	if res, _ := h.SavePlan(context.Background(), id, planReader(t, asks)); len(res.Problems) == 0 {
+		t.Error("questions accepted")
+	}
+	own := validPlan()
+	own.Rules[0].Text = "r"
+	own.Decisions = []domain.Decision{{Scope: domain.ScopeTask, Text: "pick", Fork: "B1"}}
+	if res, _ := h.SavePlan(context.Background(), id, planReader(t, own)); len(res.Problems) == 0 {
+		t.Error("decision on a decided fork accepted")
+	}
+	forged := validPlan()
+	forged.Rules[0].Text = "r"
+	forged.Decisions = []domain.Decision{{ID: "D9", Scope: domain.ScopeTask, Text: "pick", Fork: "B2"}}
+	if res, _ := h.SavePlan(context.Background(), id, planReader(t, forged)); len(res.Problems) == 0 {
+		t.Error("decision with id accepted")
+	}
+	if st.feats[id].Plan != nil {
+		t.Error("a refused plan was stored")
+	}
+}
+
+func TestSaveGapsBackToDesigning(t *testing.T) {
+	h, st, id := planningEngineer(t)
+	if res, _ := h.SaveGaps(context.Background(), id, strings.NewReader(`{"gaps":[]}`)); len(res.Problems) == 0 {
+		t.Error("empty gaps accepted")
+	}
+	res, err := h.SaveGaps(context.Background(), id, strings.NewReader(`{"gaps":["where does the cache live?"]}`))
+	if err != nil || len(res.Problems) > 0 {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	f := st.feats[id]
+	last := f.Design.Agenda[len(f.Design.Agenda)-1]
+	if f.State.Phase != domain.PhaseDesigning || f.Design.Closed || last.ID != "B3" || last.Source != domain.SourcePlanner || last.Status != domain.ForkOpen {
+		t.Errorf("feature = %+v", f)
+	}
+	if _, err := h.SaveGaps(context.Background(), id, strings.NewReader(`{"gaps":["x"]}`)); err == nil {
+		t.Error("gaps outside planning accepted")
+	}
+}
+
+func TestPlannerPromptEngineerHasNoConversation(t *testing.T) {
+	_, st, id := planningEngineer(t)
+	f := st.feats[id]
+	f.Design.Refs = []string{"usá este ejemplo"}
+	p := plan.PlannerPrompt(f, "/bin/nxy")
+	for _, want := range []string{"D1", "R1: r", "usá este ejemplo", "plan gaps", "B2: b"} {
+		if !strings.Contains(p, want) {
+			t.Errorf("prompt lacks %q", want)
+		}
+	}
+	if strings.Contains(p, "Answers to your earlier questions") || strings.Contains(p, "Ask a question only") {
+		t.Error("engineer prompt has the delegate flow")
+	}
 }
 
 func TestSavePlanInvalidLeavesStoreUntouched(t *testing.T) {

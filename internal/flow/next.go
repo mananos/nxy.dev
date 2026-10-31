@@ -25,6 +25,8 @@ type row struct {
 
 func always(state, Event) bool { return true }
 
+func engineer(_ state, ev Event) bool { return ev.Engineer }
+
 func decided(d Decision) func(state, Event) bool {
 	return func(_ state, ev Event) bool { return ev.Decision == d }
 }
@@ -176,14 +178,22 @@ func failTo(p domain.Phase) func(state, Event) (state, []action) {
 
 var table = map[domain.Phase][]row{
 	domain.PhaseNone: {
+		{Requested, engineer, to(domain.PhaseDesigning, domain.DesignDebate)},
 		{Requested, always, replan},
+	},
+	domain.PhaseDesigning: {
+		{DesignClosed, always, replan},
 	},
 	domain.PhasePlanning: {
 		{PlanSaved, always, planSaved},
+		{GapsFound, always, to(domain.PhaseDesigning, domain.DesignDebate, domain.Notify)},
 		{PlannerReturned, attempt(0), plannerAgain},
 		{PlannerReturned, attempt(1), failTo(domain.PhasePlannerFailed)},
 	},
-	domain.PhaseQuestions:  {{Answered, always, replan}},
+	domain.PhaseQuestions: {
+		{ToEngineer, always, to(domain.PhaseDesigning, domain.DesignDebate)},
+		{Answered, always, replan},
+	},
 	domain.PhaseNoTests:    {{NoTestsAnswered, always, replan}},
 	domain.PhaseChangeNote: {{ChangeNoted, always, replan}},
 	domain.PhaseApproval: {

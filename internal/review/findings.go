@@ -20,9 +20,32 @@ const BaseLens = "base"
 
 // Submission is what one reviewer saves.
 type Submission struct {
-	Lens     string             `json:"lens"`
-	Rules    []domain.RuleCheck `json:"rules,omitempty"`
-	Findings []domain.Finding   `json:"findings"`
+	Lens      string                 `json:"lens"`
+	Rules     []domain.RuleCheck     `json:"rules,omitempty"`
+	Decisions []domain.DecisionCheck `json:"decisions,omitempty"`
+	Findings  []domain.Finding       `json:"findings"`
+}
+
+// DesignDecisions are the decisions of the design a feature carries (the ones
+// with an id), in order; none for a delegate feature.
+func DesignDecisions(f domain.Feature) []domain.Decision {
+	if f.Mode != domain.ModeEngineer {
+		return nil
+	}
+	var src []domain.Decision
+	switch {
+	case f.Plan != nil && len(f.Plan.Decisions) > 0:
+		src = f.Plan.Decisions
+	case f.Design != nil:
+		src = f.Design.Decisions
+	}
+	var out []domain.Decision
+	for _, d := range src {
+		if d.ID != "" {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // Decode reads one submission; an unknown field or trailing content is an error.
@@ -45,8 +68,10 @@ func validSeverity(s domain.Severity) bool {
 
 // Validate lists what is wrong with a submission for lens. Rules must be
 // answered, once each and only those of the plan, in the base pass; no other
-// pass may carry rules.
-func Validate(sub Submission, lens string, rules []domain.Rule, base bool) []plan.Problem {
+// pass may carry rules. In an engineer feature the base pass also answers each
+// decision once and every finding carries a why and a lesson; decisions are
+// refused outside the base pass of an engineer feature.
+func Validate(sub Submission, lens string, rules []domain.Rule, base bool, decisions []domain.Decision, engineer bool) []plan.Problem {
 	var out []plan.Problem
 	add := func(where, format string, a ...any) {
 		out = append(out, plan.Problem{Where: where, Msg: fmt.Sprintf(format, a...)})
@@ -83,8 +108,45 @@ func Validate(sub Submission, lens string, rules []domain.Rule, base bool) []pla
 			}
 		}
 	}
+	if !base || !engineer {
+		if len(sub.Decisions) > 0 {
+			add("decisions", "only the base pass of an engineer feature answers the decisions")
+		}
+	} else {
+		want := map[string]bool{}
+		for _, d := range decisions {
+			want[d.ID] = true
+		}
+		seen := map[string]bool{}
+		for i, dc := range sub.Decisions {
+			where := fmt.Sprintf("decisions[%d]", i)
+			switch {
+			case !want[dc.ID]:
+				add(where, "%q is not a decision of the design", dc.ID)
+			case seen[dc.ID]:
+				add(where, "%s answered more than once", dc.ID)
+			}
+			seen[dc.ID] = true
+			if strings.TrimSpace(dc.File) == "" && strings.TrimSpace(dc.How) == "" {
+				add(where, "needs a file and line, or a how saying why it is not in the diff")
+			}
+		}
+		for _, d := range decisions {
+			if !seen[d.ID] {
+				add("decisions", "%s is missing", d.ID)
+			}
+		}
+	}
 	for i, f := range sub.Findings {
 		where := fmt.Sprintf("findings[%d]", i)
+		if engineer {
+			if strings.TrimSpace(f.Why) == "" {
+				add(where+".why", "is empty: say why it matters")
+			}
+			if strings.TrimSpace(f.Lesson) == "" {
+				add(where+".lesson", "is empty: give the general rule behind it")
+			}
+		}
 		if !validSeverity(f.Severity) {
 			add(where+".severity", "must be high, medium or low")
 		}

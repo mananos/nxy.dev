@@ -124,6 +124,7 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		if r, ok := h.changeNote(ctx, ev); ok {
 			return h.deliverPending(ctx, ev, r)
 		}
+		h.designRef(ctx, ev)
 		return h.deliverPending(ctx, ev, h.startFeature(ctx, ev))
 	case ev.Name == "PreToolUse" && ev.Tool == toolAskUser:
 		return h.preToolAskUser(ctx, ev)

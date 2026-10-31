@@ -21,12 +21,7 @@ var (
 )
 
 // Problem is one thing wrong with a plan, located by Where.
-type Problem struct {
-	Where string
-	Msg   string
-}
-
-func (p Problem) String() string { return p.Where + ": " + p.Msg }
+type Problem = domain.Problem
 
 type checker struct{ out []Problem }
 
@@ -61,6 +56,9 @@ func Validate(p domain.Plan) []Problem {
 		}
 		c.short(w+" text", d.Text)
 		c.short(w+" question", d.Question)
+		if d.ID != "" || d.By != "" || d.Dissent != "" {
+			c.add(w, "id, by and dissent are not yours to write: nxy sets them")
+		}
 	}
 
 	rules := map[string]domain.TestKind{}

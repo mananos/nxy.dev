@@ -1,6 +1,6 @@
 # nxy 2.0 dev plugin
 
-Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1–F2.4 flow (`/nxy:feature` → planner → `nxy plan save` → approval → batches → affected tests → review) and the Bash filter from F1; other events answer nothing.
+Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1–F2.5 flow (`/nxy:feature` or `/nxy:engineer` → planner → `nxy plan save` → approval → batches → affected tests → review) and the Bash filter from F1; other events answer nothing.
 
 Try it:
 
@@ -161,5 +161,27 @@ Mientras corren no tenés nada que hacer; el checkpoint llega solo cuando vuelve
 **Qué se guarda.** Por lente, cuáles hallazgos elegiste y cuáles ignoraste, en la db (`~/.nxy`); se van a ver en `/nxy:trend` en F3.
 
 **Costo** (estimación): N reviewers (uno por lente; típicamente 2–4 en riesgo medio o alto, 1 en bajo), cada uno con un paquete que incluye el diff cortado a 3000 líneas como máximo (un archivo nuevo sin trackear de más de 256 KB entra sólo con la cabecera, sin contenido; el reviewer lo lee por su cuenta); un diff de unas 1.000 líneas pesa ≈ 15k tokens por reviewer. El refutador se suma sólo en riesgo alto. La review completa son unos KB y se borra al cerrar con éxito o con `nxy feature stop`.
+
+## F2.5: modo ingeniero
+
+Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
+
+**Cómo entrás.** `/nxy:engineer <pedido>`, o la oferta **Pasar a engineer** que aparece entre las preguntas de `/nxy:feature` (la otra opción es **Responder acá**, que sigue como siempre). La oferta ocupa uno de los 4 lugares de la pantalla de preguntas; si el plan tiene 4, la cuarta llega en la vuelta siguiente. Si pasás a engineer, las preguntas del plan se vuelven las primeras bifurcaciones.
+
+**Diseñando.** Qué ves: `nxy status` dice "Diseñando", y el chat muestra la agenda (`3 de 5 decididas`) con cada bifurcación B1, B2… y su estado. Antes, Claude hace un reconocimiento con `nxy:scout` y te muestra un diagrama chico del estado actual como bloque de código `d2` (nxy no lo dibuja; es texto). Qué significa: todavía no hay plan ni se toca código; se debate. Qué hacer: respondé en el chat, proponé tu opción o pedí opciones.
+
+**El debate.** Claude te refuta o te da 2–3 opciones con su trade-off, y su opinión es condicionada ("B, salvo que X"). Si ve un problema que no pediste mirar (N+1, índice, carrera, transacción, contrato, seguridad), lo dice con `path:línea` o lo marca como duda. No hay límite de vueltas ni desempate automático: cambia de opinión sólo con un argumento y lo dice, no cede por insistencia. Si cerrás con tu opción igual, queda registrado que Claude no estaba de acuerdo.
+
+**Guardar cada decisión.** Qué ves: una pregunta `nxy feature <id>: ¿guardar la decisión D<n>?` con la decisión, el porqué y, si lo hay, "Claude mantiene su desacuerdo: …". **OK, guardar** la deja en la db en el acto; **Seguir debatiendo** (o escribir otra cosa) no guarda nada. Tus mensajes mientras diseñás se guardan tal cual como referencias para el planner.
+
+**Cerrar.** Cuando están todas decididas, Claude propone cerrar: ves las decisiones, las reglas R1…Rn y el diagrama D2 como fuente. **Cerrar y planificar** aprueba las reglas y arranca el planner; **Seguir diseñando** vuelve. Si decís "decidí vos el resto", las bifurcaciones abiertas quedan delegadas al planner y el plan las marca como "las eligió el planner".
+
+**/clear es seguro.** Las decisiones ya están en la db: después de un `/clear` la guía vuelve sola con la agenda y lo decidido.
+
+**Planner y huecos.** El planner sólo baja tu diseño a lotes, copia las reglas tal cual y no hace preguntas. Si encuentra un hueco de diseño, frena con `nxy plan gaps` y volvés a Diseñando con una bifurcación nueva. El checkpoint del plan muestra sólo los lotes (las reglas ya las aprobaste) y el plan .md suma una sección `### Diseño`.
+
+**Review.** El base pass explica el diff por decisión (`D1 → path:línea — cómo`), y cada hallazgo trae el porqué y una regla general para aprender de él.
+
+**A validar en vivo:** `/clear` con el planner en background justo tras cerrar; el peso de las referencias en el prompt del planner (≈25 KB con 50 mensajes); que nxy no valida la sintaxis d2 (un bloque roto se ve recién al renderizarlo a mano).
 
 `NXY_BIN` wins over everything. To test the download path (binary under `~/.nxy/bin/2.0.0-dev/`, fetched from the GitHub release), unset it first: a leftover `NXY_BIN` silently runs a stale build.

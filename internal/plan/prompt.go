@@ -84,30 +84,90 @@ const plannerExample = `{
   ]
 }`
 
+//go:embed prompts/planner-engineer.md
+var plannerEngineerTemplate string
+
+var plannerEngineerTmpl = template.Must(template.New("planner-engineer").Parse(plannerEngineerTemplate))
+
+// engineerExample is the example plan of the engineer prompt: no questions, no decisions of its own.
+const engineerExample = `{
+  "title": "Greet by name",
+  "rules": [
+    {"id": "R1", "text": "greet(name) returns \"Hello, <name>\"", "test": "tdd"}
+  ],
+  "batches": [
+    {
+      "n": 1,
+      "title": "Greeting function",
+      "covers": ["R1"],
+      "read": ["internal/greet/greet.go:1-40"],
+      "change": [{"at": "internal/greet/greet.go:12", "what": "add greet(name) returning Hello, name"}],
+      "test": {"kind": "new", "name": "TestGreet", "accept": "go test ./internal/greet/"},
+      "risk": "low"
+    }
+  ],
+  "suite": "go test ./...",
+  "risks": ["Callers of the old signature"]
+}`
+
 type plannerData struct {
 	Feature     domain.Feature
 	Exe         string
 	Example     string
 	PrevJSON    string
 	NotesJoined []string
+	Design      *domain.Design
+	Delegated   []domain.Fork
 }
 
 // PlannerPrompt builds the full prompt of the planner: the literal request,
-// what the user answered, the previous plan if any, and how to save.
+// what the user answered, the previous plan if any, and how to save. An engineer feature gets
+// the design instead of the conversation.
 func PlannerPrompt(f domain.Feature, exe string) string {
+	engineer := f.Mode == domain.ModeEngineer
 	d := plannerData{
 		Feature:     f,
 		Exe:         strings.ReplaceAll(exe, `\`, "/"),
 		Example:     plannerExample,
 		NotesJoined: f.ChangeNotes,
 	}
+	tmpl := plannerTmpl
+	if engineer {
+		tmpl = plannerEngineerTmpl
+		d.Example = engineerExample
+		d.Design = f.Design
+		if f.Design != nil {
+			for _, fk := range f.Design.Agenda {
+				if fk.Status == domain.ForkDelegated {
+					d.Delegated = append(d.Delegated, fk)
+				}
+			}
+		}
+	}
 	if f.Plan != nil {
-		if b, err := json.MarshalIndent(f.Plan, "", "  "); err == nil {
+		prev := *f.Plan
+		if engineer {
+			// nxy owns the design's decisions in the plan; the planner only sees (and revises) its own.
+			prev.Decisions = nil
+			for _, x := range f.Plan.Decisions {
+				if x.By == domain.ByPlanner {
+					x.ID, x.By, x.Dissent = "", "", ""
+					prev.Decisions = append(prev.Decisions, x)
+				}
+				// rules are the approved ones and there are no questions in engineer.
+				prev.Questions = nil
+				prev.Rules = nil
+				if f.Design != nil {
+					prev.Rules = f.Design.Rules
+				}
+			}
+		}
+		if b, err := json.MarshalIndent(prev, "", "  "); err == nil {
 			d.PrevJSON = string(b)
 		}
 	}
 	var b strings.Builder
-	if err := plannerTmpl.Execute(&b, d); err != nil {
+	if err := tmpl.Execute(&b, d); err != nil {
 		return "nxy: could not build the planner prompt: " + err.Error()
 	}
 	return b.String()

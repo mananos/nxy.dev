@@ -235,6 +235,41 @@ func TestCheckpointAndMarkdown(t *testing.T) {
 	}
 }
 
+func TestEngineerCheckpointAndPrompt(t *testing.T) {
+	f := domain.Feature{
+		ID: "f1", Mode: domain.ModeEngineer,
+		Plan: &domain.Plan{Decisions: []domain.Decision{{ID: "D1", Scope: domain.ScopeTask, Text: "usar cola"}}},
+		Review: &domain.Review{
+			Decisions: []domain.DecisionCheck{{ID: "D1", File: "q.go", Line: 7, How: "la cola se crea acá"}},
+			Findings: []domain.Finding{{ID: "H1", Lens: "api", Severity: domain.SeverityHigh, Title: "t",
+				Cause: domain.CauseChange, Why: "rompe el request", Lesson: "validar antes de indexar"}},
+		},
+	}
+	out := Checkpoint(f)
+	for _, want := range []string{"### Diff por decisión", "D1 usar cola → q.go:7 — la cola se crea acá", "Por qué: rompe el request", "Regla general: validar antes de indexar"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("checkpoint missing %q:\n%s", want, out)
+		}
+	}
+	f.Mode = ""
+	if strings.Contains(Checkpoint(f), "Diff por decisión") {
+		t.Error("delegate checkpoint must not show the diff by decision")
+	}
+	f.Mode = domain.ModeEngineer
+	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy")
+	if !strings.Contains(p, "Decisiones del diseño") || !strings.Contains(p, "D1: usar cola") || !strings.Contains(p, "lesson") {
+		t.Errorf("base prompt of engineer:\n%s", p)
+	}
+}
+
+func TestEngineerBaseExampleWithoutDecisions(t *testing.T) {
+	f := domain.Feature{ID: "f1", Mode: domain.ModeEngineer, Plan: &domain.Plan{}}
+	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy")
+	if strings.Contains(p, `"decisions"`) {
+		t.Errorf("example lists decisions although the design has none:\n%s", p)
+	}
+}
+
 func TestFixQuestion(t *testing.T) {
 	q := FixQuestion("f1", 2, 3)
 	if !strings.HasPrefix(q, FixQuestionPrefix("f1")) || !strings.Contains(q, "2/3") {

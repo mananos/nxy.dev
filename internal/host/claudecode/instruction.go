@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/review"
@@ -115,6 +116,8 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 		a.Kind = domain.Close // Close is not a main-thread action, so Next never keeps it
 	}
 	switch a.Kind {
+	case domain.DesignDebate:
+		s = "nxy: feature " + f.ID + " — " + design.Guide(f, exe)
 	case domain.DispatchPlanner:
 		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:planner`, prompt `feature %s`; nothing else, nxy writes its prompt.", f.ID, f.ID)
 	case domain.AskQuestions:
@@ -179,7 +182,7 @@ func checkpointAndAsk(f domain.Feature, input string, stop bool) string {
 	}
 	b.WriteString("--- checkpoint ---\n")
 	if f.Plan != nil {
-		b.WriteString(plan.Checkpoint(*f.Plan))
+		b.WriteString(plan.CheckpointOf(f))
 	}
 	b.WriteString("\n--- end checkpoint ---\n")
 	if stop {
@@ -313,18 +316,29 @@ func questionsInput(f domain.Feature) string {
 		for _, a := range f.Answers {
 			answered[a.Question] = true
 		}
-		qs = pendingQuestions(f.Plan.Questions, answered)
-		if len(qs) == 0 { // nothing left unanswered: ask them all again
-			qs = pendingQuestions(f.Plan.Questions, nil)
+		offer := f.Mode != domain.ModeEngineer && !f.OfferAnswered && len(f.Plan.Questions) > 0
+		if offer {
+			qs = append(qs, askQuestion{
+				Question: design.OfferQuestion(f.ID),
+				Header:   "Engineer",
+				Options: []askOption{
+					{design.LabelToEngineer, "Decide these with Claude, fork by fork, before planning"},
+					{design.LabelAnswerHere, "Answer the questions here"},
+				},
+			})
+		}
+		qs = append(qs, pendingQuestions(f.Plan.Questions, answered, 4-len(qs))...)
+		if len(qs) == 0 || (offer && len(qs) == 1) { // nothing left unanswered: ask them all again
+			qs = append(qs, pendingQuestions(f.Plan.Questions, nil, 4-len(qs))...)
 		}
 	}
 	return askInput(qs)
 }
 
-func pendingQuestions(all []domain.Question, answered map[string]bool) []askQuestion {
+func pendingQuestions(all []domain.Question, answered map[string]bool, max int) []askQuestion {
 	var qs []askQuestion
 	for _, q := range all {
-		if answered[q.Question] || len(qs) == 4 {
+		if answered[q.Question] || len(qs) >= max {
 			continue
 		}
 		aq := askQuestion{Question: q.Question, Header: q.Header}

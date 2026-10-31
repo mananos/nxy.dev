@@ -93,11 +93,30 @@ type BatchTest struct {
 	Accept string        `json:"accept,omitempty"`
 }
 
+// Problem is one thing wrong with an input (a plan, a design), located by Where.
+type Problem struct {
+	Where string
+	Msg   string
+}
+
+func (p Problem) String() string { return p.Where + ": " + p.Msg }
+
+// DecisionBy says who chose a decision when it was not the user.
+type DecisionBy string
+
+// ByPlanner marks a decision the planner took on a fork the user delegated.
+const ByPlanner DecisionBy = "planner"
+
 // Decision is something already settled.
 type Decision struct {
-	Scope    Scope  `json:"scope"`
-	Text     string `json:"text"`
-	Question string `json:"question,omitempty"`
+	ID       string     `json:"id,omitempty"`
+	Scope    Scope      `json:"scope"`
+	Text     string     `json:"text"`
+	Question string     `json:"question,omitempty"`
+	Why      string     `json:"why,omitempty"`
+	Dissent  string     `json:"dissent,omitempty"`
+	Fork     string     `json:"fork,omitempty"`
+	By       DecisionBy `json:"by,omitempty"`
 }
 
 // Question is asked to the user before the plan is final.

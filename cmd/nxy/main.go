@@ -17,6 +17,7 @@ var commands = map[string]command{
 	"affected": runAffected,
 	"batch":    runBatch,
 	"bench":    runBench,
+	"design":   runDesign,
 	"feature":  runFeature,
 	"hook":     runHook,
 	"plan":     runPlan,
@@ -25,7 +26,7 @@ var commands = map[string]command{
 	"version":  runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|plan save|review save|refute|batch red|green|affected|status|feature stop|version>"
+const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|batch red|green|affected|status|feature stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))

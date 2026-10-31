@@ -1,5 +1,5 @@
 {
-  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; the binary runs the F2.4 flow (/nxy:feature, planner, plan save, approval, batch-by-batch implementer with nxy batch red|green, affected tests via nxy affected, risk-proportional review with reviewers per lens, refuter, findings checkpoint and verified fixes) and the Bash filter",
+  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; the binary runs the F2.5 flow (/nxy:feature or /nxy:engineer with design debate, planner, plan save, approval, batch-by-batch implementer with nxy batch red|green, affected tests via nxy affected, risk-proportional review with reviewers per lens, refuter, findings checkpoint and verified fixes) and the Bash filter",
   "hooks": {
     "SessionStart": [
       {

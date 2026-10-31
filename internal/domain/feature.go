@@ -26,4 +26,18 @@ type Feature struct {
 	Background string `json:"background,omitempty"`
 	// Undelivered is true while Next still has to reach the main thread.
 	Undelivered bool `json:"undelivered,omitempty"`
+	// Mode is who decides the design: the planner (delegate) or the user (engineer).
+	Mode Mode `json:"mode,omitempty"`
+	// Design is the design debate of an engineer feature.
+	Design *Design `json:"design,omitempty"`
+	// OfferAnswered is true once the user answered the "Pasar a engineer" offer.
+	OfferAnswered bool `json:"offer_answered,omitempty"`
 }
+
+// Mode says how a feature is run.
+type Mode string
+
+const (
+	ModeDelegate Mode = ""
+	ModeEngineer Mode = "engineer"
+)

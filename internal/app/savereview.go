@@ -236,7 +236,8 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 	if f.Plan != nil {
 		rules = f.Plan.Rules
 	}
-	if probs := review.Validate(sub, lens, rules, lens == review.BaseLens); len(probs) > 0 {
+	engineer := f.Mode == domain.ModeEngineer
+	if probs := review.Validate(sub, lens, rules, lens == review.BaseLens, review.DesignDecisions(f), engineer); len(probs) > 0 {
 		return ReviewSaveResult{Problems: probs}, nil
 	}
 	for i := range sub.Findings {
@@ -267,6 +268,7 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 		}
 		if lens == review.BaseLens {
 			rv.Rules = sub.Rules
+			rv.Decisions = sub.Decisions
 		}
 		rv.Findings = append(rv.Findings, sub.Findings...)
 		if savedLenses(rv) < len(rv.Lenses) {

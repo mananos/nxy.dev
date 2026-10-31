@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/plan"
 )
 
 func TestPrecision(t *testing.T) {
@@ -133,7 +134,7 @@ func TestHighUnproven(t *testing.T) {
 func TestValidate(t *testing.T) {
 	rules := []domain.Rule{{ID: "R1"}, {ID: "R2"}}
 	good := Submission{Lens: "base", Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", OK: false, Why: "x"}}}
-	if p := Validate(good, "base", rules, true); len(p) != 0 {
+	if p := Validate(good, "base", rules, true, nil, false); len(p) != 0 {
 		t.Fatalf("good: %v", p)
 	}
 	tests := []struct {
@@ -160,7 +161,7 @@ func TestValidate(t *testing.T) {
 		if tc.name == "lens" {
 			lens = "base"
 		}
-		p := Validate(tc.sub, lens, rules, tc.base)
+		p := Validate(tc.sub, lens, rules, tc.base, nil, false)
 		found := false
 		for _, x := range p {
 			if strings.Contains(x.String(), tc.want) {
@@ -170,6 +171,45 @@ func TestValidate(t *testing.T) {
 		if !found {
 			t.Errorf("%s: want %q in %v", tc.name, tc.want, p)
 		}
+	}
+}
+
+func TestValidateEngineerDecisionsAndLesson(t *testing.T) {
+	decs := []domain.Decision{{ID: "D1"}, {ID: "D2"}}
+	good := Submission{Lens: "base", Decisions: []domain.DecisionCheck{
+		{ID: "D1", File: "a.go", Line: 3}, {ID: "D2", How: "only constrains"},
+	}}
+	if p := Validate(good, "base", nil, true, decs, true); len(p) != 0 {
+		t.Fatalf("good: %v", p)
+	}
+	has := func(p []plan.Problem, want string) bool {
+		for _, x := range p {
+			if strings.Contains(x.String(), want) {
+				return true
+			}
+		}
+		return false
+	}
+	missing := Submission{Lens: "base", Decisions: good.Decisions[:1]}
+	if p := Validate(missing, "base", nil, true, decs, true); !has(p, "D2 is missing") {
+		t.Errorf("missing D2: %v", p)
+	}
+	bare := Submission{Lens: "base", Decisions: []domain.DecisionCheck{{ID: "D1"}, good.Decisions[1]}}
+	if p := Validate(bare, "base", nil, true, decs, true); !has(p, "decisions[0]") {
+		t.Errorf("no file and no how: %v", p)
+	}
+	if p := Validate(good, "base", nil, true, nil, false); !has(p, "only the base pass of an engineer") {
+		t.Errorf("delegate must refuse decisions: %v", p)
+	}
+	if p := Validate(Submission{Lens: "api", Decisions: good.Decisions}, "api", nil, false, decs, true); !has(p, "decisions") {
+		t.Errorf("non-base must refuse decisions: %v", p)
+	}
+	f := Submission{Lens: "api", Findings: []domain.Finding{{Severity: "high", Title: "t"}}}
+	if p := Validate(f, "api", nil, false, nil, true); !has(p, "findings[0].why") || !has(p, "findings[0].lesson") {
+		t.Errorf("engineer needs why and lesson: %v", p)
+	}
+	if p := Validate(f, "api", nil, false, nil, false); len(p) != 0 {
+		t.Errorf("delegate unchanged: %v", p)
 	}
 }
 

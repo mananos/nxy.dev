@@ -25,8 +25,14 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 		if id == "" {
 			id = h.parseAffectedStep(cmd, ev.Tool == "PowerShell")
 		}
+		if id == "" && ev.AgentID == "" {
+			id = h.parseSave(cmd, ev.Tool == "PowerShell", h.designWords)
+		}
 	case ev.AgentType == rolePlanner:
 		id = h.parsePlanSave(cmd, ev.Tool == "PowerShell")
+		if id == "" {
+			id = h.parseSave(cmd, ev.Tool == "PowerShell", h.planGapsWords)
+		}
 	case ev.AgentType == roleReviewer || ev.AgentType == roleReviewerQuick:
 		id = h.parseSave(cmd, ev.Tool == "PowerShell", h.reviewSaveWords)
 	case ev.AgentType == roleRefuter:
@@ -154,8 +160,24 @@ func (h Hooks) reviewRefuteWords(toks []string) string {
 	return toks[4]
 }
 
+// designWords is `"<exe>" design agenda|propose|close --feature <id>`; it returns the id.
+func (h Hooks) designWords(toks []string) string {
+	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "design" || (toks[2] != "agenda" && toks[2] != "propose" && toks[2] != "close") || toks[3] != "--feature" {
+		return ""
+	}
+	return toks[4]
+}
+
 func (h Hooks) planSaveWords(toks []string) string {
 	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "plan" || toks[2] != "save" || toks[3] != "--feature" {
+		return ""
+	}
+	return toks[4]
+}
+
+// planGapsWords is `"<exe>" plan gaps --feature <id>`; it returns the id.
+func (h Hooks) planGapsWords(toks []string) string {
+	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "plan" || toks[2] != "gaps" || toks[3] != "--feature" {
 		return ""
 	}
 	return toks[4]

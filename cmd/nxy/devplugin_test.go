@@ -70,9 +70,17 @@ func TestDevPluginAgentAndCommand(t *testing.T) {
 			}
 		}
 	}
-	cmd := frontmatter(t, filepath.Join(dir, "commands", "feature.md"))
-	if !strings.Contains(cmd, "description:") {
-		t.Error("commands/feature.md frontmatter misses description")
+	scout := frontmatter(t, filepath.Join(dir, "agents", "scout.md"))
+	for _, want := range []string{"name: scout\n", "description:", "tools: Read, Grep, Glob, Bash", "model: sonnet"} {
+		if !strings.Contains(scout+"\n", want) {
+			t.Errorf("agents/scout.md frontmatter misses %q", want)
+		}
+	}
+	for _, name := range []string{"feature", "engineer"} {
+		cmd := frontmatter(t, filepath.Join(dir, "commands", name+".md"))
+		if !strings.Contains(cmd, "description:") {
+			t.Errorf("commands/%s.md frontmatter misses description", name)
+		}
 	}
 }
 

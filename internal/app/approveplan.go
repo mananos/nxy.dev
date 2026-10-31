@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
@@ -22,6 +23,10 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
 		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) ||
 		q == plan.FixesFailedQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) {
+		return true
+	}
+	if q == design.CloseQuestion(f.ID) || q == design.OfferQuestion(f.ID) ||
+		strings.HasPrefix(q, "nxy feature "+f.ID+": ¿guardar la decisión D") {
 		return true
 	}
 	if f.Plan != nil {
@@ -109,6 +114,9 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	if ans, found := decisionAnswer(f, ev.Answers); found {
 		return h.answerDecision(ctx, f, ans)
+	}
+	if f.State.Phase == domain.PhaseDesigning {
+		return h.answerDesign(ctx, f, ev.Answers)
 	}
 	if f.State.Phase == domain.PhaseQuestions && f.Plan != nil {
 		return h.answerQuestions(ctx, f, ev.Answers)
@@ -234,9 +242,41 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 }
 
 func (h Hooks) answerQuestions(ctx context.Context, f domain.Feature, answers map[string]string) HookResponse {
+	offer, offered := answers[design.OfferQuestion(f.ID)]
+	if offered && strings.Contains(offer, design.LabelToEngineer) {
+		nf, _, err := h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.ToEngineer}, func(x *domain.Feature) error {
+			if x.Plan == nil || x.State.Phase != domain.PhaseQuestions {
+				return errNoChange
+			}
+			x.Mode = domain.ModeEngineer
+			x.OfferAnswered = true
+			if x.Design == nil {
+				x.Design = &domain.Design{}
+			}
+			start := len(x.Design.Agenda)
+			titles := make([]string, 0, len(x.Plan.Questions))
+			for _, pq := range x.Plan.Questions {
+				titles = append(titles, pq.Question)
+			}
+			design.AddForks(x.Design, titles, domain.SourceOffer)
+			for i, pq := range x.Plan.Questions {
+				for _, o := range pq.Options {
+					x.Design.Agenda[start+i].Options = append(x.Design.Agenda[start+i].Options, o.Label)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
+		}
+		return HookResponse{Next: &Next{Feature: nf}}
+	}
 	merge := func(x *domain.Feature) error {
 		if x.Plan == nil || x.State.Phase != domain.PhaseQuestions {
 			return errSkipEvent
+		}
+		if offered {
+			x.OfferAnswered = true
 		}
 		out := append([]domain.Answer(nil), x.Answers...)
 		for _, pq := range x.Plan.Questions {

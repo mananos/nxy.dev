@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
@@ -37,6 +38,16 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 	if probs := plan.Validate(p); len(probs) > 0 {
 		return SaveResult{Problems: probs}, nil
 	}
+	if f.Mode == domain.ModeEngineer {
+		d := f.Design
+		if d == nil {
+			d = &domain.Design{}
+		}
+		if probs := design.CheckPlan(d, p); len(probs) > 0 {
+			return SaveResult{Problems: probs}, nil
+		}
+		design.Merge(d, &p)
+	}
 	// The repo's own runners run commands: the user sees them at the checkpoint (nxy sets them,
 	// whatever the planner wrote).
 	p.RepoRunners, p.RepoRunnersWarn = nil, ""
@@ -64,6 +75,48 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 		return SaveResult{}, err
 	}
 	return SaveResult{Rev: nf.PlanRev}, nil
+}
+
+// SaveGaps is `plan gaps`: the planner of an engineer feature found holes in the design. They
+// come back as open forks and the feature returns to Diseñando. Invalid input leaves the store untouched.
+func (h Hooks) SaveGaps(ctx context.Context, featureID string, r io.Reader) (DesignResult, error) {
+	if h.Store == nil {
+		return DesignResult{}, fmt.Errorf("no store")
+	}
+	f, err := h.Store.Feature(ctx, featureID)
+	if err != nil {
+		return DesignResult{}, fmt.Errorf("feature %s: %w", featureID, err)
+	}
+	if f.State.Phase != domain.PhasePlanning {
+		return DesignResult{}, notPlanning(f)
+	}
+	if f.Mode != domain.ModeEngineer {
+		return DesignResult{}, fmt.Errorf("feature %s is not an engineer feature: it has no design to go back to", f.ID)
+	}
+	titles, err := design.DecodeGaps(r)
+	if err != nil {
+		return DesignResult{}, err
+	}
+	if probs := design.ValidateGaps(titles); len(probs) > 0 {
+		return DesignResult{Problems: probs}, nil
+	}
+	nf, _, err := h.advanceWith(ctx, featureID, flow.Event{Kind: flow.GapsFound}, func(g *domain.Feature) error {
+		if g.State.Phase != domain.PhasePlanning {
+			return notPlanning(*g)
+		}
+		src := g.Design
+		if src == nil {
+			src = &domain.Design{}
+		}
+		d := cloneDesign(src)
+		design.AddGaps(&d, titles)
+		g.Design = &d
+		return nil
+	})
+	if err != nil {
+		return DesignResult{}, err
+	}
+	return DesignResult{Feature: nf}, nil
 }
 
 func notPlanning(f domain.Feature) error {

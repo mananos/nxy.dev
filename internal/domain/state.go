@@ -5,6 +5,7 @@ type Phase string
 
 const (
 	PhaseNone               Phase = ""
+	PhaseDesigning          Phase = "designing"
 	PhasePlanning           Phase = "planning"
 	PhaseQuestions          Phase = "questions"
 	PhaseNoTests            Phase = "no_tests"
@@ -29,7 +30,7 @@ const (
 
 // Phases lists every internal phase (not the empty initial one).
 var Phases = []Phase{
-	PhasePlanning, PhaseQuestions, PhaseNoTests, PhaseApproval, PhaseChangeNote,
+	PhaseDesigning, PhasePlanning, PhaseQuestions, PhaseNoTests, PhaseApproval, PhaseChangeNote,
 	PhasePlannerFailed, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
 	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseAffectedUnverified, PhaseReviewing,
 	PhaseRefuting, PhaseChoosingFindings, PhaseFixing,
@@ -52,6 +53,7 @@ type phaseInfo struct {
 }
 
 var phaseTable = map[Phase]phaseInfo{
+	PhaseDesigning:          {NeedsYou, "Diseñando"},
 	PhasePlanning:           {Working, "Planificando"},
 	PhaseQuestions:          {NeedsYou, "Preguntas del plan"},
 	PhaseNoTests:            {NeedsYou, "Sin tests"},

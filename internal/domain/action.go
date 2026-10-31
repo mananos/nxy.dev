@@ -6,6 +6,7 @@ import "strconv"
 type ActionKind string
 
 const (
+	DesignDebate        ActionKind = "design"
 	DispatchPlanner     ActionKind = "dispatch_planner"
 	AskQuestions        ActionKind = "ask_questions"
 	AskNoTests          ActionKind = "ask_no_tests"
@@ -38,6 +39,7 @@ type actionInfo struct {
 }
 
 var actionTable = map[ActionKind]actionInfo{
+	DesignDebate:        {true, "Diseñar"},
 	DispatchPlanner:     {true, "Planificar"},
 	AskQuestions:        {true, "Responder preguntas"},
 	AskNoTests:          {true, "Decidir sin tests"},

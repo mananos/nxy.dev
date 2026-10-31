@@ -16,6 +16,7 @@ const (
 	roleReviewer      = "nxy:reviewer"
 	roleReviewerQuick = "nxy:reviewer-quick"
 	roleRefuter       = "nxy:refuter"
+	roleScout         = "nxy:scout"
 )
 
 // roleFor is the nxy subagent each dispatch action expects.
@@ -122,7 +123,7 @@ func (h Hooks) activeFeature(ctx context.Context, ev HookEvent) (domain.Feature,
 // preToolAgent handles PreToolUse Agent/Task from the main thread: it injects the planner's
 // prompt and refuses nxy roles that are not the next step.
 func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
-	if ev.AgentID != "" || !strings.HasPrefix(ev.Subagent, "nxy:") {
+	if ev.AgentID != "" || !strings.HasPrefix(ev.Subagent, "nxy:") || ev.Subagent == roleScout {
 		return HookResponse{}
 	}
 	f, ok := h.activeFeature(ctx, ev)

@@ -82,6 +82,12 @@ func writeFinding(b *strings.Builder, f domain.Finding) {
 	if f.Scenario != "" {
 		fmt.Fprintf(b, "  - Escenario: %s\n", f.Scenario)
 	}
+	if f.Why != "" {
+		fmt.Fprintf(b, "  - Por qué: %s\n", f.Why)
+	}
+	if f.Lesson != "" {
+		fmt.Fprintf(b, "  - Regla general: %s\n", f.Lesson)
+	}
 	if f.Fix != "" {
 		fmt.Fprintf(b, "  - Arreglo: %s\n", f.Fix)
 	}
@@ -103,6 +109,32 @@ func Checkpoint(f domain.Feature) string {
 	}
 	if line := RuleLine(rv, rulesOf(f)); line != "" {
 		fmt.Fprintf(&b, "Reglas: %s\n\n", line)
+	}
+	if f.Mode == domain.ModeEngineer && len(rv.Decisions) > 0 {
+		b.WriteString("### Diff por decisión\n\n")
+		text := map[string]string{}
+		for _, d := range DesignDecisions(f) {
+			text[d.ID] = d.Text
+		}
+		for _, dc := range rv.Decisions {
+			fmt.Fprintf(&b, "- %s", dc.ID)
+			if t := text[dc.ID]; t != "" {
+				fmt.Fprintf(&b, " %s", t)
+			}
+			switch {
+			case dc.File != "" && dc.Line > 0:
+				fmt.Fprintf(&b, " → %s:%d", dc.File, dc.Line)
+			case dc.File != "":
+				fmt.Fprintf(&b, " → %s", dc.File)
+			default:
+				b.WriteString(" → fuera del diff")
+			}
+			if dc.How != "" {
+				fmt.Fprintf(&b, " — %s", dc.How)
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
 	}
 	offered := Offered(rv)
 	if len(offered) == 0 {

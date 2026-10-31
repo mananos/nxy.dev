@@ -6,9 +6,50 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/plan"
 )
+
+func offerPlan() domain.Plan {
+	p := validPlan()
+	opts := []domain.Option{{Label: "A", Description: "a", Recommended: true}, {Label: "B", Description: "b"}}
+	p.Questions = []domain.Question{
+		{Question: "First?", Header: "One", Options: opts},
+		{Question: "Second?", Header: "Two", Options: opts},
+	}
+	return p
+}
+
+func TestOfferAcceptedGoesToDesigning(t *testing.T) {
+	h, st := flowHooks(false)
+	f := approvalFeature(t, h, offerPlan())
+	h.Handle(context.Background(), askPost(f, design.OfferQuestion(f.ID), design.LabelToEngineer))
+	got := st.feats[f.ID]
+	if got.State.Phase != domain.PhaseDesigning || got.Mode != domain.ModeEngineer || !got.OfferAnswered {
+		t.Fatalf("feature = %+v", got.State)
+	}
+	if got.Design == nil || len(got.Design.Agenda) != 2 || got.Design.Agenda[0].ID != "B1" ||
+		got.Design.Agenda[1].Title != "Second?" || got.Design.Agenda[0].Source != domain.SourceOffer ||
+		len(got.Design.Agenda[0].Options) != 2 {
+		t.Errorf("agenda = %+v", got.Design)
+	}
+}
+
+func TestOfferDeclinedKeepsQuestions(t *testing.T) {
+	h, st := flowHooks(false)
+	f := approvalFeature(t, h, offerPlan())
+	h.Handle(context.Background(), askPost(f, design.OfferQuestion(f.ID), design.LabelAnswerHere))
+	got := st.feats[f.ID]
+	if got.State.Phase != domain.PhaseQuestions || !got.OfferAnswered || len(got.Answers) != 0 || got.Mode != domain.ModeDelegate {
+		t.Fatalf("feature = %+v answers=%v", got.State, got.Answers)
+	}
+	h.Handle(context.Background(), askPost(f, "First?", "A"))
+	h.Handle(context.Background(), askPost(f, "Second?", "B"))
+	if st.feats[f.ID].State.Phase != domain.PhasePlanning {
+		t.Errorf("phase = %s", st.feats[f.ID].State.Phase)
+	}
+}
 
 type fakeViewer struct{ shown []string }
 

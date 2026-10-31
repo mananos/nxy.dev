@@ -35,6 +35,14 @@ func TestNextTable(t *testing.T) {
 	cases := []tcase{
 		{"requested", st{}, Event{Kind: Requested},
 			st{Phase: domain.PhasePlanning}, acs(domain.DispatchPlanner)},
+		{"engineer requested", st{}, Event{Kind: Requested, Engineer: true},
+			st{Phase: domain.PhaseDesigning}, acs(domain.DesignDebate)},
+		{"design closed", st{Phase: domain.PhaseDesigning}, Event{Kind: DesignClosed},
+			st{Phase: domain.PhasePlanning}, acs(domain.DispatchPlanner)},
+		{"gaps found", st{Phase: domain.PhasePlanning}, Event{Kind: GapsFound},
+			st{Phase: domain.PhaseDesigning}, acs(domain.DesignDebate, domain.Notify)},
+		{"offer accepted", st{Phase: domain.PhaseQuestions}, Event{Kind: ToEngineer},
+			st{Phase: domain.PhaseDesigning}, acs(domain.DesignDebate)},
 		{"plan saved with questions", st{Phase: domain.PhasePlanning}, Event{Kind: PlanSaved, Questions: true, NoTests: true, Batches: 3},
 			st{Phase: domain.PhaseQuestions, Batches: 3}, acs(domain.AskQuestions, domain.Notify)},
 		{"plan saved no tests", st{Phase: domain.PhasePlanning}, Event{Kind: PlanSaved, NoTests: true, Batches: 3},
@@ -215,8 +223,9 @@ func TestStopFromEveryLivePhase(t *testing.T) {
 func TestOutOfOrderIsExhaustive(t *testing.T) {
 	ok := map[domain.Phase][]EventKind{
 		domain.PhaseNone:               {Requested},
-		domain.PhasePlanning:           {PlanSaved, PlannerReturned},
-		domain.PhaseQuestions:          {Answered},
+		domain.PhasePlanning:           {PlanSaved, PlannerReturned, GapsFound},
+		domain.PhaseDesigning:          {DesignClosed},
+		domain.PhaseQuestions:          {Answered, ToEngineer},
 		domain.PhaseNoTests:            {NoTestsAnswered},
 		domain.PhaseApproval:           {Approved, ChangeRequested, ViewFull},
 		domain.PhaseChangeNote:         {ChangeNoted},
