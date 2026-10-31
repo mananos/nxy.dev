@@ -22,6 +22,9 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 	switch {
 	case ev.AgentID == "" || ev.AgentType == roleImplementer:
 		id = h.parseBatchStep(cmd, ev.Tool == "PowerShell")
+		if id == "" {
+			id = h.parseAffectedStep(cmd, ev.Tool == "PowerShell")
+		}
 	case ev.AgentType == rolePlanner:
 		id = h.parsePlanSave(cmd, ev.Tool == "PowerShell")
 	}
@@ -58,6 +61,25 @@ func (h Hooks) parseBatchStep(cmd string, ps bool) string {
 		return ""
 	}
 	return toks[4]
+}
+
+// parseAffectedStep returns the feature id of `"<exe>" affected --feature <id>` (a leading `& `
+// only in PowerShell), or "".
+func (h Hooks) parseAffectedStep(cmd string, ps bool) string {
+	if strings.ContainsAny(cmd, "\r\n") {
+		return ""
+	}
+	toks, ok := shellWords(cmd)
+	if !ok {
+		return ""
+	}
+	if ps && len(toks) > 0 && toks[0] == "&" {
+		toks = toks[1:]
+	}
+	if len(toks) != 4 || !h.isExe(toks[0]) || toks[1] != "affected" || toks[2] != "--feature" {
+		return ""
+	}
+	return toks[3]
 }
 
 // parsePlanSave returns the feature id of the planner's two save forms, or "": the Bash heredoc

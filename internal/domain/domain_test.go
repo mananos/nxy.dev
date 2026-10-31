@@ -32,6 +32,9 @@ func TestEveryActionHasLabel(t *testing.T) {
 	if got := (Action{Kind: DispatchImplementer, Batch: 1}).Label(); got != "Lote 1" {
 		t.Errorf("label %q", got)
 	}
+	if !(Action{Kind: RunAffected}).MainThread() {
+		t.Error("RunAffected must be main-thread")
+	}
 	if !(Action{Kind: AskApproval}).MainThread() || (Action{Kind: Close}).MainThread() {
 		t.Error("MainThread wrong")
 	}

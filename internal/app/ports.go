@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
 )
@@ -79,4 +80,51 @@ type Files interface {
 // PermissionRules gives the host's allow/deny rules for a project.
 type PermissionRules interface {
 	Rules(projectDir string) filter.Rules
+}
+
+// Changes reads the repo's git state.
+type Changes interface {
+	// Head is the HEAD sha, or "" when there is no repo or no commit yet.
+	Head(dir string) string
+	// Changed lists the files changed since base (committed or not), repo-relative with slashes.
+	Changed(ctx context.Context, dir, base string) ([]string, error)
+	// Files lists the files of the repo (tracked and not ignored).
+	Files(ctx context.Context, dir string) ([]string, error)
+}
+
+// GraphStatus says how the code graph answered; it mirrors the tools adapter.
+type GraphStatus string
+
+const (
+	GraphMissing     GraphStatus = "missing"
+	GraphInitialized GraphStatus = "initialized"
+	GraphInitFailed  GraphStatus = "init_failed"
+	GraphInitTimeout GraphStatus = "init_timeout"
+	GraphLocked      GraphStatus = "locked"
+	GraphSyncFailed  GraphStatus = "sync_failed"
+	GraphQueryFailed GraphStatus = "query_failed"
+	GraphOK          GraphStatus = "ok"
+)
+
+// GraphResult is the answer of the code graph: the tests the changed files affect.
+type GraphResult struct {
+	Tests  []string
+	Status GraphStatus
+	Took   time.Duration
+}
+
+// TestGraph finds the tests affected by a set of changed files.
+type TestGraph interface {
+	Affected(ctx context.Context, dir string, changed []string) GraphResult
+}
+
+// Runners gives the test-runner table of a project: the embedded rows plus the repo's own.
+// The string is a Spanish warning when the repo's table is invalid ("" otherwise).
+type Runners interface {
+	Rows(dir string) ([]affected.Runner, string)
+}
+
+// FileTrees reads files of a project by repo-relative path.
+type FileTrees interface {
+	Tree(dir string) affected.Tree
 }

@@ -4,31 +4,32 @@ package domain
 type Phase string
 
 const (
-	PhaseNone             Phase = ""
-	PhasePlanning         Phase = "planning"
-	PhaseQuestions        Phase = "questions"
-	PhaseNoTests          Phase = "no_tests"
-	PhaseApproval         Phase = "approval"
-	PhaseChangeNote       Phase = "change_note"
-	PhasePlannerFailed    Phase = "planner_failed"
-	PhaseRunningBatch     Phase = "running_batch"
-	PhaseVerifyingBatch   Phase = "verifying_batch"
-	PhaseBatchFailed      Phase = "batch_failed"
-	PhaseAffected         Phase = "affected"
-	PhaseAffectedFix      Phase = "affected_fix"
-	PhaseAffectedFailed   Phase = "affected_failed"
-	PhaseReviewing        Phase = "reviewing"
-	PhaseRefuting         Phase = "refuting"
-	PhaseChoosingFindings Phase = "choosing_findings"
-	PhaseFixing           Phase = "fixing"
-	PhaseDone             Phase = "done"
+	PhaseNone               Phase = ""
+	PhasePlanning           Phase = "planning"
+	PhaseQuestions          Phase = "questions"
+	PhaseNoTests            Phase = "no_tests"
+	PhaseApproval           Phase = "approval"
+	PhaseChangeNote         Phase = "change_note"
+	PhasePlannerFailed      Phase = "planner_failed"
+	PhaseRunningBatch       Phase = "running_batch"
+	PhaseVerifyingBatch     Phase = "verifying_batch"
+	PhaseBatchFailed        Phase = "batch_failed"
+	PhaseAffected           Phase = "affected"
+	PhaseAffectedFix        Phase = "affected_fix"
+	PhaseAffectedFailed     Phase = "affected_failed"
+	PhaseAffectedUnverified Phase = "affected_unverified"
+	PhaseReviewing          Phase = "reviewing"
+	PhaseRefuting           Phase = "refuting"
+	PhaseChoosingFindings   Phase = "choosing_findings"
+	PhaseFixing             Phase = "fixing"
+	PhaseDone               Phase = "done"
 )
 
 // Phases lists every internal phase (not the empty initial one).
 var Phases = []Phase{
 	PhasePlanning, PhaseQuestions, PhaseNoTests, PhaseApproval, PhaseChangeNote,
 	PhasePlannerFailed, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
-	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseReviewing,
+	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseAffectedUnverified, PhaseReviewing,
 	PhaseRefuting, PhaseChoosingFindings, PhaseFixing, PhaseDone,
 }
 
@@ -48,23 +49,24 @@ type phaseInfo struct {
 }
 
 var phaseTable = map[Phase]phaseInfo{
-	PhasePlanning:         {Working, "Planificando"},
-	PhaseQuestions:        {NeedsYou, "Preguntas del plan"},
-	PhaseNoTests:          {NeedsYou, "Sin tests"},
-	PhaseApproval:         {NeedsYou, "Aprobación del plan"},
-	PhaseChangeNote:       {NeedsYou, "Nota de cambio"},
-	PhasePlannerFailed:    {NeedsYou, "El planner falló"},
-	PhaseRunningBatch:     {Working, "Ejecutando lote"},
-	PhaseVerifyingBatch:   {Verifying, "Verificando lote"},
-	PhaseBatchFailed:      {NeedsYou, "Lote fallido"},
-	PhaseAffected:         {Verifying, "Tests afectados"},
-	PhaseAffectedFix:      {Working, "Arreglando afectados"},
-	PhaseAffectedFailed:   {NeedsYou, "Afectados fallidos"},
-	PhaseReviewing:        {Verifying, "Revisando"},
-	PhaseRefuting:         {Verifying, "Refutando hallazgos"},
-	PhaseChoosingFindings: {NeedsYou, "Elegir hallazgos"},
-	PhaseFixing:           {Working, "Arreglando hallazgos"},
-	PhaseDone:             {Finished, "Listo"},
+	PhasePlanning:           {Working, "Planificando"},
+	PhaseQuestions:          {NeedsYou, "Preguntas del plan"},
+	PhaseNoTests:            {NeedsYou, "Sin tests"},
+	PhaseApproval:           {NeedsYou, "Aprobación del plan"},
+	PhaseChangeNote:         {NeedsYou, "Nota de cambio"},
+	PhasePlannerFailed:      {NeedsYou, "El planner falló"},
+	PhaseRunningBatch:       {Working, "Ejecutando lote"},
+	PhaseVerifyingBatch:     {Verifying, "Verificando lote"},
+	PhaseBatchFailed:        {NeedsYou, "Lote fallido"},
+	PhaseAffected:           {Verifying, "Tests afectados"},
+	PhaseAffectedFix:        {Working, "Arreglando afectados"},
+	PhaseAffectedFailed:     {NeedsYou, "Afectados fallidos"},
+	PhaseAffectedUnverified: {NeedsYou, "Afectados sin verificar"},
+	PhaseReviewing:          {Verifying, "Revisando"},
+	PhaseRefuting:           {Verifying, "Refutando hallazgos"},
+	PhaseChoosingFindings:   {NeedsYou, "Elegir hallazgos"},
+	PhaseFixing:             {Working, "Arreglando hallazgos"},
+	PhaseDone:               {Finished, "Listo"},
 }
 
 // Public maps the internal phase to the user-facing status.

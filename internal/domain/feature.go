@@ -16,6 +16,10 @@ type Feature struct {
 	ChangeNotes []string `json:"change_notes,omitempty"`
 	// Proof is the evidence of the batch being implemented.
 	Proof *Proof `json:"proof,omitempty"`
+	// Base is the HEAD sha at approval; the changed files are counted from it.
+	Base string `json:"base,omitempty"`
+	// Affected is the last run of the affected tests.
+	Affected *AffectedRun `json:"affected,omitempty"`
 	// Background is the role of the nxy agent launched in the background whose end has not been handled.
 	Background string `json:"background,omitempty"`
 	// Undelivered is true while Next still has to reach the main thread.

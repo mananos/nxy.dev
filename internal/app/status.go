@@ -40,8 +40,8 @@ func nextSituation(f domain.Feature) string {
 	if l := f.Next.Label(); l != "" && f.Next.MainThread() {
 		return l
 	}
-	if f.State.Phase == domain.PhaseAffected {
-		return "nothing for the main thread: affected tests and review arrive in F2.3; `nxy feature stop` ends the feature"
+	if f.State.Phase == domain.PhaseReviewing {
+		return "nothing for the main thread: review arrives in F2.4; `nxy feature stop` ends the feature"
 	}
 	if l := f.State.Phase.Label(); l != "" {
 		return "nothing for the main thread (" + l + ")"

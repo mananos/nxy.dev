@@ -179,6 +179,8 @@ func Validate(p domain.Plan) []Problem {
 		}
 	}
 
+	c.short("suite", p.Suite)
+
 	for i, r := range p.Risks {
 		c.short(fmt.Sprintf("risk %d", i+1), r)
 	}

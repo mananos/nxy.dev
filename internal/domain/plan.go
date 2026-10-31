@@ -44,6 +44,18 @@ type Plan struct {
 	Risks     []string   `json:"risks,omitempty"`
 	Questions []Question `json:"questions,omitempty"`
 	NoTests   bool       `json:"no_tests,omitempty"`
+	// Suite is the full-suite command, used only when the affected tests cannot be worked out.
+	Suite string `json:"suite,omitempty"`
+	// RepoRunners are the rows of the repo's .nxy/runners.json, set by nxy (not the planner) when
+	// the plan is saved so the user sees what will run; RepoRunnersWarn is set when the file is invalid.
+	RepoRunners     []RepoRunner `json:"repo_runners,omitempty"`
+	RepoRunnersWarn string       `json:"repo_runners_warn,omitempty"`
+}
+
+// RepoRunner is one row of the repo's .nxy/runners.json, as shown at the checkpoint.
+type RepoRunner struct {
+	Name    string `json:"name"`
+	Command string `json:"command"`
 }
 
 // Rule is one behavior the feature must have.

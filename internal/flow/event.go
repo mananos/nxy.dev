@@ -16,6 +16,7 @@ const (
 	BatchReturned   EventKind = "batch_returned"
 	Green           EventKind = "green"
 	Red             EventKind = "red"
+	Unverified      EventKind = "unverified"
 	Decided         EventKind = "decided"
 	ReviewDone      EventKind = "review_done"
 	RefuterDone     EventKind = "refuter_done"
@@ -27,7 +28,7 @@ const (
 // Kinds lists every event kind.
 var Kinds = []EventKind{
 	Requested, PlanSaved, PlannerReturned, Answered, NoTestsAnswered, Approved,
-	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Decided,
+	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Unverified, Decided,
 	ReviewDone, RefuterDone, Chosen, FixesReturned, Stop,
 }
 

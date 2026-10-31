@@ -26,16 +26,18 @@ var roleFor = map[domain.ActionKind]string{
 
 // roleInfo is what nxy does with a subagent that can run in the background: the phase it works
 // in and the events its return stands for (it may change the feature, e.g. the verdict).
-type roleInfo struct {
-	phase    domain.Phase
-	returned func(f *domain.Feature) []flow.Event
-}
+type roleInfo map[domain.Phase]func(f *domain.Feature) []flow.Event
 
 var roles = map[string]roleInfo{
-	rolePlanner: {domain.PhasePlanning, func(*domain.Feature) []flow.Event {
+	rolePlanner: {domain.PhasePlanning: func(*domain.Feature) []flow.Event {
 		return []flow.Event{{Kind: flow.PlannerReturned}}
 	}},
-	roleImplementer: {domain.PhaseRunningBatch, batchReturned},
+	roleImplementer: {
+		domain.PhaseRunningBatch: batchReturned,
+		domain.PhaseAffectedFix: func(*domain.Feature) []flow.Event {
+			return []flow.Event{{Kind: flow.FixesReturned}}
+		},
+	},
 }
 
 // batchReturned judges the batch from the proof the binary recorded: BatchReturned, then Green
@@ -124,7 +126,7 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{Deny: backgroundWait(f.ID, ev.Subagent)}
 	case ev.Subagent == rolePlanner && f.State.Phase == domain.PhasePlanning:
 		return HookResponse{Prompt: plan.PlannerPrompt(f, h.Exe)}
-	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch:
+	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:
 		return HookResponse{Deny: "plan not approved; next step " + f.Next.Label()}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchImplementer:
 		// A new attempt starts on a clean green; the red and the failure stay for the retry.
@@ -138,6 +140,8 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 			return HookResponse{}
 		}
 		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe)}
+	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchAffectedFix:
+		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe)}
 	case ev.Subagent != roleFor[f.Next.Kind]:
 		return HookResponse{Deny: "out of order: next step is " + f.Next.Label()}
 	}
@@ -157,7 +161,8 @@ func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	ended := f.Background == backgroundEnded
-	if ev.AgentAsync && !ended && f.State.Phase == role.phase {
+	returned, inPhase := role[f.State.Phase]
+	if ev.AgentAsync && !ended && inPhase {
 		nf, _, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
 			g.Background = ev.Subagent
 			return true
@@ -167,12 +172,12 @@ func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		return HookResponse{Context: backgroundWait(nf.ID, ev.Subagent)}
 	}
-	if f.State.Phase == role.phase {
+	if inPhase {
 		nf, _, err := h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
 			if g.Background == backgroundEnded {
 				g.Background = ""
 			}
-			return role.returned(g), nil
+			return returned(g), nil
 		})
 		if err != nil {
 			return HookResponse{}

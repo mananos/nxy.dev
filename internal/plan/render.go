@@ -27,7 +27,23 @@ func Checkpoint(p domain.Plan) string {
 		}
 		fmt.Fprintf(&b, "- Riesgo: %s\n", bt.Risk)
 	}
+	writeSuite(&b, p)
 	return b.String()
+}
+
+func writeSuite(b *strings.Builder, p domain.Plan) {
+	if p.Suite != "" {
+		fmt.Fprintf(b, "\n- Suite (sólo si no se pueden calcular los afectados): `%s`\n", p.Suite)
+	}
+	if p.RepoRunnersWarn != "" {
+		fmt.Fprintf(b, "\n- Runners del repo: %s\n", p.RepoRunnersWarn)
+	}
+	for i, r := range p.RepoRunners {
+		if i == 0 {
+			b.WriteString("\n")
+		}
+		fmt.Fprintf(b, "- Runners del repo (.nxy/runners.json): `%s` → `%s`\n", r.Name, r.Command)
+	}
 }
 
 // Markdown is the whole plan document of the feature (14.13).
@@ -73,6 +89,7 @@ func Markdown(f domain.Feature) string {
 		}
 		fmt.Fprintf(&b, "- Riesgo: %s\n", bt.Risk)
 	}
+	writeSuite(&b, p)
 	if len(p.Risks) > 0 {
 		b.WriteString("\n### Riesgos\n\n")
 		for _, r := range p.Risks {

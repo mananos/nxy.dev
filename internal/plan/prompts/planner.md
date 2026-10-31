@@ -28,11 +28,12 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
 - risk is low, medium or high. depends lists earlier batch numbers only.
 - Ask a question only for a real fork you cannot settle from the repo: 2 to 4 options, the recommended one first and the only one marked recommended, at most 4 questions. If you ask, you may still save a full plan.
+- suite: the command that runs the whole test suite of the repo (e.g. `npm test`); nxy runs it only when it cannot work out the affected tests; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.
 
 ## Plan format (JSON)
 
-Fields: title, decisions[{scope repo|task, text, question}], rules[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
+Fields: title, decisions[{scope repo|task, text, question}], rules[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
 
 Example of a valid plan:
 

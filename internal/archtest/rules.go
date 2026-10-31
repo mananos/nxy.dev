@@ -30,7 +30,7 @@ func (v Violation) String() string {
 
 // Rules as data: paths are relative to the module.
 var (
-	pure     = set("internal/domain", "internal/flow", "internal/plan", "internal/review", "internal/gate", "internal/filter", "internal/version")
+	pure     = set("internal/domain", "internal/flow", "internal/plan", "internal/review", "internal/gate", "internal/filter", "internal/version", "internal/affected")
 	adapters = set("internal/store/sqlite", "internal/host/claudecode", "internal/runner", "internal/tools", "internal/update", "internal/tui")
 	// support packages: may not import adapters, may only be imported by adapters and cmd.
 	support = set("internal/platform", "internal/views")
@@ -92,7 +92,7 @@ func Check(pkgs []Pkg) []Violation {
 	return out
 }
 
-func checkPure(p Pkg)[]Violation {
+func checkPure(p Pkg) []Violation {
 	var out []Violation
 	for _, d := range p.Deps {
 		if d == p.ImportPath {

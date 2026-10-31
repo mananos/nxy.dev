@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/app"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
@@ -185,11 +186,78 @@ func (shellRunner) Run(ctx context.Context, dir, command string) (app.ShellResul
 	defer cancel()
 	exit, out, err := platform.RunShell(ctx, dir, command, acceptKeep)
 	if errors.Is(err, context.DeadlineExceeded) {
-		out = strings.TrimRight(out, "\r\n") + fmt.Sprintf("\nnxy: Accept timed out after %s and was killed", acceptTimeout)
+		out = strings.TrimRight(out, "\r\n") + fmt.Sprintf("\nnxy: command timed out after %s and was killed", acceptTimeout)
 		return app.ShellResult{Exit: -1, Output: out, TimedOut: true}, nil
 	}
 	return app.ShellResult{Exit: exit, Output: out}, err
 }
+
+// gitChanges answers from git without a shell.
+type gitChanges struct{}
+
+func (gitChanges) Head(dir string) string { return platform.GitHead(dir) }
+func (gitChanges) Changed(ctx context.Context, dir, base string) ([]string, error) {
+	return platform.GitChanged(ctx, dir, base)
+}
+func (gitChanges) Files(ctx context.Context, dir string) ([]string, error) {
+	return platform.GitFiles(ctx, dir)
+}
+
+// codegraphGraph drives the codegraph CLI; it is found once per process.
+type codegraphGraph struct {
+	once sync.Once
+	g    *tools.Graph
+}
+
+func (c *codegraphGraph) Affected(ctx context.Context, dir string, changed []string) app.GraphResult {
+	c.once.Do(func() { c.g = tools.NewGraph(os.Getenv) })
+	r := c.g.Affected(ctx, dir, changed)
+	st := app.GraphMissing
+	switch r.Status {
+	case tools.StatusOK:
+		st = app.GraphOK
+	case tools.StatusInitialized:
+		st = app.GraphInitialized
+	case tools.StatusInitFailed:
+		st = app.GraphInitFailed
+	case tools.StatusInitTimeout:
+		st = app.GraphInitTimeout
+	case tools.StatusLocked:
+		st = app.GraphLocked
+	case tools.StatusSyncFailed:
+		st = app.GraphSyncFailed
+	case tools.StatusQueryFailed:
+		st = app.GraphQueryFailed
+	}
+	return app.GraphResult{Tests: r.Tests, Status: st, Took: r.Took}
+}
+
+// runnerRows is the embedded table plus <project>/.nxy/runners.json.
+type runnerRows struct{}
+
+func (runnerRows) Rows(dir string) ([]affected.Runner, string) {
+	builtin := affected.Builtin()
+	data, err := os.ReadFile(filepath.Join(dir, ".nxy", "runners.json"))
+	if err != nil {
+		return builtin, ""
+	}
+	repo, err := affected.Parse(data)
+	if err != nil {
+		return builtin, ".nxy/runners.json inválido, se ignora: " + err.Error()
+	}
+	return affected.Merge(repo, builtin), ""
+}
+
+type diskTree struct{ root string }
+
+func (t diskTree) Read(p string) ([]byte, bool) {
+	b, err := os.ReadFile(filepath.Join(t.root, filepath.FromSlash(p)))
+	return b, err == nil
+}
+
+type fileTrees struct{}
+
+func (fileTrees) Tree(dir string) affected.Tree { return diskTree{platform.NativePath(dir)} }
 
 type fileProbe struct{}
 
@@ -213,5 +281,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 	return app.Hooks{
 		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{},
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
+		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 	}, st
 }

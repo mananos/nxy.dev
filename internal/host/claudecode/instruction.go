@@ -22,16 +22,44 @@ type askQuestion struct {
 
 // Instruction words the step f.Next as one instruction for the main thread, starting with "nxy:".
 func Instruction(f domain.Feature, note string) string {
-	return instruction(f, note, false)
+	return instruction(f, note, "", false)
+}
+
+// InstructionFor is Instruction with the path of the nxy binary, for the commands it writes.
+func InstructionFor(f domain.Feature, note, exe string) string {
+	return instruction(f, note, exe, false)
 }
 
 // StopInstruction is Instruction for the Stop hook: its text is the block reason, which the user
 // already sees, so the checkpoint or failure goes once and the model is told not to repeat it.
-func StopInstruction(f domain.Feature, note string) string {
-	return instruction(f, note, true)
+func StopInstruction(f domain.Feature, note, exe string) string {
+	return instruction(f, note, exe, true)
 }
 
-func instruction(f domain.Feature, note string, stop bool) string {
+// affectedSummary is a one-line Spanish summary of the affected tests run.
+func affectedSummary(f domain.Feature) string {
+	a := f.Affected
+	if a == nil {
+		return "sin registro"
+	}
+	verdict := "verde"
+	switch {
+	case a.Failure != "":
+		verdict = "rojo (aceptado por el usuario)"
+	case len(a.Runs) == 0:
+		verdict = "sin verificar (seguido por el usuario)"
+	}
+	s := fmt.Sprintf("%s (%d tests, fuente: %s)", verdict, len(a.Tests), a.Source)
+	if a.Note != "" {
+		s += "; " + a.Note
+	}
+	return s
+}
+
+func instruction(f domain.Feature, note, exe string, stop bool) string {
+	if exe == "" {
+		exe = "nxy"
+	}
 	var s string
 	switch a := f.Next; a.Kind {
 	case domain.DispatchPlanner:
@@ -50,9 +78,17 @@ func instruction(f domain.Feature, note string, stop bool) string {
 		}
 	case domain.AskDecision:
 		s = "nxy: feature " + f.ID + " — " + decisionAndAsk(f, stop)
+	case domain.RunAffected:
+		s = fmt.Sprintf("nxy: feature %s — all batches are green; Next: run exactly `\"%s\" affected --feature %s` as its own Bash call with timeout 600000, not in the background; nxy picks and runs the affected tests and prints the next step.", f.ID, exe, f.ID)
+	case domain.DispatchAffectedFix:
+		lead := "Next"
+		if a.Retry {
+			lead = "the affected fix did not pass the check; nxy retries once — dispatch it again the same way"
+		}
+		s = fmt.Sprintf("nxy: feature %s — %s: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s affected fix`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, lead, f.ID)
 	default:
-		if f.State.Phase == domain.PhaseAffected {
-			s = "nxy: feature " + f.ID + " — all batches are green; affected tests and review arrive in F2.3: stop here. To end the feature: `nxy feature stop`."
+		if f.State.Phase == domain.PhaseReviewing {
+			s = fmt.Sprintf("nxy: feature %s — affected tests: %s; review arrives in F2.4: tell the user that line and stop here. To end the feature: `nxy feature stop`.", f.ID, affectedSummary(f))
 		} else {
 			s = "nxy: feature " + f.ID + " — " + a.Label() + ": not available yet in this build; stop here. To end the feature: `nxy feature stop`."
 		}
@@ -105,6 +141,43 @@ func decisionAndAsk(f domain.Feature, stop bool) string {
 			{plan.Continue, "Accept it as is and go to the next batch"},
 			{plan.Stop, "End the feature"},
 		})
+	case domain.PhaseAffectedFailed, domain.PhaseAffectedUnverified:
+		if stop {
+			b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
+		} else {
+			b.WriteString("Next: show this to the user verbatim, without summarizing or reformatting.\n")
+		}
+		failed := f.State.Phase == domain.PhaseAffectedFailed
+		body := ""
+		if f.Affected != nil {
+			body = strings.TrimSpace(f.Affected.Reason + "\n" + f.Affected.Note)
+			if failed {
+				body = f.Affected.Failure
+			}
+		}
+		if failed {
+			b.WriteString("--- Afectados fallidos ---\n" + body + "\n--- fin ---\n")
+		} else {
+			b.WriteString("--- Afectados sin verificar ---\n" + body + "\n--- fin ---\n")
+		}
+		if stop {
+			b.WriteString("Input:\n")
+		} else {
+			b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
+		}
+		if failed {
+			input = decisionInput(plan.AffectedFailedQuestion(f.ID), "Afectados", []askOption{
+				{plan.Retry, "Dispatch the implementer to fix them again"},
+				{plan.Continue, "Accept them failing and go on to review"},
+				{plan.Stop, "End the feature"},
+			})
+		} else {
+			input = decisionInput(plan.UnverifiedQuestion(f.ID), "Afectados", []askOption{
+				{plan.Retry, "Run nxy affected again (e.g. after adding .nxy/runners.json or suite)"},
+				{plan.Continue, "Go on without verifying"},
+				{plan.Stop, "End the feature"},
+			})
+		}
 	case domain.PhasePlannerFailed:
 		b.WriteString("Next: the planner ended without saving a plan; ask with AskUserQuestion, with exactly this input.\n")
 		input = decisionInput(plan.PlannerFailedQuestion(f.ID), "Planner", []askOption{

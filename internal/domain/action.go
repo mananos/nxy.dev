@@ -46,7 +46,7 @@ var actionTable = map[ActionKind]actionInfo{
 	OpenPlan:            {false, "Abrir plan"},
 	DispatchImplementer: {true, "Lote"},
 	VerifyBatch:         {false, "Verificar lote"},
-	RunAffected:         {false, "Correr afectados"},
+	RunAffected:         {true, "Correr afectados"},
 	DispatchAffectedFix: {true, "Arreglar afectados"},
 	AskDecision:         {true, "Decidir"},
 	DispatchReviewer:    {true, "Revisar"},

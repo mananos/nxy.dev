@@ -3,6 +3,7 @@ package platform
 import (
 	"context"
 	"errors"
+	"io"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -35,29 +36,47 @@ func ShellArgv(goos string, lookPath func(string) (string, error), command strin
 // an error: err is only for a shell that cannot start or an expired ctx.
 func RunShell(ctx context.Context, dir, command string, keep int) (exit int, out string, err error) {
 	argv, cmdLine := ShellArgv(runtime.GOOS, exec.LookPath, command)
+	w := &tailWriter{keep: keep}
+	exit, err = runProc(ctx, dir, argv, cmdLine, "", w, w)
+	return exit, w.String(), err
+}
+
+// RunArgvSplit runs argv directly (no shell) in dir, feeding stdin when not empty,
+// with stdout kept apart from stderr (for output that is parsed, such as JSON).
+// Same error contract as RunShell. Returns the whole stdout, capped at keep bytes from its tail, and the stderr tail.
+func RunArgvSplit(ctx context.Context, dir string, argv []string, stdin string, keep int) (exit int, stdout, stderr string, err error) {
+	o, e := &tailWriter{keep: keep}, &tailWriter{keep: 4096}
+	exit, err = runProc(ctx, dir, argv, "", stdin, o, e)
+	return exit, o.String(), e.String(), err
+}
+
+// runProc is the exec core: hidden window, process tree killed on ctx expiry, and
+// a WaitDelay so a grandchild holding the pipe cannot hang Wait.
+func runProc(ctx context.Context, dir string, argv []string, cmdLine, stdin string, stdout, stderr io.Writer) (int, error) {
 	c := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	c.Dir = dir
-	c.WaitDelay = 3 * time.Second // a grandchild holding the pipe must not hang Wait
+	c.WaitDelay = 3 * time.Second
 	hideWindow(c)
 	if cmdLine != "" {
 		setCmdLine(c, cmdLine)
 	}
 	killTree(c)
-	w := &tailWriter{keep: keep}
-	c.Stdout, c.Stderr = w, w
+	if stdin != "" {
+		c.Stdin = strings.NewReader(stdin)
+	}
+	c.Stdout, c.Stderr = stdout, stderr
 	runErr := c.Run()
-	out = w.String()
 	if ctx.Err() != nil {
-		return -1, out, ctx.Err()
+		return -1, ctx.Err()
 	}
 	var ee *exec.ExitError
 	switch {
 	case runErr == nil, errors.Is(runErr, exec.ErrWaitDelay) && c.ProcessState != nil:
-		return c.ProcessState.ExitCode(), out, nil
+		return c.ProcessState.ExitCode(), nil
 	case errors.As(runErr, &ee):
-		return ee.ExitCode(), out, nil
+		return ee.ExitCode(), nil
 	}
-	return -1, out, runErr
+	return -1, runErr
 }
 
 // tailWriter keeps only the last keep bytes written to it.

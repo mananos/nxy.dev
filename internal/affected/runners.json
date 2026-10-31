@@ -1,0 +1,107 @@
+[
+  {
+    "name": "go",
+    "detect": [{"file": "go.mod"}],
+    "tests": ["*_test.go"],
+    "stems": ["{name}_test"],
+    "same_dir": true,
+    "command": "go test {tests}",
+    "item": "dir",
+    "sep": " "
+  },
+  {
+    "name": "angular",
+    "detect": [{"file": "angular.json"}],
+    "tests": ["*.spec.ts"],
+    "stems": ["{name}.spec"],
+    "command": "npx ng test --watch=false {tests}",
+    "item": "path",
+    "prefix": "--include=",
+    "sep": " "
+  },
+  {
+    "name": "vitest",
+    "detect": [{"file": "package.json", "contains": "vitest"}],
+    "tests": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx", "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx"],
+    "stems": ["{name}.spec", "{name}.test"],
+    "command": "npx vitest run {tests}",
+    "item": "path",
+    "sep": " "
+  },
+  {
+    "name": "jest",
+    "detect": [{"file": "package.json", "contains": "jest"}],
+    "tests": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx", "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx"],
+    "stems": ["{name}.spec", "{name}.test"],
+    "command": "npx jest {tests}",
+    "item": "path",
+    "sep": " "
+  },
+  {
+    "name": "react-scripts",
+    "detect": [{"file": "package.json", "contains": "react-scripts"}],
+    "tests": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx", "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx"],
+    "stems": ["{name}.spec", "{name}.test"],
+    "command": "npx react-scripts test --watchAll=false {tests}",
+    "item": "path",
+    "sep": " "
+  },
+  {
+    "name": "maven-wrapper",
+    "wrapper_of": "maven",
+    "detect": [{"file": "mvnw"}],
+    "tests": ["*Test.java", "*Tests.java", "*IT.java", "*Spec.java", "*Test.kt", "*Tests.kt", "*IT.kt", "*Spec.kt", "*Test.scala", "*Spec.scala"],
+    "stems": ["{name}Test", "{name}Tests", "{name}IT", "{name}Spec"],
+    "command": "./mvnw -q test -Dsurefire.failIfNoSpecifiedTests=false -Dtest={tests}",
+    "item": "class",
+    "sep": ","
+  },
+  {
+    "name": "maven",
+    "detect": [{"file": "pom.xml"}],
+    "tests": ["*Test.java", "*Tests.java", "*IT.java", "*Spec.java", "*Test.kt", "*Tests.kt", "*IT.kt", "*Spec.kt", "*Test.scala", "*Spec.scala"],
+    "stems": ["{name}Test", "{name}Tests", "{name}IT", "{name}Spec"],
+    "command": "mvn -q test -Dsurefire.failIfNoSpecifiedTests=false -Dtest={tests}",
+    "item": "class",
+    "sep": ","
+  },
+  {
+    "name": "gradle-wrapper",
+    "wrapper_of": "gradle",
+    "detect": [{"file": "gradlew"}],
+    "tests": ["*Test.java", "*Tests.java", "*IT.java", "*Spec.java", "*Test.kt", "*Tests.kt", "*IT.kt", "*Spec.kt", "*Test.groovy", "*Spec.groovy"],
+    "stems": ["{name}Test", "{name}Tests", "{name}IT", "{name}Spec"],
+    "command": "./gradlew {module}test {tests}",
+    "item": "class",
+    "prefix": "--tests ",
+    "sep": " "
+  },
+  {
+    "name": "gradle",
+    "detect": [{"file": "build.gradle"}, {"file": "build.gradle.kts"}],
+    "tests": ["*Test.java", "*Tests.java", "*IT.java", "*Spec.java", "*Test.kt", "*Tests.kt", "*IT.kt", "*Spec.kt", "*Test.groovy", "*Spec.groovy"],
+    "stems": ["{name}Test", "{name}Tests", "{name}IT", "{name}Spec"],
+    "command": "gradle {module}test {tests}",
+    "item": "class",
+    "prefix": "--tests ",
+    "sep": " "
+  },
+  {
+    "name": "sbt",
+    "detect": [{"file": "build.sbt"}],
+    "tests": ["*Spec.scala", "*Test.scala"],
+    "stems": ["{name}Spec", "{name}Test"],
+    "command": "sbt \"testOnly {tests}\"",
+    "item": "class",
+    "sep": " "
+  },
+  {
+    "name": "pytest",
+    "detect": [{"file": "pyproject.toml"}, {"file": "pytest.ini"}, {"file": "setup.cfg"}, {"file": "conftest.py"}],
+    "tests": ["test_*.py", "*_test.py"],
+    "stems": ["test_{name}", "{name}_test"],
+    "command": "python -m pytest {tests}",
+    "item": "path",
+    "sep": " "
+  }
+]

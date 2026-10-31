@@ -228,7 +228,7 @@ func TestInstructionPerAction(t *testing.T) {
 			t.Errorf("batch_failed missing %q in:\n%s", want, s)
 		}
 	}
-	st := StopInstruction(f, "")
+	st := StopInstruction(f, "", "")
 	if strings.Count(st, "green never passed: boom") != 1 || !strings.Contains(st, "do not repeat it") {
 		t.Errorf("stop batch_failed: %s", st)
 	}
@@ -238,16 +238,37 @@ func TestInstructionPerAction(t *testing.T) {
 	}
 	f.Next = domain.Action{Kind: domain.RunAffected}
 	f.State = domain.State{Phase: domain.PhaseAffected}
-	if s := Instruction(f, ""); !strings.Contains(s, "all batches are green") || !strings.Contains(s, "`nxy feature stop`") {
+	if s := InstructionFor(f, "", "/bin/nxy"); !strings.Contains(s, "all batches are green") || !strings.Contains(s, `"/bin/nxy" affected --feature f1`) || !strings.Contains(s, "timeout 600000") {
 		t.Errorf("affected: %s", s)
 	}
+	f.Next = domain.Action{Kind: domain.DispatchAffectedFix}
+	f.State = domain.State{Phase: domain.PhaseAffectedFix}
+	if s := Instruction(f, ""); !strings.Contains(s, "`nxy:implementer`") || !strings.Contains(s, "feature f1 affected fix") {
+		t.Errorf("affected fix: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.AskDecision}
+	f.State = domain.State{Phase: domain.PhaseAffectedFailed}
+	f.Affected = &domain.AffectedRun{Failure: "`go test` (exit 1):\nboom"}
+	if s := Instruction(f, ""); !strings.Contains(s, "--- Afectados fallidos ---") || !strings.Contains(s, "boom") || !strings.Contains(s, plan.AffectedFailedQuestion("f1")) || !strings.Contains(s, plan.Continue) {
+		t.Errorf("affected failed: %s", s)
+	}
+	f.State = domain.State{Phase: domain.PhaseAffectedUnverified}
+	f.Affected = &domain.AffectedRun{Note: "ningún test afectado"}
+	if s := Instruction(f, ""); !strings.Contains(s, "--- Afectados sin verificar ---") || !strings.Contains(s, "ningún test afectado") || !strings.Contains(s, plan.UnverifiedQuestion("f1")) {
+		t.Errorf("affected unverified: %s", s)
+	}
 	af := approvalFeature()
-	if s := StopInstruction(af, ""); strings.Count(s, plan.Checkpoint(*af.Plan)) != 1 || !strings.Contains(s, "do not repeat it") || strings.Contains(s, "verbatim") {
+	if s := StopInstruction(af, "", ""); strings.Count(s, plan.Checkpoint(*af.Plan)) != 1 || !strings.Contains(s, "do not repeat it") || strings.Contains(s, "verbatim") {
 		t.Errorf("stop approval: %s", s)
 	}
 	f.Next = domain.Action{Kind: domain.DispatchReviewer}
 	f.State = domain.State{Phase: domain.PhaseReviewing}
-	if s := Instruction(f, ""); !strings.Contains(s, "not available yet") {
+	if s := Instruction(f, ""); !strings.Contains(s, "F2.4") || !strings.Contains(s, "`nxy feature stop`") {
+		t.Errorf("reviewing: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.DispatchFixer}
+	f.State = domain.State{Phase: domain.PhaseReviewing}
+	if s := Instruction(f, ""); !strings.Contains(s, "F2.4") {
 		t.Errorf("default: %s", s)
 	}
 }

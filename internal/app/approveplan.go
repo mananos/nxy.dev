@@ -18,7 +18,8 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 	if strings.HasPrefix(q, "Approve nxy plan "+f.ID+" r") {
 		return true
 	}
-	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) {
+	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
+		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) {
 		return true
 	}
 	if f.Plan != nil {
@@ -39,6 +40,10 @@ func decisionAnswer(f domain.Feature, answers map[string]string) (string, bool) 
 		q = plan.DecisionQuestion(f.ID, f.State.Batch)
 	case domain.PhasePlannerFailed:
 		q = plan.PlannerFailedQuestion(f.ID)
+	case domain.PhaseAffectedFailed:
+		q = plan.AffectedFailedQuestion(f.ID)
+	case domain.PhaseAffectedUnverified:
+		q = plan.UnverifiedQuestion(f.ID)
 	default:
 		return "", false
 	}
@@ -52,7 +57,8 @@ func (h Hooks) answerDecision(ctx context.Context, f domain.Feature, answer stri
 	case plan.Retry:
 		d = flow.DecisionRetry
 	case plan.Continue:
-		if f.State.Phase == domain.PhaseBatchFailed {
+		switch f.State.Phase {
+		case domain.PhaseBatchFailed, domain.PhaseAffectedFailed, domain.PhaseAffectedUnverified:
 			d = flow.DecisionContinue
 		}
 	case plan.Stop:
@@ -136,7 +142,12 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 	note := ""
 	switch answer {
 	case plan.Approve:
-		nf, _, err = h.advance(ctx, f.ID, flow.Event{Kind: flow.Approved})
+		nf, _, err = h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.Approved}, func(x *domain.Feature) error {
+			if x.Base == "" && h.Changes != nil {
+				x.Base = h.Changes.Head(x.ProjectDir)
+			}
+			return nil
+		})
 	case plan.ViewFull:
 		if h.Viewer != nil {
 			path, serr := h.Viewer.Show(ctx, f)

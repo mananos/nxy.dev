@@ -35,7 +35,8 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 				}
 			}
 			role, known := roles[f.Background]
-			running := known && f.State.Phase == role.phase
+			_, inPhase := role[f.State.Phase]
+			running := known && inPhase
 			if running {
 				r.Context = backgroundWait(f.ID, f.Background)
 			} else {

@@ -26,7 +26,7 @@ func TestExampleIsValid(t *testing.T) {
 func TestCheckpointOmitsMachineFields(t *testing.T) {
 	f := sampleFeature(t)
 	cp := Checkpoint(*f.Plan)
-	for _, bad := range []string{"Leer","internal/greet/greet.go:1-40", "add greeting"} {
+	for _, bad := range []string{"Leer", "internal/greet/greet.go:1-40", "add greeting"} {
 		if strings.Contains(cp, bad) {
 			t.Errorf("checkpoint contains %q:\n%s", bad, cp)
 		}

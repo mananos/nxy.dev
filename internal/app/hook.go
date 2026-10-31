@@ -46,6 +46,8 @@ type HookEvent struct {
 type Next struct {
 	Feature domain.Feature
 	Note    string
+	// Exe is the path of the nxy binary, for the commands the adapter writes.
+	Exe string
 }
 
 // CommandRewrite asks the host to run Command instead of the original; Allow also pre-approves it.
@@ -87,10 +89,24 @@ type Hooks struct {
 	Files Files
 	// Exe is the path of the nxy binary, with forward slashes.
 	Exe string
+	// Changes, Graph, Runners and Trees serve `nxy affected`; nil ones degrade to plan paths,
+	// no graph, the embedded table and no files.
+	Changes Changes
+	Graph   TestGraph
+	Runners Runners
+	Trees   FileTrees
 }
 
 // Handle answers a hook event, one use case per event/tool.
 func (h Hooks) Handle(ctx context.Context, ev HookEvent) HookResponse {
+	resp := h.handle(ctx, ev)
+	if resp.Next != nil {
+		resp.Next.Exe = h.Exe
+	}
+	return resp
+}
+
+func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 	switch {
 	case ev.Name == "PreToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
 		return h.preToolBash(ctx, ev)

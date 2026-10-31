@@ -205,12 +205,18 @@ var table = map[domain.Phase][]row{
 		{Green, always, review},
 		{Red, attempt(0), retryAs(domain.PhaseAffectedFix, domain.DispatchAffectedFix, false)},
 		{Red, attempt(1), failTo(domain.PhaseAffectedFailed)},
+		{Unverified, always, failTo(domain.PhaseAffectedUnverified)},
 	},
 	domain.PhaseAffectedFix: {
 		{FixesReturned, always, reverify},
 	},
 	domain.PhaseAffectedFailed: {
 		{Decided, decided(DecisionRetry), to(domain.PhaseAffectedFix, domain.DispatchAffectedFix)},
+		{Decided, decided(DecisionContinue), review},
+		{Decided, decided(DecisionStop), stop},
+	},
+	domain.PhaseAffectedUnverified: {
+		{Decided, decided(DecisionRetry), to(domain.PhaseAffected, domain.RunAffected)},
 		{Decided, decided(DecisionContinue), review},
 		{Decided, decided(DecisionStop), stop},
 	},

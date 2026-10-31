@@ -20,11 +20,11 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 	if !ok {
 		return HookResponse{}
 	}
-	if f.Background == "" && f.State.Phase == role.phase {
+	if _, in := role[f.State.Phase]; f.Background == "" && in {
 		// It ended before its launch hook ran (or it is a foreground one, whose
 		// PostToolUse clears this): remember it so a later async launch does not wait.
 		_, _, _ = h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
-			if g.Background != "" || g.State.Phase != role.phase {
+			if _, in := role[g.State.Phase]; g.Background != "" || !in {
 				return false
 			}
 			g.Background = backgroundEnded
@@ -41,10 +41,11 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		g.Background = ""
 		g.Undelivered = true
-		if g.State.Phase != role.phase {
+		returned, in := role[g.State.Phase]
+		if !in {
 			return nil, errSkipEvent
 		}
-		return role.returned(g), nil
+		return returned(g), nil
 	})
 	return HookResponse{}
 }

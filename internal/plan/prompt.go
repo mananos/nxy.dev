@@ -19,6 +19,35 @@ var implementerTemplate string
 
 var implementerTmpl = template.Must(template.New("implementer").Parse(implementerTemplate))
 
+//go:embed prompts/affectedfix.md
+var affectedFixTemplate string
+
+var affectedFixTmpl = template.Must(template.New("affectedfix").Parse(affectedFixTemplate))
+
+type affectedFixData struct {
+	Feature   domain.Feature
+	Exe       string
+	Decisions []domain.Decision
+	Failure   string
+}
+
+// AffectedFixPrompt builds the prompt of the implementer that fixes the
+// failing affected tests of the feature.
+func AffectedFixPrompt(f domain.Feature, exe string) string {
+	d := affectedFixData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/")}
+	if f.Plan != nil {
+		d.Decisions = f.Plan.Decisions
+	}
+	if f.Affected != nil {
+		d.Failure = f.Affected.Failure
+	}
+	var b strings.Builder
+	if err := affectedFixTmpl.Execute(&b, d); err != nil {
+		return "nxy: could not build the affected fix prompt: " + err.Error()
+	}
+	return b.String()
+}
+
 // plannerExample is the example plan of the prompt; the tests check it is valid.
 const plannerExample = `{
   "title": "Greet by name",
@@ -41,6 +70,7 @@ const plannerExample = `{
       "risk": "low"
     }
   ],
+  "suite": "go test ./...",
   "risks": ["Callers of the old signature"],
   "questions": [
     {

@@ -37,6 +37,18 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 	if probs := plan.Validate(p); len(probs) > 0 {
 		return SaveResult{Problems: probs}, nil
 	}
+	// The repo's own runners run commands: the user sees them at the checkpoint (nxy sets them,
+	// whatever the planner wrote).
+	p.RepoRunners, p.RepoRunnersWarn = nil, ""
+	if h.Runners != nil {
+		rows, warn := h.Runners.Rows(f.ProjectDir)
+		p.RepoRunnersWarn = warn
+		for _, r := range rows {
+			if r.Repo {
+				p.RepoRunners = append(p.RepoRunners, domain.RepoRunner{Name: r.Name, Command: r.Command})
+			}
+		}
+	}
 	ev := flow.Event{Kind: flow.PlanSaved, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches)}
 	nf, _, err := h.advanceWith(ctx, featureID, ev, func(f *domain.Feature) error {
 		if f.State.Phase != domain.PhasePlanning {

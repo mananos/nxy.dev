@@ -135,13 +135,13 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			"updatedInput":             fields,
 		}}
 	case ev.Name == "Stop" && resp.Next != nil:
-		out = map[string]any{"decision": "block", "reason": StopInstruction(resp.Next.Feature, resp.Next.Note)}
+		out = map[string]any{"decision": "block", "reason": StopInstruction(resp.Next.Feature, resp.Next.Note, resp.Next.Exe)}
 	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != "" || resp.Context != ""):
 		out = map[string]any{}
 		if resp.Next != nil || resp.Context != "" {
 			var parts []string
 			if resp.Next != nil {
-				parts = append(parts, Instruction(resp.Next.Feature, resp.Next.Note))
+				parts = append(parts, InstructionFor(resp.Next.Feature, resp.Next.Note, resp.Next.Exe))
 			}
 			if resp.Context != "" {
 				parts = append(parts, resp.Context)
