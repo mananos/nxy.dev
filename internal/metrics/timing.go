@@ -7,17 +7,11 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/internal/searchscope"
 )
 
 // Where a subagent run's time goes: model / Bash / other tools / waiting, with usage-limit gaps
 // excluded and counted apart (core/metrics/timing.mjs). Works on parsed transcript lines.
-
-// locateNudgeMark is the fixed first words of the planner nudge (core/search-scope.mjs
-// LOCATE_NUDGE_MARK); F3.3 ports search-scope and replaces this copy.
-const locateNudgeMark = "nxy locate nudge:"
-
-// isLocateCommand is true when the command runs the locate entry (search-scope.mjs copy).
-func isLocateCommand(cmd string) bool { return strings.Contains(cmd, "locate.mjs") }
 
 // JS \s: the ASCII set plus \v and the Unicode spaces (RE2 \s lacks them).
 const jsSpaceClass = `[\s\x{000B}\x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]+`
@@ -268,11 +262,11 @@ func AgentTiming(events []any) Timing {
 			if isString(jscompat.Get(b, "type"), "tool_use") && jscompat.Truthy(id) {
 				name, input := jscompat.Get(b, "name"), jscompat.Get(b, "input")
 				uses[keyOf(id)] = toolUse{e.ts, name, input}
-				if isShell(name) && isLocateCommand(jscompat.String(firstNonNullish(jscompat.Get(input, "command"), ""))) {
+				if isShell(name) && searchscope.IsLocateCommand(jscompat.String(firstNonNullish(jscompat.Get(input, "command"), ""))) {
 					locateCalls++
 				}
 			} else if isString(jscompat.Get(b, "type"), "tool_result") {
-				if strings.Contains(resultText(b), locateNudgeMark) {
+				if strings.Contains(resultText(b), searchscope.LocateNudgeMark) {
 					nudges++
 				}
 				k := keyOf(jscompat.Get(b, "tool_use_id"))

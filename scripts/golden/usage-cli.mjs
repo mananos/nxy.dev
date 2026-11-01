@@ -56,9 +56,6 @@
  * `<rootslug>`. Statusline: `state` = {<session id as the 1.x sanitizes it>: text of the session cache
  * file} after the last step (every `"offset":N` masked as `"offset":0`: it counts bytes of transcripts
  * that embed the root path, whose length differs per machine), `input` = text of the last-payload file (null when absent), both normalized.
- *
- * The generator refuses a stats case whose main transcripts have broad searches
- * (broadSearchesInTranscript): the Go port returns none until F3.3.
  */
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
@@ -66,7 +63,6 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { broadSearchesInTranscript } from '../../hosts/claude-code/search-history.mjs';
 import { diffArea, loadCorpus, ROOT, staleSets, writeArea } from './lib.mjs';
 import { fixtureTexts, normRootText } from './fixtures.mjs';
 import { haveGo } from './hook.mjs';
@@ -336,26 +332,10 @@ function run(entry, args, stdin, w, env) {
   return { stdout: normRootText(r.stdout || '', w.root), stderr: normRootText(r.stderr || '', w.root), code: r.status ?? -1 };
 }
 
-/** Throws when a stats case would show broad searches (they wait for F3.3). */
-function refuseBroadSearches(/** @type {any} */ c, /** @type {World} */ w) {
-  const threshold = c.projectConfig?.gate?.contextTokens ?? c.userConfig?.gate?.contextTokens ?? 100000;
-  const dir = join(w.root, 'projects');
-  if (!existsSync(dir)) return;
-  for (const p of readdirSync(dir)) {
-    for (const f of readdirSync(join(dir, p), { withFileTypes: true })) {
-      if (!f.isFile() || !f.name.endsWith('.jsonl')) continue;
-      if (broadSearchesInTranscript(join(dir, p, f.name), { threshold }).length) {
-        throw new Error(`usage-cli ${c.name}: ${p}/${f.name} has broad searches (F3.3); change the case`);
-      }
-    }
-  }
-}
-
 /** @param {any} c expanded case @param {'stats'|'trend'} cmd @param {Record<string, string>} texts */
 function runPlain(c, cmd, texts) {
   const { world, env, cleanup } = materialize(c, texts);
   try {
-    if (cmd === 'stats') refuseBroadSearches(c, world);
     const args = (c.args || []).map((/** @type {string} */ a) => a.split('@ROOT@').join(world.root));
     return run(ENTRIES[cmd], args, '', world, env);
   } finally {

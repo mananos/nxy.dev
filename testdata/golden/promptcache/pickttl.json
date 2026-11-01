@@ -1,0 +1,16 @@
+[
+{"name":"pickttl:000","input":{"observed":"5m","settings":"1h","infer":null},"output":{"ttl":"5m","source":"observed"}},
+{"name":"pickttl:001","input":{"observed":"1h","settings":"5m","infer":null},"output":{"ttl":"1h","source":"observed"}},
+{"name":"pickttl:002","input":{"observed":"1h","settings":null,"infer":{"gapMs":0,"readTokens":0,"prevTokens":0}},"output":{"ttl":"1h","source":"observed"}},
+{"name":"pickttl:003","input":{"observed":null,"settings":"1h","infer":null},"output":{"ttl":"1h","source":"settings"}},
+{"name":"pickttl:004","input":{"observed":null,"settings":"5m","infer":null},"output":{"ttl":"5m","source":"settings"}},
+{"name":"pickttl:005","input":{"observed":null,"settings":null,"infer":null},"output":{"ttl":"5m","source":"default"}},
+{"name":"pickttl:006","input":{"observed":null,"settings":"weird","infer":null},"output":{"ttl":"5m","source":"default"}},
+{"name":"pickttl:007","input":{"observed":"weird","settings":"1h","infer":null},"output":{"ttl":"1h","source":"settings"}},
+{"name":"pickttl:008","input":{"observed":null,"settings":null,"infer":{"gapMs":400000,"readTokens":100,"prevTokens":100}},"output":{"ttl":"1h","source":"inferred"}},
+{"name":"pickttl:009","input":{"observed":null,"settings":"5m","infer":{"gapMs":400000,"readTokens":100,"prevTokens":100}},"output":{"ttl":"1h","source":"inferred"}},
+{"name":"pickttl:010","input":{"observed":null,"settings":"1h","infer":{"gapMs":400000,"readTokens":100,"prevTokens":100}},"output":{"ttl":"1h","source":"settings"}},
+{"name":"pickttl:011","input":{"observed":null,"settings":null,"infer":{"gapMs":100000,"readTokens":100,"prevTokens":100}},"output":{"ttl":"5m","source":"default"}},
+{"name":"pickttl:012","input":{"observed":null,"settings":"5m","infer":{"gapMs":400000,"readTokens":10,"prevTokens":100}},"output":{"ttl":"5m","source":"settings"}},
+{"name":"pickttl:013","input":{"observed":"5m","settings":null,"infer":{"gapMs":400000,"readTokens":100,"prevTokens":100}},"output":{"ttl":"5m","source":"observed"}}
+]

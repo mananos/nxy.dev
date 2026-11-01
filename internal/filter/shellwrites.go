@@ -129,6 +129,20 @@ func splitQuotedLines(text string) []string {
 	return append(out, text[start:])
 }
 
+// SplitLines is shellwrites.mjs splitLines: it splits on newlines that are outside quotes.
+func SplitLines(text string) []string { return splitQuotedLines(text) }
+
+// Words is the texts of the non-operator tokens of a segment (shellwrites.mjs tokenize, op tokens dropped).
+func Words(seg string, posix bool) []string {
+	var out []string
+	for _, t := range tokenizeWrites(seg, posix) {
+		if !t.op {
+			out = append(out, t.text)
+		}
+	}
+	return out
+}
+
 // tokenizeWrites splits a segment into words and redirection operators, honouring quotes.
 func tokenizeWrites(seg string, posix bool) []writeTok {
 	var toks []writeTok

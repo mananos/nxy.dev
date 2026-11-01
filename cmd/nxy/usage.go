@@ -58,9 +58,8 @@ func newUsage(getenv func(string) string, getwd func() string, clock func() time
 		FilterRows: func(dir string) []any {
 			return platform.ReadJSONL(filepath.Join(platform.RuntimeDir(dir), "metrics", "filter.jsonl"))
 		},
-		Config: func(dir string) map[string]any { return platform.LoadConfig(dir, getenv) },
-		// Broad searches wait for the search-scope port (F3.3): no rows until then.
-		BroadSearches: func(string, float64) []report.BroadRow { return nil },
+		Config:        func(dir string) map[string]any { return platform.LoadConfig(dir, getenv) },
+		BroadSearches: claudecode.BroadSearchesInTranscript,
 		Gain: func(here bool, cwd string) (any, bool) {
 			info := filterEngine{tools.Engine{Getenv: getenv, Now: clock}}.Info(platform.LoadFilterSettings(cwd, getenv), cwd)
 			if info.RtkPath == "" {

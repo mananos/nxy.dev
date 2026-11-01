@@ -1,0 +1,309 @@
+{
+  "names": [
+    "a.js", "A.JS", "x.test.ts", "Makefile", ".bashrc", ".js", "a.", "a..", "..", "...", "a/b.py", "a/.hidden",
+    "a/.hidden.go", "a.b/c", "a.b/c.", "dir.d/", "src/File.JAVA", "x.pyi", "x.sc", "x.scala", "x.cs", "x.CS", "x.go",
+    "main.GO", "foo.tsx", "foo.d.ts", "foo.mjs", "bar.cjs", "a.txt", "README.md", "..a", "a/..", "a/.", "x.c",
+    "f.jsx", "f.mts", "f.cts", "e.pyI", "", "/", "a.b.c.d", "dot.", "a.js/", "src/é.ts", "x.Mjs"
+  ],
+  "symbols": [
+    { "name": "ts class forms", "ext": ".ts", "lines": [
+      "export default abstract class Shape {", "class Plain extends Base {}", "  abstract class Inner {",
+      "export abstract class Abs {", "declare class NotMatched {}", "class" ] },
+    { "name": "ts functions", "ext": ".ts", "lines": [
+      "export default async function main() {", "function* gen() {}", "async function  *  star() {}", "function (anon) {}",
+      "export function typed<T>(x: T): T {", "function" ] },
+    { "name": "ts arrows", "ext": ".tsx", "lines": [
+      "export const a = () => 1;", "const b = async (x) => x;", "let c = x => x;", "var d = async y => y;",
+      "const notArrow = 5;", "const e = (a, b) => {", "const f = function () {};" ] },
+    { "name": "ts types", "ext": ".ts", "lines": [
+      "export interface Opts {", "interface Bare {}", "export type Alias = string;", "type Gen<T> = T[];",
+      "type NoEq;", "export const enum Dir {", "enum Color {", "export enum Mode {" ] },
+    { "name": "ts methods", "ext": ".ts", "lines": [
+      "class A {", "  run() {", "    deep(x) {", "  public static async build(a: number): Promise<A> {", "  get value(): number {",
+      "  private readonly cache(x) {", "  constructor(a) {", "\trun() {", "run() {", "  async *gen() {" ] },
+    { "name": "ts reserved words", "ext": ".ts", "lines": [
+      "  if (x) {", "  for (const a of b) {", "  while (go) {", "  switch (v) {", "  } catch (e) {", "  catch (e) {", "  return (x) {",
+      "  function (x) {", "  new Foo() {", "  super() {", "  this.x() {", "  with (o) {", "  yield (v) {", "  typeof (v) {",
+      "  delete (v) {", "  throw (v) {", "  await (v) {", "  do (v) {", "  else (v) {", "  try (v) {", "  finally (v) {", "  case (v) {", "  iffy() {" ] },
+    { "name": "comment lines skipped", "ext": ".ts", "lines": [
+      "// class A {}", "  // class B {}", "* class C {}", "  * class D {}", "# class E {}", "/* class F {}", "  /* class G */", "class Real {}",
+      "\u00a0// class Nbsp {}", "\u2003* class Em {}", "\ufeffclass Bom {}" ] },
+    { "name": "crlf lines", "ext": ".ts", "crlf": true, "lines": [
+      "export class A {", "  run() {", "  }", "}", "export const f = () => 1;", "function g() {}", "" ] },
+    { "name": "blank and whitespace only", "ext": ".ts", "lines": [ "", " ", "\t", "\u00a0", "   \u3000", "class Z {}" ] },
+    { "name": "unicode leading space", "ext": ".ts", "lines": [
+      "\u00a0class Nb {}", "\u2003export const f = () => 1;", "\u3000function g() {}", "\ufeff\u00a0  interface I {}", "\u180eclass Mongol {}",
+      "\u0085class Nel {}" ] },
+    { "name": "line of 400 units", "ext": ".ts", "lines": [ { "pre": "class Ok { // ", "fill": "x", "n": 386 }, "class After {}" ] },
+    { "name": "line of 401 units", "ext": ".ts", "lines": [ { "pre": "class Big { // ", "fill": "x", "n": 387 }, "class After {}" ] },
+    { "name": "astral line of 400 units", "ext": ".ts", "lines": [ { "pre": "class Em { // ", "fill": "\ud83d\ude00", "n": 193 }, "class After {}" ] },
+    { "name": "astral line of 402 units", "ext": ".ts", "lines": [ { "pre": "class Em { // ", "fill": "\ud83d\ude00", "n": 194 }, "class After {}" ] },
+    { "name": "astral 200 emoji", "ext": ".ts", "lines": [ { "pre": "class Many { // ", "fill": "\ud83d\ude00", "n": 200 }, "class After {}" ] },
+    { "name": "signature of 200 chars", "ext": ".ts", "lines": [ { "pre": "function sig(", "fill": "a, ", "n": 66, "post": ") {}" } ] },
+    { "name": "signature cut on an emoji pair", "ext": ".ts", "lines": [ { "pre": "class P{ // ", "fill": "\ud83d\ude00", "n": 80 } ] },
+    { "name": "signature trimmed", "ext": ".ts", "lines": [ "   \tclass Padded {}   \t", "\u00a0class Nbsp {}\u00a0\u3000" ] },
+    { "name": "astral in signature", "ext": ".ts", "lines": [ "class A { // \ud83d\ude00 emoji", "const \ud83d\ude00 = () => 1;" ] },
+    { "name": "js dollar names", "ext": ".js", "lines": [ "class $Cls {}", "function _f$() {}", "const $x = () => 1;", "class 9bad {}" ] },
+    { "name": "java types", "ext": ".java", "lines": [
+      "public class Main {", "public final class Fin {", "abstract class Abs {", "interface Api {", "public sealed interface S {",
+      "enum Color {", "public enum Mode {", "record Point(int x) {}", "public static final record R() {}",
+      "class", "  public static class Nested {" ] },
+    { "name": "java methods", "ext": ".java", "lines": [
+      "    public void run(int a) {", "    private static <T> List<T> of(T... xs) {", "    public String name() {",
+      "    default void d() {", "    public final Map<String, List<Integer>> m() {", "    public abstract void a();",
+      "    public void multi(int a,", "    void noModifier() {", "  @Override", "    public synchronized int[] arr() {", "    public if (x) {" ] },
+    { "name": "java endpoints", "ext": ".java", "lines": [
+      "@GetMapping(\"/users/{id}\")", "  @PostMapping(value = \"/users\")", "@RequestMapping( \"/api\" )", "@PatchMapping(path = \"/x\")",
+      "@DeleteMapping(\"\")", "@PutMapping(\"a\", \"b\")" ] },
+    { "name": "scala", "ext": ".scala", "lines": [
+      "object Main extends App {", "case object Nil2", "private implicit object Imp", "class Plain", "case class Pt(x: Int)",
+      "sealed abstract class Shape", "trait Walker", "sealed trait Animal", "def run(): Unit = {", "  override def toString = \"x\"",
+      "  implicit final def conv(x: Int)", "def", "val x = 1" ] },
+    { "name": "python", "ext": ".py", "lines": [
+      "class Foo(Base):", "  class Inner:", "def run(x):", "async def go():", "    def method(self):", "  async def am(self):",
+      "@app.route('/users/<id>')", "@router.get(\"/items\")", "@bp.websocket('/ws')", "@a.b.c.post('/x', methods=['POST'])",
+      "@app.errorhandler(404)", "MAX_SIZE = 10", "DEBUG: bool = True", "AB = 1", "ABC = 1", "  INDENTED = 1", "lower_name = 2",
+      "# class Commented", "A_B_C: int=3" ] },
+    { "name": "python decorator and def", "ext": ".pyi", "lines": [ "@app.get('/ping')", "def ping(): ...", "class Stub: ..." ] },
+    { "name": "go", "ext": ".go", "lines": [
+      "func main() {", "func (s *Server) Handle(w http.ResponseWriter) {", "func (Server) Plain() {}", "func Generic[T any](x T) T {",
+      "type Server struct {", "type Alias = int", "  func notTop() {}", "  type notTop int", "func", "func (a, b) Odd() {}",
+      "type (", "func _under() {}" ] },
+    { "name": "csharp", "ext": ".cs", "lines": [
+      "public class Program {", "internal static partial class Util {", "sealed class S {", "public interface IThing {",
+      "internal interface IInner {", "    public static void Main(string[] args) {", "    private async Task<int> RunAsync() {",
+      "    public virtual List<string> Names() {", "    public override string ToString() {", "    void NoModifier() {",
+      "    public abstract void A();", "    public int Prop { get; set; }" ] },
+    { "name": "scala sc extension and crlf", "ext": ".sc", "crlf": true, "lines": [ "object Script {", "  def go() = 1", "}" ] },
+    { "name": "windows line endings in java method", "ext": ".java", "crlf": true, "lines": [ "    public void run(int a) {", "    public void split(int a,", "        int b) {" ] },
+    { "name": "tabs inside a signature", "ext": ".ts", "lines": [ "function\ttabbed(a,\tb) {}", "const\tc\t=\t()\t=>\t1;" ] },
+    { "name": "no trailing newline and empty", "ext": ".ts", "lines": [ "" ] },
+    { "name": "only one name pattern per line", "ext": ".ts", "lines": [ "export class A { run() {} }", "export interface B { c(): void }" ] },
+    { "name": "regex alternation across keywords", "ext": ".ts", "lines": [ "classy Foo {}", "functional() {}", "interfaceX {}", "typeof x", "types Y =" ] },
+    { "name": "mixed languages ignored by rules", "ext": ".go", "lines": [ "class Nope {}", "def nope():", "function nope() {}", "func Yes() {}" ] },
+    { "name": "py const with trailing spaces and types", "ext": ".py", "lines": [ "TIMEOUT_MS : int = 5", "A1B = 1", "ABC_D=2", "ABc = 3" ] }
+  ],
+  "ignore": [
+    { "name": "empty", "text": "", "probes": [["a.js", false], ["node_modules", true], ["dist", true]] },
+    { "name": "bare names and extensions", "text": "node_modules\n*.log\nsecret.js\n", "probes": [
+      ["node_modules", true], ["node_modules", false], ["a/node_modules", true], ["x.log", false], ["a/b/x.log", false], ["x.logs", false],
+      ["secret.js", false], ["lib/secret.js", false], ["secret.json", false], ["xsecret.js", false] ] },
+    { "name": "dir only", "text": "build/\ncache/\n", "probes": [
+      ["build", true], ["build", false], ["src/build", true], ["src/build", false], ["cache", true], ["builds", true] ] },
+    { "name": "rooted", "text": "/dist\n/docs/gen\n/root.js\n/out/\n", "probes": [
+      ["dist", true], ["a/dist", true], ["docs/gen", true], ["docs/gen", false], ["x/docs/gen", true], ["root.js", false], ["a/root.js", false],
+      ["out", true], ["out", false], ["a/out", true] ] },
+    { "name": "slash in the middle not rooted", "text": "docs/*.md\nsrc/gen\n", "probes": [
+      ["docs/a.md", false], ["a.md", false], ["src/gen", true], ["gen", true], ["docs/x/a.md", false] ] },
+    { "name": "negation and comments", "text": "# comment\n!keep.js\n  # indented comment\n*.js\n", "probes": [
+      ["keep.js", false], ["a.js", false], ["# comment", false], ["x.ts", false] ] },
+    { "name": "double star skipped", "text": "**/vendor\nsrc/**/gen\na**b\n**\n**/\n", "probes": [
+      ["vendor", true], ["a/vendor", true], ["src/gen", true], ["src/x/gen", true], ["ab", true], ["axxb", true], ["x", false] ] },
+    { "name": "windows line endings", "text": "out/\r\n*.tmp\r\n/secret\r\n", "probes": [
+      ["out", true], ["a.tmp", false], ["a.tmp\r", false], ["secret", true], ["out\r", true] ] },
+    { "name": "regex metacharacters are literal", "text": "a+b\n(x)\n[y]\nc.d\ne$f\ng^h\n{i}\nj|k\nl\\m\nn?o\n", "probes": [
+      ["a+b", false], ["aab", false], ["(x)", false], ["x", false], ["[y]", false], ["y", false], ["c.d", false], ["cxd", false], ["e$f", false],
+      ["g^h", false], ["{i}", false], ["j|k", false], ["j", false], ["l\\m", false], ["n?o", false], ["no", false], ["nxo", false] ] },
+    { "name": "stars", "text": "*\n", "probes": [["a", false], ["a.b", true], ["", false]] },
+    { "name": "star in the middle", "text": "a*b\n*.min.*\n.*rc\nfoo*/\n", "probes": [
+      ["ab", false], ["axxb", false], ["a/b", false], ["x.min.js", false], ["x.min.", false], ["x.min", false], [".eslintrc", false], [".rc", false],
+      ["foo", true], ["foobar", true], ["foobar", false], ["a/foobar", true] ] },
+    { "name": "lone slashes and blanks", "text": "/\n//\n   \n\t\n/ \n", "probes": [["a", false], ["a", true], ["", true]] },
+    { "name": "spaces around and inside", "text": "  padded  \nin side\n\u00a0nbsp\u00a0\n", "probes": [
+      ["padded", false], ["  padded  ", false], ["in side", false], ["inside", false], ["nbsp", false], ["\u00a0nbsp\u00a0", false] ] },
+    { "name": "dir slash with rooted star", "text": "/*.cache/\n/tmp*/\n", "probes": [
+      ["x.cache", true], ["x.cache", false], ["a/x.cache", true], ["tmp", true], ["tmp2", true], ["a/tmp", true], ["tmp", false] ] },
+    { "name": "case sensitive and unicode", "text": "Build\n*.TXT\nnaïve\n", "probes": [
+      ["build", true], ["Build", true], ["a.txt", false], ["a.TXT", false], ["naïve", false], ["naive", false] ] },
+    { "name": "trailing dot and dash", "text": "a-b\nc.\n-d\n", "probes": [["a-b", false], ["a b", false], ["c.", false], ["c", false], ["-d", false]] }
+  ],
+  "query": {
+    "rows": [
+      ["src/app.ts", "1", "class", "App", "export class App {"],
+      ["src/app.ts", "5", "method", "run", "  run() {"],
+      ["src/app.ts", "12", "function", "helper", "function helper() {}"],
+      ["src/util/strings.ts", "3", "function", "slugify", "export function slugify(s: string) {"],
+      ["src/util/strings.ts", "20", "const", "trimAll", "export const trimAll = (s) => s.trim();"],
+      ["src/api/Users.java", "7", "class", "UsersController", "public class UsersController {"],
+      ["src/api/Users.java", "10", "endpoint", "/users/{id}", "@GetMapping(\"/users/{id}\")"],
+      ["src/api/Users.java", "11", "method", "getUser", "    public User getUser(long id) {"],
+      ["lib/Server.go", "4", "type", "Server", "type Server struct {"],
+      ["lib/Server.go", "9", "func", "Handle", "func (s *Server) Handle(w http.ResponseWriter) {"],
+      ["tools/gen.py", "2", "def", "generate", "def generate(spec):"],
+      ["tools/gen.py", "30", "const", "MAX_SIZE", "MAX_SIZE = 10"],
+      ["tools/gen.py", "31", "def", "Naïve", "def Naïve():"],
+      ["Docs/Guide.cs", "1", "class", "Guide", "public class Guide {"],
+      ["src/tabs.ts", "2", "function", "tabbed", "function\ttabbed(a,\tb) {}"],
+      ["src/app2.ts", "1", "class", "App2", "export class App2 {"]
+    ],
+    "queries": [
+      { "query": "app" },
+      { "query": "APP" },
+      { "query": "run" },
+      { "query": "users" },
+      { "query": "src/util" },
+      { "query": "/users/{id}" },
+      { "query": "  app" },
+      { "query": "app  " },
+      { "query": "" },
+      { "query": "zzz-nothing" },
+      { "query": "naïve" },
+      { "query": "NAÏVE" },
+      { "query": "app", "opts": { "kind": "class" } },
+      { "query": "app", "opts": { "kind": "nope" } },
+      { "query": "e", "opts": { "path": "src/API" } },
+      { "query": "e", "opts": { "path": "docs" } },
+      { "query": "e", "opts": { "kind": "function", "path": "util" } },
+      { "query": "e", "opts": { "limit": 1 } },
+      { "query": "e", "opts": { "limit": 2 } },
+      { "query": "e", "opts": { "limit": 0 } },
+      { "query": "zzz-nothing", "opts": { "limit": 0 } },
+      { "query": "e", "opts": { "limit": 100 } },
+      { "query": "/^App/" },
+      { "query": "/^app/" },
+      { "query": "/^app/i" },
+      { "query": "/^app/g" },
+      { "query": "/^App/gi" },
+      { "query": "/^App/im" },
+      { "query": "/^App/ss" },
+      { "query": "/App$/" },
+      { "query": "/app/s" },
+      { "query": "/App.*run/" },
+      { "query": "/GetMapping/" },
+      { "query": "/export class/" },
+      { "query": "/\\d+/" },
+      { "query": "/[A-Z_]{3,}/" },
+      { "query": "/(/" },
+      { "query": "/[/" },
+      { "query": "/a|b/" },
+      { "query": "//" },
+      { "query": "/a/b/" },
+      { "query": "/a/x/" },
+      { "query": "  /^App/  " },
+      { "query": "/^app/", "opts": { "kind": "class" } },
+      { "query": "/Server/", "opts": { "limit": 1 } },
+      { "query": "/tabbed/" },
+      { "query": "/b\\) \\{/" },
+      { "query": "/./", "opts": { "limit": 3 } },
+      { "query": "/^.{0}$/" }
+    ]
+  },
+  "build": [
+    {
+      "name": "empty-tree",
+      "now": 1800000000000,
+      "tree": {}
+    },
+    {
+      "name": "mixed-tree",
+      "now": 1800000000000,
+      "gitignore": "# comment\n*.gen.ts\n/secret\nlogs/\n!keep.ts\nweird/**/x\n",
+      "tree": {
+        "src/app.ts": { "text": "export class App {\n  run() {}\n}\nexport function helper() {}\n", "mtime": 1700000000000 },
+        "src/util/strings.ts": { "text": "export const trimAll = (s) => s.trim();\r\nexport function slugify(s: string) {\r\n}\r\n", "mtime": 1700000001000 },
+        "src/Main.java": { "text": "public class Main {\n    public static void main(String[] args) {\n    }\n}\n", "mtime": 1700000002000 },
+        "pkg/tool.py": { "text": "class Tool:\n    def go(self):\n        pass\n\ndef main():\n    pass\n", "mtime": 1700000003000 },
+        "cmd/main.go": { "text": "package main\n\nfunc main() {}\n\ntype Server struct {\n}\n", "mtime": 1700000004000 },
+        "Z.cs": { "text": "public class Zed {\n    public void Run() {}\n}\n", "mtime": 1700000005000 },
+        "a.js": { "text": "function a() {}\n", "mtime": 1700000006500 },
+        "src/types.gen.ts": { "text": "export class Generated {}\n", "mtime": 1700000007000 },
+        "secret/key.ts": { "text": "export class Secret {}\n", "mtime": 1700000008000 },
+        "sub/secret/ok.ts": { "text": "export class NotRooted {}\n", "mtime": 1700000009000 },
+        "logs/out.ts": { "text": "export class Logs {}\n", "mtime": 1700000010000 },
+        "keep.ts": { "text": "export class Keep {}\n", "mtime": 1700000011000 },
+        "node_modules/dep/index.js": { "text": "function dep() {}\n", "mtime": 1700000012000 },
+        "dist/bundle.js": { "text": "function bundled() {}\n", "mtime": 1700000013000 },
+        ".hidden/h.ts": { "text": "export class Hidden {}\n", "mtime": 1700000014000 },
+        ".dotfile.ts": { "text": "export class Dot {}\n", "mtime": 1700000015000 },
+        "notes.txt": { "text": "not source\n", "mtime": 1700000016000 },
+        "README": { "text": "no extension\n", "mtime": 1700000017000 },
+        "data.json": { "text": "{}\n", "mtime": 1700000018000 },
+        "big/huge.js": { "size": 1000001, "mtime": 1700000019000 },
+        "big/edge.js": { "text": "function edge() {}\n", "mtime": 1700000020000 },
+        "empty.ts": { "text": "", "mtime": 1700000021000 },
+        "UP.PY": { "text": "def shout():\n    pass\n", "mtime": 1700000022000 },
+        "a/b/c/d/deep.ts": { "text": "export class Deep {}\n", "mtime": 1700000023000 }
+      },
+      "steps": [
+        { "name": "again" },
+        { "name": "touch-one", "write": { "src/app.ts": { "text": "export class App {}\nexport class Second {}\n", "mtime": 1700000030000 } } },
+        { "name": "same-mtime-new-size", "write": { "a.js": { "text": "function a() {}\nfunction b() {}\n", "mtime": 1700000006500 } } },
+        { "name": "same-size-new-mtime", "write": { "cmd/main.go": { "text": "package main\n\nfunc main() {}\n\ntype Server struct {\n}\n", "mtime": 1700000031000 } } },
+        { "name": "forced", "force": true },
+        { "name": "removed", "remove": ["Z.cs", "src/Main.java"] },
+        { "name": "broken-meta", "meta": "{not json" },
+        { "name": "meta-without-files", "meta": "{\"builtAt\":1}" },
+        { "name": "meta-files-array", "meta": "{\"files\":[1,2]}" },
+        { "name": "meta-bad-entry", "meta": "{\"files\":{\"a.js\":{\"mtimeMs\":1700000006500,\"size\":16}}}" }
+      ]
+    },
+    {
+      "name": "gitignore-wildcard-dir",
+      "now": 1800000000123,
+      "gitignore": "gen*/\n*.min.js\n",
+      "tree": {
+        "gen1/a.ts": { "text": "export class A {}\n", "mtime": 1700000000000 },
+        "src/gen2/b.ts": { "text": "export class B {}\n", "mtime": 1700000001000 },
+        "src/app.min.js": { "text": "function m() {}\n", "mtime": 1700000002000 },
+        "src/app.js": { "text": "function n() {}\n", "mtime": 1700000003000 }
+      }
+    },
+    {
+      "name": "non-ascii-names",
+      "now": 1800000000000,
+      "tree": {
+        "ñ/ü.ts": { "text": "export class Ñandú {}\n", "mtime": 1700000000000 },
+        "Z/b.ts": { "text": "export class B {}\n", "mtime": 1700000001000 },
+        "a/b.ts": { "text": "export class A {}\n", "mtime": 1700000002000 },
+        "_x.ts": { "text": "export class X {}\n", "mtime": 1700000003000 }
+      }
+    }
+  ],
+  "info": [
+    {
+      "name": "known-meta",
+      "now": 1800000000000,
+      "map": "a.ts\t1\tclass\tA\tclass A {}\n",
+      "meta": { "builtAt": 1799999990000, "root": "/x", "files": { "a.ts": { "mtimeMs": 1, "size": 2, "lines": ["a.ts\t1\tclass\tA\tclass A {}"] }, "b.ts": { "mtimeMs": 1, "size": 2, "lines": [] } } }
+    },
+    {
+      "name": "no-builtat",
+      "now": 1800000000000,
+      "map": "",
+      "meta": { "files": {} }
+    },
+    {
+      "name": "odd-entries",
+      "now": 1800000000000,
+      "map": "",
+      "meta": { "builtAt": 1799999999000, "files": { "a.ts": { "lines": ["x", "y"] }, "b.ts": null, "c.ts": { "lines": "nope" } } }
+    },
+    {
+      "name": "bad-meta-json",
+      "now": 1800000000000,
+      "map": "",
+      "metaRaw": "{oops"
+    },
+    { "name": "files-array", "now": 1800000000000, "map": "", "meta": { "builtAt": 1799999999000, "files": [{ "lines": ["x", "y", "z"] }, null, { "lines": "no" }] } },
+    { "name": "files-string", "now": 1800000000000, "map": "", "meta": { "builtAt": 1799999999000, "files": "ab😀" } },
+    { "name": "files-falsy", "now": 1800000000000, "map": "", "meta": { "builtAt": 0, "files": 0 } },
+    { "name": "files-number", "now": 1800000000000, "map": "", "meta": { "builtAt": 1799999999000, "files": 7 } },
+    { "name": "meta-number", "now": 1800000000000, "map": "", "metaRaw": "5" },
+    { "name": "meta-array", "now": 1800000000000, "map": "", "metaRaw": "[1, 2]" },
+    { "name": "meta-null", "now": 1800000000000, "map": "", "metaRaw": "null" },
+    {
+      "name": "no-map",
+      "now": 1800000000000,
+      "meta": { "builtAt": 1, "files": {} }
+    },
+    {
+      "name": "no-meta",
+      "now": 1800000000000,
+      "map": ""
+    },
+    {
+      "name": "no-index",
+      "now": 1800000000000
+    }
+  ]
+}

@@ -5,20 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 )
-
-func TestMtimeMsKeepsFraction(t *testing.T) {
-	got := mtimeMs(time.Unix(1700000000, 123456789))
-	if want := 1700000000123.456789; got != want {
-		t.Fatalf("mtimeMs = %v, want %v", got, want)
-	}
-	if got := mtimeMs(time.Unix(5, 0)); got != 5000 {
-		t.Fatalf("whole second = %v", got)
-	}
-}
 
 func TestListSessionsSkipsDanglingEntry(t *testing.T) {
 	root := t.TempDir()

@@ -13,4 +13,9 @@
 // ICU rules, Windows Go the registry, so historical DST rules could differ. Further limits: ToNumber
 // of arrays and objects is NaN (JS goes through String), Restringify cannot reproduce lone
 // surrogates, ToFixed supports 0..100 digits, and PadStart/PadEnd cut a filler at a pair boundary.
+//
+// Text helpers: Trim, TrimStart, TrimEnd (JS whitespace set), CompareUTF16 (code-unit order of
+// the default sort(), unlike byte order for characters outside the BMP), DecodeUTF8 (Node's
+// toString('utf8'): one U+FFFD per maximal invalid subpart) and SpaceClass (the JS \s set as a Go
+// regexp class body, since Go's \s is ASCII only).
 package jscompat

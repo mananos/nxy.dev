@@ -1,0 +1,3 @@
+[
+{"name":"noindex","input":{"query":"app"},"output":{"ok":false,"reason":"no-index","rows":[],"truncated":false,"scanned":0}}
+]

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 // One entry per 1.x golden generator of the usage / transcripts / metrics area; each exports check().
-const generators = ['pricing', 'jscompat', 'metrics', 'transcripts', 'format', 'report', 'usage-cli'];
+const generators = ['pricing', 'jscompat', 'metrics', 'transcripts', 'format', 'report', 'usage-cli', 'promptcache', 'searchscope', 'textdiff', 'repomap'];
 
 for (const name of generators) {
   test(`golden ${name} matches what the 1.x produces now`, async () => {

@@ -3,7 +3,7 @@
  * Golden of the JS semantics the Go ports depend on (`internal/jscompat`): Date.parse, String(),
  * truthiness / `||`, UTF-16 length and slice, per-unit replace and localeCompare. Node is the oracle.
  * Sets: date, value, get, or, text, replace, collate, tofixed, round, tonumber, pad, space, localdate,
- * parselocal, stringify. The `date` set leaves date-times without an offset out on purpose (V8 reads
+ * parselocal, stringify, trimstart, utf16cmp, utf8decode. The `date` set leaves date-times without an offset out on purpose (V8 reads
  * them in local time); `localdate` and `parselocal` cover local time through one child node per zone.
  *
  *   node scripts/golden/jscompat.mjs          write testdata/golden/jscompat/*.json
@@ -146,6 +146,29 @@ export function generate() {
     output: { collapsed: s.replace(/\s+/g, ' '), trim: s.trim(), trimEnd: s.trimEnd() },
   }));
 
+  const trimstart = corpus.trimStarts.map((/** @type {string} */ s, /** @type {number} */ i) => ({
+    name: `trimstart:${String(i).padStart(2, '0')}:${JSON.stringify(s)}`,
+    input: { s },
+    output: { trimStart: s.trimStart() },
+  }));
+
+  // Default sort() and < compare UTF-16 code units, not bytes: that is the order the Go side must reproduce.
+  const utf16cmp = corpus.utf16Lists.map((/** @type {string[]} */ list, /** @type {number} */ i) => ({
+    name: `utf16cmp:${String(i).padStart(2, '0')}`,
+    input: { list },
+    output: {
+      signs: list.flatMap((a) => list.map((b) => (a < b ? -1 : a > b ? 1 : 0))),
+      sorted: [...list].sort(),
+    },
+  }));
+
+  // readFileSync(path, 'utf8') = Buffer#toString('utf8'): how bytes that are not valid UTF-8 decode.
+  const utf8decode = corpus.utf8Hex.map((/** @type {string} */ hex, /** @type {number} */ i) => ({
+    name: `utf8decode:${String(i).padStart(2, '0')}:${hex}`,
+    input: { hex },
+    output: { text: Buffer.from(hex, 'hex').toString('utf8') },
+  }));
+
   // Date getters and offset-less Date.parse, computed by a child node per zone (TZ=<zone>).
   const instants = corpus.localInstants.map((/** @type {string} */ s) => Date.parse(s));
   const ms = [...corpus.localMs, ...instants];
@@ -168,7 +191,7 @@ export function generate() {
     })),
   );
 
-  return { date, value, get, or, text, replace, collate, tofixed, round, tonumber, pad, space, localdate, parselocal, stringify };
+  return { date, value, get, or, text, replace, collate, tofixed, round, tonumber, pad, space, localdate, parselocal, stringify, trimstart, utf16cmp, utf8decode };
 }
 
 function nullNaN(/** @type {number} */ n) {

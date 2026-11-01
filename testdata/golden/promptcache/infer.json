@@ -1,0 +1,12 @@
+[
+{"name":"infer:000","input":{"ttl":"1h","gapMs":0,"readTokens":0,"prevTokens":0},"output":{"ttl":"1h"}},
+{"name":"infer:001","input":{"ttl":"5m","gapMs":300000,"readTokens":100,"prevTokens":100},"output":{"ttl":"5m"}},
+{"name":"infer:002","input":{"ttl":"5m","gapMs":300001,"readTokens":100,"prevTokens":100},"output":{"ttl":"1h"}},
+{"name":"infer:003","input":{"ttl":"5m","gapMs":300001,"readTokens":50,"prevTokens":100},"output":{"ttl":"1h"}},
+{"name":"infer:004","input":{"ttl":"5m","gapMs":300001,"readTokens":49,"prevTokens":100},"output":{"ttl":"5m"}},
+{"name":"infer:005","input":{"ttl":"5m","gapMs":300001,"readTokens":0,"prevTokens":0},"output":{"ttl":"5m"}},
+{"name":"infer:006","input":{"ttl":"5m","gapMs":300001,"readTokens":1,"prevTokens":0},"output":{"ttl":"1h"}},
+{"name":"infer:007","input":{"ttl":"5m","gapMs":900000,"readTokens":20000,"prevTokens":30000},"output":{"ttl":"1h"}},
+{"name":"infer:008","input":{"ttl":"5m","gapMs":100000,"readTokens":20000,"prevTokens":1000},"output":{"ttl":"5m"}},
+{"name":"infer:009","input":{"ttl":"5m","gapMs":400000,"readTokens":50001,"prevTokens":100003},"output":{"ttl":"5m"}}
+]

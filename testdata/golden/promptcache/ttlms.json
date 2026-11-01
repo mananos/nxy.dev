@@ -1,0 +1,10 @@
+[
+{"name":"ttlms:000:\"5m\"","input":{"ttl":"5m"},"output":{"ms":300000}},
+{"name":"ttlms:001:\"1h\"","input":{"ttl":"1h"},"output":{"ms":3600000}},
+{"name":"ttlms:002:null","input":{"ttl":null},"output":{"ms":null}},
+{"name":"ttlms:003:\"\"","input":{"ttl":""},"output":{"ms":null}},
+{"name":"ttlms:004:\"1H\"","input":{"ttl":"1H"},"output":{"ms":null}},
+{"name":"ttlms:005:\"24h\"","input":{"ttl":"24h"},"output":{"ms":null}},
+{"name":"ttlms:006:\"5M\"","input":{"ttl":"5M"},"output":{"ms":null}},
+{"name":"ttlms:007:\" 5m\"","input":{"ttl":" 5m"},"output":{"ms":null}}
+]

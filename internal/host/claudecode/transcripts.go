@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/internal/platform"
 )
 
 // ListOpts select the sessions ListSessions returns.
@@ -35,11 +35,6 @@ func ProjectsDir(override string) string {
 		return ""
 	}
 	return filepath.Join(home, ".claude", "projects")
-}
-
-// mtimeMs is the modification time as Node's stat.mtimeMs: fractional epoch milliseconds.
-func mtimeMs(t time.Time) float64 {
-	return float64(t.Unix())*1e3 + float64(t.Nanosecond())/1e6
 }
 
 // ListSessions returns the sessions found, newest first. A transcript that cannot be stat'ed (a
@@ -80,7 +75,7 @@ func ListSessions(opts ListOpts) []transcript.SessionRef {
 			if err != nil {
 				continue
 			}
-			mtime := mtimeMs(st.ModTime())
+			mtime := platform.MtimeMs(st.ModTime())
 			if opts.Since != 0 && mtime < float64(opts.Since) {
 				continue
 			}

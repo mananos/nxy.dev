@@ -1,0 +1,218 @@
+[
+  {
+    "name": "utf8decode:00:",
+    "input": {
+      "hex": ""
+    },
+    "output": {
+      "text": ""
+    }
+  },
+  {
+    "name": "utf8decode:01:41",
+    "input": {
+      "hex": "41"
+    },
+    "output": {
+      "text": "A"
+    }
+  },
+  {
+    "name": "utf8decode:02:e9",
+    "input": {
+      "hex": "e9"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:03:e9e0",
+    "input": {
+      "hex": "e9e0"
+    },
+    "output": {
+      "text": "��"
+    }
+  },
+  {
+    "name": "utf8decode:04:48e96c6c6f",
+    "input": {
+      "hex": "48e96c6c6f"
+    },
+    "output": {
+      "text": "H�llo"
+    }
+  },
+  {
+    "name": "utf8decode:05:e282",
+    "input": {
+      "hex": "e282"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:06:e28241",
+    "input": {
+      "hex": "e28241"
+    },
+    "output": {
+      "text": "�A"
+    }
+  },
+  {
+    "name": "utf8decode:07:e282ac",
+    "input": {
+      "hex": "e282ac"
+    },
+    "output": {
+      "text": "€"
+    }
+  },
+  {
+    "name": "utf8decode:08:eda080",
+    "input": {
+      "hex": "eda080"
+    },
+    "output": {
+      "text": "���"
+    }
+  },
+  {
+    "name": "utf8decode:09:c0af",
+    "input": {
+      "hex": "c0af"
+    },
+    "output": {
+      "text": "��"
+    }
+  },
+  {
+    "name": "utf8decode:10:c2",
+    "input": {
+      "hex": "c2"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:11:f4908080",
+    "input": {
+      "hex": "f4908080"
+    },
+    "output": {
+      "text": "����"
+    }
+  },
+  {
+    "name": "utf8decode:12:f09f98",
+    "input": {
+      "hex": "f09f98"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:13:f09f9841",
+    "input": {
+      "hex": "f09f9841"
+    },
+    "output": {
+      "text": "�A"
+    }
+  },
+  {
+    "name": "utf8decode:14:f09f9880",
+    "input": {
+      "hex": "f09f9880"
+    },
+    "output": {
+      "text": "😀"
+    }
+  },
+  {
+    "name": "utf8decode:15:ff",
+    "input": {
+      "hex": "ff"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:16:fe41",
+    "input": {
+      "hex": "fe41"
+    },
+    "output": {
+      "text": "�A"
+    }
+  },
+  {
+    "name": "utf8decode:17:efbbbf41",
+    "input": {
+      "hex": "efbbbf41"
+    },
+    "output": {
+      "text": "﻿A"
+    }
+  },
+  {
+    "name": "utf8decode:18:80bf41",
+    "input": {
+      "hex": "80bf41"
+    },
+    "output": {
+      "text": "��A"
+    }
+  },
+  {
+    "name": "utf8decode:19:f0808080",
+    "input": {
+      "hex": "f0808080"
+    },
+    "output": {
+      "text": "����"
+    }
+  },
+  {
+    "name": "utf8decode:20:e0809f",
+    "input": {
+      "hex": "e0809f"
+    },
+    "output": {
+      "text": "���"
+    }
+  },
+  {
+    "name": "utf8decode:21:e0a0",
+    "input": {
+      "hex": "e0a0"
+    },
+    "output": {
+      "text": "�"
+    }
+  },
+  {
+    "name": "utf8decode:22:f48fbfbf",
+    "input": {
+      "hex": "f48fbfbf"
+    },
+    "output": {
+      "text": "􏿿"
+    }
+  },
+  {
+    "name": "utf8decode:23:7075626c696320766f696420e9636f2829",
+    "input": {
+      "hex": "7075626c696320766f696420e9636f2829"
+    },
+    "output": {
+      "text": "public void �co()"
+    }
+  }
+]

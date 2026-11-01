@@ -1,0 +1,146 @@
+[
+  {
+    "name": "trimstart:00:\"\"",
+    "input": {
+      "s": ""
+    },
+    "output": {
+      "trimStart": ""
+    }
+  },
+  {
+    "name": "trimstart:01:\" \"",
+    "input": {
+      "s": " "
+    },
+    "output": {
+      "trimStart": ""
+    }
+  },
+  {
+    "name": "trimstart:02:\"a\"",
+    "input": {
+      "s": "a"
+    },
+    "output": {
+      "trimStart": "a"
+    }
+  },
+  {
+    "name": "trimstart:03:\"  a\"",
+    "input": {
+      "s": "  a"
+    },
+    "output": {
+      "trimStart": "a"
+    }
+  },
+  {
+    "name": "trimstart:04:\"a  \"",
+    "input": {
+      "s": "a  "
+    },
+    "output": {
+      "trimStart": "a  "
+    }
+  },
+  {
+    "name": "trimstart:05:\"\\t\\n\\r a b\"",
+    "input": {
+      "s": "\t\n\r a b"
+    },
+    "output": {
+      "trimStart": "a b"
+    }
+  },
+  {
+    "name": "trimstart:06:\"  x　\"",
+    "input": {
+      "s": "  x　"
+    },
+    "output": {
+      "trimStart": "x　"
+    }
+  },
+  {
+    "name": "trimstart:07:\"﻿bom\"",
+    "input": {
+      "s": "﻿bom"
+    },
+    "output": {
+      "trimStart": "bom"
+    }
+  },
+  {
+    "name": "trimstart:08:\"  y\"",
+    "input": {
+      "s": "  y"
+    },
+    "output": {
+      "trimStart": "y"
+    }
+  },
+  {
+    "name": "trimstart:09:\"z\"",
+    "input": {
+      "s": "z"
+    },
+    "output": {
+      "trimStart": "z"
+    }
+  },
+  {
+    "name": "trimstart:10:\"᠎w\"",
+    "input": {
+      "s": "᠎w"
+    },
+    "output": {
+      "trimStart": "᠎w"
+    }
+  },
+  {
+    "name": "trimstart:11:\"​q\"",
+    "input": {
+      "s": "​q"
+    },
+    "output": {
+      "trimStart": "​q"
+    }
+  },
+  {
+    "name": "trimstart:12:\"\\u000b\\fv\"",
+    "input": {
+      "s": "\u000b\fv"
+    },
+    "output": {
+      "trimStart": "v"
+    }
+  },
+  {
+    "name": "trimstart:13:\"  😀 \"",
+    "input": {
+      "s": "  😀 "
+    },
+    "output": {
+      "trimStart": "😀 "
+    }
+  },
+  {
+    "name": "trimstart:14:\"     k\"",
+    "input": {
+      "s": "     k"
+    },
+    "output": {
+      "trimStart": "k"
+    }
+  },
+  {
+    "name": "trimstart:15:\"//  c\"",
+    "input": {
+      "s": "//  c"
+    },
+    "output": {
+      "trimStart": "//  c"
+    }
+  }
+]

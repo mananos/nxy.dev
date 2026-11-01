@@ -281,5 +281,18 @@
     { "name": "spaced input", "raw": "  {  \"k\" :  [ 1 , 2 ]  }  " },
     { "name": "session state shape", "raw": "{\"main\":{\"offset\":123,\"sums\":{\"in\":0.000001,\"out\":1.5e-7},\"seen\":[]},\"agents\":{\"agent-a\":{\"offset\":0}}}" }
   ],
-  "stringifyIndents": ["  ", "", "\t", "    "]
+  "stringifyIndents": ["  ", "", "\t", "    "],
+  "trimStarts": [
+    "", " ", "a", "  a", "a  ", "\t\n\r a b", "  x　", "﻿bom", "  y", "\u0085z", "᠎w",
+    "​q", "\u000b\u000cv", "  😀 ", "     k", "//  c"
+  ],
+  "utf16Lists": [
+    ["b", "a", "B", "A", "", "ab", "a ", "aa"],
+    ["￿", "😀", "", "a", "퟿", "𐀀", "􏿿", "z"],
+    ["src/é.js", "src/e.js", "src/😀.js", "src/～.js", "src/z.js", "src/𝄞.js"],
+    ["a/b", "a-b", "a.b", "a_b", "a b", "A/b", "a0b", "a\tb"]
+  ],
+  "utf8Hex": [
+    "", "41", "e9", "e9e0", "48e96c6c6f", "e282", "e28241", "e282ac", "eda080", "c0af", "c2", "f4908080", "f09f98", "f09f9841", "f09f9880", "ff", "fe41", "efbbbf41", "80bf41", "f0808080", "e0809f", "e0a0", "f48fbfbf", "7075626c696320766f696420e9636f2829"
+  ]
 }
