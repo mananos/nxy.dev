@@ -1,0 +1,178 @@
+{
+  "models": [
+    "CLAUDE-OPUS-5",
+    "claude-opus-5-20260401",
+    "claude-opus-5-20260401[1m]",
+    "claude-opus-5[1m]",
+    "claude-opus-4-5-20251101",
+    "claude-sonnet-4-20250514",
+    "claude-3-5-haiku-latest",
+    "claude-3-5-haiku-20241022",
+    "claude-3-5-haiku",
+    "claude-3-haiku",
+    "claude-3-7-sonnet-20250219",
+    "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "eu.anthropic.claude-opus-4-1-v1:0",
+    "apac.anthropic.claude-sonnet-4-v1:0",
+    "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "anthropic.claude-sonnet-4-5-v2:0",
+    "claude-sonnet-4-5@20250929",
+    "claude-opus-4-1@20250805",
+    "claude-sonnet-5-6",
+    "claude-sonnet-6",
+    "claude-opus-6",
+    "claude-opus-3",
+    "claude-opus-4-9",
+    "claude-haiku-5-6",
+    "claude-haiku-5",
+    "claude-fable-5-2",
+    "claude-mythos-5-2",
+    "claude-fable-4",
+    "x-opus-9",
+    "Claude-Haiku-4-5",
+    "claude-instant-1",
+    "gpt-4o",
+    "gemini-1.5-pro",
+    "unknown-model",
+    "",
+    "<synthetic>",
+    "<foo>",
+    "<>",
+    " <synthetic> ",
+    " <synthetic>﻿",
+    "<a<b>",
+    "<synthetic",
+    "synthetic>",
+    "<multi\nline>"
+  ],
+  "tables": [
+    {
+      "name": "two-families",
+      "models": {
+        "claude-opus-4": { "input": 15, "cache_write_5m": 18.75, "cache_write_1h": 30, "cache_read": 1.5, "output": 75 },
+        "claude-opus-4-5": { "input": 5, "cache_write_5m": 6.25, "cache_write_1h": 10, "cache_read": 0.5, "output": 25 },
+        "claude-sonnet-4": { "input": 3, "cache_write_5m": 3.75, "cache_write_1h": 6, "cache_read": 0.3, "output": 15 }
+      },
+      "ids": ["claude-opus-4-1", "claude-opus-3", "claude-opus-4-5", "claude-opus-9", "claude-haiku-4", "claude-sonnet-4-5", "claude-sonnet-4", "claude-fable-1"]
+    },
+    {
+      "name": "tie-a",
+      "models": {
+        "claude-opus-5": { "input": 1, "cache_write_5m": 1, "cache_write_1h": 1, "cache_read": 1, "output": 1 },
+        "claude-5-opus": { "input": 2, "cache_write_5m": 2, "cache_write_1h": 2, "cache_read": 2, "output": 2 }
+      },
+      "ids": ["claude-opus-5-1", "claude-opus-4", "claude-opus-5-0"]
+    },
+    {
+      "name": "tie-b",
+      "models": {
+        "claude-5-opus": { "input": 2, "cache_write_5m": 2, "cache_write_1h": 2, "cache_read": 2, "output": 2 },
+        "claude-opus-5": { "input": 1, "cache_write_5m": 1, "cache_write_1h": 1, "cache_read": 1, "output": 1 }
+      },
+      "ids": ["claude-opus-5-1", "claude-opus-4", "claude-opus-5-0"]
+    },
+    {
+      "name": "old-order",
+      "models": {
+        "claude-3-5-haiku": { "input": 0.8, "cache_write_5m": 1, "cache_write_1h": 1.6, "cache_read": 0.08, "output": 4 },
+        "claude-haiku-4-5": { "input": 1, "cache_write_5m": 1.25, "cache_write_1h": 2, "cache_read": 0.1, "output": 5 }
+      },
+      "ids": ["claude-haiku-4", "claude-haiku-3", "claude-haiku-9", "claude-3-5-haiku-latest", "claude-haiku-4-5-20251001"]
+    },
+    {
+      "name": "with-above",
+      "models": {
+        "claude-haiku-5-5": { "input": 0.1, "cache_write_5m": 0.125, "cache_write_1h": 0.2, "cache_read": 0.01, "output": 0.5, "above": { "threshold": 100000, "input": 0.5, "cache_write_5m": 0.625, "cache_write_1h": 1, "cache_read": 0.05, "output": 2.5 } },
+        "claude-opus-5": { "input": 5, "cache_write_5m": 6.25, "cache_write_1h": 10, "cache_read": 0.5, "output": 25, "fast": { "input": 10, "output": 50 } }
+      },
+      "ids": ["claude-haiku-5-5", "claude-haiku-5-6", "claude-haiku-2", "claude-opus-5-20260401", "claude-opus-5-1"]
+    },
+    {
+      "name": "empty",
+      "models": {},
+      "ids": ["claude-opus-5", "gpt-4o"]
+    }
+  ],
+  "usages": [
+    { "name": "usage-full", "raw": { "input_tokens": 100, "cache_creation_input_tokens": 300, "cache_creation": { "ephemeral_5m_input_tokens": 100, "ephemeral_1h_input_tokens": 200 }, "cache_read_input_tokens": 5000, "output_tokens": 250, "output_tokens_details": { "thinking_tokens": 40 }, "speed": "standard" } },
+    { "name": "usage-empty-object", "raw": {} },
+    { "name": "usage-null", "raw": null },
+    { "name": "usage-string", "raw": "abc" },
+    { "name": "usage-number", "raw": 5 },
+    { "name": "usage-array", "raw": [] },
+    { "name": "usage-bool", "raw": true },
+    { "name": "usage-old-no-breakdown", "raw": { "input_tokens": 10, "cache_creation_input_tokens": 700, "cache_read_input_tokens": 20, "output_tokens": 30 } },
+    { "name": "usage-old-empty-cc", "raw": { "input_tokens": 10, "cache_creation_input_tokens": 700, "cache_creation": {} } },
+    { "name": "usage-cc-zero-total", "raw": { "cache_creation_input_tokens": 700, "cache_creation": { "ephemeral_5m_input_tokens": 0, "ephemeral_1h_input_tokens": 0 } } },
+    { "name": "usage-cc-differs-from-total", "raw": { "cache_creation_input_tokens": 999, "cache_creation": { "ephemeral_5m_input_tokens": 1, "ephemeral_1h_input_tokens": 2 } } },
+    { "name": "usage-cc-1h-only", "raw": { "cache_creation": { "ephemeral_1h_input_tokens": 400 } } },
+    { "name": "usage-cc-5m-only", "raw": { "cache_creation": { "ephemeral_5m_input_tokens": 400 } } },
+    { "name": "usage-cc-null", "raw": { "cache_creation": null, "cache_creation_input_tokens": 8 } },
+    { "name": "usage-cc-string", "raw": { "cache_creation": "x", "cache_creation_input_tokens": 8 } },
+    { "name": "usage-cc-number", "raw": { "cache_creation": 3, "cache_creation_input_tokens": 8 } },
+    { "name": "usage-cc-array", "raw": { "cache_creation": [1, 2], "cache_creation_input_tokens": 8 } },
+    { "name": "usage-string-fields", "raw": { "input_tokens": "12", "output_tokens": "7", "cache_read_input_tokens": null } },
+    { "name": "usage-negative", "raw": { "input_tokens": -5, "output_tokens": 10 } },
+    { "name": "usage-negative-total-write", "raw": { "cache_creation_input_tokens": -50 } },
+    { "name": "usage-fractions", "raw": { "input_tokens": 1.5, "cache_read_input_tokens": 0.25, "output_tokens": 0.1 } },
+    { "name": "usage-huge", "raw": { "input_tokens": 1e21, "output_tokens": 1e-7 } },
+    { "name": "usage-speed-fast", "raw": { "input_tokens": 1, "speed": "fast" } },
+    { "name": "usage-speed-capital", "raw": { "input_tokens": 1, "speed": "Fast" } },
+    { "name": "usage-speed-other", "raw": { "input_tokens": 1, "speed": 3 } },
+    { "name": "usage-thinking-only", "raw": { "output_tokens_details": { "thinking_tokens": 99 } } },
+    { "name": "usage-thinking-string", "raw": { "output_tokens": 5, "output_tokens_details": "x" } },
+    { "name": "usage-only-output", "raw": { "output_tokens": 1 } },
+    { "name": "usage-only-cache-read", "raw": { "cache_read_input_tokens": 77 } },
+    { "name": "usage-hit-100", "raw": { "cache_read_input_tokens": 77 } },
+    { "name": "usage-hit-third", "raw": { "input_tokens": 200, "cache_read_input_tokens": 100 } },
+    { "name": "usage-hit-tenth", "raw": { "input_tokens": 9, "cache_read_input_tokens": 1 } },
+    { "name": "usage-hit-sevens", "raw": { "input_tokens": 7777, "cache_creation_input_tokens": 333, "cache_read_input_tokens": 12345 } }
+  ],
+  "costs": [
+    { "name": "cost-sonnet-5-5", "model": "claude-sonnet-5-5", "usage": { "input_tokens": 1234, "cache_creation_input_tokens": 5678, "cache_creation": { "ephemeral_5m_input_tokens": 5000, "ephemeral_1h_input_tokens": 678 }, "cache_read_input_tokens": 91011, "output_tokens": 1213 } },
+    { "name": "cost-sonnet-5-5-versions", "model": "claude-sonnet-5-5-20260601[1m]", "usage": { "input_tokens": 3, "cache_read_input_tokens": 77777, "output_tokens": 491 } },
+    { "name": "cost-bedrock", "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0", "usage": { "input_tokens": 17, "cache_creation_input_tokens": 4321, "cache_read_input_tokens": 12345, "output_tokens": 333 } },
+    { "name": "cost-vertex", "model": "claude-opus-4-1@20250805", "usage": { "input_tokens": 111, "cache_read_input_tokens": 222, "output_tokens": 333 } },
+    { "name": "cost-estimated-sonnet-5-6", "model": "claude-sonnet-5-6", "usage": { "input_tokens": 1000, "cache_read_input_tokens": 90000, "output_tokens": 500 } },
+    { "name": "cost-estimated-opus-6", "model": "claude-opus-6", "usage": { "input_tokens": 1, "output_tokens": 1 } },
+    { "name": "cost-old-haiku", "model": "claude-3-5-haiku-latest", "usage": { "input_tokens": 4321, "cache_creation_input_tokens": 1000, "output_tokens": 99 } },
+    { "name": "cost-opus-5-fast", "model": "claude-opus-5", "usage": { "input_tokens": 1000, "cache_creation_input_tokens": 2000, "cache_creation": { "ephemeral_5m_input_tokens": 1500, "ephemeral_1h_input_tokens": 500 }, "cache_read_input_tokens": 30000, "output_tokens": 700, "speed": "fast" } },
+    { "name": "cost-opus-5-standard", "model": "claude-opus-5", "usage": { "input_tokens": 1000, "cache_creation_input_tokens": 2000, "cache_creation": { "ephemeral_5m_input_tokens": 1500, "ephemeral_1h_input_tokens": 500 }, "cache_read_input_tokens": 30000, "output_tokens": 700 } },
+    { "name": "cost-opus-5-5-fast", "model": "claude-opus-5-5", "usage": { "input_tokens": 123, "cache_read_input_tokens": 4567, "output_tokens": 89, "speed": "fast" } },
+    { "name": "cost-opus-4-8-fast", "model": "claude-opus-4-8", "usage": { "input_tokens": 123, "cache_read_input_tokens": 4567, "output_tokens": 89, "speed": "fast" } },
+    { "name": "cost-sonnet-fast-without-fast-row", "model": "claude-sonnet-4-6", "usage": { "input_tokens": 123, "output_tokens": 89, "speed": "fast" } },
+    { "name": "cost-fable-5-1", "model": "claude-fable-5-1", "usage": { "input_tokens": 10, "cache_creation_input_tokens": 20, "cache_read_input_tokens": 30, "output_tokens": 40 } },
+    { "name": "cost-1h-writes", "model": "claude-sonnet-4-6", "usage": { "cache_creation_input_tokens": 100000, "cache_creation": { "ephemeral_1h_input_tokens": 100000 } } },
+    { "name": "cost-fractions", "model": "claude-sonnet-4-6", "usage": { "input_tokens": 0.1, "cache_read_input_tokens": 0.2, "output_tokens": 0.3 } },
+    { "name": "cost-haiku-5-5-at-threshold", "model": "claude-haiku-5-5", "usage": { "input_tokens": 100000, "output_tokens": 1000 } },
+    { "name": "cost-haiku-5-5-above-threshold", "model": "claude-haiku-5-5", "usage": { "input_tokens": 100001, "output_tokens": 1000 } },
+    { "name": "cost-haiku-5-5-below-threshold", "model": "claude-haiku-5-5", "usage": { "input_tokens": 99999, "output_tokens": 1000 } },
+    { "name": "cost-haiku-5-5-mixed-at", "model": "claude-haiku-5-5", "usage": { "input_tokens": 50000, "cache_read_input_tokens": 50000, "output_tokens": 10 } },
+    { "name": "cost-haiku-5-5-mixed-above", "model": "claude-haiku-5-5", "usage": { "input_tokens": 50000, "cache_read_input_tokens": 50001, "output_tokens": 10 } },
+    { "name": "cost-haiku-5-5-writes-above", "model": "claude-haiku-5-5", "usage": { "input_tokens": 1, "cache_creation_input_tokens": 100000, "cache_creation": { "ephemeral_1h_input_tokens": 100000 } } },
+    { "name": "cost-haiku-5-5-prompt-at", "model": "claude-haiku-5-5", "promptTokens": 100000, "usage": { "cache_creation_input_tokens": 500, "cache_creation": { "ephemeral_1h_input_tokens": 500 } } },
+    { "name": "cost-haiku-5-5-prompt-above", "model": "claude-haiku-5-5", "promptTokens": 100001, "usage": { "cache_creation_input_tokens": 500, "cache_creation": { "ephemeral_1h_input_tokens": 500 } } },
+    { "name": "cost-haiku-5-5-prompt-zero-overrides", "model": "claude-haiku-5-5", "promptTokens": 0, "usage": { "input_tokens": 200000, "output_tokens": 5 } },
+    { "name": "cost-haiku-5-5-prompt-small-overrides", "model": "claude-haiku-5-5", "promptTokens": 5, "usage": { "input_tokens": 200000, "output_tokens": 5 } },
+    { "name": "cost-sonnet-prompt-ignored", "model": "claude-sonnet-5-5", "promptTokens": 500000, "usage": { "input_tokens": 10, "output_tokens": 5 } },
+    { "name": "cost-haiku-5-6-estimated-above", "model": "claude-haiku-5-6", "usage": { "input_tokens": 150000, "output_tokens": 5 } },
+    { "name": "cost-unknown", "model": "gpt-4o", "usage": { "input_tokens": 100, "output_tokens": 50 } },
+    { "name": "cost-unknown-empty-model", "model": "", "usage": { "input_tokens": 100 } },
+    { "name": "cost-synthetic-with-tokens", "model": "<synthetic>", "usage": { "input_tokens": 100 } },
+    { "name": "cost-zero-unknown", "model": "gpt-4o", "usage": {} },
+    { "name": "cost-zero-synthetic", "model": "<synthetic>", "usage": { "input_tokens": 0, "output_tokens": 0 } },
+    { "name": "cost-zero-known", "model": "claude-opus-5", "usage": { "input_tokens": 0 } },
+    { "name": "cost-zero-but-thinking", "model": "claude-opus-5", "usage": { "output_tokens_details": { "thinking_tokens": 99 } } },
+    { "name": "cost-zero-fast", "model": "claude-opus-5", "usage": { "speed": "fast" }, "promptTokens": 9 },
+    { "name": "cost-null-usage", "model": "claude-opus-5", "usage": null },
+    { "name": "cost-negative", "model": "claude-sonnet-4-6", "usage": { "input_tokens": -1000, "output_tokens": 10 } }
+  ],
+  "tiers": [
+    { "name": "tier-haiku-5-5-99999", "model": "claude-haiku-5-5", "promptTokens": 99999 },
+    { "name": "tier-haiku-5-5-100000", "model": "claude-haiku-5-5", "promptTokens": 100000 },
+    { "name": "tier-haiku-5-5-100001", "model": "claude-haiku-5-5", "promptTokens": 100001 },
+    { "name": "tier-haiku-5-5-0", "model": "claude-haiku-5-5", "promptTokens": 0 },
+    { "name": "tier-opus-5-big", "model": "claude-opus-5", "promptTokens": 5000000 },
+    { "name": "tier-sonnet-4-6-big", "model": "claude-sonnet-4-6", "promptTokens": 5000000 }
+  ]
+}

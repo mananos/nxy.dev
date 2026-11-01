@@ -1,0 +1,3656 @@
+[
+  {
+    "name": "events:all-untimed",
+    "input": {
+      "events": [
+        {
+          "type": "user"
+        },
+        {
+          "type": "assistant",
+          "timestamp": true
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 0,
+        "modelMs": 0,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:empty-events",
+    "input": {
+      "events": []
+    },
+    "output": {
+      "timing": {
+        "wallMs": 0,
+        "modelMs": 0,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:fixture:-home-dev-code-my-app/sess-0001.jsonl",
+    "input": {
+      "events": [
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "u1",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "Add a health endpoint"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a1",
+          "requestId": "req_1",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_1",
+            "model": "claude-opus-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 1000,
+              "cache_creation_input_tokens": 20000,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 20000,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "ok"
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a1b",
+          "requestId": "req_1",
+          "timestamp": "2026-09-01T10:00:01.500Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_1",
+            "model": "claude-opus-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 1000,
+              "cache_creation_input_tokens": 20000,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 40,
+              "output_tokens_details": {
+                "thinking_tokens": 15
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 20000,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "/srv/dev/code/my.app/src/app.js"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "u2",
+          "timestamp": "2026-09-01T10:00:02.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tu_read",
+                "content": "x"
+              }
+            ]
+          },
+          "toolUseResult": {
+            "type": "text",
+            "file": {
+              "filePath": "/srv/dev/code/my.app/src/app.js",
+              "content": "x",
+              "numLines": 1
+            }
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a2",
+          "requestId": "req_2",
+          "timestamp": "2026-09-01T10:00:03.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_2",
+            "model": "claude-opus-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 21000,
+              "output_tokens": 100,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "npm test"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "tu_edit",
+                "name": "Edit",
+                "input": {
+                  "file_path": "/srv/dev/code/my.app/src/app.js",
+                  "old_string": "a",
+                  "new_string": "b"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "u3",
+          "timestamp": "2026-09-01T10:00:04.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tu_bash",
+                "content": "x"
+              }
+            ]
+          },
+          "toolUseResult": {
+            "stdout": "line1\nline2\nline3",
+            "stderr": "",
+            "interrupted": false
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a3",
+          "requestId": "req_3",
+          "timestamp": "2026-09-01T10:00:05.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_3",
+            "model": "claude-opus-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 500,
+              "cache_read_input_tokens": 21000,
+              "output_tokens": 60,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 500,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "tu_agent",
+                "name": "Agent",
+                "input": {
+                  "subagent_type": "Explore",
+                  "description": "Find tests",
+                  "prompt": "..."
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "u4",
+          "timestamp": "2026-09-01T10:00:06.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "tu_agent",
+                "content": "done"
+              }
+            ]
+          },
+          "toolUseResult": {
+            "agentId": "a1b2c3d4e5f60718",
+            "description": "Find tests",
+            "resolvedModel": "claude-haiku-4-5",
+            "status": "completed"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "u5",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "<command-name>/nxy:stats</command-name>\n<command-message>stats</command-message>"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a4",
+          "requestId": "req_4",
+          "timestamp": "2026-09-01T10:00:11.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_4",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 2000,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 200,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "stats"
+              },
+              {
+                "type": "tool_use",
+                "id": "tu_write",
+                "name": "Write",
+                "input": {
+                  "file_path": "/srv/dev/code/my.app/src/health.js",
+                  "content": "x"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "tu_edit2",
+                "name": "Edit",
+                "input": {
+                  "file_path": "/srv/dev/code/my.app/src/app.js",
+                  "old_string": "b",
+                  "new_string": "c"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a5",
+          "requestId": "req_5",
+          "timestamp": "2026-09-01T10:00:12.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_5",
+            "model": "claude-future-9",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "?"
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "a6",
+          "requestId": "req_6",
+          "timestamp": "2026-09-01T10:00:12.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_6",
+            "model": "<synthetic>",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 0,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "internal"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 12000,
+        "modelMs": 5500,
+        "bashMs": 1000,
+        "toolMs": 1500,
+        "waitMs": 4000,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [
+          {
+            "tool": "Bash",
+            "text": "npm test",
+            "ms": 1000
+          },
+          {
+            "tool": "Agent",
+            "text": "Agent",
+            "ms": 1000
+          },
+          {
+            "tool": "Read",
+            "text": "Read /srv/dev/code/my.app/src/app.js",
+            "ms": 500
+          }
+        ],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:fixture:-home-dev-code-my-app/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl",
+    "input": {
+      "events": [
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "s-u1",
+          "timestamp": "2026-09-01T10:00:05.100Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "Find tests"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "a1b2c3d4e5f60718",
+          "type": "assistant",
+          "uuid": "s-a1",
+          "requestId": "req_s1",
+          "timestamp": "2026-09-01T10:00:05.200Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_s1",
+            "model": "claude-haiku-4-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 3000,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 300,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "s-tu",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "s-u2",
+          "timestamp": "2026-09-01T10:00:05.300Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "s-tu",
+                "content": "x"
+              }
+            ]
+          },
+          "toolUseResult": {
+            "stdout": "a\nb",
+            "stderr": "",
+            "interrupted": false
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "a1b2c3d4e5f60718",
+          "type": "assistant",
+          "uuid": "s-a2",
+          "requestId": "req_s2",
+          "timestamp": "2026-09-01T10:00:05.400Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_s2",
+            "model": "claude-haiku-4-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 3100,
+              "output_tokens": 50,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "found"
+              },
+              {
+                "type": "tool_use",
+                "id": "s-tu-w",
+                "name": "Write",
+                "input": {
+                  "file_path": "/srv/dev/code/my.app/tests/health.test.js",
+                  "content": "x"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 300,
+        "modelMs": 200,
+        "bashMs": 100,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [
+          {
+            "tool": "Bash",
+            "text": "ls",
+            "ms": 100
+          }
+        ],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:fixture:-home-dev-code-my-app/sess-timing.jsonl",
+    "input": {
+      "events": [
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "user",
+          "uuid": "t-u1",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "Plan and build it"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": false,
+          "type": "assistant",
+          "uuid": "t-a1",
+          "requestId": "req_t1",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "effort": "high",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_t1",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 1000,
+        "modelMs": 1000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:fixture:-home-dev-code-my-app/sess-timing/subagents/agent-impl000000000001.jsonl",
+    "input": {
+      "events": [
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "i-u1",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "Run the tests"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "impl000000000001",
+          "type": "assistant",
+          "uuid": "i-a1",
+          "requestId": "req_i1",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_i1",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "i-tu1",
+                "name": "Bash",
+                "input": {
+                  "command": "./mvnw -q test"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "i-u2",
+          "timestamp": "2026-09-01T10:04:01.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "i-tu1",
+                "content": "x"
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "impl000000000001",
+          "type": "assistant",
+          "uuid": "i-a2",
+          "requestId": "req_i2",
+          "timestamp": "2026-09-01T10:04:02.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_i2",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "tests passed"
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "impl000000000001",
+          "type": "assistant",
+          "uuid": "i-a3",
+          "requestId": "req_i3",
+          "timestamp": "2026-09-01T10:04:03.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_i3",
+            "model": "<synthetic>",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 0,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "You've hit your usage limit. It resets later."
+              }
+            ]
+          },
+          "apiError": "usage_limit_reached"
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "i-u3",
+          "timestamp": "2026-09-01T15:04:03.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "continue"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "impl000000000001",
+          "type": "assistant",
+          "uuid": "i-a4",
+          "requestId": "req_i4",
+          "timestamp": "2026-09-01T15:04:04.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_i4",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 244000,
+        "modelMs": 3000,
+        "bashMs": 240000,
+        "toolMs": 0,
+        "waitMs": 1000,
+        "limitStops": 1,
+        "limitMs": 18000000,
+        "slowest": [
+          {
+            "tool": "Bash",
+            "text": "./mvnw -q test",
+            "ms": 240000
+          }
+        ],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:fixture:-home-dev-code-my-app/sess-timing/subagents/agent-plan000000000001.jsonl",
+    "input": {
+      "events": [
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "p-u1",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": "Plan it"
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "plan000000000001",
+          "type": "assistant",
+          "uuid": "p-a1",
+          "requestId": "req_p1",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_p1",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "p-tu1",
+                "name": "Bash",
+                "input": {
+                  "command": "node \"/x/hosts/claude-code/entries/locate.mjs\" \"health\""
+                }
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "type": "user",
+          "uuid": "p-u2",
+          "timestamp": "2026-09-01T10:00:02.000Z",
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "p-tu1",
+                "content": "x"
+              }
+            ]
+          }
+        },
+        {
+          "parentUuid": null,
+          "isSidechain": true,
+          "agentId": "plan000000000001",
+          "type": "assistant",
+          "uuid": "p-a2",
+          "requestId": "req_p2",
+          "timestamp": "2026-09-01T10:00:03.000Z",
+          "effort": null,
+          "cwd": "/srv/dev/code/my.app",
+          "version": "2.1.274",
+          "gitBranch": "main",
+          "message": {
+            "id": "msg_req_p2",
+            "model": "claude-sonnet-5",
+            "role": "assistant",
+            "usage": {
+              "input_tokens": 100,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 10,
+              "output_tokens_details": {
+                "thinking_tokens": 0
+              },
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "service_tier": "standard",
+              "speed": "standard"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "plan"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 3000,
+        "modelMs": 2000,
+        "bashMs": 1000,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [
+          {
+            "tool": "Bash",
+            "text": "node \"/x/hosts/claude-code/entries/locate.mjs\" \"health\"",
+            "ms": 1000
+          }
+        ],
+        "locateCalls": 1,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-overlap",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "requestId": "r1",
+          "message": {
+            "id": "msg_1",
+            "model": "claude-sonnet-5",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Session limit reached - resets 5pm"
+              }
+            ]
+          }
+        },
+        {
+          "type": "system",
+          "timestamp": "2026-09-01T10:00:20.000Z",
+          "error": "rate_limit"
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:01:00.000Z",
+          "message": {
+            "content": "continue"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:05.000Z",
+          "requestId": "r3",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "system",
+          "timestamp": "2026-09-01T10:01:30.000Z",
+          "apiError": "usage_limit_reached"
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:40.000Z",
+          "requestId": "r4",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": [
+              {
+                "type": "text",
+                "text": "back"
+              }
+            ]
+          }
+        },
+        {
+          "type": "system",
+          "timestamp": "2026-09-01T10:02:00.000Z",
+          "error": "rate_limit"
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 60000,
+        "modelMs": 6000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 54000,
+        "limitStops": 3,
+        "limitMs": 60000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:00",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Interrupted by user"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:01",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Claude usage limit reached|1700000000"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:02",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Your session limit will reset at 5pm"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:03",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "RATE   LIMIT exceeded"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:04",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "rate limit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:05",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "rate limit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:06",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "rate\tlimit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:07",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "ratelimit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:08",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "limits"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:09",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "usage-limit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:10",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "limit  reached"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:11",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Limit Will Reset"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:12",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "You've hit your usage limit. It resets later."
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:13",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:limit-text:14",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "session limit"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 10000,
+        "modelMs": 10000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 20000,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:missing-timestamps",
+    "input": {
+      "events": [
+        null,
+        5,
+        "str",
+        [],
+        {},
+        {
+          "timestamp": null
+        },
+        {
+          "timestamp": "not a date"
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00Z"
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30Z",
+          "requestId": "r",
+          "message": {
+            "model": "claude-sonnet-5"
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 30000,
+        "modelMs": 30000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:null-events",
+    "input": {
+      "events": null
+    },
+    "output": {
+      "timing": {
+        "wallMs": 0,
+        "modelMs": 0,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:ordering-and-keys",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:10.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:20.000Z",
+          "message": {
+            "content": "more"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:05.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:30.000Z",
+          "message": {
+            "id": "msg_x",
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:31.000Z",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:50.000Z",
+          "message": {
+            "content": "again"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:40.000Z",
+          "requestId": "r3",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:55.000Z",
+          "requestId": "r3",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:10.000Z",
+          "requestId": 12345,
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:20.000Z",
+          "requestId": "12345",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        },
+        {
+          "type": "system",
+          "timestamp": "2026-09-01T10:01:30.000Z"
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:40.000Z",
+          "requestId": "r9",
+          "message": {
+            "model": "<synthetic>",
+            "content": [
+              {
+                "type": "text",
+                "text": "Interrupted"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:01:50.000Z",
+          "requestId": "r10",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": "not an array"
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 110000,
+        "modelMs": 70000,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 40000,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:single-event",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z"
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 0,
+        "modelMs": 0,
+        "bashMs": 0,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:tool-straddles-limit",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z"
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:01.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "t",
+                "name": "Bash",
+                "input": {
+                  "command": "make"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "system",
+          "timestamp": "2026-09-01T10:00:05.000Z",
+          "apiError": "usage_limit_reached"
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:10:00.000Z",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "t",
+                "content": "ok"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:10:03.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": []
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 8000,
+        "modelMs": 4000,
+        "bashMs": 4000,
+        "toolMs": 0,
+        "waitMs": 0,
+        "limitStops": 1,
+        "limitMs": 595000,
+        "slowest": [
+          {
+            "tool": "Bash",
+            "text": "make",
+            "ms": 599000
+          }
+        ],
+        "locateCalls": 0,
+        "nudges": 0
+      }
+    }
+  },
+  {
+    "name": "events:tools-and-locate",
+    "input": {
+      "events": [
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:00.000Z",
+          "message": {
+            "content": "go"
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:02.000Z",
+          "requestId": "r1",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "b1",
+                "name": "Bash",
+                "input": {
+                  "command": "node \"/x/entries/locate.mjs\" health"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "p1",
+                "name": "PowerShell",
+                "input": {
+                  "command": "node C:\\x\\locate.mjs foo"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "g1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.go",
+                  "path": "/srv/x"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "gr1",
+                "name": "Grep",
+                "input": {
+                  "pattern": "foo"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "rd1",
+                "name": "Read",
+                "input": {
+                  "file_path": "/srv/x/a.go"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "t1",
+                "name": "Task",
+                "input": {}
+              },
+              {
+                "type": "tool_use",
+                "id": "b2",
+                "name": "Bash",
+                "input": {}
+              },
+              {
+                "type": "tool_use",
+                "id": "nores",
+                "name": "Bash",
+                "input": {
+                  "command": "sleep 1"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "dup",
+                "name": "Read",
+                "input": {
+                  "file_path": "/srv/x/first.go"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "dup",
+                "name": "Write",
+                "input": {
+                  "file_path": "/srv/x/second.go"
+                }
+              },
+              {
+                "type": "tool_use",
+                "name": "Bash",
+                "input": {
+                  "command": "no id"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "num",
+                "name": "Edit",
+                "input": {
+                  "file_path": "",
+                  "path": "/srv/x/c.go"
+                }
+              },
+              {
+                "type": "tool_use",
+                "id": "lw",
+                "name": "Bash",
+                "input": {
+                  "command": "grep locate.mjs notes.txt"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:05.000Z",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "b1",
+                "content": "nxy locate nudge: use locate"
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "p1",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "ok"
+                  },
+                  {
+                    "type": "image"
+                  }
+                ]
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "g1",
+                "content": "x"
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "zzz",
+                "content": "x"
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:20.000Z",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "gr1",
+                "content": ".."
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "rd1",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "nxy locate nudge: stop"
+                  }
+                ]
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "b2",
+                "content": ""
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "t1",
+                "content": 5
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "dup",
+                "content": "x"
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "num",
+                "content": "x"
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "lw",
+                "content": "x"
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "timestamp": "2026-09-01T10:00:22.000Z",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "b1",
+                "content": "again nxy locate nudge: twice"
+              },
+              {
+                "type": "tool_result",
+                "tool_use_id": "dup",
+                "content": "x"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "timestamp": "2026-09-01T10:00:25.000Z",
+          "requestId": "r2",
+          "message": {
+            "model": "claude-sonnet-5",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "timing": {
+        "wallMs": 25000,
+        "modelMs": 5000,
+        "bashMs": 18000,
+        "toolMs": 0,
+        "waitMs": 2000,
+        "limitStops": 0,
+        "limitMs": 0,
+        "slowest": [
+          {
+            "tool": "Grep",
+            "text": "Grep foo",
+            "ms": 18000
+          },
+          {
+            "tool": "Read",
+            "text": "Read /srv/x/a.go",
+            "ms": 18000
+          },
+          {
+            "tool": "Bash",
+            "text": "",
+            "ms": 18000
+          },
+          {
+            "tool": "Task",
+            "text": "Task",
+            "ms": 18000
+          },
+          {
+            "tool": "Write",
+            "text": "Write /srv/x/second.go",
+            "ms": 18000
+          }
+        ],
+        "locateCalls": 3,
+        "nudges": 3
+      }
+    }
+  },
+  {
+    "name": "quantile:empty",
+    "input": {
+      "sorted": [],
+      "p": 0.5
+    },
+    "output": {
+      "quantile": 0
+    }
+  },
+  {
+    "name": "quantile:one",
+    "input": {
+      "sorted": [
+        5
+      ],
+      "p": 0.9
+    },
+    "output": {
+      "quantile": 5
+    }
+  },
+  {
+    "name": "quantile:seven-p90",
+    "input": {
+      "sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "p": 0.9
+    },
+    "output": {
+      "quantile": 7
+    }
+  },
+  {
+    "name": "quantile:ten-p0",
+    "input": {
+      "sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "p": 0
+    },
+    "output": {
+      "quantile": 1
+    }
+  },
+  {
+    "name": "quantile:ten-p1",
+    "input": {
+      "sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "p": 1
+    },
+    "output": {
+      "quantile": 10
+    }
+  },
+  {
+    "name": "quantile:ten-p50",
+    "input": {
+      "sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "p": 0.5
+    },
+    "output": {
+      "quantile": 6
+    }
+  },
+  {
+    "name": "quantile:ten-p90",
+    "input": {
+      "sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "p": 0.9
+    },
+    "output": {
+      "quantile": 10
+    }
+  },
+  {
+    "name": "quantile:three-p50",
+    "input": {
+      "sorted": [
+        10,
+        20,
+        30
+      ],
+      "p": 0.5
+    },
+    "output": {
+      "quantile": 20
+    }
+  },
+  {
+    "name": "runs:eleven-walls",
+    "input": {
+      "runs": [
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 11,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 3,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 7,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 1,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 9,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 5,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 2,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 8,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 4,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 10,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 6,
+            "modelMs": 1,
+            "bashMs": 1,
+            "toolMs": 1,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "types": [
+          {
+            "agentType": "Explore",
+            "runs": 11,
+            "medianMs": 6,
+            "p90Ms": 10,
+            "maxMs": 11,
+            "modelMs": 11,
+            "bashMs": 11,
+            "toolMs": 11,
+            "waitMs": 11,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          }
+        ],
+        "slowest": [],
+        "limitStops": 0
+      }
+    }
+  },
+  {
+    "name": "runs:empty-runs",
+    "input": {
+      "runs": []
+    },
+    "output": {
+      "summary": {
+        "types": [],
+        "slowest": [],
+        "limitStops": 0
+      }
+    }
+  },
+  {
+    "name": "runs:fixture-runs",
+    "input": {
+      "runs": [
+        {
+          "agentType": "nxy:implementer",
+          "timing": {
+            "wallMs": 244000,
+            "modelMs": 3000,
+            "bashMs": 240000,
+            "toolMs": 0,
+            "waitMs": 1000,
+            "limitStops": 1,
+            "limitMs": 18000000,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "./mvnw -q test",
+                "ms": 240000
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "nxy:planner",
+          "timing": {
+            "wallMs": 3000,
+            "modelMs": 2000,
+            "bashMs": 1000,
+            "toolMs": 0,
+            "waitMs": 0,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "node \"/x/hosts/claude-code/entries/locate.mjs\" \"health\"",
+                "ms": 1000
+              }
+            ],
+            "locateCalls": 1,
+            "nudges": 0
+          }
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "types": [
+          {
+            "agentType": "nxy:implementer",
+            "runs": 1,
+            "medianMs": 244000,
+            "p90Ms": 244000,
+            "maxMs": 244000,
+            "modelMs": 3000,
+            "bashMs": 240000,
+            "toolMs": 0,
+            "waitMs": 1000,
+            "limitStops": 1,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "nxy:planner",
+            "runs": 1,
+            "medianMs": 3000,
+            "p90Ms": 3000,
+            "maxMs": 3000,
+            "modelMs": 2000,
+            "bashMs": 1000,
+            "toolMs": 0,
+            "waitMs": 0,
+            "limitStops": 0,
+            "withLocate": 1,
+            "nudges": 0
+          }
+        ],
+        "slowest": [
+          {
+            "agentType": "nxy:implementer",
+            "tool": "Bash",
+            "text": "./mvnw -q test",
+            "ms": 240000
+          },
+          {
+            "agentType": "nxy:planner",
+            "tool": "Bash",
+            "text": "node \"/x/hosts/claude-code/entries/locate.mjs\" \"health\"",
+            "ms": 1000
+          }
+        ],
+        "limitStops": 1
+      }
+    }
+  },
+  {
+    "name": "runs:multi-run-quantiles",
+    "input": {
+      "runs": [
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 5000,
+            "modelMs": 1000,
+            "bashMs": 2000,
+            "toolMs": 500,
+            "waitMs": 1500,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "make test",
+                "ms": 2000
+              },
+              {
+                "tool": "Read",
+                "text": "Read /srv/x/a.go",
+                "ms": 40
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 100,
+            "modelMs": 10,
+            "bashMs": 20,
+            "toolMs": 5,
+            "waitMs": 15,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 1,
+            "nudges": 1
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 900,
+            "modelMs": 100,
+            "bashMs": 200,
+            "toolMs": 50,
+            "waitMs": 150,
+            "limitStops": 1,
+            "limitMs": 7,
+            "slowest": [
+              {
+                "tool": "Glob",
+                "text": "Glob **/*.go",
+                "ms": 2000
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 2
+          }
+        },
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 900,
+            "modelMs": 100,
+            "bashMs": 200,
+            "toolMs": 50,
+            "waitMs": 150,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 3,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "nxy:implementer",
+          "timing": {
+            "wallMs": 240000,
+            "modelMs": 3000,
+            "bashMs": 240000,
+            "toolMs": 0,
+            "waitMs": 100,
+            "limitStops": 1,
+            "limitMs": 18000000,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "./mvnw -q test",
+                "ms": 240000
+              },
+              {
+                "tool": "Edit",
+                "text": "Edit /srv/x/b.go",
+                "ms": 10
+              },
+              {
+                "tool": "PowerShell",
+                "text": "Get-ChildItem",
+                "ms": 10
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "nxy:implementer",
+          "timing": {
+            "wallMs": 1234,
+            "modelMs": 3,
+            "bashMs": 4,
+            "toolMs": 5,
+            "waitMs": 6,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "npm test",
+                "ms": 10
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": null,
+          "timing": null
+        },
+        {
+          "agentType": "Plan",
+          "timing": {
+            "wallMs": 1,
+            "modelMs": 0,
+            "bashMs": 0,
+            "toolMs": 0,
+            "waitMs": 1,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [
+              {
+                "tool": "Bash",
+                "text": "a",
+                "ms": 2000
+              },
+              {
+                "tool": "Bash",
+                "text": "b",
+                "ms": 2000
+              },
+              {
+                "tool": "Bash",
+                "text": "c",
+                "ms": 2000
+              }
+            ],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "types": [
+          {
+            "agentType": "Explore",
+            "runs": 4,
+            "medianMs": 900,
+            "p90Ms": 5000,
+            "maxMs": 5000,
+            "modelMs": 1210,
+            "bashMs": 2420,
+            "toolMs": 605,
+            "waitMs": 1815,
+            "limitStops": 1,
+            "withLocate": 2,
+            "nudges": 3
+          },
+          {
+            "agentType": "nxy:implementer",
+            "runs": 2,
+            "medianMs": 240000,
+            "p90Ms": 240000,
+            "maxMs": 240000,
+            "modelMs": 3003,
+            "bashMs": 240004,
+            "toolMs": 5,
+            "waitMs": 106,
+            "limitStops": 1,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "Plan",
+            "runs": 1,
+            "medianMs": 1,
+            "p90Ms": 1,
+            "maxMs": 1,
+            "modelMs": 0,
+            "bashMs": 0,
+            "toolMs": 0,
+            "waitMs": 1,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          }
+        ],
+        "slowest": [
+          {
+            "agentType": "nxy:implementer",
+            "tool": "Bash",
+            "text": "./mvnw -q test",
+            "ms": 240000
+          },
+          {
+            "agentType": "Explore",
+            "tool": "Bash",
+            "text": "make test",
+            "ms": 2000
+          },
+          {
+            "agentType": "Explore",
+            "tool": "Glob",
+            "text": "Glob **/*.go",
+            "ms": 2000
+          },
+          {
+            "agentType": "Plan",
+            "tool": "Bash",
+            "text": "a",
+            "ms": 2000
+          },
+          {
+            "agentType": "Plan",
+            "tool": "Bash",
+            "text": "b",
+            "ms": 2000
+          }
+        ],
+        "limitStops": 2
+      }
+    }
+  },
+  {
+    "name": "runs:null-runs",
+    "input": {
+      "runs": null
+    },
+    "output": {
+      "summary": {
+        "types": [],
+        "slowest": [],
+        "limitStops": 0
+      }
+    }
+  },
+  {
+    "name": "runs:tied-on-count",
+    "input": {
+      "runs": [
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 1000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 400,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Plan",
+          "timing": {
+            "wallMs": 2000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 1400,
+            "limitStops": 1,
+            "limitMs": 10,
+            "slowest": [],
+            "locateCalls": 1,
+            "nudges": 1
+          }
+        },
+        {
+          "agentType": "nxy:planner",
+          "timing": {
+            "wallMs": 3000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 2400,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 2,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "general-purpose",
+          "timing": {
+            "wallMs": 4000,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "statusline-setup",
+          "timing": {
+            "wallMs": 10,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": null,
+          "timing": {
+            "wallMs": 20,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 2,
+            "limitMs": 5,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "",
+          "timing": {
+            "wallMs": 30,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "nxy:implementer",
+          "timing": {
+            "wallMs": 40,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "a_b",
+          "timing": {
+            "wallMs": 50,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "a-b",
+          "timing": {
+            "wallMs": 60,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "A",
+          "timing": {
+            "wallMs": 70,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "a",
+          "timing": {
+            "wallMs": 80,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "1abc",
+          "timing": {
+            "wallMs": 90,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "limitMs": 0,
+            "slowest": [],
+            "locateCalls": 0,
+            "nudges": 0
+          }
+        },
+        {
+          "agentType": "Zed",
+          "timing": null
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "types": [
+          {
+            "agentType": "unknown",
+            "runs": 2,
+            "medianMs": 30,
+            "p90Ms": 30,
+            "maxMs": 30,
+            "modelMs": 2,
+            "bashMs": 4,
+            "toolMs": 6,
+            "waitMs": 8,
+            "limitStops": 2,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "1abc",
+            "runs": 1,
+            "medianMs": 90,
+            "p90Ms": 90,
+            "maxMs": 90,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "a",
+            "runs": 1,
+            "medianMs": 80,
+            "p90Ms": 80,
+            "maxMs": 80,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "A",
+            "runs": 1,
+            "medianMs": 70,
+            "p90Ms": 70,
+            "maxMs": 70,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "a_b",
+            "runs": 1,
+            "medianMs": 50,
+            "p90Ms": 50,
+            "maxMs": 50,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "a-b",
+            "runs": 1,
+            "medianMs": 60,
+            "p90Ms": 60,
+            "maxMs": 60,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "Explore",
+            "runs": 1,
+            "medianMs": 1000,
+            "p90Ms": 1000,
+            "maxMs": 1000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 400,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "general-purpose",
+            "runs": 1,
+            "medianMs": 4000,
+            "p90Ms": 4000,
+            "maxMs": 4000,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "nxy:implementer",
+            "runs": 1,
+            "medianMs": 40,
+            "p90Ms": 40,
+            "maxMs": 40,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          },
+          {
+            "agentType": "nxy:planner",
+            "runs": 1,
+            "medianMs": 3000,
+            "p90Ms": 3000,
+            "maxMs": 3000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 2400,
+            "limitStops": 0,
+            "withLocate": 1,
+            "nudges": 0
+          },
+          {
+            "agentType": "Plan",
+            "runs": 1,
+            "medianMs": 2000,
+            "p90Ms": 2000,
+            "maxMs": 2000,
+            "modelMs": 500,
+            "bashMs": 100,
+            "toolMs": 0,
+            "waitMs": 1400,
+            "limitStops": 1,
+            "withLocate": 1,
+            "nudges": 1
+          },
+          {
+            "agentType": "statusline-setup",
+            "runs": 1,
+            "medianMs": 10,
+            "p90Ms": 10,
+            "maxMs": 10,
+            "modelMs": 1,
+            "bashMs": 2,
+            "toolMs": 3,
+            "waitMs": 4,
+            "limitStops": 0,
+            "withLocate": 0,
+            "nudges": 0
+          }
+        ],
+        "slowest": [],
+        "limitStops": 3
+      }
+    }
+  }
+]

@@ -1,0 +1,1053 @@
+[
+  {
+    "name": "cost-1h-writes",
+    "input": {
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "cache_creation_input_tokens": 100000,
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 100000
+        }
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 100000,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.6
+    }
+  },
+  {
+    "name": "cost-bedrock",
+    "input": {
+      "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "usage": {
+        "input_tokens": 17,
+        "cache_creation_input_tokens": 4321,
+        "cache_read_input_tokens": 12345,
+        "output_tokens": 333
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 17,
+        "cacheWrite5m": 4321,
+        "cacheWrite1h": 0,
+        "cacheRead": 12345,
+        "output": 333,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.02495325
+    }
+  },
+  {
+    "name": "cost-estimated-opus-6",
+    "input": {
+      "model": "claude-opus-6",
+      "usage": {
+        "input_tokens": 1,
+        "output_tokens": 1
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.000024
+    }
+  },
+  {
+    "name": "cost-estimated-sonnet-5-6",
+    "input": {
+      "model": "claude-sonnet-5-6",
+      "usage": {
+        "input_tokens": 1000,
+        "cache_read_input_tokens": 90000,
+        "output_tokens": 500
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 90000,
+        "output": 500,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.016
+    }
+  },
+  {
+    "name": "cost-fable-5-1",
+    "input": {
+      "model": "claude-fable-5-1",
+      "usage": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 20,
+        "cache_read_input_tokens": 30,
+        "output_tokens": 40
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 10,
+        "cacheWrite5m": 20,
+        "cacheWrite1h": 0,
+        "cacheRead": 30,
+        "output": 40,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0023575
+    }
+  },
+  {
+    "name": "cost-fractions",
+    "input": {
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "input_tokens": 0.1,
+        "cache_read_input_tokens": 0.2,
+        "output_tokens": 0.3
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 0.1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0.2,
+        "output": 0.3,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.00000486
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-above-threshold",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 100001,
+        "output_tokens": 1000
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 100001,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1000,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0525005
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-at-threshold",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 100000,
+        "output_tokens": 1000
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 100000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1000,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0105
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-below-threshold",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 99999,
+        "output_tokens": 1000
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 99999,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1000,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.010499900000000001
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-mixed-above",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 50000,
+        "cache_read_input_tokens": 50001,
+        "output_tokens": 10
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 50000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 50001,
+        "output": 10,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.02752505
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-mixed-at",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 50000,
+        "cache_read_input_tokens": 50000,
+        "output_tokens": 10
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 50000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 50000,
+        "output": 10,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.005505
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-prompt-above",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "cache_creation_input_tokens": 500,
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 500
+        }
+      },
+      "promptTokens": 100001
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 500,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0005
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-prompt-at",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "cache_creation_input_tokens": 500,
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 500
+        }
+      },
+      "promptTokens": 100000
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 500,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0001
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-prompt-small-overrides",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 200000,
+        "output_tokens": 5
+      },
+      "promptTokens": 5
+    },
+    "output": {
+      "usage": {
+        "input": 200000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 5,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0200025
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-prompt-zero-overrides",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 200000,
+        "output_tokens": 5
+      },
+      "promptTokens": 0
+    },
+    "output": {
+      "usage": {
+        "input": 200000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 5,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0200025
+    }
+  },
+  {
+    "name": "cost-haiku-5-5-writes-above",
+    "input": {
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "input_tokens": 1,
+        "cache_creation_input_tokens": 100000,
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 100000
+        }
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 100000,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.1000005
+    }
+  },
+  {
+    "name": "cost-haiku-5-6-estimated-above",
+    "input": {
+      "model": "claude-haiku-5-6",
+      "usage": {
+        "input_tokens": 150000,
+        "output_tokens": 5
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 150000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 5,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0750125
+    }
+  },
+  {
+    "name": "cost-negative",
+    "input": {
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "input_tokens": -1000,
+        "output_tokens": 10
+      }
+    },
+    "output": {
+      "usage": {
+        "input": -1000,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 10,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": -0.00285
+    }
+  },
+  {
+    "name": "cost-null-usage",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": null
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "cost-old-haiku",
+    "input": {
+      "model": "claude-3-5-haiku-latest",
+      "usage": {
+        "input_tokens": 4321,
+        "cache_creation_input_tokens": 1000,
+        "output_tokens": 99
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 4321,
+        "cacheWrite5m": 1000,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 99,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0048528
+    }
+  },
+  {
+    "name": "cost-opus-4-8-fast",
+    "input": {
+      "model": "claude-opus-4-8",
+      "usage": {
+        "input_tokens": 123,
+        "cache_read_input_tokens": 4567,
+        "output_tokens": 89,
+        "speed": "fast"
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 123,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 4567,
+        "output": 89,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "costFor": 0.010247
+    }
+  },
+  {
+    "name": "cost-opus-5-5-fast",
+    "input": {
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 123,
+        "cache_read_input_tokens": 4567,
+        "output_tokens": 89,
+        "speed": "fast"
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 123,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 4567,
+        "output": 89,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "costFor": 0.0063708
+    }
+  },
+  {
+    "name": "cost-opus-5-fast",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": {
+        "input_tokens": 1000,
+        "cache_creation_input_tokens": 2000,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1500,
+          "ephemeral_1h_input_tokens": 500
+        },
+        "cache_read_input_tokens": 30000,
+        "output_tokens": 700,
+        "speed": "fast"
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1000,
+        "cacheWrite5m": 1500,
+        "cacheWrite1h": 500,
+        "cacheRead": 30000,
+        "output": 700,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "costFor": 0.10375
+    }
+  },
+  {
+    "name": "cost-opus-5-standard",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": {
+        "input_tokens": 1000,
+        "cache_creation_input_tokens": 2000,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1500,
+          "ephemeral_1h_input_tokens": 500
+        },
+        "cache_read_input_tokens": 30000,
+        "output_tokens": 700
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1000,
+        "cacheWrite5m": 1500,
+        "cacheWrite1h": 500,
+        "cacheRead": 30000,
+        "output": 700,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.051875
+    }
+  },
+  {
+    "name": "cost-sonnet-5-5",
+    "input": {
+      "model": "claude-sonnet-5-5",
+      "usage": {
+        "input_tokens": 1234,
+        "cache_creation_input_tokens": 5678,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5000,
+          "ephemeral_1h_input_tokens": 678
+        },
+        "cache_read_input_tokens": 91011,
+        "output_tokens": 1213
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 1234,
+        "cacheWrite5m": 5000,
+        "cacheWrite1h": 678,
+        "cacheRead": 91011,
+        "output": 1213,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0389111
+    }
+  },
+  {
+    "name": "cost-sonnet-5-5-versions",
+    "input": {
+      "model": "claude-sonnet-5-5-20260601[1m]",
+      "usage": {
+        "input_tokens": 3,
+        "cache_read_input_tokens": 77777,
+        "output_tokens": 491
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 3,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 77777,
+        "output": 491,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.0126937
+    }
+  },
+  {
+    "name": "cost-sonnet-fast-without-fast-row",
+    "input": {
+      "model": "claude-sonnet-4-6",
+      "usage": {
+        "input_tokens": 123,
+        "output_tokens": 89,
+        "speed": "fast"
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 123,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 89,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "costFor": 0.001704
+    }
+  },
+  {
+    "name": "cost-sonnet-prompt-ignored",
+    "input": {
+      "model": "claude-sonnet-5-5",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 5
+      },
+      "promptTokens": 500000
+    },
+    "output": {
+      "usage": {
+        "input": 10,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 5,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.00007
+    }
+  },
+  {
+    "name": "cost-synthetic-with-tokens",
+    "input": {
+      "model": "<synthetic>",
+      "usage": {
+        "input_tokens": 100
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 100,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": null
+    }
+  },
+  {
+    "name": "cost-unknown",
+    "input": {
+      "model": "gpt-4o",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 50
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 100,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 50,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": null
+    }
+  },
+  {
+    "name": "cost-unknown-empty-model",
+    "input": {
+      "model": "",
+      "usage": {
+        "input_tokens": 100
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 100,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": null
+    }
+  },
+  {
+    "name": "cost-vertex",
+    "input": {
+      "model": "claude-opus-4-1@20250805",
+      "usage": {
+        "input_tokens": 111,
+        "cache_read_input_tokens": 222,
+        "output_tokens": 333
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 111,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 222,
+        "output": 333,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0.026973
+    }
+  },
+  {
+    "name": "cost-zero-but-thinking",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 99
+        }
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 99,
+        "speed": "standard"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "cost-zero-fast",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": {
+        "speed": "fast"
+      },
+      "promptTokens": 9
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "cost-zero-known",
+    "input": {
+      "model": "claude-opus-5",
+      "usage": {
+        "input_tokens": 0
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "cost-zero-synthetic",
+    "input": {
+      "model": "<synthetic>",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      }
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "cost-zero-unknown",
+    "input": {
+      "model": "gpt-4o",
+      "usage": {}
+    },
+    "output": {
+      "usage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "costFor": 0
+    }
+  },
+  {
+    "name": "tier-haiku-5-5-0",
+    "input": {
+      "price": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      },
+      "promptTokens": 0
+    },
+    "output": {
+      "tierFor": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      }
+    }
+  },
+  {
+    "name": "tier-haiku-5-5-100000",
+    "input": {
+      "price": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      },
+      "promptTokens": 100000
+    },
+    "output": {
+      "tierFor": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      }
+    }
+  },
+  {
+    "name": "tier-haiku-5-5-100001",
+    "input": {
+      "price": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      },
+      "promptTokens": 100001
+    },
+    "output": {
+      "tierFor": {
+        "input": 0.5,
+        "cache_write_5m": 0.625,
+        "cache_write_1h": 1,
+        "cache_read": 0.05,
+        "output": 2.5
+      }
+    }
+  },
+  {
+    "name": "tier-haiku-5-5-99999",
+    "input": {
+      "price": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      },
+      "promptTokens": 99999
+    },
+    "output": {
+      "tierFor": {
+        "input": 0.1,
+        "cache_write_5m": 0.125,
+        "cache_write_1h": 0.2,
+        "cache_read": 0.01,
+        "output": 0.5,
+        "above": {
+          "threshold": 100000,
+          "input": 0.5,
+          "cache_write_5m": 0.625,
+          "cache_write_1h": 1,
+          "cache_read": 0.05,
+          "output": 2.5
+        }
+      }
+    }
+  },
+  {
+    "name": "tier-opus-5-big",
+    "input": {
+      "price": {
+        "input": 5,
+        "cache_write_5m": 6.25,
+        "cache_write_1h": 10,
+        "cache_read": 0.5,
+        "output": 25,
+        "fast": {
+          "input": 10,
+          "output": 50
+        }
+      },
+      "promptTokens": 5000000
+    },
+    "output": {
+      "tierFor": {
+        "input": 5,
+        "cache_write_5m": 6.25,
+        "cache_write_1h": 10,
+        "cache_read": 0.5,
+        "output": 25,
+        "fast": {
+          "input": 10,
+          "output": 50
+        }
+      }
+    }
+  },
+  {
+    "name": "tier-sonnet-4-6-big",
+    "input": {
+      "price": {
+        "input": 3,
+        "cache_write_5m": 3.75,
+        "cache_write_1h": 6,
+        "cache_read": 0.3,
+        "output": 15
+      },
+      "promptTokens": 5000000
+    },
+    "output": {
+      "tierFor": {
+        "input": 3,
+        "cache_write_5m": 3.75,
+        "cache_write_1h": 6,
+        "cache_read": 0.3,
+        "output": 15
+      }
+    }
+  }
+]

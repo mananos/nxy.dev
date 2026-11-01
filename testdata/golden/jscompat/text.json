@@ -1,0 +1,252 @@
+[
+  {
+    "name": "accents",
+    "input": {
+      "s": "canción ñandú é",
+      "cuts": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    },
+    "output": {
+      "length": 15,
+      "prefixes": [
+        "",
+        "c",
+        "ca",
+        "can",
+        "canc",
+        "canci",
+        "canció",
+        "canción",
+        "canción ",
+        "canción ñ",
+        "canción ña",
+        "canción ñan",
+        "canción ñand",
+        "canción ñandú",
+        "canción ñandú ",
+        "canción ñandú é",
+        "canción ñandú é",
+        "canción ñandú é"
+      ]
+    }
+  },
+  {
+    "name": "ascii",
+    "input": {
+      "s": "hello world",
+      "cuts": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    "output": {
+      "length": 11,
+      "prefixes": [
+        "",
+        "h",
+        "he",
+        "hel",
+        "hell",
+        "hello",
+        "hello ",
+        "hello w",
+        "hello wo",
+        "hello wor",
+        "hello worl",
+        "hello world",
+        "hello world",
+        "hello world"
+      ]
+    }
+  },
+  {
+    "name": "cjk",
+    "input": {
+      "s": "日本語のテキスト",
+      "cuts": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    "output": {
+      "length": 8,
+      "prefixes": [
+        "",
+        "日",
+        "日本",
+        "日本語",
+        "日本語の",
+        "日本語のテ",
+        "日本語のテキ",
+        "日本語のテキス",
+        "日本語のテキスト",
+        "日本語のテキスト",
+        "日本語のテキスト"
+      ]
+    }
+  },
+  {
+    "name": "combining",
+    "input": {
+      "s": "éa",
+      "cuts": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "output": {
+      "length": 3,
+      "prefixes": [
+        "",
+        "e",
+        "é",
+        "éa",
+        "éa",
+        "éa"
+      ]
+    }
+  },
+  {
+    "name": "emoji",
+    "input": {
+      "s": "a😀b😀😀c",
+      "cuts": [
+        0,
+        1,
+        3,
+        4,
+        6,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    "output": {
+      "length": 9,
+      "prefixes": [
+        "",
+        "a",
+        "a😀",
+        "a😀b",
+        "a😀b😀",
+        "a😀b😀😀",
+        "a😀b😀😀c",
+        "a😀b😀😀c",
+        "a😀b😀😀c"
+      ]
+    }
+  },
+  {
+    "name": "emoji only",
+    "input": {
+      "s": "😀",
+      "cuts": [
+        0,
+        2,
+        3,
+        4
+      ]
+    },
+    "output": {
+      "length": 2,
+      "prefixes": [
+        "",
+        "😀",
+        "😀",
+        "😀"
+      ]
+    }
+  },
+  {
+    "name": "empty",
+    "input": {
+      "s": "",
+      "cuts": [
+        0,
+        1,
+        2
+      ]
+    },
+    "output": {
+      "length": 0,
+      "prefixes": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  {
+    "name": "mixed",
+    "input": {
+      "s": "xé😀中y",
+      "cuts": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "output": {
+      "length": 6,
+      "prefixes": [
+        "",
+        "x",
+        "xé",
+        "xé😀",
+        "xé😀中",
+        "xé😀中y",
+        "xé😀中y",
+        "xé😀中y"
+      ]
+    }
+  }
+]

@@ -1,0 +1,197 @@
+[
+  {
+    "name": "empty key",
+    "input": {
+      "obj": {
+        "": "e"
+      },
+      "keys": [
+        ""
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "string": "e",
+      "value": "e"
+    }
+  },
+  {
+    "name": "false value",
+    "input": {
+      "obj": {
+        "a": false
+      },
+      "keys": [
+        "a"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "string": "false",
+      "value": false
+    }
+  },
+  {
+    "name": "missing deep",
+    "input": {
+      "obj": {
+        "a": {
+          "b": 1
+        }
+      },
+      "keys": [
+        "a",
+        "c",
+        "d"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "missing first",
+    "input": {
+      "obj": {
+        "a": 1
+      },
+      "keys": [
+        "x"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "no keys",
+    "input": {
+      "obj": {
+        "a": 1
+      },
+      "keys": []
+    },
+    "output": {
+      "undefined": false,
+      "string": "[object Object]",
+      "value": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "name": "null value",
+    "input": {
+      "obj": {
+        "a": null
+      },
+      "keys": [
+        "a"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "string": "null",
+      "value": null
+    }
+  },
+  {
+    "name": "present",
+    "input": {
+      "obj": {
+        "a": {
+          "b": 3
+        }
+      },
+      "keys": [
+        "a",
+        "b"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "string": "3",
+      "value": 3
+    }
+  },
+  {
+    "name": "root is null",
+    "input": {
+      "obj": null,
+      "keys": [
+        "x"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "root is number",
+    "input": {
+      "obj": 5,
+      "keys": [
+        "x"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "root is string",
+    "input": {
+      "obj": "abc",
+      "keys": [
+        "x"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "through null",
+    "input": {
+      "obj": {
+        "a": null
+      },
+      "keys": [
+        "a",
+        "b"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  },
+  {
+    "name": "through number",
+    "input": {
+      "obj": {
+        "a": 5
+      },
+      "keys": [
+        "a",
+        "b"
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "string": "undefined",
+      "value": null
+    }
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "accents",
+    "input": {
+      "s": "señor ñ"
+    },
+    "output": {
+      "slug": "se-or--"
+    }
+  },
+  {
+    "name": "alnum only",
+    "input": {
+      "s": "abcXYZ019"
+    },
+    "output": {
+      "slug": "abcXYZ019"
+    }
+  },
+  {
+    "name": "emoji is two units",
+    "input": {
+      "s": "a😀b"
+    },
+    "output": {
+      "slug": "a--b"
+    }
+  },
+  {
+    "name": "empty",
+    "input": {
+      "s": ""
+    },
+    "output": {
+      "slug": ""
+    }
+  },
+  {
+    "name": "path",
+    "input": {
+      "s": "/srv/nxy.dev/some_dir-1"
+    },
+    "output": {
+      "slug": "-srv-nxy-dev-some-dir-1"
+    }
+  },
+  {
+    "name": "windows path",
+    "input": {
+      "s": "D:\\work\\dev\\proy"
+    },
+    "output": {
+      "slug": "D--work-dev-proy"
+    }
+  }
+]

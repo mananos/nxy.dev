@@ -24,11 +24,13 @@ function builtIn() {
 }
 
 export function generate() {
-  const base = builtIn();
+  const base = /** @type {import('../../core/review.mjs').Lens[]} */ (builtIn());
   /** @type {any[]} */
   const corpus = loadCorpus('lenses');
   return corpus.map((c) => {
-    const repo = (c.repo || []).map((/** @type {{name: string, text: string}} */ r) => parseLens(r.text, r.name)).filter((l) => l);
+    const repo = /** @type {import('../../core/review.mjs').Lens[]} */ (
+      (c.repo || []).map((/** @type {{name: string, text: string}} */ r) => parseLens(r.text, r.name)).filter((l) => l)
+    );
     const files = (c.files || []).map((/** @type {{path: string, content: string|null}} */ f) => ({ path: f.path, content: f.content ?? null }));
     const selected = selectLenses(mergeLenses(base, repo), files);
     return {

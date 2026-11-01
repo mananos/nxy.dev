@@ -28,6 +28,11 @@ export function toJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+/** Compact text of a golden file: one case per line, LF, trailing newline (same content, smaller). */
+export function toCompactJson(cases) {
+  return `[\n${cases.map((c) => JSON.stringify(c)).join(',\n')}\n]\n`;
+}
+
 /**
  * @param {string} name
  * @param {any} data
@@ -53,12 +58,14 @@ function areaFile(area, set) {
  * @param {string} area
  * @param {string} set
  * @param {GoldenCase[]} cases
+ * @param {boolean} [compact]  one case per line, no indentation
  * @returns {string} written path
  */
-export function writeArea(area, set, cases) {
+export function writeArea(area, set, cases, compact = false) {
   const p = areaFile(area, set);
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, toJson(sortedCases(cases)), 'utf8');
+  const sorted = sortedCases(cases);
+  writeFileSync(p, compact ? toCompactJson(sorted) : toJson(sorted), 'utf8');
   return p;
 }
 
@@ -67,14 +74,15 @@ export function writeArea(area, set, cases) {
  * @param {string} area
  * @param {string} set
  * @param {GoldenCase[]} cases
+ * @param {boolean} [compact]  the file is written compact (see writeArea)
  * @returns {string[]} human readable differences, empty when identical
  */
-export function diffArea(area, set, cases) {
+export function diffArea(area, set, cases, compact = false) {
   const p = areaFile(area, set);
   const want = sortedCases(cases);
   if (!existsSync(p)) return [`${area}/${set}.json: missing (run node scripts/golden/filter.mjs)`];
   const text = readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
-  if (text === toJson(want)) return [];
+  if (text === (compact ? toCompactJson(want) : toJson(want))) return [];
   let have = [];
   try {
     have = JSON.parse(text);

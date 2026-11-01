@@ -1,0 +1,328 @@
+[
+  {
+    "name": "array",
+    "input": {
+      "value": [
+        1,
+        [
+          2,
+          3
+        ],
+        null,
+        "x",
+        true,
+        {}
+      ]
+    },
+    "output": {
+      "string": "1,2,3,,x,true,[object Object]",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "array with empty",
+    "input": {
+      "value": [
+        [],
+        [
+          []
+        ],
+        ""
+      ]
+    },
+    "output": {
+      "string": ",,",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "big",
+    "input": {
+      "value": 123456789012345680000
+    },
+    "output": {
+      "string": "123456789012345680000",
+      "truthy": true,
+      "num": 123456789012345680000
+    }
+  },
+  {
+    "name": "empty array",
+    "input": {
+      "value": []
+    },
+    "output": {
+      "string": "",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "empty object",
+    "input": {
+      "value": {}
+    },
+    "output": {
+      "string": "[object Object]",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "empty string",
+    "input": {
+      "value": ""
+    },
+    "output": {
+      "string": "",
+      "truthy": false,
+      "num": null
+    }
+  },
+  {
+    "name": "exp 1.5e300",
+    "input": {
+      "value": 1.5e+300
+    },
+    "output": {
+      "string": "1.5e+300",
+      "truthy": true,
+      "num": 1.5e+300
+    }
+  },
+  {
+    "name": "exp 1e20",
+    "input": {
+      "value": 100000000000000000000
+    },
+    "output": {
+      "string": "100000000000000000000",
+      "truthy": true,
+      "num": 100000000000000000000
+    }
+  },
+  {
+    "name": "exp 1e21",
+    "input": {
+      "value": 1e+21
+    },
+    "output": {
+      "string": "1e+21",
+      "truthy": true,
+      "num": 1e+21
+    }
+  },
+  {
+    "name": "false",
+    "input": {
+      "value": false
+    },
+    "output": {
+      "string": "false",
+      "truthy": false,
+      "num": null
+    }
+  },
+  {
+    "name": "float",
+    "input": {
+      "value": 1.5
+    },
+    "output": {
+      "string": "1.5",
+      "truthy": true,
+      "num": 1.5
+    }
+  },
+  {
+    "name": "int",
+    "input": {
+      "value": 7
+    },
+    "output": {
+      "string": "7",
+      "truthy": true,
+      "num": 7
+    }
+  },
+  {
+    "name": "max safe",
+    "input": {
+      "value": 9007199254740992
+    },
+    "output": {
+      "string": "9007199254740992",
+      "truthy": true,
+      "num": 9007199254740992
+    }
+  },
+  {
+    "name": "negative",
+    "input": {
+      "value": -42.5
+    },
+    "output": {
+      "string": "-42.5",
+      "truthy": true,
+      "num": -42.5
+    }
+  },
+  {
+    "name": "negative exp",
+    "input": {
+      "value": -1e-10
+    },
+    "output": {
+      "string": "-1e-10",
+      "truthy": true,
+      "num": -1e-10
+    }
+  },
+  {
+    "name": "negative zero",
+    "input": {
+      "value": 0
+    },
+    "output": {
+      "string": "0",
+      "truthy": false,
+      "num": 0
+    }
+  },
+  {
+    "name": "null",
+    "input": {
+      "value": null
+    },
+    "output": {
+      "string": "null",
+      "truthy": false,
+      "num": null
+    }
+  },
+  {
+    "name": "object",
+    "input": {
+      "value": {
+        "a": 1
+      }
+    },
+    "output": {
+      "string": "[object Object]",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "small 1.25e-7",
+    "input": {
+      "value": 1.25e-7
+    },
+    "output": {
+      "string": "1.25e-7",
+      "truthy": true,
+      "num": 1.25e-7
+    }
+  },
+  {
+    "name": "small 1e-6",
+    "input": {
+      "value": 0.000001
+    },
+    "output": {
+      "string": "0.000001",
+      "truthy": true,
+      "num": 0.000001
+    }
+  },
+  {
+    "name": "small 1e-7",
+    "input": {
+      "value": 1e-7
+    },
+    "output": {
+      "string": "1e-7",
+      "truthy": true,
+      "num": 1e-7
+    }
+  },
+  {
+    "name": "string",
+    "input": {
+      "value": "abc"
+    },
+    "output": {
+      "string": "abc",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "sum-like",
+    "input": {
+      "value": 0.30000000000000004
+    },
+    "output": {
+      "string": "0.30000000000000004",
+      "truthy": true,
+      "num": 0.30000000000000004
+    }
+  },
+  {
+    "name": "tenth",
+    "input": {
+      "value": 0.1
+    },
+    "output": {
+      "string": "0.1",
+      "truthy": true,
+      "num": 0.1
+    }
+  },
+  {
+    "name": "true",
+    "input": {
+      "value": true
+    },
+    "output": {
+      "string": "true",
+      "truthy": true,
+      "num": null
+    }
+  },
+  {
+    "name": "undefined",
+    "input": {
+      "undefined": true
+    },
+    "output": {
+      "string": "undefined",
+      "truthy": false,
+      "num": null
+    }
+  },
+  {
+    "name": "zero",
+    "input": {
+      "value": 0
+    },
+    "output": {
+      "string": "0",
+      "truthy": false,
+      "num": 0
+    }
+  },
+  {
+    "name": "zero string",
+    "input": {
+      "value": "0"
+    },
+    "output": {
+      "string": "0",
+      "truthy": true,
+      "num": null
+    }
+  }
+]

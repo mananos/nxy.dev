@@ -1,0 +1,767 @@
+[
+  {
+    "name": "usage-array",
+    "input": {
+      "raw": []
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-bool",
+    "input": {
+      "raw": true
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-cc-1h-only",
+    "input": {
+      "raw": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 400
+        }
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 400,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 400,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-5m-only",
+    "input": {
+      "raw": {
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 400
+        }
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 400,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 400,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-array",
+    "input": {
+      "raw": {
+        "cache_creation": [
+          1,
+          2
+        ],
+        "cache_creation_input_tokens": 8
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 8,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 8,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-differs-from-total",
+    "input": {
+      "raw": {
+        "cache_creation_input_tokens": 999,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1,
+          "ephemeral_1h_input_tokens": 2
+        }
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 1,
+        "cacheWrite1h": 2,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 3,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-null",
+    "input": {
+      "raw": {
+        "cache_creation": null,
+        "cache_creation_input_tokens": 8
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 8,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 8,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-number",
+    "input": {
+      "raw": {
+        "cache_creation": 3,
+        "cache_creation_input_tokens": 8
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 8,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 8,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-string",
+    "input": {
+      "raw": {
+        "cache_creation": "x",
+        "cache_creation_input_tokens": 8
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 8,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 8,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-cc-zero-total",
+    "input": {
+      "raw": {
+        "cache_creation_input_tokens": 700,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        }
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 700,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 700,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-empty-object",
+    "input": {
+      "raw": {}
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-fractions",
+    "input": {
+      "raw": {
+        "input_tokens": 1.5,
+        "cache_read_input_tokens": 0.25,
+        "output_tokens": 0.1
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 1.5,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0.25,
+        "output": 0.1,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 1.75,
+      "cacheHitPct": 14.285714285714285
+    }
+  },
+  {
+    "name": "usage-full",
+    "input": {
+      "raw": {
+        "input_tokens": 100,
+        "cache_creation_input_tokens": 300,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 100,
+          "ephemeral_1h_input_tokens": 200
+        },
+        "cache_read_input_tokens": 5000,
+        "output_tokens": 250,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        },
+        "speed": "standard"
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 100,
+        "cacheWrite5m": 100,
+        "cacheWrite1h": 200,
+        "cacheRead": 5000,
+        "output": 250,
+        "thinking": 40,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 5400,
+      "cacheHitPct": 92.5925925925926
+    }
+  },
+  {
+    "name": "usage-hit-100",
+    "input": {
+      "raw": {
+        "cache_read_input_tokens": 77
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 77,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 77,
+      "cacheHitPct": 100
+    }
+  },
+  {
+    "name": "usage-hit-sevens",
+    "input": {
+      "raw": {
+        "input_tokens": 7777,
+        "cache_creation_input_tokens": 333,
+        "cache_read_input_tokens": 12345
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 7777,
+        "cacheWrite5m": 333,
+        "cacheWrite1h": 0,
+        "cacheRead": 12345,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 20455,
+      "cacheHitPct": 60.351992177951594
+    }
+  },
+  {
+    "name": "usage-hit-tenth",
+    "input": {
+      "raw": {
+        "input_tokens": 9,
+        "cache_read_input_tokens": 1
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 9,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 1,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 10,
+      "cacheHitPct": 10
+    }
+  },
+  {
+    "name": "usage-hit-third",
+    "input": {
+      "raw": {
+        "input_tokens": 200,
+        "cache_read_input_tokens": 100
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 200,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 100,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 300,
+      "cacheHitPct": 33.33333333333333
+    }
+  },
+  {
+    "name": "usage-huge",
+    "input": {
+      "raw": {
+        "input_tokens": 1e+21,
+        "output_tokens": 1e-7
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 1e+21,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1e-7,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 1e+21,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-negative",
+    "input": {
+      "raw": {
+        "input_tokens": -5,
+        "output_tokens": 10
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": -5,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 10,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": -5,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-negative-total-write",
+    "input": {
+      "raw": {
+        "cache_creation_input_tokens": -50
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-null",
+    "input": {
+      "raw": null
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-number",
+    "input": {
+      "raw": 5
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-old-empty-cc",
+    "input": {
+      "raw": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 700,
+        "cache_creation": {}
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 10,
+        "cacheWrite5m": 700,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 710,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-old-no-breakdown",
+    "input": {
+      "raw": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 700,
+        "cache_read_input_tokens": 20,
+        "output_tokens": 30
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 10,
+        "cacheWrite5m": 700,
+        "cacheWrite1h": 0,
+        "cacheRead": 20,
+        "output": 30,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 730,
+      "cacheHitPct": 2.73972602739726
+    }
+  },
+  {
+    "name": "usage-only-cache-read",
+    "input": {
+      "raw": {
+        "cache_read_input_tokens": 77
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 77,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 77,
+      "cacheHitPct": 100
+    }
+  },
+  {
+    "name": "usage-only-output",
+    "input": {
+      "raw": {
+        "output_tokens": 1
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 1,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-speed-capital",
+    "input": {
+      "raw": {
+        "input_tokens": 1,
+        "speed": "Fast"
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 1,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-speed-fast",
+    "input": {
+      "raw": {
+        "input_tokens": 1,
+        "speed": "fast"
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "fast"
+      },
+      "isZeroUsage": false,
+      "totalInput": 1,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-speed-other",
+    "input": {
+      "raw": {
+        "input_tokens": 1,
+        "speed": 3
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 1,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 1,
+      "cacheHitPct": 0
+    }
+  },
+  {
+    "name": "usage-string",
+    "input": {
+      "raw": "abc"
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-string-fields",
+    "input": {
+      "raw": {
+        "input_tokens": "12",
+        "output_tokens": "7",
+        "cache_read_input_tokens": null
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-thinking-only",
+    "input": {
+      "raw": {
+        "output_tokens_details": {
+          "thinking_tokens": 99
+        }
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 0,
+        "thinking": 99,
+        "speed": "standard"
+      },
+      "isZeroUsage": true,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  },
+  {
+    "name": "usage-thinking-string",
+    "input": {
+      "raw": {
+        "output_tokens": 5,
+        "output_tokens_details": "x"
+      }
+    },
+    "output": {
+      "toUsage": {
+        "input": 0,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 0,
+        "output": 5,
+        "thinking": 0,
+        "speed": "standard"
+      },
+      "isZeroUsage": false,
+      "totalInput": 0,
+      "cacheHitPct": null
+    }
+  }
+]

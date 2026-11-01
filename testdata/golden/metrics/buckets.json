@@ -1,0 +1,2558 @@
+[
+  {
+    "name": "bucket:empty",
+    "input": {
+      "calls": []
+    },
+    "output": {
+      "bucket": {
+        "calls": 0,
+        "usage": {
+          "input": 0,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0
+        },
+        "usd": 0,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 0,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": null,
+        "totalInput": 0
+      }
+    }
+  },
+  {
+    "name": "bucket:estimated-models",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 1000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 5000,
+            "output": 100,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-sonnet-6",
+          "usage": {
+            "input": 2000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 300,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "x-opus-9",
+          "usage": {
+            "input": 50,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 5,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 1,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 1,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-haiku-5-6",
+          "usage": {
+            "input": 0,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 0,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_5",
+          "ts": 1788256805000,
+          "model": "claude-3-5-haiku-latest",
+          "usage": {
+            "input": 400,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 40,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_6",
+          "ts": 1788256806000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 400,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 40,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 7,
+        "usage": {
+          "input": 3851,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 5000,
+          "output": 486,
+          "thinking": 0
+        },
+        "usd": 0.020810000000000002,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 5,
+        "estimatedModels": {
+          "claude-opus-4-9": "claude-opus-4-8",
+          "claude-sonnet-6": "claude-sonnet-5-5",
+          "x-opus-9": "claude-opus-5-5",
+          "claude-3-5-haiku-latest": "claude-haiku-3-5"
+        },
+        "contextPeak": 6000,
+        "usdPartial": false,
+        "usdEstimated": true,
+        "cacheHitPct": 56.49079200090385,
+        "totalInput": 8851
+      }
+    }
+  },
+  {
+    "name": "bucket:fast-mode",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 1000,
+            "cacheWrite5m": 3000,
+            "cacheWrite1h": 1000,
+            "cacheRead": 9000,
+            "output": 70,
+            "thinking": 0,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 777,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 123,
+            "output": 31,
+            "thinking": 0,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 100,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 1000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 70,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 4,
+        "usage": {
+          "input": 2877,
+          "cacheWrite5m": 3000,
+          "cacheWrite1h": 1000,
+          "cacheRead": 9123,
+          "output": 181,
+          "thinking": 0
+        },
+        "usd": 0.0945552,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 14000,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 57.01875,
+        "totalInput": 16000
+      }
+    }
+  },
+  {
+    "name": "bucket:haiku-above-tier",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 99999,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 100000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 100001,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 45000,
+            "cacheWrite1h": 45000,
+            "cacheRead": 9990,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 11,
+            "cacheWrite5m": 45000,
+            "cacheWrite1h": 45000,
+            "cacheRead": 9990,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 5,
+        "usage": {
+          "input": 300021,
+          "cacheWrite5m": 90000,
+          "cacheWrite1h": 90000,
+          "cacheRead": 19980,
+          "output": 50,
+          "thinking": 0
+        },
+        "usd": 0.1584213,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 100001,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 3.995992008015984,
+        "totalInput": 500001
+      }
+    }
+  },
+  {
+    "name": "bucket:known-mix",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 1000,
+            "cacheWrite5m": 20000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 40,
+            "thinking": 15,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 3,
+            "cacheWrite5m": 500,
+            "cacheWrite1h": 0,
+            "cacheRead": 21000,
+            "output": 100,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 200,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": "high",
+          "skill": "nxy:stats",
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 3000,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 3100,
+            "output": 350,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": "a1b2c3d4e5f60718",
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-sonnet-4-6",
+          "usage": {
+            "input": 7,
+            "cacheWrite5m": 111,
+            "cacheWrite1h": 222,
+            "cacheRead": 777,
+            "output": 11,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": "p1",
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 5,
+        "usage": {
+          "input": 6010,
+          "cacheWrite5m": 20611,
+          "cacheWrite1h": 222,
+          "cacheRead": 24877,
+          "output": 701,
+          "thinking": 15
+        },
+        "usd": 0.16036735000000002,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 21503,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 48.09938128383604,
+        "totalInput": 51720
+      }
+    }
+  },
+  {
+    "name": "bucket:lcg-60",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 1412,
+            "cacheWrite5m": 59755,
+            "cacheWrite1h": 5185,
+            "cacheRead": 6653,
+            "output": 114,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": "compact"
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2251,
+            "cacheWrite5m": 430,
+            "cacheWrite1h": 0,
+            "cacheRead": 123112,
+            "output": 2289,
+            "thinking": 311,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": "subagent"
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2686,
+            "cacheWrite5m": 64413,
+            "cacheWrite1h": 0,
+            "cacheRead": 55391,
+            "output": 476,
+            "thinking": 362,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3600000,
+          "after": "compact"
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 3981,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 19585,
+            "cacheRead": 87106,
+            "output": 1795,
+            "thinking": 489,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 4947,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 26584,
+            "output": 3057,
+            "thinking": 383,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3600000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_5",
+          "ts": 1788256805000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 1846,
+            "cacheWrite5m": 71693,
+            "cacheWrite1h": 0,
+            "cacheRead": 105055,
+            "output": 252,
+            "thinking": 214,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": null
+        },
+        {
+          "key": "req_6",
+          "ts": 1788256806000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 3413,
+            "cacheWrite5m": 45544,
+            "cacheWrite1h": 0,
+            "cacheRead": 131938,
+            "output": 259,
+            "thinking": 237,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 500,
+          "after": null
+        },
+        {
+          "key": "req_7",
+          "ts": 1788256807000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2249,
+            "cacheWrite5m": 84271,
+            "cacheWrite1h": 8565,
+            "cacheRead": 125430,
+            "output": 1239,
+            "thinking": 113,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_8",
+          "ts": 1788256808000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 2229,
+            "cacheWrite5m": 11683,
+            "cacheWrite1h": 9481,
+            "cacheRead": 58906,
+            "output": 2475,
+            "thinking": 449,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": null
+        },
+        {
+          "key": "req_9",
+          "ts": 1788256809000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 3073,
+            "cacheWrite5m": 6695,
+            "cacheWrite1h": 9789,
+            "cacheRead": 78750,
+            "output": 2079,
+            "thinking": 177,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": null
+        },
+        {
+          "key": "req_10",
+          "ts": 1788256810000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 4429,
+            "cacheWrite5m": 4379,
+            "cacheWrite1h": 4465,
+            "cacheRead": 25730,
+            "output": 2771,
+            "thinking": 77,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_11",
+          "ts": 1788256811000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 3211,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 142376,
+            "output": 2465,
+            "thinking": 71,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_12",
+          "ts": 1788256812000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 4702,
+            "cacheWrite5m": 6317,
+            "cacheWrite1h": 0,
+            "cacheRead": 133503,
+            "output": 844,
+            "thinking": 298,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_13",
+          "ts": 1788256813000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 4541,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 12497,
+            "cacheRead": 14962,
+            "output": 211,
+            "thinking": 77,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": "subagent"
+        },
+        {
+          "key": "req_14",
+          "ts": 1788256814000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 3385,
+            "cacheWrite5m": 8207,
+            "cacheWrite1h": 6149,
+            "cacheRead": 6582,
+            "output": 3175,
+            "thinking": 165,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_15",
+          "ts": 1788256815000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 4757,
+            "cacheWrite5m": 35363,
+            "cacheWrite1h": 2297,
+            "cacheRead": 104426,
+            "output": 795,
+            "thinking": 421,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 9000000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_16",
+          "ts": 1788256816000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 2203,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 17360,
+            "output": 1353,
+            "thinking": 423,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": null
+        },
+        {
+          "key": "req_17",
+          "ts": 1788256817000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 4070,
+            "cacheWrite5m": 12581,
+            "cacheWrite1h": 0,
+            "cacheRead": 57095,
+            "output": 2740,
+            "thinking": 114,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": "compact"
+        },
+        {
+          "key": "req_18",
+          "ts": 1788256818000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 3181,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 9465,
+            "cacheRead": 97834,
+            "output": 1115,
+            "thinking": 189,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": "compact"
+        },
+        {
+          "key": "req_19",
+          "ts": 1788256819000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 3051,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 114944,
+            "output": 2505,
+            "thinking": 291,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": "compact"
+        },
+        {
+          "key": "req_20",
+          "ts": 1788256820000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 593,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 103478,
+            "output": 2439,
+            "thinking": 181,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_21",
+          "ts": 1788256821000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 957,
+            "cacheWrite5m": 68435,
+            "cacheWrite1h": 16985,
+            "cacheRead": 96458,
+            "output": 2875,
+            "thinking": 57,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": "compact"
+        },
+        {
+          "key": "req_22",
+          "ts": 1788256822000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 4065,
+            "cacheWrite5m": 54535,
+            "cacheWrite1h": 15917,
+            "cacheRead": 113710,
+            "output": 687,
+            "thinking": 173,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": "compact"
+        },
+        {
+          "key": "req_23",
+          "ts": 1788256823000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 485,
+            "cacheWrite5m": 33579,
+            "cacheWrite1h": 3521,
+            "cacheRead": 92466,
+            "output": 1507,
+            "thinking": 133,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": "subagent"
+        },
+        {
+          "key": "req_24",
+          "ts": 1788256824000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 2953,
+            "cacheWrite5m": 69167,
+            "cacheWrite1h": 10037,
+            "cacheRead": 3910,
+            "output": 3607,
+            "thinking": 165,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3600000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_25",
+          "ts": 1788256825000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 2997,
+            "cacheWrite5m": 14307,
+            "cacheWrite1h": 5609,
+            "cacheRead": 143514,
+            "output": 747,
+            "thinking": 41,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_26",
+          "ts": 1788256826000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 25,
+            "cacheWrite5m": 63063,
+            "cacheWrite1h": 3677,
+            "cacheRead": 17502,
+            "output": 2815,
+            "thinking": 93,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3600000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_27",
+          "ts": 1788256827000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 3077,
+            "cacheWrite5m": 37659,
+            "cacheWrite1h": 12497,
+            "cacheRead": 143426,
+            "output": 3507,
+            "thinking": 441,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": "subagent"
+        },
+        {
+          "key": "req_28",
+          "ts": 1788256828000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 4787,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 5992,
+            "output": 3137,
+            "thinking": 291,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 4000,
+          "after": null
+        },
+        {
+          "key": "req_29",
+          "ts": 1788256829000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 3617,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 59454,
+            "output": 2463,
+            "thinking": 109,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_30",
+          "ts": 1788256830000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 4935,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 144052,
+            "output": 1037,
+            "thinking": 55,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_31",
+          "ts": 1788256831000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 3522,
+            "cacheWrite5m": 55113,
+            "cacheWrite1h": 0,
+            "cacheRead": 26107,
+            "output": 2184,
+            "thinking": 62,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": "subagent"
+        },
+        {
+          "key": "req_32",
+          "ts": 1788256832000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 2889,
+            "cacheWrite5m": 71780,
+            "cacheWrite1h": 0,
+            "cacheRead": 8110,
+            "output": 3327,
+            "thinking": 65,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_33",
+          "ts": 1788256833000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 2573,
+            "cacheWrite5m": 19067,
+            "cacheWrite1h": 2225,
+            "cacheRead": 96546,
+            "output": 1939,
+            "thinking": 497,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": null
+        },
+        {
+          "key": "req_34",
+          "ts": 1788256834000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 4571,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 75512,
+            "output": 1729,
+            "thinking": 487,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_35",
+          "ts": 1788256835000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2982,
+            "cacheWrite5m": 35213,
+            "cacheWrite1h": 0,
+            "cacheRead": 56975,
+            "output": 2380,
+            "thinking": 266,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": "compact"
+        },
+        {
+          "key": "req_36",
+          "ts": 1788256836000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 2693,
+            "cacheWrite5m": 74136,
+            "cacheWrite1h": 0,
+            "cacheRead": 10194,
+            "output": 3251,
+            "thinking": 417,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 500,
+          "after": null
+        },
+        {
+          "key": "req_37",
+          "ts": 1788256837000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 929,
+            "cacheWrite5m": 11247,
+            "cacheWrite1h": 5093,
+            "cacheRead": 25030,
+            "output": 839,
+            "thinking": 185,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_38",
+          "ts": 1788256838000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 1837,
+            "cacheWrite5m": 62995,
+            "cacheWrite1h": 2521,
+            "cacheRead": 87082,
+            "output": 3195,
+            "thinking": 13,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_39",
+          "ts": 1788256839000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 425,
+            "cacheWrite5m": 42583,
+            "cacheWrite1h": 1549,
+            "cacheRead": 138878,
+            "output": 2447,
+            "thinking": 197,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 9000000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_40",
+          "ts": 1788256840000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 1709,
+            "cacheWrite5m": 7515,
+            "cacheWrite1h": 9409,
+            "cacheRead": 132018,
+            "output": 1379,
+            "thinking": 133,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": "compact"
+        },
+        {
+          "key": "req_41",
+          "ts": 1788256841000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 1873,
+            "cacheWrite5m": 27519,
+            "cacheWrite1h": 2581,
+            "cacheRead": 102118,
+            "output": 1591,
+            "thinking": 161,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": null
+        },
+        {
+          "key": "req_42",
+          "ts": 1788256842000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 2335,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 71596,
+            "output": 3621,
+            "thinking": 463,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 4000,
+          "after": null
+        },
+        {
+          "key": "req_43",
+          "ts": 1788256843000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 3757,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 83426,
+            "output": 2851,
+            "thinking": 337,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 9000000,
+          "after": "compact"
+        },
+        {
+          "key": "req_44",
+          "ts": 1788256844000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 2993,
+            "cacheWrite5m": 61135,
+            "cacheWrite1h": 9845,
+            "cacheRead": 141174,
+            "output": 3671,
+            "thinking": 9,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": null
+        },
+        {
+          "key": "req_45",
+          "ts": 1788256845000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 3685,
+            "cacheWrite5m": 38563,
+            "cacheWrite1h": 12777,
+            "cacheRead": 25402,
+            "output": 3787,
+            "thinking": 261,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": "compact"
+        },
+        {
+          "key": "req_46",
+          "ts": 1788256846000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 201,
+            "cacheWrite5m": 25399,
+            "cacheWrite1h": 4669,
+            "cacheRead": 23614,
+            "output": 1791,
+            "thinking": 373,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 500,
+          "after": null
+        },
+        {
+          "key": "req_47",
+          "ts": 1788256847000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 1735,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 30756,
+            "output": 237,
+            "thinking": 283,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_48",
+          "ts": 1788256848000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 4074,
+            "cacheWrite5m": 42313,
+            "cacheWrite1h": 0,
+            "cacheRead": 52091,
+            "output": 1384,
+            "thinking": 2,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_49",
+          "ts": 1788256849000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 2633,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 9245,
+            "cacheRead": 144510,
+            "output": 2527,
+            "thinking": 313,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_50",
+          "ts": 1788256850000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 4949,
+            "cacheWrite5m": 35355,
+            "cacheWrite1h": 14289,
+            "cacheRead": 102226,
+            "output": 3667,
+            "thinking": 301,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 500,
+          "after": null
+        },
+        {
+          "key": "req_51",
+          "ts": 1788256851000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 3323,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 37896,
+            "output": 545,
+            "thinking": 287,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": null
+        },
+        {
+          "key": "req_52",
+          "ts": 1788256852000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 838,
+            "cacheWrite5m": 59837,
+            "cacheWrite1h": 0,
+            "cacheRead": 87663,
+            "output": 236,
+            "thinking": 314,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_53",
+          "ts": 1788256853000,
+          "model": "claude-opus-4-9",
+          "usage": {
+            "input": 3005,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 14961,
+            "cacheRead": 45778,
+            "output": 1299,
+            "thinking": 473,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": "compact"
+        },
+        {
+          "key": "req_54",
+          "ts": 1788256854000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 3089,
+            "cacheWrite5m": 89535,
+            "cacheWrite1h": 517,
+            "cacheRead": 82230,
+            "output": 871,
+            "thinking": 165,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 9000000,
+          "after": null
+        },
+        {
+          "key": "req_55",
+          "ts": 1788256855000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 95,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 8668,
+            "output": 3733,
+            "thinking": 255,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_56",
+          "ts": 1788256856000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 4133,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 2818,
+            "output": 1459,
+            "thinking": 401,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_57",
+          "ts": 1788256857000,
+          "model": "claude-opus-5-5",
+          "usage": {
+            "input": 2697,
+            "cacheWrite5m": 81967,
+            "cacheWrite1h": 6501,
+            "cacheRead": 101862,
+            "output": 871,
+            "thinking": 113,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 400000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_58",
+          "ts": 1788256858000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 773,
+            "cacheWrite5m": 89411,
+            "cacheWrite1h": 15673,
+            "cacheRead": 56362,
+            "output": 379,
+            "thinking": 233,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_59",
+          "ts": 1788256859000,
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input": 3385,
+            "cacheWrite5m": 24679,
+            "cacheWrite1h": 17613,
+            "cacheRead": 36110,
+            "output": 3951,
+            "thinking": 457,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 60,
+        "usage": {
+          "input": 167811,
+          "cacheWrite5m": 1707438,
+          "cacheWrite1h": 285189,
+          "cacheRead": 4330451,
+          "output": 117971,
+          "thinking": 14123
+        },
+        "usd": 16.087315229999998,
+        "usdUnknownCalls": 5,
+        "unknownModels": [
+          "claude-future-9"
+        ],
+        "usdEstimatedCalls": 6,
+        "estimatedModels": {
+          "claude-opus-4-9": "claude-opus-4-8"
+        },
+        "contextPeak": 220515,
+        "usdPartial": true,
+        "usdEstimated": true,
+        "cacheHitPct": 66.71583815406488,
+        "totalInput": 6490889
+      }
+    }
+  },
+  {
+    "name": "bucket:old-transcript-no-breakdown",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 100,
+            "cacheWrite5m": 3000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 20,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 100,
+            "cacheWrite5m": 2000,
+            "cacheWrite1h": 0,
+            "cacheRead": 3000,
+            "output": 20,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 0,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 20,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 3,
+        "usage": {
+          "input": 200,
+          "cacheWrite5m": 5000,
+          "cacheWrite1h": 0,
+          "cacheRead": 3000,
+          "output": 60,
+          "thinking": 0
+        },
+        "usd": 0.014100000000000001,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 5100,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 36.58536585365854,
+        "totalInput": 8200
+      }
+    }
+  },
+  {
+    "name": "bucket:synthetic",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "<synthetic>",
+          "usage": {
+            "input": 0,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 0,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "<synthetic>",
+          "usage": {
+            "input": 5,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 5,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 5,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 5,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 3,
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 10,
+          "thinking": 0
+        },
+        "usd": 0.00006,
+        "usdUnknownCalls": 1,
+        "unknownModels": [
+          "<synthetic>"
+        ],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 5,
+        "usdPartial": true,
+        "usdEstimated": false,
+        "cacheHitPct": 0,
+        "totalInput": 10
+      }
+    }
+  },
+  {
+    "name": "bucket:ttl-compact-and-subagent",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 30000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 8000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 600000,
+          "after": "compact"
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 9000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 600000,
+          "after": "subagent"
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-sonnet-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 100,
+            "cacheWrite1h": 0,
+            "cacheRead": 9000,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 1200,
+          "after": "subagent"
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 4,
+        "usage": {
+          "input": 40,
+          "cacheWrite5m": 47100,
+          "cacheWrite1h": 0,
+          "cacheRead": 9000,
+          "output": 40,
+          "thinking": 0
+        },
+        "usd": 0.12003000000000001,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 30010,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 16.031350195938725,
+        "totalInput": 56140
+      }
+    }
+  },
+  {
+    "name": "bucket:ttl-gap-boundaries",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 50000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 1000,
+            "cacheWrite1h": 0,
+            "cacheRead": 49990,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 299999,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 51000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 300000,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 52000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3599999,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 52010,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 3600000,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 5,
+        "usage": {
+          "input": 50,
+          "cacheWrite5m": 206010,
+          "cacheWrite1h": 0,
+          "cacheRead": 49990,
+          "output": 50,
+          "thinking": 0
+        },
+        "usd": 1.3140574999999999,
+        "usdUnknownCalls": 0,
+        "unknownModels": [],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 52020,
+        "usdPartial": false,
+        "usdEstimated": false,
+        "cacheHitPct": 19.523530560437415,
+        "totalInput": 256050
+      }
+    }
+  },
+  {
+    "name": "bucket:ttl-one-hour-and-unknown",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 40000,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 5000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 1000,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 45000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 900000,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 45000,
+            "cacheWrite1h": 0,
+            "cacheRead": 100000,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 900000,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 500,
+            "cacheWrite1h": 0,
+            "cacheRead": 145000,
+            "output": 10,
+            "thinking": 0,
+            "speed": "fast"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 900000,
+          "after": null
+        },
+        {
+          "key": "req_5",
+          "ts": 1788256805000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 120000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 900000,
+          "after": null
+        },
+        {
+          "key": "req_6",
+          "ts": 1788256806000,
+          "model": "claude-haiku-5-5",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 120000,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": 900000,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 7,
+        "usage": {
+          "input": 70,
+          "cacheWrite5m": 335500,
+          "cacheWrite1h": 40000,
+          "cacheRead": 245000,
+          "output": 70,
+          "thinking": 0
+        },
+        "usd": 1.31531,
+        "usdUnknownCalls": 1,
+        "unknownModels": [
+          "claude-future-9"
+        ],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 145510,
+        "usdPartial": true,
+        "usdEstimated": false,
+        "cacheHitPct": 39.479833056705935,
+        "totalInput": 620570
+      }
+    }
+  },
+  {
+    "name": "bucket:unknown-models",
+    "input": {
+      "calls": [
+        {
+          "key": "req_0",
+          "ts": 1788256800000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 10,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_1",
+          "ts": 1788256801000,
+          "model": "zeta-model",
+          "usage": {
+            "input": 5,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 1,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_2",
+          "ts": 1788256802000,
+          "model": "claude-opus-5",
+          "usage": {
+            "input": 100,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 10,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_3",
+          "ts": 1788256803000,
+          "model": "claude-future-9",
+          "usage": {
+            "input": 12,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 3,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_4",
+          "ts": 1788256804000,
+          "model": "alpha-model",
+          "usage": {
+            "input": 0,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 0,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        },
+        {
+          "key": "req_5",
+          "ts": 1788256805000,
+          "model": "alpha-model",
+          "usage": {
+            "input": 1,
+            "cacheWrite5m": 0,
+            "cacheWrite1h": 0,
+            "cacheRead": 0,
+            "output": 0,
+            "thinking": 0,
+            "speed": "standard"
+          },
+          "effort": null,
+          "skill": null,
+          "promptKey": null,
+          "agentId": null,
+          "gapMs": null,
+          "after": null
+        }
+      ]
+    },
+    "output": {
+      "bucket": {
+        "calls": 6,
+        "usage": {
+          "input": 128,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 24,
+          "thinking": 0
+        },
+        "usd": 0.00075,
+        "usdUnknownCalls": 4,
+        "unknownModels": [
+          "claude-future-9",
+          "zeta-model",
+          "alpha-model"
+        ],
+        "usdEstimatedCalls": 0,
+        "estimatedModels": {},
+        "contextPeak": 100,
+        "usdPartial": true,
+        "usdEstimated": false,
+        "cacheHitPct": 0,
+        "totalInput": 128
+      }
+    }
+  }
+]

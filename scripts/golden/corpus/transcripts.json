@@ -1,0 +1,286 @@
+{
+  "_doc": "Hand edge-case transcript files. A file is an array of lines or {lines, noEol}; a line is a raw string, an object (JSON.stringify'd) or {$crlf: object} (stringified + CR). `cases` are extra parseFile runs (files = rels as in texts.json, since = ISO string, share = one seenUuids for all the files). The generator also runs every file plain and as a subagent file.",
+  "files": {
+    "malformed": [
+      "not json at all",
+      "{\"type\":\"user\"",
+      "",
+      "123",
+      "\"str\"",
+      "[1,2,3]",
+      { "type": "user", "uuid": "mf-u1", "timestamp": "2026-09-01T10:00:00.000Z", "cwd": "/srv/dev/app", "version": "2.1.0", "gitBranch": "main", "message": { "role": "user", "content": "hello there" } },
+      "{\"type\":\"assistant\",\"uuid\":\"mf-a0\"}",
+      { "type": "assistant", "uuid": "mf-a1", "requestId": "req_mf1", "timestamp": "2026-09-01T10:00:05.000Z", "effort": "high", "message": { "id": "msg_mf1", "model": "claude-sonnet-5", "usage": { "input_tokens": 10, "output_tokens": 5, "cache_read_input_tokens": 100, "cache_creation_input_tokens": 50, "cache_creation": { "ephemeral_5m_input_tokens": 50, "ephemeral_1h_input_tokens": 0 } }, "content": [{ "type": "text", "text": "hi" }] } },
+      "{broken",
+      { "type": "assistant", "uuid": "mf-a2", "requestId": "req_mf2", "timestamp": "2026-09-01T10:00:09.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": [] } }
+    ],
+    "crlf": [
+      { "$crlf": { "type": "user", "uuid": "cr-u1", "timestamp": "2026-09-01T10:00:00.000Z", "cwd": "/srv/dev/app", "message": { "content": "windows line endings" } } },
+      { "$crlf": { "type": "assistant", "uuid": "cr-a1", "requestId": "req_cr1", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 5, "output_tokens": 7 }, "content": [] } } },
+      "\r",
+      { "$crlf": { "type": "assistant", "uuid": "cr-a2", "requestId": "req_cr2", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 6, "output_tokens": 8 }, "content": [] } } }
+    ],
+    "no-eol": {
+      "noEol": true,
+      "lines": [
+        { "type": "user", "uuid": "ne-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "last line has no newline" } },
+        { "type": "assistant", "uuid": "ne-a1", "requestId": "req_ne1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 2, "output_tokens": 3 }, "content": [] } }
+      ]
+    },
+    "synthetic": [
+      { "type": "user", "uuid": "sy-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "go" } },
+      { "type": "assistant", "uuid": "sy-a1", "requestId": "req_sy1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "<synthetic>", "usage": { "input_tokens": 0, "output_tokens": 0 }, "content": [{ "type": "text", "text": "internal" }] } },
+      { "type": "assistant", "uuid": "sy-a2", "requestId": "req_sy2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "<synthetic>", "usage": { "input_tokens": 0, "output_tokens": 12 }, "content": [{ "type": "text", "text": "limit" }] } },
+      { "type": "assistant", "uuid": "sy-a3", "requestId": "req_sy3", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 4 }, "content": [] } },
+      { "type": "assistant", "uuid": "sy-a4", "requestId": "req_sy4", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "<other>", "usage": { "input_tokens": 1 }, "content": [] } }
+    ],
+    "compact": [
+      { "type": "user", "uuid": "cp-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "before compact" } },
+      { "type": "assistant", "uuid": "cp-a1", "requestId": "req_cp1", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 4 }, "content": [] } },
+      { "type": "system", "subtype": "compact_boundary", "uuid": "cp-s1", "timestamp": "2026-09-01T10:00:03.000Z" },
+      { "type": "user", "uuid": "cp-u2", "isCompactSummary": true, "timestamp": "2026-09-01T10:00:04.000Z", "message": { "content": "summary of the conversation" } },
+      { "type": "assistant", "uuid": "cp-a2", "requestId": "req_cp2", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 5, "output_tokens": 6 }, "content": [] } },
+      { "type": "system", "subtype": "other", "uuid": "cp-s2", "timestamp": "2026-09-01T10:00:07.000Z" },
+      { "type": "assistant", "uuid": "cp-a3", "requestId": "req_cp3", "timestamp": "2026-09-01T10:00:08.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 7, "output_tokens": 8 }, "content": [] } }
+    ],
+    "skills": [
+      { "type": "user", "uuid": "sk-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "<command-name>/nxy:stats</command-name>\n<command-message>stats</command-message>" } },
+      { "type": "assistant", "uuid": "sk-a1", "requestId": "req_sk1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": [] } },
+      { "type": "assistant", "uuid": "sk-a2", "requestId": "req_sk2", "timestamp": "2026-09-01T10:00:02.000Z", "attributionSkill": "nxy:review", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 2, "output_tokens": 3 }, "content": [{ "type": "tool_use", "id": "sk-t1", "name": "Skill", "input": { "skill": "nxy:plan" } }] } },
+      { "type": "assistant", "uuid": "sk-a3", "requestId": "req_sk3", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 4 }, "content": [{ "type": "tool_use", "id": "sk-t2", "name": "Skill", "input": { "skill": 42 } }] } },
+      { "type": "assistant", "uuid": "sk-a4", "requestId": "req_sk4", "timestamp": "2026-09-01T10:00:04.000Z", "attributionSkill": "", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 4, "output_tokens": 5 }, "content": [{ "type": "tool_use", "id": "sk-t3", "name": "Skill", "input": {} }] } },
+      { "type": "user", "uuid": "sk-u2", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "content": "a plain message resets the skill" } },
+      { "type": "assistant", "uuid": "sk-a5", "requestId": "req_sk5", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 5, "output_tokens": 6 }, "content": [] } },
+      { "type": "user", "uuid": "sk-u3", "timestamp": "2026-09-01T10:00:07.000Z", "message": { "content": "<command-message>nxy:plan</command-message>" } },
+      { "type": "assistant", "uuid": "sk-a6", "requestId": "req_sk6", "timestamp": "2026-09-01T10:00:08.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 6, "output_tokens": 7 }, "content": [] } },
+      { "type": "user", "uuid": "sk-u4", "timestamp": "2026-09-01T10:00:09.000Z", "message": { "content": "<command-name>  </command-name> blank command" } },
+      { "type": "assistant", "uuid": "sk-a7", "requestId": "req_sk7", "timestamp": "2026-09-01T10:00:10.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 7, "output_tokens": 8 }, "content": [] } }
+    ],
+    "agents": [
+      { "type": "user", "uuid": "ag-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "delegate" } },
+      { "type": "assistant", "uuid": "ag-a1", "requestId": "req_ag1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": [
+        { "type": "tool_use", "id": "toolu_a", "name": "Agent", "input": { "subagent_type": "Explore", "description": "look around" } },
+        { "type": "tool_use", "id": "toolu_b", "name": "Task", "input": { "prompt": "no type, no description" } },
+        { "type": "tool_use", "id": "toolu_c", "name": "Agent", "input": { "subagent_type": "nxy:planner", "description": "plan it" } },
+        { "type": "tool_use", "id": "toolu_d", "name": "Agent" }
+      ] } },
+      { "type": "user", "uuid": "ag-u2", "timestamp": "2026-09-01T10:00:20.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "toolu_a", "content": "done" }] }, "toolUseResult": { "agentId": "aaaa0001", "description": "", "resolvedModel": "claude-haiku-4-5", "status": "completed" } },
+      { "type": "assistant", "uuid": "ag-a2", "requestId": "req_ag2", "timestamp": "2026-09-01T10:00:22.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 4 }, "content": [] } },
+      { "type": "user", "uuid": "ag-u3", "timestamp": "2026-09-01T10:00:30.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "toolu_b", "content": "done" }] }, "toolUseResult": { "agentId": "bbbb0002", "description": "from result" } },
+      { "type": "user", "uuid": "ag-u4", "timestamp": "2026-09-01T10:00:31.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "toolu_zzz", "content": "done" }] }, "toolUseResult": { "agentId": "cccc0003" } },
+      { "type": "user", "uuid": "ag-u5", "timestamp": "2026-09-01T10:00:32.000Z", "message": { "content": "agent result without a tool_use_id" }, "toolUseResult": { "agentId": "dddd0004" } },
+      { "type": "user", "uuid": "ag-u6", "timestamp": "2026-09-01T10:00:33.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "toolu_c", "content": "done" }] }, "toolUseResult": { "agentId": "aaaa0001", "description": "again", "resolvedModel": "claude-sonnet-5" } },
+      { "type": "user", "uuid": "ag-u7", "timestamp": "2026-09-01T10:00:34.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "toolu_d", "content": "done" }] }, "toolUseResult": { "agentId": "eeee0005" } },
+      { "type": "assistant", "uuid": "ag-a3", "requestId": "req_ag3", "timestamp": "2026-09-01T10:00:36.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 5, "output_tokens": 6 }, "content": [] } }
+    ],
+    "bash": [
+      { "type": "user", "uuid": "bs-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "run things" } },
+      { "type": "user", "uuid": "bs-r1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t1", "content": "x" }] }, "toolUseResult": { "stdout": "a\nb", "stderr": "err", "interrupted": true } },
+      { "type": "user", "uuid": "bs-r2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t2", "content": "x" }] }, "toolUseResult": { "stdout": "", "stderr": "", "interrupted": false } },
+      { "type": "user", "uuid": "bs-r3", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t3", "content": "x" }] }, "toolUseResult": { "stderr": "only stderr" } },
+      { "type": "user", "uuid": "bs-r4", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t4", "content": "x" }] }, "toolUseResult": { "stdout": "😀😀 two emoji\nline two\n" } },
+      { "type": "user", "uuid": "bs-r5", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t5", "content": "x" }] }, "toolUseResult": { "stdout": 12, "stderr": "number stdout" } },
+      { "type": "user", "uuid": "bs-r6", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t6", "content": "x" }] }, "toolUseResult": { "stdout": "\n\n" } },
+      { "type": "user", "uuid": "bs-r7", "timestamp": "2026-09-01T10:00:07.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t7", "content": "x" }] }, "toolUseResult": { "stdout": null, "stderr": null } }
+    ],
+    "reads": [
+      { "type": "user", "uuid": "rd-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "read things" } },
+      { "type": "user", "uuid": "rd-r1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t1", "content": "x" }] }, "toolUseResult": { "type": "text", "file": { "filePath": "/srv/dev/app/src/a.ts", "content": "x" } } },
+      { "type": "user", "uuid": "rd-r2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t2", "content": "x" }] }, "toolUseResult": { "file": { "filePath": "/srv/dev/app/src/b.ts" } } },
+      { "type": "user", "uuid": "rd-r3", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t3", "content": "x" }] }, "toolUseResult": { "file": { "filePath": "/srv/dev/app/src/a.ts" } } },
+      { "type": "user", "uuid": "rd-r4", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t4", "content": "x" }] }, "toolUseResult": { "file": { "filePath": "" } } },
+      { "type": "user", "uuid": "rd-r5", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t5", "content": "x" }] }, "toolUseResult": { "matches": 3 } },
+      { "type": "user", "uuid": "rd-r6", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t6", "content": "x" }] }, "toolUseResult": ["a", "b"] },
+      { "type": "user", "uuid": "rd-r7", "timestamp": "2026-09-01T10:00:07.000Z", "message": { "content": "a prompt that carries a string toolUseResult" }, "toolUseResult": "oops" },
+      { "type": "user", "uuid": "rd-r8", "timestamp": "2026-09-01T10:00:08.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "t8", "content": "x" }] }, "toolUseResult": {} }
+    ],
+    "edits": [
+      { "type": "user", "uuid": "ed-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "edit things" } },
+      { "type": "assistant", "uuid": "ed-a1", "requestId": "req_ed1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": [
+        { "type": "tool_use", "id": "e1", "name": "Edit", "input": { "file_path": "/srv/dev/app/a.ts" } },
+        { "type": "tool_use", "id": "e2", "name": "Write", "input": { "file_path": "/srv/dev/app/b.ts" } },
+        { "type": "tool_use", "id": "e3", "name": "MultiEdit", "input": { "file_path": "/srv/dev/app/a.ts" } },
+        { "type": "tool_use", "id": "e4", "name": "NotebookEdit", "input": { "notebook_path": "/srv/dev/app/n.ipynb" } },
+        { "type": "tool_use", "id": "e5", "name": "Edit", "input": {} },
+        { "type": "tool_use", "id": "e6", "name": "Edit", "input": { "file_path": 5 } },
+        { "type": "tool_use", "id": "e7", "name": "Read", "input": { "file_path": "/srv/dev/app/never.ts" } },
+        { "type": "tool_use", "id": "e8", "name": "Edit", "input": { "file_path": "", "notebook_path": "/srv/dev/app/fallback.ipynb" } },
+        { "type": "tool_use", "id": "e9", "input": { "file_path": "/srv/dev/app/noname.ts" } },
+        { "type": "text", "text": "not a tool" },
+        null,
+        "stray",
+        { "type": "tool_use", "id": "e10", "name": "Bash", "input": { "command": "ls" } },
+        { "type": "tool_use", "id": "e11", "name": "Bash", "input": { "command": "ls" } }
+      ] } },
+      { "type": "assistant", "uuid": "ed-a2", "requestId": "req_ed2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": "not an array" } },
+      { "type": "assistant", "uuid": "ed-a3", "requestId": "req_ed3", "timestamp": "2026-09-01T10:00:03.000Z", "message": "a string message" }
+    ],
+    "prompts": [
+      { "type": "user", "uuid": "pr-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "<system-reminder>ignore me</system-reminder>" } },
+      { "type": "user", "uuid": "pr-u2", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "content": "<task-notification>done</task-notification>" } },
+      { "type": "user", "uuid": "pr-u3", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "content": "<scheduled-wakeup>x" } },
+      { "type": "user", "uuid": "pr-u4", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "content": "<background-task>x" } },
+      { "type": "user", "uuid": "pr-u5", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "content": "[Request interrupted by user]" } },
+      { "type": "user", "uuid": "pr-u6", "timestamp": "2026-09-01T10:00:05.000Z", "isMeta": true, "message": { "content": "meta line" } },
+      { "type": "user", "uuid": "pr-u7", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "content": [{ "type": "tool_result", "tool_use_id": "x", "content": "r" }] } },
+      { "type": "user", "uuid": "pr-u8", "timestamp": "2026-09-01T10:00:07.000Z", "message": { "content": [{ "type": "text", "text": "block prompt" }, { "type": "text", "text": "second block ignored" }] } },
+      { "type": "user", "uuid": "pr-u9", "timestamp": "2026-09-01T10:00:08.000Z", "message": { "content": [{ "type": "text", "text": "" }] } },
+      { "type": "user", "uuid": "pr-u10", "timestamp": "2026-09-01T10:00:09.000Z", "message": { "content": [{ "type": "image", "source": {} }] } },
+      { "type": "user", "uuid": "pr-u11", "timestamp": "2026-09-01T10:00:10.000Z", "message": { "content": [] } },
+      { "type": "user", "uuid": "pr-u12", "timestamp": "2026-09-01T10:00:11.000Z", "message": { "content": 7 } },
+      { "type": "user", "uuid": "pr-u13", "timestamp": "2026-09-01T10:00:12.000Z", "message": { "content": [null] } },
+      { "type": "user", "uuid": "pr-u14", "timestamp": "2026-09-01T10:00:13.000Z", "message": { "content": [{ "type": "text" }] } },
+      { "type": "user", "uuid": "pr-u15", "timestamp": "2026-09-01T10:00:14.000Z", "message": { "content": "" } },
+      { "type": "user", "uuid": "pr-u16", "timestamp": "2026-09-01T10:00:15.000Z", "isSidechain": true, "message": { "content": "sidechain prompt" } },
+      { "type": "user", "timestamp": "2026-09-01T10:00:16.000Z", "message": { "content": "no uuid prompt" } },
+      { "type": "user", "uuid": "pr-u17", "timestamp": "2026-09-01T10:00:17.000Z", "message": { "content": "  <system-reminder> leading space is a prompt" } },
+      { "type": "user", "uuid": "pr-u18", "timestamp": "2026-09-01T10:00:18.000Z", "message": { "content": "multi\nline\nprompt" } }
+    ],
+    "long-prompts": [
+      { "type": "user", "uuid": "lp-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } },
+      { "type": "user", "uuid": "lp-u2", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "content": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀" } },
+      { "type": "user", "uuid": "lp-u3", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "content": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé😀😀fin" } }
+    ],
+    "sidechain": [
+      { "type": "user", "uuid": "sc-u1", "timestamp": "2026-09-01T10:00:00.000Z", "isSidechain": true, "message": { "content": "<command-name>/nxy:stats</command-name>" } },
+      { "type": "assistant", "uuid": "sc-a1", "requestId": "req_sc1", "timestamp": "2026-09-01T10:00:01.000Z", "isSidechain": true, "message": { "model": "claude-haiku-4-5", "usage": { "input_tokens": 1, "output_tokens": 2 }, "content": [] } },
+      { "type": "user", "uuid": "sc-u2", "timestamp": "2026-09-01T10:00:02.000Z", "isSidechain": true, "message": { "content": "plain sidechain message" } },
+      { "type": "assistant", "uuid": "sc-a2", "requestId": "req_sc2", "timestamp": "2026-09-01T10:00:03.000Z", "isSidechain": true, "message": { "model": "claude-haiku-4-5", "usage": { "input_tokens": 3, "output_tokens": 4 }, "content": [] } },
+      { "type": "user", "uuid": "sc-u3", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "content": "main thread message after" } }
+    ],
+    "fallback-keys": [
+      { "type": "user", "uuid": "fk-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "keys" } },
+      { "type": "assistant", "uuid": "fk-a1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "id": "abc", "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "fk-a2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "id": "msg_fk2", "model": "claude-sonnet-5", "usage": { "input_tokens": 2, "output_tokens": 2 }, "content": [] } },
+      { "type": "assistant", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 3 }, "content": [] } },
+      { "type": "assistant", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "id": 77, "model": "claude-sonnet-5", "usage": { "input_tokens": 4, "output_tokens": 4 }, "content": [] } },
+      { "type": "assistant", "uuid": "fk-a3", "requestId": "", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "id": "msg_fk3", "model": "claude-sonnet-5", "usage": { "input_tokens": 5, "output_tokens": 5 }, "content": [] } },
+      { "type": "assistant", "uuid": "fk-a4", "requestId": "99", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 6, "output_tokens": 6 }, "content": [] } }
+    ],
+    "dups": [
+      { "type": "user", "uuid": "du-u1", "timestamp": "2026-09-01T10:00:00.000Z", "cwd": "/srv/dev/app", "message": { "content": "dup" } },
+      { "type": "assistant", "uuid": "du-a1", "requestId": "req_du1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "du-a1", "requestId": "req_du2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 2, "output_tokens": 2 }, "content": [] } },
+      { "type": "user", "uuid": "du-u1", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "content": "dup again" } },
+      { "type": "assistant", "requestId": "req_du3", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 3 }, "content": [] } },
+      { "type": "assistant", "requestId": "req_du3", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 9 }, "content": [] } }
+    ],
+    "streaming": [
+      { "type": "user", "uuid": "st-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "<command-name>/nxy:feature</command-name>" } },
+      { "type": "assistant", "uuid": "st-a1", "requestId": "req_st1", "timestamp": "2026-09-01T10:00:02.000Z", "effort": "low", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 100, "output_tokens": 10, "cache_read_input_tokens": 1000 }, "content": [] } },
+      { "type": "assistant", "uuid": "st-a2", "requestId": "req_st1", "timestamp": "2026-09-01T10:00:03.000Z", "attributionSkill": "nxy:other", "effort": "high", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 100, "output_tokens": 50, "cache_read_input_tokens": 1000 }, "content": [] } },
+      { "type": "assistant", "uuid": "st-a3", "requestId": "req_st1", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 100, "output_tokens": 30, "cache_read_input_tokens": 1000 }, "content": [] } },
+      { "type": "assistant", "uuid": "st-a4", "requestId": "req_st1", "timestamp": "2026-09-01T10:00:05.000Z", "effort": 3, "message": { "model": "claude-opus-5", "usage": { "input_tokens": 100, "output_tokens": 50, "cache_read_input_tokens": 2000 }, "content": [] } },
+      { "type": "assistant", "uuid": "st-a5", "requestId": "req_st2", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "st-a6", "requestId": "req_st1", "timestamp": "2026-09-01T10:00:07.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 100, "output_tokens": 70, "cache_read_input_tokens": 3000 }, "content": [] } }
+    ],
+    "timestamps": [
+      { "type": "user", "uuid": "ts-u1", "message": { "content": "no timestamp first" } },
+      { "type": "assistant", "uuid": "ts-a1", "requestId": "req_ts1", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a2", "requestId": "req_ts2", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 2, "output_tokens": 2 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a3", "requestId": "req_ts3", "timestamp": "not a date", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 3 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a4", "requestId": "req_ts4", "timestamp": "2026-09-01T12:00:04.000+02:00", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 4, "output_tokens": 4 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a5", "requestId": "req_ts5", "timestamp": "2026-09-01T10:04:59.999Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 5, "output_tokens": 5 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a6", "requestId": "req_ts6", "timestamp": "2026-09-01T10:10:00.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 6, "output_tokens": 6 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a7", "requestId": "req_ts7", "timestamp": "2026-09-01T10:10:00.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 7, "output_tokens": 7 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a8", "requestId": "req_ts8", "timestamp": "2026-09-01T10:09:00.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 8, "output_tokens": 8 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a9", "requestId": "req_ts9", "timestamp": "2026-09-01T10:09:30.5Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 9, "output_tokens": 9 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a10", "requestId": "req_ts10", "timestamp": "2026-09-01", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 10, "output_tokens": 10 }, "content": [] } },
+      { "type": "assistant", "uuid": "ts-a11", "requestId": "req_ts11", "timestamp": "2026-09-02T00:00:00Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 11, "output_tokens": 11 }, "content": [] } }
+    ],
+    "meta": [
+      { "type": "system", "uuid": "me-s1", "timestamp": "2026-09-01T10:00:00.000Z" },
+      { "type": "user", "uuid": "me-u1", "timestamp": "2026-09-01T10:00:01.000Z", "cwd": "/srv/dev/first", "gitBranch": "feature/x", "message": { "content": "first cwd, no version" } },
+      { "type": "assistant", "uuid": "me-a1", "requestId": "req_me1", "timestamp": "2026-09-01T10:00:02.000Z", "cwd": "/srv/dev/second", "version": "9.9.9", "message": { "model": "<synthetic>", "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "me-a2", "requestId": "req_me2", "timestamp": "2026-09-01T10:00:03.000Z", "cwd": "/srv/dev/third", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 2, "output_tokens": 2 }, "content": [] } },
+      { "type": "assistant", "uuid": "me-a3", "requestId": "req_me3", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": 3, "output_tokens": 3 }, "content": [] } }
+    ],
+    "usages": [
+      { "type": "user", "uuid": "us-u1", "timestamp": "2026-09-01T10:00:00.000Z", "message": { "content": "usage shapes" } },
+      { "type": "assistant", "uuid": "us-a1", "requestId": "req_us1", "timestamp": "2026-09-01T10:00:01.000Z", "message": { "model": "claude-sonnet-5", "usage": "x", "content": [] } },
+      { "type": "assistant", "uuid": "us-a2", "requestId": "req_us2", "timestamp": "2026-09-01T10:00:02.000Z", "message": { "model": "claude-sonnet-5", "usage": {}, "content": [] } },
+      { "type": "assistant", "uuid": "us-a3", "requestId": "req_us3", "timestamp": "2026-09-01T10:00:03.000Z", "message": { "usage": { "input_tokens": 1, "output_tokens": 1 }, "content": [] } },
+      { "type": "assistant", "uuid": "us-a4", "requestId": "req_us4", "timestamp": "2026-09-01T10:00:04.000Z", "message": { "model": "claude-sonnet-5", "usage": { "input_tokens": "5", "output_tokens": 3, "cache_creation_input_tokens": 100, "speed": "fast" }, "content": [] } },
+      { "type": "assistant", "uuid": "us-a5", "requestId": "req_us5", "timestamp": "2026-09-01T10:00:05.000Z", "message": { "model": "claude-sonnet-5", "usage": 0, "content": [] } },
+      { "type": "assistant", "uuid": "us-a6", "requestId": "req_us6", "timestamp": "2026-09-01T10:00:06.000Z", "message": { "model": "claude-opus-5", "usage": { "input_tokens": 1, "output_tokens": 1, "cache_creation": { "ephemeral_5m_input_tokens": 7, "ephemeral_1h_input_tokens": 9 }, "output_tokens_details": { "thinking_tokens": 4 } }, "content": [] } }
+    ]
+  },
+  "cases": [
+    { "name": "since:mid-fixture", "files": ["-home-dev-code-my-app/sess-0001.jsonl"], "since": "2026-09-01T10:00:03.000Z" },
+    { "name": "since:after-all", "files": ["-home-dev-code-my-app/sess-0001.jsonl", "corpus/timestamps.jsonl"], "since": "2030-01-01T00:00:00.000Z" },
+    { "name": "since:exactly-first", "files": ["-home-dev-code-my-app/sess-0001.jsonl"], "since": "2026-09-01T10:00:00.000Z" },
+    { "name": "since:mid-timestamps", "files": ["corpus/timestamps.jsonl"], "since": "2026-09-01T10:05:00.000Z" },
+    { "name": "since:mid-corpus-agents", "files": ["corpus/agents.jsonl", "corpus/skills.jsonl"], "since": "2026-09-01T10:00:20.000Z" },
+    { "name": "share:main-and-sub", "files": ["-home-dev-code-my-app/sess-0001.jsonl", "-home-dev-code-my-app/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl"], "share": true },
+    { "name": "share:same-file-twice", "files": ["corpus/dups.jsonl", "corpus/dups.jsonl"], "share": true },
+    { "name": "noshare:same-file-twice", "files": ["corpus/dups.jsonl", "corpus/dups.jsonl"] },
+    { "name": "share:fixture-twice", "files": ["-home-dev-code-my-app/sess-0001.jsonl", "-home-dev-code-my-app/sess-0001.jsonl"], "share": true },
+    { "name": "agent:fixture-sub-with-id", "files": ["-home-dev-code-my-app/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl"], "agentId": "a1b2c3d4e5f60718" },
+    { "name": "agent:shared-two", "files": ["corpus/agents.jsonl", "corpus/bash.jsonl"], "agentId": "zz9", "share": true },
+    { "name": "missing:file", "files": ["corpus/does-not-exist.jsonl"] },
+    { "name": "missing:among-others", "files": ["corpus/malformed.jsonl", "corpus/does-not-exist.jsonl", "corpus/crlf.jsonl"], "share": true }
+  ],
+  "_doc_sessions": "Session cases: projectsDir/project/id locate <root>/<projectsDir>/<project>/<id>.jsonl (the trees are built in transcripts.mjs: sess/ and the 1.x fixtures); opts = parseSession options (since = ISO string).",
+  "sessions": [
+    { "name": "fixture:default", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001" },
+    { "name": "fixture:no-subagents", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "includeSubagents": false } },
+    { "name": "fixture:timing", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "timing": true } },
+    { "name": "fixture:threshold-0", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "cacheBreakThreshold": 0 } },
+    { "name": "fixture:threshold-20000", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "cacheBreakThreshold": 20000 } },
+    { "name": "fixture:threshold-21000", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "cacheBreakThreshold": 21000 } },
+    { "name": "fixture:since-mid", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "since": "2026-09-01T10:00:03.000Z" } },
+    { "name": "fixture:since-after-all", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-0001", "opts": { "since": "2030-01-01T00:00:00.000Z", "timing": true } },
+    { "name": "timing:default", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-timing" },
+    { "name": "timing:timing", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-timing", "opts": { "timing": true } },
+    { "name": "timing:timing-no-subagents", "projectsDir": "", "project": "-home-dev-code-my-app", "id": "sess-timing", "opts": { "timing": true, "includeSubagents": false } },
+    { "name": "s0:default", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s0" },
+    { "name": "s0:threshold-0", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s0", "opts": { "cacheBreakThreshold": 0 } },
+    { "name": "s0:threshold-huge", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s0", "opts": { "cacheBreakThreshold": 1000000000 } },
+    { "name": "s0:since-mid", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s0", "opts": { "since": "2026-09-01T10:11:00.000Z" } },
+    { "name": "s0:timing", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s0", "opts": { "timing": true } },
+    { "name": "s1:default", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s1" },
+    { "name": "s1:timing", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s1", "opts": { "timing": true } },
+    { "name": "s1:no-subagents", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s1", "opts": { "includeSubagents": false } },
+    { "name": "s2:default", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s2" },
+    { "name": "s2:timing", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s2", "opts": { "timing": true } },
+    { "name": "s2:no-subagents", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s2", "opts": { "includeSubagents": false } },
+    { "name": "s2:threshold-50000", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s2", "opts": { "cacheBreakThreshold": 50000 } },
+    { "name": "s2:since-mid", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "s2", "opts": { "since": "2026-09-01T10:00:30.000Z", "timing": true } },
+    { "name": "missing:session", "projectsDir": "sess", "project": "-srv-dev-code-app", "id": "nope", "opts": { "timing": true } }
+  ],
+  "_doc_discovery": "Discovery cases over <root>/disc (projects with non-jsonl files and dirs); mtimes (epoch seconds) are applied to the files, all distinct; ids are lowercase hex/ASCII so directory order is the same on Linux and NTFS. selector -> resolveSession (output ref), otherwise listSessions (output list).",
+  "mtimes": {
+    "disc/-srv-dev-code-app/aaa111.jsonl": 1788256800,
+    "disc/-srv-dev-code-app/bbb222.jsonl": 1788260400,
+    "disc/-srv-dev-code-app/abc999.jsonl": 1788264000,
+    "disc/-srv-dev-code-app/abd000.jsonl": 1788250000,
+    "disc/-srv-dev-code-other/ccc333.jsonl": 1788270000,
+    "disc/-srv-dev-code-other/aaa111.jsonl": 1788200000
+  },
+  "discovery": [
+    { "name": "list:all", "projectsDir": "disc", "all": true },
+    { "name": "list:no-cwd", "projectsDir": "disc" },
+    { "name": "list:cwd-app", "projectsDir": "disc", "cwd": "/srv/dev/code/app" },
+    { "name": "list:cwd-other", "projectsDir": "disc", "cwd": "/srv/dev/code/other" },
+    { "name": "list:cwd-unknown", "projectsDir": "disc", "cwd": "/srv/dev/code/nothere" },
+    { "name": "list:cwd-but-all", "projectsDir": "disc", "cwd": "/srv/dev/code/app", "all": true },
+    { "name": "list:since-inclusive", "projectsDir": "disc", "all": true, "since": 1788256800000 },
+    { "name": "list:since-just-after", "projectsDir": "disc", "all": true, "since": 1788256800001 },
+    { "name": "list:since-after-all", "projectsDir": "disc", "all": true, "since": 1788300000000 },
+    { "name": "list:missing-dir", "projectsDir": "disc-missing", "all": true },
+    { "name": "resolve:last-cwd-app", "projectsDir": "disc", "cwd": "/srv/dev/code/app", "selector": "last" },
+    { "name": "resolve:last-cwd-other", "projectsDir": "disc", "cwd": "/srv/dev/code/other", "selector": "last" },
+    { "name": "resolve:last-no-cwd", "projectsDir": "disc", "selector": "last" },
+    { "name": "resolve:last-unknown-cwd", "projectsDir": "disc", "cwd": "/srv/dev/code/nothere", "selector": "last" },
+    { "name": "resolve:last-since-after-all", "projectsDir": "disc", "selector": "last", "since": 1788300000000 },
+    { "name": "resolve:exact-in-two-projects", "projectsDir": "disc", "selector": "aaa111" },
+    { "name": "resolve:exact-other", "projectsDir": "disc", "cwd": "/srv/dev/code/other", "selector": "ccc333" },
+    { "name": "resolve:prefix-newest-wins", "projectsDir": "disc", "selector": "ab" },
+    { "name": "resolve:prefix-exact-beats-prefix", "projectsDir": "disc", "selector": "abc999" },
+    { "name": "resolve:prefix-single", "projectsDir": "disc", "selector": "cc" },
+    { "name": "resolve:unknown", "projectsDir": "disc", "selector": "zzz" },
+    { "name": "resolve:empty-selector", "projectsDir": "disc", "selector": "" },
+    { "name": "resolve:since-excludes", "projectsDir": "disc", "selector": "bbb222", "since": 1788270000000 },
+    { "name": "resolve:missing-dir", "projectsDir": "disc-missing", "selector": "last" }
+  ]
+}
