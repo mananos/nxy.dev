@@ -1,0 +1,282 @@
+[
+  {
+    "name": "round:00:0.5",
+    "input": {
+      "x": 0.5
+    },
+    "output": {
+      "s": "1",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:01:1.5",
+    "input": {
+      "x": 1.5
+    },
+    "output": {
+      "s": "2",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:02:2.5",
+    "input": {
+      "x": 2.5
+    },
+    "output": {
+      "s": "3",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:03:3.5",
+    "input": {
+      "x": 3.5
+    },
+    "output": {
+      "s": "4",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:04:-0.5",
+    "input": {
+      "x": -0.5
+    },
+    "output": {
+      "s": "0",
+      "negzero": true
+    }
+  },
+  {
+    "name": "round:05:-1.5",
+    "input": {
+      "x": -1.5
+    },
+    "output": {
+      "s": "-1",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:06:-2.5",
+    "input": {
+      "x": -2.5
+    },
+    "output": {
+      "s": "-2",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:07:0.49999999999999994",
+    "input": {
+      "x": 0.49999999999999994
+    },
+    "output": {
+      "s": "0",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:08:-0.49999999999999994",
+    "input": {
+      "x": -0.49999999999999994
+    },
+    "output": {
+      "s": "0",
+      "negzero": true
+    }
+  },
+  {
+    "name": "round:09:0.4",
+    "input": {
+      "x": 0.4
+    },
+    "output": {
+      "s": "0",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:10:-0.4",
+    "input": {
+      "x": -0.4
+    },
+    "output": {
+      "s": "0",
+      "negzero": true
+    }
+  },
+  {
+    "name": "round:11:0",
+    "input": {
+      "x": 0
+    },
+    "output": {
+      "s": "0",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:12:4503599627370495.5",
+    "input": {
+      "x": 4503599627370495.5
+    },
+    "output": {
+      "s": "4503599627370496",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:13:4503599627370496",
+    "input": {
+      "x": 4503599627370496
+    },
+    "output": {
+      "s": "4503599627370496",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:14:9007199254740991",
+    "input": {
+      "x": 9007199254740991
+    },
+    "output": {
+      "s": "9007199254740991",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:15:9007199254740992",
+    "input": {
+      "x": 9007199254740992
+    },
+    "output": {
+      "s": "9007199254740992",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:16:1e+21",
+    "input": {
+      "x": 1e+21
+    },
+    "output": {
+      "s": "1e+21",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:17:-1e+21",
+    "input": {
+      "x": -1e+21
+    },
+    "output": {
+      "s": "-1e+21",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:18:1e-7",
+    "input": {
+      "x": 1e-7
+    },
+    "output": {
+      "s": "0",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:19:2.4999999999999996",
+    "input": {
+      "x": 2.4999999999999996
+    },
+    "output": {
+      "s": "2",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:20:0.9999999999999999",
+    "input": {
+      "x": 0.9999999999999999
+    },
+    "output": {
+      "s": "1",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:21:99.5",
+    "input": {
+      "x": 99.5
+    },
+    "output": {
+      "s": "100",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:22:100.49999999999999",
+    "input": {
+      "x": 100.49999999999999
+    },
+    "output": {
+      "s": "100",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:23:12345.5",
+    "input": {
+      "x": 12345.5
+    },
+    "output": {
+      "s": "12346",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:24:-12345.5",
+    "input": {
+      "x": -12345.5
+    },
+    "output": {
+      "s": "-12345",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:25:null",
+    "input": {
+      "x": null
+    },
+    "output": {
+      "s": "NaN",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:26:Infinity",
+    "input": {
+      "x": "Infinity"
+    },
+    "output": {
+      "s": "Infinity",
+      "negzero": false
+    }
+  },
+  {
+    "name": "round:27:-Infinity",
+    "input": {
+      "x": "-Infinity"
+    },
+    "output": {
+      "s": "-Infinity",
+      "negzero": false
+    }
+  }
+]

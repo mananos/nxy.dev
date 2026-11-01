@@ -53,7 +53,7 @@ func TestGoldenFiles(t *testing.T) {
 				opts.Seen = NewUUIDSet()
 			}
 			results := make([]FileResult, 0, len(files))
-				order := make([][]string, 0, len(files))
+			order := make([][]string, 0, len(files))
 			for _, rel := range files {
 				text, ok := texts[rel]
 				r := ParseFile(fakeRoot+"/"+rel, []byte(text), ok, opts)

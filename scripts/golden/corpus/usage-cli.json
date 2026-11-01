@@ -1,0 +1,360 @@
+{
+  "gen": {
+    "g1": { "start": "2026-08-20T10:00:00Z", "prompts": [[0, "Refactor the parser"], [600000, "Now add tests"]], "calls": [[1000, "claude-opus-5", 1200, 80000, 0, 0, 600], [9000, "claude-opus-5", 40, 2000, 0, 80000, 300, [["Read", { "file_path": "@ROOT@/proj/parser.go" }]]], [601000, "claude-opus-5", 900, 3000, 0, 82000, 400], [605000, "claude-opus-5", 30, 1500, 0, 85000, 250, [["Edit", { "file_path": "@ROOT@/proj/parser_test.go" }]]]] },
+    "g2": { "start": "2026-08-20T23:30:00Z", "prompts": [[0, "Fix the flaky test"]], "calls": [[1000, "claude-sonnet-5", 800, 40000, 0, 0, 500], [20000, "claude-sonnet-5", 20, 1200, 0, 40000, 200, [["Edit", { "file_path": "@ROOT@/proj/flaky_test.go" }]]], [60000, "claude-sonnet-5", 15, 900, 0, 41200, 150]] },
+    "g3": { "start": "2026-08-24T08:00:00Z", "prompts": [[0, "Summarize the changelog"]], "calls": [[2000, "claude-haiku-4-5", 3000, 9000, 0, 0, 700], [30000, "claude-haiku-4-5", 100, 500, 0, 9000, 400]] },
+    "g4": { "start": "2026-08-30T22:00:00Z", "prompts": [[0, "<command-name>/nxy:plan</command-name>\n<command-message>nxy:plan</command-message>"], [300000, "go on"]], "calls": [[5000, "claude-opus-5", 500, 30000, 0, 0, 900], [310000, "claude-opus-5", 60, 4000, 0, 30500, 600, [["Write", { "file_path": "@ROOT@/proj/plan.md" }]]]] },
+    "g5": { "start": "2026-09-06T03:30:00Z", "prompts": [[0, "Rename the module"]], "calls": [[3000, "claude-sonnet-5", 700, 25000, 0, 0, 450], [40000, "claude-sonnet-5", 25, 2500, 0, 25000, 300]] },
+    "g6": { "start": "2026-09-06T04:30:00Z", "prompts": [[0, "Try the new model"]], "calls": [[1000, "claude-future-9", 900, 12000, 0, 0, 300], [9000, "claude-sonnet-5", 30, 1000, 0, 12000, 120]] },
+    "g7": { "start": "2026-09-08T12:00:00Z", "prompts": [[0, "Estimate this one"], [90000, "and again"]], "calls": [[1000, "claude-sonnet-5-9", 600, 20000, 0, 0, 350], [95000, "claude-sonnet-5-9", 20, 1800, 0, 20000, 220]] },
+    "g8": { "start": "2026-09-09T09:00:00Z", "prompts": [[0, "Big context, long pauses"], [4300000, "I am back"]], "calls": [[1000, "claude-opus-5", 1000, 120000, 0, 0, 500], [601000, "claude-opus-5", 200, 130000, 0, 120000, 400], [4310000, "claude-opus-5", 5, 0, 150000, 0, 5], [4320000, "claude-opus-5", 20, 110000, 0, 150000, 100]] },
+    "g9": { "start": "2026-09-09T15:00:00Z", "prompts": [[0, "hello, anyone?"]], "calls": [] },
+    "g11": { "start": "2026-08-12T10:00:00Z", "prompts": [[0, "Older session, still in range"]], "calls": [[1000, "claude-opus-5", 400, 18000, 0, 0, 260], [12000, "claude-opus-5", 10, 600, 0, 18000, 90]] },
+    "g12": { "start": "2026-07-01T10:00:00Z", "prompts": [[0, "Too old for the default range"]], "calls": [[1000, "claude-opus-5", 400, 18000, 0, 0, 260]] },
+    "o1": { "start": "2026-09-09T20:00:00Z", "prompts": [[0, "Other project, newest session"]], "calls": [[1000, "claude-haiku-5-5", 2000, 6000, 0, 0, 300], [9000, "claude-haiku-5-5", 80, 400, 0, 6000, 200]] }
+  },
+  "texts": {
+    "garbage-line": "this is not json\n",
+    "user-only": "{\"type\":\"user\",\"uuid\":\"uo1\",\"timestamp\":\"2026-09-09T08:00:00.000Z\",\"cwd\":\"@ROOT@/proj\",\"version\":\"2.1.274\",\"gitBranch\":\"main\",\"message\":{\"role\":\"user\",\"content\":\"first prompt, no answer yet\"}}\n"
+  },
+  "fileSets": {
+    "fixture": {
+      "projects/@SLUG@/sess-0001.jsonl": { "ref": "fixture/sess-0001.jsonl", "mtime": "2026-09-01T10:05:00Z" },
+      "projects/@SLUG@/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl",
+      "projects/@SLUG@/sess-0001/subagents/agent-a1b2c3d4e5f60718.meta.json": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.meta.json",
+      "projects/@SLUG@/sess-timing.jsonl": { "ref": "fixture/sess-timing.jsonl", "mtime": "2026-09-01T11:00:00Z" },
+      "projects/@SLUG@/sess-timing/subagents/agent-impl000000000001.jsonl": "fixture/sess-timing/subagents/agent-impl000000000001.jsonl",
+      "projects/@SLUG@/sess-timing/subagents/agent-impl000000000001.meta.json": "fixture/sess-timing/subagents/agent-impl000000000001.meta.json",
+      "projects/@SLUG@/sess-timing/subagents/agent-plan000000000001.jsonl": "fixture/sess-timing/subagents/agent-plan000000000001.jsonl",
+      "projects/@SLUG@/sess-timing/subagents/agent-plan000000000001.meta.json": "fixture/sess-timing/subagents/agent-plan000000000001.meta.json"
+    },
+    "gen": {
+      "projects/@SLUG@/g1.jsonl": { "ref": "gen/g1", "mtime": "2026-08-20T10:12:00Z" },
+      "projects/@SLUG@/g2.jsonl": { "ref": "gen/g2", "mtime": "2026-08-21T00:31:00Z" },
+      "projects/@SLUG@/g3.jsonl": { "ref": "gen/g3", "mtime": "2026-08-24T08:01:00Z" },
+      "projects/@SLUG@/g4.jsonl": { "ref": "gen/g4", "mtime": "2026-08-30T22:06:00Z" },
+      "projects/@SLUG@/g5.jsonl": { "ref": "gen/g5", "mtime": "2026-09-06T03:31:00Z" },
+      "projects/@SLUG@/g6.jsonl": { "ref": "gen/g6", "mtime": "2026-09-06T04:31:00Z" },
+      "projects/@SLUG@/g7.jsonl": { "ref": "gen/g7", "mtime": "2026-09-08T12:03:00Z" },
+      "projects/@SLUG@/g8.jsonl": { "ref": "gen/g8", "mtime": "2026-09-09T10:15:00Z" },
+      "projects/@SLUG@/g9.jsonl": { "ref": "gen/g9", "mtime": "2026-09-09T15:01:00Z" },
+      "projects/@SLUG@/g11.jsonl": { "ref": "gen/g11", "mtime": "2026-08-12T10:01:00Z" },
+      "projects/@SLUG@/g12.jsonl": { "ref": "gen/g12", "mtime": "2026-07-01T10:01:00Z" }
+    },
+    "other": {
+      "projects/-srv-dev-other-app/o1.jsonl": { "ref": "gen/o1", "mtime": "2026-09-09T20:05:00Z" }
+    }
+  },
+  "stats": [
+    { "name": "current", "sets": ["fixture"], "session": "sess-0001", "tz": "UTC" },
+    { "name": "current-madrid-bytes", "sets": ["fixture"], "session": "sess-0001", "tz": "Europe/Madrid" },
+    { "name": "last-no-session-env", "sets": ["fixture"], "tz": "America/Argentina/Buenos_Aires" },
+    { "name": "id-prefix", "sets": ["fixture"], "args": ["--session", "sess-00"], "tz": "Asia/Kolkata" },
+    { "name": "positional-id", "sets": ["fixture"], "args": ["sess-timing"] },
+    { "name": "timing-agents", "sets": ["fixture"], "args": ["--session", "sess-timing"], "tz": "America/Santiago" },
+    { "name": "no-agents", "sets": ["fixture"], "session": "sess-0001", "args": ["--no-agents"] },
+    { "name": "json", "sets": ["fixture"], "session": "sess-0001", "args": ["--json"], "tz": "Europe/Madrid" },
+    { "name": "json-no-agents", "sets": ["fixture"], "args": ["--no-agents", "--json", "--session", "sess-0001"] },
+    { "name": "no-such-session", "sets": ["fixture"], "args": ["--session", "nope"] },
+    { "name": "no-such-session-current", "sets": ["fixture"], "session": "brand-new-session" },
+    { "name": "no-projects-dir", "args": [] },
+    { "name": "no-api-calls", "sets": ["gen"], "args": ["--session", "g9"] },
+    { "name": "no-api-calls-json", "sets": ["gen"], "args": ["--session", "g9", "--json"] },
+    { "name": "user-only-singular-prompt", "files": { "projects/@SLUG@/uo.jsonl": "text/user-only" }, "args": ["--session", "uo"] },
+    { "name": "garbage-lines", "files": { "projects/@SLUG@/gl.jsonl": "text/garbage-line" }, "args": ["--session", "gl"] },
+    { "name": "all-projects", "sets": ["fixture", "other"], "args": ["--all"] },
+    { "name": "other-project-not-here", "sets": ["fixture", "other"], "args": [] },
+    { "name": "unknown-model", "sets": ["gen"], "args": ["--session", "g6"] },
+    { "name": "estimated-model", "sets": ["gen"], "args": ["--session", "g7"], "tz": "Europe/Madrid" },
+    { "name": "cache-breaks", "sets": ["gen"], "args": ["--session", "g8"] },
+    { "name": "cache-breaks-threshold", "sets": ["gen"], "args": ["--session", "g8"], "projectConfig": { "metrics": { "cacheBreakThreshold": 50000 } } },
+    { "name": "cache-breaks-json", "sets": ["gen"], "args": ["--session", "g8", "--json"] },
+    { "name": "skill-session", "sets": ["gen"], "args": ["--session", "g4"] },
+    { "name": "subscription-off", "sets": ["fixture"], "session": "sess-0001", "userConfig": { "metrics": { "subscription": false } } },
+    { "name": "subscription-off-project-wins", "sets": ["gen"], "args": ["--session", "g1"], "userConfig": { "metrics": { "subscription": false } }, "projectConfig": { "metrics": { "subscription": true } } },
+    {
+      "name": "filter-no-rtk", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [
+        { "session_id": "sess-0001", "engine": "skip", "reason": "excluded", "filtered_chars": 400, "est_tokens": 100, "command_kind": "npm" },
+        { "session_id": "sess-0001", "engine": "skip", "reason": "no-match", "filtered_chars": 80, "est_tokens": 20, "command_kind": "ls" },
+        { "session_id": "sess-0001", "engine": "skip", "reason": "excluded", "filtered_chars": 120, "est_tokens": 30, "command_kind": "npm" },
+        { "session_id": "sess-0001", "engine": "off", "filtered_chars": 2000, "est_tokens": 500, "command_kind": "git" },
+        { "session_id": "other-session", "engine": "off", "filtered_chars": 99999, "est_tokens": 99999, "command_kind": "git" },
+        "not json at all", "   ", { "session_id": "sess-0001", "engine": "off", "command_kind": "git" }
+      ]
+    },
+    {
+      "name": "filter-rtk-ledger-ok", "sets": ["fixture"], "session": "sess-0001", "tz": "Europe/Madrid",
+      "filterRows": [
+        { "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 1200, "est_tokens": 300, "command_kind": "git" },
+        { "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 3400, "est_tokens": 850, "command_kind": "npm" },
+        { "session_id": "sess-0001", "engine": "skip", "reason": "excluded", "filtered_chars": 100, "est_tokens": 25, "command_kind": "npm" }
+      ],
+      "ledger": {
+        "rows": [
+          { "timestamp": "2026-09-01T10:00:03.250000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 5000, "output_tokens": 800, "saved_tokens": 4200 },
+          { "timestamp": "2026-09-01T10:00:07.000000000+00:00", "project_path": "@ROOT@/proj/sub", "input_tokens": 12000, "output_tokens": 1500, "saved_tokens": 10500 },
+          { "timestamp": "2026-09-01T10:00:09.500000000+00:00", "project_path": "\\\\?\\@ROOT@/proj", "input_tokens": 700, "output_tokens": 700, "saved_tokens": 0 },
+          { "timestamp": "2026-09-01T10:00:05.000000000+00:00", "project_path": "@ROOT@/elsewhere", "input_tokens": 99999, "output_tokens": 1, "saved_tokens": 99998 },
+          { "timestamp": "2026-09-01T10:30:00.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 5000, "output_tokens": 500, "saved_tokens": 4500 },
+          { "timestamp": "2026-09-01T09:59:00.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 4000, "output_tokens": 400, "saved_tokens": 3600 },
+          { "timestamp": "2026-09-01T10:00:08.000000000+00:00", "project_path": null, "input_tokens": 100, "output_tokens": 10, "saved_tokens": 90 },
+          { "timestamp": "garbage timestamp", "project_path": "@ROOT@/proj", "input_tokens": 1, "output_tokens": 1, "saved_tokens": 0 }
+        ]
+      }
+    },
+    {
+      "name": "filter-rtk-ledger-window-edges", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 10, "est_tokens": 3, "command_kind": "git" }],
+      "ledger": {
+        "rows": [
+          { "timestamp": "2026-09-01T09:59:55.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 100, "output_tokens": 50, "saved_tokens": 50 },
+          { "timestamp": "2026-09-01T09:59:54.999000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 1000, "output_tokens": 500, "saved_tokens": 500 },
+          { "timestamp": "2026-09-01T10:01:12.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 200, "output_tokens": 100, "saved_tokens": 100 },
+          { "timestamp": "2026-09-01T10:01:12.500000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 2000, "output_tokens": 1000, "saved_tokens": 1000 },
+          { "timestamp": "2026-09-01T12:00:00.000000000+02:00", "project_path": "@ROOT@/proj", "input_tokens": 3000, "output_tokens": 1500, "saved_tokens": 1500 },
+          { "timestamp": "2026-09-01T10:00:04Z", "project_path": "@ROOT@/proj", "input_tokens": 10, "output_tokens": 5, "saved_tokens": 5 }
+        ]
+      }
+    },
+    {
+      "name": "filter-rtk-ledger-empty-window", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 10, "est_tokens": 3, "command_kind": "git" }],
+      "ledger": { "rows": [{ "timestamp": "2026-09-02T10:00:00.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 5000, "output_tokens": 800, "saved_tokens": 4200 }] }
+    },
+    {
+      "name": "filter-rtk-no-db", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 10, "est_tokens": 3, "command_kind": "git" }]
+    },
+    {
+      "name": "filter-rtk-unreadable", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 10, "est_tokens": 3, "command_kind": "git" }],
+      "ledger": { "garbage": true }
+    },
+    {
+      "name": "filter-rtk-no-table", "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 10, "est_tokens": 3, "command_kind": "git" }],
+      "ledger": { "noTable": true }
+    },
+    {
+      "name": "filter-json-ledger", "sets": ["fixture"], "session": "sess-0001", "args": ["--json"],
+      "filterRows": [
+        { "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 1200, "est_tokens": 300, "command_kind": "git" },
+        { "session_id": "sess-0001", "engine": "skip", "reason": "excluded", "filtered_chars": 100, "est_tokens": 25, "command_kind": "npm" }
+      ],
+      "ledger": { "rows": [{ "timestamp": "2026-09-01T10:00:03.250000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 5000, "output_tokens": 800, "saved_tokens": 4200 }] }
+    },
+    {
+      "name": "root-with-space-ledger", "rootSpace": true, "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 1200, "est_tokens": 300, "command_kind": "git" }],
+      "ledger": { "rows": [{ "timestamp": "2026-09-01T10:00:03.250000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 5000, "output_tokens": 800, "saved_tokens": 4200 }] }
+    },
+    {
+      "name": "root-with-space-no-db", "rootSpace": true, "sets": ["fixture"], "session": "sess-0001",
+      "filterRows": [{ "session_id": "sess-0001", "engine": "rtk", "filtered_chars": 1200, "est_tokens": 300, "command_kind": "git" }]
+    }
+  ],
+  "trend": [
+    { "name": "day-utc", "sets": ["gen", "fixture"], "tz": "UTC" },
+    { "name": "day-buenos-aires", "sets": ["gen", "fixture"], "tz": "America/Argentina/Buenos_Aires" },
+    { "name": "day-madrid", "sets": ["gen", "fixture"], "tz": "Europe/Madrid" },
+    { "name": "day-santiago", "sets": ["gen", "fixture"], "tz": "America/Santiago" },
+    { "name": "day-kolkata", "sets": ["gen", "fixture"], "tz": "Asia/Kolkata" },
+    { "name": "week-utc", "sets": ["gen", "fixture"], "args": ["--by", "week"], "tz": "UTC" },
+    { "name": "week-madrid", "sets": ["gen", "fixture"], "args": ["--by", "week"], "tz": "Europe/Madrid" },
+    { "name": "week-santiago-dst-midnight", "sets": ["gen", "fixture"], "args": ["--by", "week"], "tz": "America/Santiago" },
+    { "name": "week-kolkata", "sets": ["gen", "fixture"], "args": ["--by", "week"], "tz": "Asia/Kolkata" },
+    { "name": "session-madrid", "sets": ["gen", "fixture"], "args": ["--by", "session"], "tz": "Europe/Madrid" },
+    { "name": "session-buenos-aires-since-30d", "sets": ["gen"], "args": ["--by", "session", "--since", "30d"], "tz": "America/Argentina/Buenos_Aires" },
+    { "name": "model-utc", "sets": ["gen", "fixture"], "args": ["--by", "model"] },
+    { "name": "agent-utc", "sets": ["gen", "fixture"], "args": ["--by", "agent"] },
+    { "name": "agent-json", "sets": ["fixture"], "args": ["--by", "agent", "--json"] },
+    { "name": "here-with-other-project", "sets": ["gen", "other"], "args": ["--here"], "tz": "Europe/Madrid" },
+    { "name": "global-with-other-project", "sets": ["gen", "other"], "tz": "Europe/Madrid" },
+    { "name": "since-7d", "sets": ["gen", "fixture"], "args": ["--since", "7d"], "tz": "Asia/Kolkata" },
+    { "name": "since-iso-date", "sets": ["gen", "fixture"], "args": ["--since", "2026-08-25"], "tz": "America/Santiago" },
+    { "name": "since-iso-local-datetime", "sets": ["gen", "fixture"], "args": ["--since", "2026-08-25T00:00:00", "--by", "session"], "tz": "America/Santiago" },
+    { "name": "since-weeks", "sets": ["gen"], "args": ["--since", "3w", "--by", "week"] },
+    { "name": "since-bad-falls-back-to-everything", "sets": ["gen"], "args": ["--since", "yesterday"] },
+    { "name": "empty-range", "sets": ["gen", "fixture"], "args": ["--since", "1h"] },
+    { "name": "empty-range-here", "sets": ["gen"], "args": ["--since", "1h", "--here"], "tz": "Europe/Madrid" },
+    { "name": "no-projects-dir", "args": [] },
+    { "name": "bad-by", "sets": ["gen"], "args": ["--by", "year"] },
+    { "name": "no-calls-only", "sets": ["gen"], "args": ["--since", "30d"], "files": { "projects/@SLUG@/g1.jsonl": null, "projects/@SLUG@/g2.jsonl": null, "projects/@SLUG@/g3.jsonl": null, "projects/@SLUG@/g4.jsonl": null, "projects/@SLUG@/g5.jsonl": null, "projects/@SLUG@/g6.jsonl": null, "projects/@SLUG@/g7.jsonl": null, "projects/@SLUG@/g8.jsonl": null, "projects/@SLUG@/g11.jsonl": null, "projects/@SLUG@/g12.jsonl": null, "projects/@SLUG@/g9.jsonl": { "ref": "gen/g9", "mtime": "2026-09-09T15:01:00Z" } } },
+    { "name": "subscription-off", "sets": ["gen"], "userConfig": { "metrics": { "subscription": false } } },
+    { "name": "cache-breaks-and-rebuilds", "sets": ["gen"], "args": ["--by", "session"], "projectConfig": { "metrics": { "cacheBreakThreshold": 50000 } } },
+    {
+      "name": "day-ledger", "sets": ["gen", "fixture"], "tz": "Europe/Madrid",
+      "filterRows": [
+        { "session_id": "g1", "engine": "rtk", "command_kind": "git" },
+        { "session_id": "g1", "engine": "rtk", "command_kind": "npm" },
+        { "session_id": "g5", "engine": "rtk", "command_kind": "git" },
+        { "session_id": "g2", "engine": "skip", "reason": "excluded", "command_kind": "git" },
+        { "session_id": "sess-0001", "engine": "off", "command_kind": "git" }
+      ],
+      "ledger": {
+        "rows": [
+          { "timestamp": "2026-08-20T10:00:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 8000, "output_tokens": 1000, "saved_tokens": 7000 },
+          { "timestamp": "2026-08-20T10:10:30.000000000+00:00", "project_path": "@ROOT@/proj/pkg", "input_tokens": 2000, "output_tokens": 500, "saved_tokens": 1500 },
+          { "timestamp": "2026-09-06T03:30:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 6000, "output_tokens": 2000, "saved_tokens": 4000 },
+          { "timestamp": "2026-08-20T23:30:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 500, "output_tokens": 100, "saved_tokens": 400 },
+          { "timestamp": "2026-07-01T10:00:00.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 500, "output_tokens": 100, "saved_tokens": 400 }
+        ]
+      }
+    },
+    {
+      "name": "session-ledger", "sets": ["gen"], "args": ["--by", "session"], "tz": "UTC",
+      "filterRows": [
+        { "session_id": "g1", "engine": "rtk", "command_kind": "git" },
+        { "session_id": "g5", "engine": "rtk", "command_kind": "git" },
+        { "session_id": "g6", "engine": "skip", "reason": "excluded", "command_kind": "git" }
+      ],
+      "ledger": {
+        "rows": [
+          { "timestamp": "2026-08-20T10:00:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 8000, "output_tokens": 1000, "saved_tokens": 7000 },
+          { "timestamp": "2026-09-06T03:30:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 6000, "output_tokens": 2000, "saved_tokens": 4000 }
+        ]
+      }
+    },
+    {
+      "name": "week-ledger-empty", "sets": ["gen"], "args": ["--by", "week"],
+      "filterRows": [{ "session_id": "g1", "engine": "rtk", "command_kind": "git" }],
+      "ledger": { "rows": [{ "timestamp": "2020-01-01T00:00:00.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 1, "output_tokens": 1, "saved_tokens": 0 }] }
+    },
+    {
+      "name": "day-json-ledger", "sets": ["gen"], "args": ["--json"], "tz": "Europe/Madrid",
+      "filterRows": [{ "session_id": "g1", "engine": "rtk", "command_kind": "git" }],
+      "ledger": { "rows": [{ "timestamp": "2026-08-20T10:00:30.000000000+00:00", "project_path": "@ROOT@/proj", "input_tokens": 8000, "output_tokens": 1000, "saved_tokens": 7000 }] }
+    },
+    { "name": "model-json", "sets": ["gen", "fixture"], "args": ["--by", "model", "--json"] },
+    {
+      "name": "gain-fallback-day", "sets": ["gen"], "tz": "Europe/Madrid",
+      "rtk": { "gain": { "daily": [
+        { "date": "2026-08-20", "commands": 12, "input_tokens": 9000, "output_tokens": 1500, "saved_tokens": 7500 },
+        { "date": "2026-09-06", "commands": 4, "input_tokens": 3000, "output_tokens": 600, "saved_tokens": 2400 },
+        { "date": "2026-09-07", "commands": 1 }, { "commands": 5, "saved_tokens": 5 }
+      ] } }
+    },
+    { "name": "gain-fallback-day-here", "sets": ["gen"], "args": ["--here"], "rtk": { "gain": { "daily": [{ "date": "2026-08-20", "commands": 3, "input_tokens": 100, "output_tokens": 10, "saved_tokens": 90 }] } } },
+    { "name": "gain-fallback-week-stays-unknown", "sets": ["gen"], "args": ["--by", "week"], "rtk": { "gain": { "daily": [{ "date": "2026-08-20", "commands": 3, "input_tokens": 100, "output_tokens": 10, "saved_tokens": 90 }] } } },
+    { "name": "gain-fallback-garbage-json", "sets": ["gen"], "rtk": { "gainText": "{not json" } },
+    { "name": "gain-fallback-empty-output", "sets": ["gen"], "rtk": { "gainText": "" } },
+    { "name": "gain-fallback-stub-fails", "sets": ["gen"], "rtk": { "gain": null } },
+    { "name": "gain-fallback-no-daily", "sets": ["gen"], "rtk": { "gain": { "summary": {} } } },
+    { "name": "no-ledger-no-rtk", "sets": ["gen"] },
+    { "name": "ledger-garbage-then-gain", "sets": ["gen"], "ledger": { "garbage": true }, "rtk": { "gain": { "daily": [{ "date": "2026-08-20", "commands": 2, "input_tokens": 50, "output_tokens": 5, "saved_tokens": 45 }] } } },
+    { "name": "root-with-space-here", "rootSpace": true, "sets": ["gen"], "args": ["--here"], "tz": "Europe/Madrid" }
+  ],
+  "statusline": [
+    {
+      "name": "grows-between-runs", "now": "2026-09-01T10:01:00Z", "session": "sess-0001",
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": { "ref": "fixture/sess-0001.jsonl", "lines": [0, 5] } }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" }, "effort": { "level": "high" }, "context_window": { "used_percentage": 18, "total_input_tokens": 36000, "context_window_size": 200000 }, "prompt_cache": { "warm": true, "expires_at": 1788257100, "hit_ratio": 0.9 } } },
+        { "append": { "transcripts/sess-0001.jsonl": { "ref": "fixture/sess-0001.jsonl", "lines": [5, 9] } }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" }, "effort": { "level": "high" }, "context_window": { "used_percentage": 52, "total_input_tokens": 104000, "context_window_size": 200000 }, "prompt_cache": { "warm": true, "expires_at": 1788257100, "hit_ratio": 0.93 } } },
+        { "append": { "transcripts/sess-0001.jsonl": { "ref": "fixture/sess-0001.jsonl", "lines": [9, 12] } }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-sonnet-5", "display_name": "Sonnet 5" }, "context_window": { "used_percentage": 97, "total_input_tokens": 194000, "context_window_size": 200000 }, "rate_limits": { "five_hour": { "used_percentage": 41.6 }, "seven_day": { "used_percentage": 9.2 } } } },
+        { "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-sonnet-5" } } }
+      ]
+    },
+    {
+      "name": "subagent-appears-later", "now": "2026-09-01T10:01:00Z", "session": "sess-0001", "tz": "Europe/Madrid",
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" } } },
+        { "write": { "transcripts/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl": { "ref": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl", "lines": [0, 2] }, "transcripts/sess-0001/subagents/agent-a1b2c3d4e5f60718.meta.json": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.meta.json" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" } } },
+        { "append": { "transcripts/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl": { "ref": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl", "lines": [2, 4] } }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" } } },
+        { "write": { "transcripts/sess-0001/subagents/agent-second0000000001.jsonl": { "ref": "fixture/sess-timing/subagents/agent-plan000000000001.jsonl" }, "transcripts/sess-0001/subagents/notes.txt": { "text": "not an agent\n" } }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" } } }
+      ]
+    },
+    {
+      "name": "new-turn-resets-turn-cost", "now": "2026-09-01T10:30:00Z", "session": "t1",
+      "steps": [
+        { "write": { "transcripts/t1.jsonl": { "ref": "gen/g8", "lines": [0, 4] } }, "stdin": { "session_id": "t1", "transcript_path": "@ROOT@/transcripts/t1.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" } } },
+        { "append": { "transcripts/t1.jsonl": { "ref": "gen/g8", "lines": [4, 8] } }, "stdin": { "session_id": "t1", "transcript_path": "@ROOT@/transcripts/t1.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" } } }
+      ]
+    },
+    {
+      "name": "partial-line-then-completed", "now": "2026-09-01T10:01:00Z",
+      "steps": [
+        { "write": { "transcripts/p.jsonl": { "text": "{\"type\":\"user\",\"uuid\":\"p1\",\"timestamp\":\"2026-09-01T10:00:00.000Z\",\"cwd\":\"@ROOT@/proj\",\"message\":{\"role\":\"user\",\"content\":\"hi\"}}\n{\"type\":\"assistant\",\"uuid\":\"pa1\",\"requestId\":\"r1\",\"timestamp\":\"2026-09-01T10:00:01.000Z\",\"message\":{\"id\":\"m1\",\"model\":\"claude-opus-5\",\"usage\":{\"input_tokens\":10,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":2000,\"output_tokens\":50}" } }, "stdin": { "session_id": "p", "transcript_path": "@ROOT@/transcripts/p.jsonl", "cwd": "@ROOT@/proj" } },
+        { "append": { "transcripts/p.jsonl": { "text": ",\"content\":[]}}\n" } }, "stdin": { "session_id": "p", "transcript_path": "@ROOT@/transcripts/p.jsonl", "cwd": "@ROOT@/proj" } }
+      ]
+    },
+    {
+      "name": "cold-cache-from-payload", "now": "2026-09-01T10:01:00Z", "session": "sess-0001", "tz": "Asia/Kolkata",
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" }, "context_window": { "used_percentage": 30, "total_input_tokens": 60000, "context_window_size": 200000 }, "prompt_cache": { "warm": false, "expires_at": 1788256800, "recache_tokens_if_cold": 60000, "ttl": "1h" }, "rate_limits": { "spend_limit": { "used_percentage": 3 } } } },
+        { "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" }, "prompt_cache": { "warm": false, "caching_observed": false, "expires_at": 1788256800 } } }
+      ]
+    },
+    {
+      "name": "cold-cache-from-idle-last-call", "now": "2026-09-01T11:00:00Z", "session": "sess-0001",
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" }, "context_window": { "used_percentage": 30, "total_input_tokens": 60000, "context_window_size": 200000 } } },
+        { "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj" } }
+      ]
+    },
+    {
+      "name": "invalid-stdin", "now": "2026-09-01T10:01:00Z",
+      "steps": [{ "stdin": "this is not json" }, { "stdin": "" }, { "stdin": "[1,2,3]" }]
+    },
+    {
+      "name": "missing-transcript", "now": "2026-09-01T10:01:00Z",
+      "steps": [{ "stdin": { "session_id": "ghost", "transcript_path": "@ROOT@/transcripts/ghost.jsonl", "cwd": "@ROOT@/proj", "model": { "display_name": "Opus 5" } } }]
+    },
+    {
+      "name": "no-cwd-uses-process-cwd", "now": "2026-09-01T10:01:00Z", "projectConfig": { "metrics": { "statusline": { "preset": "classic", "brand": "" } } },
+      "steps": [{ "stdin": { "session_id": "nocwd", "model": { "id": "claude-opus-5" } } }]
+    },
+    {
+      "name": "odd-session-id-and-no-session", "now": "2026-09-01T10:01:00Z",
+      "steps": [
+        { "write": { "transcripts/odd.jsonl": { "ref": "fixture/sess-timing.jsonl" } }, "stdin": { "session_id": "we!rd id/../x", "transcript_path": "@ROOT@/transcripts/odd.jsonl", "cwd": "@ROOT@/proj" } },
+        { "stdin": { "transcript_path": "@ROOT@/transcripts/odd.jsonl", "cwd": "@ROOT@/proj" } }
+      ]
+    },
+    {
+      "name": "detached-head", "now": "2026-09-01T10:01:00Z", "git": "0123456789abcdef0123456789abcdef01234567\n",
+      "steps": [{ "stdin": { "session_id": "dh", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" } } }]
+    },
+    {
+      "name": "branch-with-slash", "now": "2026-09-01T10:01:00Z", "git": "ref: refs/heads/feature/ui-refresh\n",
+      "steps": [{ "stdin": { "session_id": "bs", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" } } }]
+    },
+    {
+      "name": "worktree-pointer", "now": "2026-09-01T10:01:00Z",
+      "files": {
+        "wt/.git": { "text": "gitdir: @ROOTRAW@/proj/.git/worktrees/wt\n" },
+        "proj/.git/worktrees/wt/HEAD": { "text": "ref: refs/heads/wt-branch\n" }
+      },
+      "steps": [{ "stdin": { "session_id": "wt", "cwd": "@ROOT@/wt", "model": { "id": "claude-opus-5" } } }]
+    },
+    {
+      "name": "no-git-head", "now": "2026-09-01T10:01:00Z", "git": false,
+      "steps": [{ "stdin": { "session_id": "ng", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" } } }]
+    },
+    {
+      "name": "powerline-two-line", "now": "2026-09-01T10:01:00Z", "session": "sess-0001", "projectConfig": { "metrics": { "statusline": { "preset": "powerline", "layout": "two-line", "color": true } } },
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" }, "effort": { "level": "xhigh" }, "context_window": { "used_percentage": 64, "total_input_tokens": 128000, "context_window_size": 200000 }, "prompt_cache": { "warm": true, "expires_at": 1788257100, "hit_ratio": 0.5 } } }
+      ]
+    },
+    {
+      "name": "color-off-subscription-off", "now": "2026-09-01T10:01:00Z", "session": "sess-0001", "userConfig": { "metrics": { "subscription": false, "statusline": { "color": false, "separator": "|", "brand": "nxy" } } },
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5" }, "context_window": { "used_percentage": 10, "context_window_size": 200000 } } }
+      ]
+    },
+    {
+      "name": "root-with-space", "rootSpace": true, "now": "2026-09-01T10:01:00Z", "session": "sess-0001",
+      "steps": [
+        { "write": { "transcripts/sess-0001.jsonl": "fixture/sess-0001.jsonl", "transcripts/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl": "fixture/sess-0001/subagents/agent-a1b2c3d4e5f60718.jsonl" }, "stdin": { "session_id": "sess-0001", "transcript_path": "@ROOT@/transcripts/sess-0001.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-opus-5", "display_name": "Opus 5" } } }
+      ]
+    },
+    {
+      "name": "unknown-and-estimated-models", "now": "2026-09-09T12:00:00Z", "session": "u1",
+      "steps": [
+        { "write": { "transcripts/u1.jsonl": "gen/g6", "transcripts/u2.jsonl": "gen/g7" }, "stdin": { "session_id": "u1", "transcript_path": "@ROOT@/transcripts/u1.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-future-9" } } },
+        { "stdin": { "session_id": "u2", "transcript_path": "@ROOT@/transcripts/u2.jsonl", "cwd": "@ROOT@/proj", "model": { "id": "claude-sonnet-5-9" } } }
+      ]
+    }
+  ]
+}

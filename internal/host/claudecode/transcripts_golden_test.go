@@ -76,8 +76,8 @@ func TestGoldenSessions(t *testing.T) {
 				AgentsDir: filepath.Join(dir, in.ID, "subagents"),
 			}
 			parsed := ParseSession(ref, in.Opts)
-				session := goldentest.NormRoot(goldentest.Norm(t, parsed), root)
-				order := append([]string{}, parsed.Tools.Calls.Keys...)
+			session := goldentest.NormRoot(goldentest.Norm(t, parsed), root)
+			order := append([]string{}, parsed.Tools.Calls.Keys...)
 			subs := goldentest.NormRoot(goldentest.Norm(t, SubagentFiles(ref)), root)
 			goldentest.Check(t, c, map[string]any{"session": session, "subagents": subs, "callsOrder": order})
 		})

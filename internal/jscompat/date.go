@@ -1,6 +1,9 @@
 package jscompat
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 const maxTime = 8_640_000_000_000_000 // ms, ECMAScript TimeClip limit
 
@@ -9,18 +12,34 @@ const maxTime = 8_640_000_000_000_000 // ms, ECMAScript TimeClip limit
 // false where JS gives NaN. Date-only forms are UTC; a date-time without offset is local time
 // (time.Local), as V8. Like V8 the day may be 1..31 in any month (Feb 30 rolls into March); the
 // fraction is truncated to milliseconds. Non-strings and anything outside the format give false.
-func ParseDate(v any) (int64, bool) {
+func ParseDate(v any) (int64, bool) { return ParseDateIn(v, time.Local) }
+
+// ParseDateIn is ParseDate with the zone that reads date-times without an offset.
+func ParseDateIn(v any, loc *time.Location) (int64, bool) {
 	s, ok := v.(string)
 	if !ok {
 		return 0, false
 	}
-	p := &dateParser{s: s}
+	p := &dateParser{s: s, loc: loc}
 	return p.parse()
 }
 
+// LocalTime is the Date getters (getFullYear, getMonth, getDate, getHours, getMinutes, getDay)
+// of the instant ms in loc. mon is 0-based like getMonth and weekday 0 is Sunday. ms goes through
+// TimeClip: the fraction is truncated toward zero and NaN or |ms| > 8.64e15 gives ok=false (JS
+// getters give NaN, which prints as "NaN").
+func LocalTime(ms float64, loc *time.Location) (y, mon, d, h, min, weekday int, ok bool) {
+	if math.IsNaN(ms) || math.Abs(ms) > maxTime {
+		return 0, 0, 0, 0, 0, 0, false
+	}
+	t := time.UnixMilli(int64(math.Trunc(ms))).In(loc)
+	return t.Year(), int(t.Month()) - 1, t.Day(), t.Hour(), t.Minute(), int(t.Weekday()), true
+}
+
 type dateParser struct {
-	s string
-	i int
+	s   string
+	i   int
+	loc *time.Location
 }
 
 func (p *dateParser) digits(n int) (int, bool) {
@@ -140,8 +159,7 @@ func (p *dateParser) parse() (int64, bool) {
 	}
 	if hasTime && !hasOffset {
 		// Local time, as V8. Only years time.Date handles sanely get here.
-		t := time.Date(year, time.Month(month), day, hour, minute, sec, 0, time.Local)
-		out := t.Unix()*1000 + int64(ms)
+		out := localToUnix(year, month, day, hour, minute, sec, p.loc)*1000 + int64(ms)
 		if out > maxTime || out < -maxTime {
 			return 0, false
 		}
@@ -153,6 +171,30 @@ func (p *dateParser) parse() (int64, bool) {
 		return 0, false
 	}
 	return out, true
+}
+
+// localToUnix is the epoch second of a wall-clock time in loc the way V8 resolves it: a time that
+// happens twice (clocks going back) is the first one, and a time that does not exist (clocks going
+// forward) is read with the offset in effect before the change. time.Date picks the second
+// instance in the first case, so the candidates are checked here.
+func localToUnix(year, month, day, hour, minute, sec int, loc *time.Location) int64 {
+	wall := time.Date(year, time.Month(month), day, hour, minute, sec, 0, time.UTC).Unix()
+	offsetAt := func(u int64) int {
+		_, o := time.Unix(u, 0).In(loc).Zone()
+		return o
+	}
+	before, after := offsetAt(wall-86400), offsetAt(wall+86400)
+	best, found := int64(0), false
+	for _, off := range [2]int{before, after} {
+		u := wall - int64(off)
+		if offsetAt(u) == off && (!found || u < best) {
+			best, found = u, true
+		}
+	}
+	if !found {
+		return wall - int64(before)
+	}
+	return best
 }
 
 // daysFromCivil is the proleptic Gregorian day number since 1970-01-01.

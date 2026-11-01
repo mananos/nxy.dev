@@ -2,16 +2,21 @@
 /**
  * Golden of the JS semantics the Go ports depend on (`internal/jscompat`): Date.parse, String(),
  * truthiness / `||`, UTF-16 length and slice, per-unit replace and localeCompare. Node is the oracle.
- * Sets: date, value, get, or, text, replace, collate. Date-times without an offset are left out of the
- * corpus on purpose (V8 reads them in local time, so the golden would depend on the machine).
+ * Sets: date, value, get, or, text, replace, collate, tofixed, round, tonumber, pad, space, localdate,
+ * parselocal, stringify. The `date` set leaves date-times without an offset out on purpose (V8 reads
+ * them in local time); `localdate` and `parselocal` cover local time through one child node per zone.
  *
  *   node scripts/golden/jscompat.mjs          write testdata/golden/jscompat/*.json
  *   node scripts/golden/jscompat.mjs --check  fail when they differ
  */
 import { fileURLToPath } from 'node:url';
 import { diffArea, loadCorpus, staleSets, writeArea } from './lib.mjs';
+import { ZONES, inZone } from './tz-child.mjs';
 
 export const AREA = 'jscompat';
+
+/** Sets written one case per line (the large ones). */
+const COMPACT = new Set(['tofixed', 'tonumber', 'localdate', 'parselocal', 'stringify']);
 
 /** `{"$undefined": true}` stands for JS undefined inside JSON data. */
 const revive = (/** @type {any} */ v) => (v !== null && typeof v === 'object' && v.$undefined === true ? undefined : v);
@@ -98,7 +103,72 @@ export function generate() {
     },
   ];
 
-  return { date, value, get, or, text, replace, collate };
+  // toFixed: hand-picked ties and edges, then LCG doubles (magnitudes 1e-3..1e6, half of them rounded
+  // to 3 decimals and some to eighths so exact binary ties show up), each at 0..3 digits.
+  const toNum = (/** @type {any} */ x) => (x === null ? NaN : Number(x));
+  const tofixedCase = (/** @type {string} */ name, /** @type {any} */ x) => ({
+    name,
+    input: { x, digits: [0, 1, 2, 3] },
+    output: { s: [0, 1, 2, 3].map((d) => toNum(x).toFixed(d)) },
+  });
+  let seed = 12345;
+  const next = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+  const tofixed = [
+    ...corpus.tofixed.map((/** @type {any} */ x, /** @type {number} */ i) => tofixedCase(`tofixed:h${String(i).padStart(3, '0')}:${String(x)}`, x)),
+  ];
+  for (let i = 0; i < 400; i++) {
+    let x = (next() - 0.5) * 10 ** ((i % 10) - 3);
+    if (i % 2) x = Math.round(x * 1000) / 1000;
+    if (i % 5 === 0) x = Math.round(next() * 2000) / 8;
+    tofixed.push(tofixedCase(`tofixed:l${String(i).padStart(3, '0')}:${String(x)}`, x));
+  }
+
+  const round = corpus.round.map((/** @type {any} */ x, /** @type {number} */ i) => {
+    const r = Math.round(toNum(x));
+    return { name: `round:${String(i).padStart(2, '0')}:${String(x)}`, input: { x }, output: { s: String(r), negzero: Object.is(r, -0) } };
+  });
+
+  const tonumber = corpus.tonumber.map((/** @type {any} */ v, /** @type {number} */ i) => ({
+    name: `tonumber:${String(i).padStart(2, '0')}:${JSON.stringify(v)}`,
+    input: { value: v },
+    output: { s: String(Number(v)) },
+  }));
+
+  const pad = corpus.pads.map((/** @type {any} */ c, /** @type {number} */ i) => ({
+    name: `pad:${String(i).padStart(2, '0')}:${JSON.stringify(c.s)}/${c.n}/${JSON.stringify(c.fill)}`,
+    input: c,
+    output: { start: c.s.padStart(c.n, c.fill), end: c.s.padEnd(c.n, c.fill) },
+  }));
+
+  const space = corpus.spaces.map((/** @type {string} */ s, /** @type {number} */ i) => ({
+    name: `space:${String(i).padStart(2, '0')}:${JSON.stringify(s)}`,
+    input: { s },
+    output: { collapsed: s.replace(/\s+/g, ' '), trim: s.trim(), trimEnd: s.trimEnd() },
+  }));
+
+  // Date getters and offset-less Date.parse, computed by a child node per zone (TZ=<zone>).
+  const instants = corpus.localInstants.map((/** @type {string} */ s) => Date.parse(s));
+  const ms = [...corpus.localMs, ...instants];
+  const localdate = ZONES.map((zone) => ({
+    name: `localdate:${zone}`,
+    input: { zone, ms },
+    output: { parts: inZone(zone, 'scripts/golden/tz-child.mjs', 'localParts', ms.map((/** @type {any} */ m) => [m])) },
+  }));
+  const parselocal = ZONES.map((zone) => ({
+    name: `parselocal:${zone}`,
+    input: { zone, values: corpus.localDates },
+    output: { ms: inZone(zone, 'scripts/golden/tz-child.mjs', 'parseLocal', corpus.localDates.map((/** @type {string} */ s) => [s])) },
+  }));
+
+  const stringify = corpus.stringifyIndents.flatMap((/** @type {string} */ indent) =>
+    corpus.stringify.map((/** @type {any} */ c) => ({
+      name: `stringify:${c.name}|indent=${JSON.stringify(indent)}`,
+      input: { raw: c.raw, indent },
+      output: { text: JSON.stringify(JSON.parse(c.raw), null, indent || undefined) },
+    })),
+  );
+
+  return { date, value, get, or, text, replace, collate, tofixed, round, tonumber, pad, space, localdate, parselocal, stringify };
 }
 
 function nullNaN(/** @type {number} */ n) {
@@ -109,13 +179,13 @@ function nullNaN(/** @type {number} */ n) {
 export function check() {
   const sets = generate();
   const diffs = [];
-  for (const [set, cases] of Object.entries(sets)) diffs.push(...diffArea(AREA, set, cases));
+  for (const [set, cases] of Object.entries(sets)) diffs.push(...diffArea(AREA, set, cases, COMPACT.has(set)));
   diffs.push(...staleSets(AREA, Object.keys(sets)));
   return diffs;
 }
 
 export function write() {
-  return Object.entries(generate()).map(([set, cases]) => writeArea(AREA, set, cases));
+  return Object.entries(generate()).map(([set, cases]) => writeArea(AREA, set, cases, COMPACT.has(set)));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

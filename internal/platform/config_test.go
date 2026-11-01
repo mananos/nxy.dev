@@ -8,7 +8,13 @@ import (
 	"testing"
 )
 
-func noEnv(string) string { return "" }
+// noEnv has no NXY_* switches; NXY_HOME still comes from the process (setup sets it).
+func noEnv(k string) string {
+	if k == "NXY_HOME" {
+		return os.Getenv(k)
+	}
+	return ""
+}
 
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
@@ -115,15 +121,116 @@ func TestDefaultsMatchPluginConfig(t *testing.T) {
 	if err := json.Unmarshal(data, &plugin); err != nil {
 		t.Fatal(err)
 	}
-	def := defaultFilterConfig()
-	got := map[string]any{
-		"modules": map[string]any{"filter": plugin["modules"].(map[string]any)["filter"]},
-		"filter":  plugin["filter"],
+	var check func(path string, def, plug any)
+	check = func(path string, def, plug any) {
+		if dm, ok := def.(map[string]any); ok && len(dm) > 0 {
+			pm, ok := plug.(map[string]any)
+			if !ok {
+				t.Errorf("%s: not an object in nxy.config.json", path)
+				return
+			}
+			for k, v := range dm {
+				pv, present := pm[k]
+				if !present {
+					t.Errorf("%s.%s: missing in nxy.config.json", path, k)
+					continue
+				}
+				check(path+"."+k, v, pv)
+			}
+			return
+		}
+		a, _ := json.Marshal(def)
+		b, _ := json.Marshal(plug)
+		if string(a) != string(b) {
+			t.Errorf("%s: go default %s, nxy.config.json %s", path, a, b)
+		}
 	}
-	// normalise through JSON so []any{} and number types compare alike
-	a, _ := json.Marshal(def)
-	b, _ := json.Marshal(got)
-	if string(a) != string(b) {
-		t.Fatalf("Go defaults differ from nxy.config.json\n go: %s\njson: %s", a, b)
+	check("", defaultConfig(), plugin)
+}
+
+func TestLoadConfigMetricsGateLayering(t *testing.T) {
+	home, project := setup(t)
+	cfg := LoadConfig(project, noEnv)
+	m := cfg["metrics"].(map[string]any)
+	if m["subscription"] != true || m["projectsDir"] != nil || m["cacheBreakThreshold"] != float64(100000) {
+		t.Fatalf("metrics defaults: %v", m)
+	}
+	writeFile(t, filepath.Join(home, "config.json"), `{"metrics":{"statusline":{"preset":"calm"}},"gate":{"contextTokens":5}}`)
+	writeFile(t, filepath.Join(project, ".nxy", "config.json"), `{"metrics":{"statusline":{"brand":"x"},"projectsDir":"/p"}}`)
+	cfg = LoadConfig(project, noEnv)
+	sl := cfg["metrics"].(map[string]any)["statusline"].(map[string]any)
+	if sl["preset"] != "calm" || sl["brand"] != "x" || sl["layout"] != "line" {
+		t.Fatalf("statusline layering: %v", sl)
+	}
+	if cfg["metrics"].(map[string]any)["projectsDir"] != "/p" || cfg["gate"].(map[string]any)["contextTokens"] != float64(5) {
+		t.Fatalf("layering: %v", cfg)
+	}
+}
+
+func TestRuntimeDirFromSubdir(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sub := filepath.Join(root, "a", "b")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := RuntimeDir(sub), filepath.Join(root, ".nxy", "local"); got != want {
+		t.Fatalf("RuntimeDir = %q want %q", got, want)
+	}
+}
+
+func TestReadJSONLSkipsBroken(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "x.jsonl")
+	writeFile(t, p, "{\"a\":1}\n   \n{broken\n\n[2]\n")
+	rows := ReadJSONL(p)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %v", rows)
+	}
+	if ReadJSONL(filepath.Join(t.TempDir(), "none")) != nil {
+		t.Fatal("missing file must give no rows")
+	}
+}
+
+func TestGitBranch(t *testing.T) {
+	root := t.TempDir()
+	if _, ok := GitBranch(root); ok {
+		t.Fatal("no repo must be false")
+	}
+	writeFile(t, filepath.Join(root, ".git", "HEAD"), "ref: refs/heads/feat/x\n")
+	sub := filepath.Join(root, "s")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if b, ok := GitBranch(sub); !ok || b != "feat/x" {
+		t.Fatalf("branch = %q %v", b, ok)
+	}
+	writeFile(t, filepath.Join(root, ".git", "HEAD"), "0123456789abcdef\n")
+	if b, ok := GitBranch(root); !ok || b != "0123456" {
+		t.Fatalf("detached = %q %v", b, ok)
+	}
+	// worktree pointer file, relative target
+	wt := t.TempDir()
+	writeFile(t, filepath.Join(wt, ".git"), "gitdir: gd/wt1\n")
+	writeFile(t, filepath.Join(wt, "gd", "wt1", "HEAD"), "ref: refs/heads/wt\n")
+	if b, ok := GitBranch(wt); !ok || b != "wt" {
+		t.Fatalf("worktree = %q %v", b, ok)
+	}
+}
+
+func TestWriteAtomic(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "s.json")
+	if err := WriteAtomic(p, []byte("one")); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteAtomic(p, []byte("two")); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(p); string(b) != "two" {
+		t.Fatalf("got %q", b)
+	}
+	if e, _ := os.ReadDir(filepath.Dir(p)); len(e) != 1 {
+		t.Fatalf("temp file left behind: %v", e)
 	}
 }

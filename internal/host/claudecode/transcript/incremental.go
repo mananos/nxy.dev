@@ -107,9 +107,8 @@ type IncrementalState struct {
 	Partial        string        `json:"partial"` // trailing incomplete line
 	Seen           Seen          `json:"seen"`    // requestId -> largest output seen (bounded)
 	Usage          pricing.Usage `json:"usage"`
-	Usd            float64       `json:"usd"`                    // priced part
-	UsdUnknown     int           `json:"usdUnknown"`             // calls without a price
-	UsdEstimated   *int          `json:"usdEstimated,omitempty"` // calls priced by family; absent until first set
+	Usd            float64       `json:"usd"`        // priced part
+	UsdUnknown     int           `json:"usdUnknown"` // calls without a price
 	Model          *string       `json:"model"`
 	Calls          int           `json:"calls"`
 	Turns          int           `json:"turns"`          // human prompts seen (main transcript only)
@@ -117,6 +116,8 @@ type IncrementalState struct {
 	TurnUsdUnknown int           `json:"turnUsdUnknown"` // unpriced calls in the current turn
 	LastTs         *int64        `json:"lastTs"`         // ms of the last API call seen
 	TurnStartTs    *int64        `json:"turnStartTs"`    // ms of the prompt that opened the turn
+	// UsdEstimated is last because the 1.x adds the key when it is first set, after the initial ones.
+	UsdEstimated *int `json:"usdEstimated,omitempty"` // calls priced by family; absent until first set
 }
 
 // NewIncrementalState is a fresh state.

@@ -1,6 +1,7 @@
 package platform
 
 import (
+	_ "embed"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -28,17 +29,17 @@ func GitRoot(dir string) (string, bool) {
 	return "", false
 }
 
-// defaultFilterConfig is modules.filter and filter.* of nxy.config.json (a test keeps them equal).
-func defaultFilterConfig() map[string]any {
-	return map[string]any{
-		"modules": map[string]any{"filter": true},
-		"filter": map[string]any{
-			"engine":                       "auto",
-			"excludeCommands":              []any{},
-			"onlyCommands":                 []any{},
-			"autoAllowWhenOriginalAllowed": true,
-		},
+// defaultsJSON holds the keys of nxy.config.json that the v2 reads (a test keeps them equal).
+//
+//go:embed defaults.json
+var defaultsJSON []byte
+
+func defaultConfig() map[string]any {
+	var m map[string]any
+	if err := json.Unmarshal(defaultsJSON, &m); err != nil {
+		panic("platform: bad defaults.json: " + err.Error())
 	}
+	return m
 }
 
 // deepMerge mirrors core/config.mjs: objects recurse, arrays and scalars replace.
@@ -102,11 +103,12 @@ func stringList(v any) []string {
 	return out
 }
 
-// LoadFilterSettings resolves the filter settings: defaults, then <UserDir>/config.json, then
-// <git root or projectDir>/.nxy/config.json, then NXY_FILTER=0|1 and NXY_ENGINE=rtk|off.
-func LoadFilterSettings(projectDir string, getenv func(string) string) filter.Settings {
-	cfg := defaultFilterConfig()
-	if u, err := UserDir(); err == nil {
+// LoadConfig resolves the merged config like core/config.mjs: defaults, then <UserDir>/config.json,
+// then <git root or projectDir>/.nxy/config.json, then NXY_FILTER=0|1 and NXY_ENGINE=rtk|off.
+// Defaults cover only the keys the v2 reads.
+func LoadConfig(projectDir string, getenv func(string) string) map[string]any {
+	cfg := defaultConfig()
+	if u, err := UserDirEnv(getenv); err == nil {
 		cfg = deepMerge(cfg, readJSONObject(filepath.Join(u, "config.json")))
 	}
 	root := projectDir
@@ -120,6 +122,12 @@ func LoadFilterSettings(projectDir string, getenv func(string) string) filter.Se
 	if v := getenv("NXY_ENGINE"); v == "rtk" || v == "off" {
 		cfg = deepMerge(cfg, map[string]any{"filter": map[string]any{"engine": v}})
 	}
+	return cfg
+}
+
+// LoadFilterSettings is the filter view over LoadConfig.
+func LoadFilterSettings(projectDir string, getenv func(string) string) filter.Settings {
+	cfg := LoadConfig(projectDir, getenv)
 	modules, _ := cfg["modules"].(map[string]any)
 	f, _ := cfg["filter"].(map[string]any)
 	engine, _ := f["engine"].(string)

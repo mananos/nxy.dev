@@ -1,0 +1,10 @@
+[
+{"name":"dbpath:home-only","input":{"env":{"HOME":"/srv/x"},"platforms":["win32","linux","darwin"]},"output":{"paths":["/srv/x/AppData/Local/rtk/history.db","/srv/x/.local/share/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:home-wins","input":{"env":{"HOME":"/srv/x","USERPROFILE":"C:\\Work\\y"},"platforms":["win32","linux","darwin"]},"output":{"paths":["/srv/x/AppData/Local/rtk/history.db","/srv/x/.local/share/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:localappdata","input":{"env":{"HOME":"/srv/x","LOCALAPPDATA":"D:\\Data\\Local"},"platforms":["win32","linux","darwin"]},"output":{"paths":["D:/Data/Local/rtk/history.db","/srv/x/.local/share/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:rtk-db-path","input":{"env":{"RTK_DB_PATH":"/custom/history.db","HOME":"/srv/x"},"platforms":["win32","linux","darwin"]},"output":{"paths":["/custom/history.db","/custom/history.db","/custom/history.db"]}},
+{"name":"dbpath:rtk-db-path-empty","input":{"env":{"RTK_DB_PATH":"","HOME":"/srv/x"},"platforms":["win32","linux","darwin"]},"output":{"paths":["/srv/x/AppData/Local/rtk/history.db","/srv/x/.local/share/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:userprofile-only","input":{"env":{"USERPROFILE":"C:\\Work\\x"},"platforms":["win32","linux","darwin"]},"output":{"paths":["C:/Work/x/AppData/Local/rtk/history.db","C:/Work/x/.local/share/rtk/history.db","C:/Work/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:xdg","input":{"env":{"HOME":"/srv/x","XDG_DATA_HOME":"/srv/xdg"},"platforms":["win32","linux","darwin"]},"output":{"paths":["/srv/x/AppData/Local/rtk/history.db","/srv/xdg/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}},
+{"name":"dbpath:xdg-empty","input":{"env":{"HOME":"/srv/x","XDG_DATA_HOME":""},"platforms":["win32","linux","darwin"]},"output":{"paths":["/srv/x/AppData/Local/rtk/history.db","/srv/x/.local/share/rtk/history.db","/srv/x/Library/Application Support/rtk/history.db"]}}
+]

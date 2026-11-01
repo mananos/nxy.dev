@@ -1,0 +1,218 @@
+[
+  {
+    "name": "pad:00:\"abc\"/6/\" \"",
+    "input": {
+      "s": "abc",
+      "n": 6,
+      "fill": " "
+    },
+    "output": {
+      "start": "   abc",
+      "end": "abc   "
+    }
+  },
+  {
+    "name": "pad:01:\"abc\"/2/\" \"",
+    "input": {
+      "s": "abc",
+      "n": 2,
+      "fill": " "
+    },
+    "output": {
+      "start": "abc",
+      "end": "abc"
+    }
+  },
+  {
+    "name": "pad:02:\"abc\"/3/\" \"",
+    "input": {
+      "s": "abc",
+      "n": 3,
+      "fill": " "
+    },
+    "output": {
+      "start": "abc",
+      "end": "abc"
+    }
+  },
+  {
+    "name": "pad:03:\"abc\"/0/\" \"",
+    "input": {
+      "s": "abc",
+      "n": 0,
+      "fill": " "
+    },
+    "output": {
+      "start": "abc",
+      "end": "abc"
+    }
+  },
+  {
+    "name": "pad:04:\"abc\"/-4/\" \"",
+    "input": {
+      "s": "abc",
+      "n": -4,
+      "fill": " "
+    },
+    "output": {
+      "start": "abc",
+      "end": "abc"
+    }
+  },
+  {
+    "name": "pad:05:\"\"/3/\"0\"",
+    "input": {
+      "s": "",
+      "n": 3,
+      "fill": "0"
+    },
+    "output": {
+      "start": "000",
+      "end": "000"
+    }
+  },
+  {
+    "name": "pad:06:\"7\"/3/\"0\"",
+    "input": {
+      "s": "7",
+      "n": 3,
+      "fill": "0"
+    },
+    "output": {
+      "start": "007",
+      "end": "700"
+    }
+  },
+  {
+    "name": "pad:07:\"abc\"/10/\"xy\"",
+    "input": {
+      "s": "abc",
+      "n": 10,
+      "fill": "xy"
+    },
+    "output": {
+      "start": "xyxyxyxabc",
+      "end": "abcxyxyxyx"
+    }
+  },
+  {
+    "name": "pad:08:\"abc\"/9/\"123\"",
+    "input": {
+      "s": "abc",
+      "n": 9,
+      "fill": "123"
+    },
+    "output": {
+      "start": "123123abc",
+      "end": "abc123123"
+    }
+  },
+  {
+    "name": "pad:09:\"abc\"/7/\"-=\"",
+    "input": {
+      "s": "abc",
+      "n": 7,
+      "fill": "-="
+    },
+    "output": {
+      "start": "-=-=abc",
+      "end": "abc-=-="
+    }
+  },
+  {
+    "name": "pad:10:\"abc\"/8/\"\"",
+    "input": {
+      "s": "abc",
+      "n": 8,
+      "fill": ""
+    },
+    "output": {
+      "start": "abc",
+      "end": "abc"
+    }
+  },
+  {
+    "name": "pad:11:\"😀\"/5/\"ab\"",
+    "input": {
+      "s": "😀",
+      "n": 5,
+      "fill": "ab"
+    },
+    "output": {
+      "start": "aba😀",
+      "end": "😀aba"
+    }
+  },
+  {
+    "name": "pad:12:\"😀😀\"/4/\".\"",
+    "input": {
+      "s": "😀😀",
+      "n": 4,
+      "fill": "."
+    },
+    "output": {
+      "start": "😀😀",
+      "end": "😀😀"
+    }
+  },
+  {
+    "name": "pad:13:\"😀\"/2/\".\"",
+    "input": {
+      "s": "😀",
+      "n": 2,
+      "fill": "."
+    },
+    "output": {
+      "start": "😀",
+      "end": "😀"
+    }
+  },
+  {
+    "name": "pad:14:\"café\"/8/\"*\"",
+    "input": {
+      "s": "café",
+      "n": 8,
+      "fill": "*"
+    },
+    "output": {
+      "start": "****café",
+      "end": "café****"
+    }
+  },
+  {
+    "name": "pad:15:\"日本\"/6/\" \"",
+    "input": {
+      "s": "日本",
+      "n": 6,
+      "fill": " "
+    },
+    "output": {
+      "start": "    日本",
+      "end": "日本    "
+    }
+  },
+  {
+    "name": "pad:16:\"a b\"/6/\"·\"",
+    "input": {
+      "s": "a b",
+      "n": 6,
+      "fill": "·"
+    },
+    "output": {
+      "start": "···a b",
+      "end": "a b···"
+    }
+  },
+  {
+    "name": "pad:17:\"x\"/4/\"éè\"",
+    "input": {
+      "s": "x",
+      "n": 4,
+      "fill": "éè"
+    },
+    "output": {
+      "start": "éèéx",
+      "end": "xéèé"
+    }
+  }
+]

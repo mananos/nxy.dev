@@ -1,0 +1,69 @@
+{
+  "numbers": [null, 0, -0, -1, -5, 0.4, 0.5, 1.5, 2.5, 7, 842, 999, 999.4, 999.5, 1000, 1049, 1050, 4200, 9949, 9950, 9999, 10000, 12345, 412000, 999499, 999500, 1000000, 1250000, 4200000, 9949999, 9950000, 10000000, 123456789, 1e15, 1e21, 0.004, 0.0004, 0.0005, 0.9995, 0.9999, 1.005, 1.2345, 8.345, 15.5, 100, 164.2, 1234.5678, -0.004],
+  "digits": [0, 1, 2],
+  "partials": [null, 0, 0.004, 1.5, 164.2, 12345.678],
+  "estimates": [
+    [],
+    [["claude-sonnet-5-5", "claude-sonnet-5"]],
+    [["claude-sonnet-5-5", "claude-sonnet-5"], ["claude-opus-9", "claude-opus-4"], ["claude-sonnet-5-6", "claude-sonnet-5"]],
+    [["a", "x"], ["b", "y"], ["c", "x"], ["d", "z"], ["e", "y"]],
+    [["only", "só-ñ"]]
+  ],
+  "durations": [null, -1, -0, 0, 400, 500, 1499, 1500, 44500, 59499, 59500, 60000, 61000, 719000, 3599499, 3599500, 3600000, 7500000, 86399499, 86400000, 90000000, 273600000, 1e10, 1e20, 1e26],
+  "dates": [null, 0, 1, 1000000000000, 1700000000000, 1700000000999, 1710054000000, 1711846800000, 1730000000000, 1711933200000, 1698541199000, 1.7e12, 86400000, -86400000, -62135596800000, 8640000000000000, 8640000000000001, -8640000000000000, -8640000000000001, 1e18],
+  "datesFraction": [1700000000000.9, -1.5, 0.5],
+  "gauges": [null, -50, 0, 5, 6.25, 18.75, 31.25, 50, 56.25, 99, 100, 150],
+  "cells": [8, 4, 1, 0],
+  "styles": [null, "", " ", "text", "bold", "red", "bold red", "  red  ", "red red", "bold bold dim", "text red", "bg:red", "bg:muted", "bg:bold", "bg:text", "bg:grey", "muted", "gray", "grey", "#FF00aa", "#ff00AA", "bg:#1e1e2e", "#12345", "#1234567", "#ggg000", "245", "256", "0", "007", "1234", "bg:80", "bg:0", "bg:300", "bg:", "bg:bg:red", "BOLD", "unknown", "bold unknown red", "toString", "constructor", "hasOwnProperty", "valueOf", "red\tbold", "red bold", "red\nbold", " red ", "80 bg:236 bold", "bg:red bg:red red", "38;5;245", "١"],
+  "severities": [
+    [null, 70, 90],
+    [0, 70, 90],
+    [69.9, 70, 90],
+    [70, 70, 90],
+    [89.9, 70, 90],
+    [90, 70, 90],
+    [150, 70, 90],
+    [-1, 70, 90],
+    [80, null, 90],
+    [95, null, 90],
+    [80, 70, null],
+    [80, null, null],
+    [5, 5, 5],
+    [4, 5, 5]
+  ],
+  "tables": [
+    {"name": "plain", "cols": [{"label": "name"}, {"label": "n", "align": "right"}], "rows": [["alpha", "1"], ["b", "12345"], ["", "0"]]},
+    {"name": "no rows", "cols": [{"label": "name"}, {"label": "calls", "align": "right"}], "rows": []},
+    {"name": "last column left is trimmed", "cols": [{"label": "k", "align": "right"}, {"label": "value"}], "rows": [["a", "x  "], ["bb", ""], ["ccc", " "]]},
+    {"name": "wide and astral", "cols": [{"label": "model"}, {"label": "$", "align": "right"}, {"label": "bar"}], "rows": [["sonnet ñ", "$1.20", "▰▰▱▱"], ["日本語", "$0.004", "😀 ok"], ["x", "?", ""]]},
+    {"name": "single column", "cols": [{"label": "only a label that is long"}], "rows": [["a"], ["bb"]]},
+    {"name": "right aligned last", "cols": [{"label": "tool"}, {"label": "chars", "align": "right"}], "rows": [["Bash", "1,200"], ["Read", "12"]]}
+  ],
+  "clips": [
+    ["", 5], [null, 5], ["abc", 5], ["abcde", 5], ["abcdef", 5], ["abcdef", 1], ["abcdef", 0], ["abcdef", -3], ["abcdef", 2], ["a…b…c…", 4], ["日本語テキスト", 4], ["ab😀cd", 5], ["ab😀", 5], ["😀😀😀", 6], ["😀😀😀", 7], ["x y z", 3], ["tabs\tand\nnewlines", 8]
+  ],
+  "sinceNow": 1700000000000,
+  "sinces": [null, "", "7d", "24h", "30m", "90s", "2w", "0d", "  7d  ", "7D", "d", "7 d", "-7d", "1.5d", "007d", "99999d", "2024-03-10", "2024-03-10T10:00:00Z", "2024-03-10T10:00:00+02:00", "2024-03-10T10:00", "2024-03-10T10:00:00", "2024-03-31T02:30", "2024-10-27T02:30:00", "2024-03-09T24:00", "2024-04-07T00:00", "2024-09-08T00:30", "2024-13-01", "garbage", "yesterday", "2024"],
+  "argvs": [
+    [],
+    ["--json"],
+    ["--by", "day"],
+    ["--by=week"],
+    ["--by", "day", "--by", "model"],
+    ["--json", "--no-agents"],
+    ["--json", "pos1", "pos2"],
+    ["pos1", "--here", "pos2"],
+    ["--since", "--here"],
+    ["--since", "-5"],
+    ["--k=", "--j"],
+    ["--k=a=b"],
+    ["--=x"],
+    ["--", "x"],
+    ["--k", "--k=v"],
+    ["--k=v", "--k"],
+    ["-x", "-", "--flag", "a", "b"],
+    ["--all", "--session", "abc-123", "last"],
+    ["", "--e", ""],
+    ["--a", "--b", "--c", "v"]
+  ]
+}

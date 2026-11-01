@@ -1,0 +1,7 @@
+[
+{"name":"estnote:000","input":{"pairs":[]},"output":{"s":""}},
+{"name":"estnote:001","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"]]},"output":{"s":"(estimated with claude-sonnet-5 rates: claude-sonnet-5-5 — not in core/pricing.json)"}},
+{"name":"estnote:002","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"],["claude-opus-9","claude-opus-4"],["claude-sonnet-5-6","claude-sonnet-5"]]},"output":{"s":"(estimated with claude-sonnet-5 rates: claude-sonnet-5-5, claude-sonnet-5-6; estimated with claude-opus-4 rates: claude-opus-9 — not in core/pricing.json)"}},
+{"name":"estnote:003","input":{"pairs":[["a","x"],["b","y"],["c","x"],["d","z"],["e","y"]]},"output":{"s":"(estimated with x rates: a, c; estimated with y rates: b, e; estimated with z rates: d — not in core/pricing.json)"}},
+{"name":"estnote:004","input":{"pairs":[["only","só-ñ"]]},"output":{"s":"(estimated with só-ñ rates: only — not in core/pricing.json)"}}
+]

@@ -3,7 +3,9 @@ package transcript
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"sort"
+	"strconv"
 
 	"github.com/mananos/nxy.dev/internal/jscompat"
 	"github.com/mananos/nxy.dev/internal/metrics"
@@ -86,6 +88,23 @@ func (o OrderedMap[V]) MarshalJSON() ([]byte, error) {
 type AgentTypeBucket struct {
 	metrics.Finished
 	Agents int `json:"agents"`
+}
+
+// MarshalJSON writes the 1.x key order: "agents" sits between contextPeak and usdPartial.
+func (t AgentTypeBucket) MarshalJSON() ([]byte, error) {
+	raw, err := json.Marshal(t.Finished)
+	if err != nil {
+		return nil, err
+	}
+	const at = `,"usdPartial":`
+	i := bytes.Index(raw, []byte(at))
+	if i < 0 {
+		return nil, errors.New("transcript: unexpected bucket JSON")
+	}
+	out := append([]byte{}, raw[:i]...)
+	out = append(out, `,"agents":`...)
+	out = strconv.AppendInt(out, int64(t.Agents), 10)
+	return append(out, raw[i:]...), nil
 }
 
 // Agent is one subagent run of the session.

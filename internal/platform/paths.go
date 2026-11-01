@@ -36,8 +36,11 @@ func nativePath(goos, p string) string {
 }
 
 // UserDir is the user-level nxy directory: NXY_HOME when set, else ~/.nxy.
-func UserDir() (string, error) {
-	if h := os.Getenv("NXY_HOME"); h != "" {
+func UserDir() (string, error) { return UserDirEnv(os.Getenv) }
+
+// UserDirEnv is UserDir reading NXY_HOME through getenv (the home still comes from the OS).
+func UserDirEnv(getenv func(string) string) (string, error) {
+	if h := getenv("NXY_HOME"); h != "" {
 		return NativePath(h), nil
 	}
 	home, err := os.UserHomeDir()
@@ -45,6 +48,15 @@ func UserDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(home, ".nxy"), nil
+}
+
+// RuntimeDir is the per-checkout runtime state: <git root or dir>/.nxy/local (paths.mjs nxyRuntimeDir).
+func RuntimeDir(dir string) string {
+	root := dir
+	if r, ok := GitRoot(dir); ok {
+		root = r
+	}
+	return filepath.Join(root, ".nxy", "local")
 }
 
 // BinDir is where the binary of a given version lives.

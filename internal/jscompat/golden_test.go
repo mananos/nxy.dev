@@ -1,8 +1,11 @@
 package jscompat
 
 import (
+	"math"
 	"sort"
 	"testing"
+	"time"
+	_ "time/tzdata" // zones load on Windows CI too
 
 	"github.com/mananos/nxy.dev/internal/goldentest"
 )
@@ -109,6 +112,147 @@ func TestGoldenReplace(t *testing.T) {
 		}, "-")
 		goldentest.Check(t, c, map[string]any{"slug": slug})
 	})
+}
+
+// numIn reads a corpus number: null is NaN and the strings "Infinity"/"-Infinity" are the infinities.
+func numIn(v any) float64 {
+	switch x := v.(type) {
+	case nil:
+		return math.NaN()
+	case string:
+		if x == "-Infinity" {
+			return math.Inf(-1)
+		}
+		return math.Inf(1)
+	}
+	return v.(float64)
+}
+
+func TestGoldenToFixed(t *testing.T) {
+	forFile(t, "tofixed.json", func(t *testing.T, c goldentest.Case) {
+		var x any
+		var digits []int
+		c.In(t, "x", &x)
+		c.In(t, "digits", &digits)
+		out := make([]string, len(digits))
+		for i, d := range digits {
+			out[i] = ToFixed(numIn(x), d)
+		}
+		goldentest.Check(t, c, map[string]any{"s": out})
+	})
+}
+
+func TestGoldenRound(t *testing.T) {
+	forFile(t, "round.json", func(t *testing.T, c goldentest.Case) {
+		var x any
+		c.In(t, "x", &x)
+		r := Round(numIn(x))
+		goldentest.Check(t, c, map[string]any{"s": formatNumber(r), "negzero": r == 0 && math.Signbit(r)})
+	})
+}
+
+func TestGoldenToNumber(t *testing.T) {
+	forFile(t, "tonumber.json", func(t *testing.T, c goldentest.Case) {
+		var v any
+		c.In(t, "value", &v)
+		goldentest.Check(t, c, map[string]any{"s": formatNumber(ToNumber(v))})
+	})
+}
+
+func TestGoldenPad(t *testing.T) {
+	forFile(t, "pad.json", func(t *testing.T, c goldentest.Case) {
+		var s, fill string
+		var n int
+		c.In(t, "s", &s)
+		c.In(t, "n", &n)
+		c.In(t, "fill", &fill)
+		goldentest.Check(t, c, map[string]any{"start": PadStart(s, n, fill), "end": PadEnd(s, n, fill)})
+	})
+}
+
+func TestGoldenSpace(t *testing.T) {
+	forFile(t, "space.json", func(t *testing.T, c goldentest.Case) {
+		var s string
+		c.In(t, "s", &s)
+		goldentest.Check(t, c, map[string]any{"collapsed": CollapseSpace(s), "trim": Trim(s), "trimEnd": TrimEnd(s)})
+	})
+}
+
+func zoneOf(t *testing.T, c goldentest.Case) *time.Location {
+	t.Helper()
+	var zone string
+	c.In(t, "zone", &zone)
+	loc, err := time.LoadLocation(zone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return loc
+}
+
+func TestGoldenLocalDate(t *testing.T) {
+	forFile(t, "localdate.json", func(t *testing.T, c goldentest.Case) {
+		loc := zoneOf(t, c)
+		var ms []any
+		c.In(t, "ms", &ms)
+		parts := make([]any, len(ms))
+		for i, m := range ms {
+			if y, mon, d, h, min, wd, ok := LocalTime(numIn(m), loc); ok {
+				parts[i] = map[string]any{"y": y, "mon": mon, "d": d, "h": h, "min": min, "wd": wd}
+			}
+		}
+		goldentest.Check(t, c, map[string]any{"parts": parts})
+	})
+}
+
+func TestGoldenParseLocal(t *testing.T) {
+	forFile(t, "parselocal.json", func(t *testing.T, c goldentest.Case) {
+		loc := zoneOf(t, c)
+		var values []string
+		c.In(t, "values", &values)
+		out := make([]any, len(values))
+		for i, s := range values {
+			if n, ok := ParseDateIn(s, loc); ok {
+				out[i] = n
+			}
+		}
+		goldentest.Check(t, c, map[string]any{"ms": out})
+	})
+}
+
+func TestGoldenStringify(t *testing.T) {
+	forFile(t, "stringify.json", func(t *testing.T, c goldentest.Case) {
+		var raw, indent string
+		c.In(t, "raw", &raw)
+		c.In(t, "indent", &indent)
+		got, err := Restringify([]byte(raw), indent)
+		if err != nil {
+			t.Fatal(err)
+		}
+		goldentest.Check(t, c, map[string]any{"text": string(got)})
+	})
+}
+
+func TestToFixedNegativeZeroAndRound(t *testing.T) {
+	if got := ToFixed(math.Copysign(0, -1), 2); got != "0.00" {
+		t.Errorf("ToFixed(-0) = %q", got)
+	}
+	if got := ToFixed(-0.001, 2); got != "-0.00" {
+		t.Errorf("ToFixed(-0.001) = %q", got)
+	}
+	if r := Round(math.Copysign(0, -1)); !math.Signbit(r) {
+		t.Error("Round(-0) lost its sign")
+	}
+	if !math.IsNaN(ToNumber([]any{})) || ToNumber(nil) != 0 {
+		t.Error("ToNumber of non-scalars")
+	}
+}
+
+func TestRestringifyRejectsBadInput(t *testing.T) {
+	for _, raw := range []string{"", "{", "[1,]", "{} {}", "nope"} {
+		if _, err := Restringify([]byte(raw), "  "); err == nil {
+			t.Errorf("Restringify(%q) did not fail", raw)
+		}
+	}
 }
 
 func TestGoldenCollate(t *testing.T) {

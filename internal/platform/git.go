@@ -5,9 +5,55 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/mananos/nxy.dev/internal/jscompat"
 )
+
+var (
+	gitdirLine = regexp.MustCompile(`(?m)^gitdir:\s*(.+?)\s*$`)
+	headRef    = regexp.MustCompile(`^ref:\s*refs/heads/(.+)$`)
+)
+
+// GitBranch is the current branch of the checkout containing dir, or the first 7 units of a detached
+// HEAD (paths.mjs gitBranch). It reads files only and never spawns git. Not a repo or unreadable: "", false.
+func GitBranch(dir string) (string, bool) {
+	root, ok := GitRoot(dir)
+	if !ok {
+		return "", false
+	}
+	gitDir := filepath.Join(root, ".git")
+	st, err := os.Stat(gitDir)
+	if err != nil {
+		return "", false
+	}
+	if !st.IsDir() {
+		data, err := os.ReadFile(gitDir)
+		if err != nil {
+			return "", false
+		}
+		m := gitdirLine.FindStringSubmatch(string(data))
+		if m == nil {
+			return "", false
+		}
+		p := jscompat.Trim(m[1])
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(root, p)
+		}
+		gitDir = p
+	}
+	raw, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
+	if err != nil {
+		return "", false
+	}
+	head := jscompat.Trim(string(raw))
+	if m := headRef.FindStringSubmatch(head); m != nil {
+		return m[1], true
+	}
+	return jscompat.UTF16Prefix(head, 7), true
+}
 
 // GitHead returns the commit HEAD points to, read from the .git files without
 // running git (the approval hook must stay fast). "" when dir is not in a repo or

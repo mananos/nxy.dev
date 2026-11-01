@@ -70,6 +70,27 @@ export function normRoot(value, root) {
   return value;
 }
 
+const reEscape = (/** @type {string} */ s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Makes a command's output machine independent (same rule as goldentest.NormRootText):
+ *  - the root, written raw or JSON-escaped, becomes `<root>`, and the rest of that path (up to a
+ *    space, quote, `)`, `,` or `;`) gets forward slashes;
+ *  - the Claude Code project slug of the root (every non-alphanumeric char as `-`) becomes `<rootslug>`.
+ * @param {string} text
+ * @param {string} root
+ * @returns {string}
+ */
+export function normRootText(text, root) {
+  let out = text;
+  const esc = JSON.stringify(root).slice(1, -1);
+  if (esc !== root) {
+    out = out.replace(new RegExp(`${reEscape(esc)}((?:\\\\\\\\|[^\\s"\\\\),;])*)`, 'g'), (_m, rest) => `<root>${rest.replace(/\\\\/g, '/')}`);
+  }
+  out = out.replace(new RegExp(`${reEscape(root)}([^\\s"'),;]*)`, 'g'), (_m, rest) => `<root>${rest.replace(/\\/g, '/')}`);
+  return out.split(root.replace(/[^A-Za-z0-9]/g, '-')).join('<rootslug>');
+}
+
 /**
  * Map -> object, Set -> array, recursively; the shape JSON.stringify would not keep.
  * @param {any} value

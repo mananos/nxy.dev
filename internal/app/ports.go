@@ -8,8 +8,41 @@ import (
 	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/internal/report"
 	"github.com/mananos/nxy.dev/internal/review"
 )
+
+// SessionLookup selects the transcripts a report reads.
+type SessionLookup struct {
+	// Cwd limits the lookup to the project of that directory unless All is set.
+	Cwd string
+	All bool
+	// ProjectsDir overrides the host's transcript root ("" = its default).
+	ProjectsDir string
+	// Since drops sessions last modified before this epoch ms; 0 keeps everything.
+	Since int64
+}
+
+// Transcripts reads the host's session transcripts.
+type Transcripts interface {
+	// ResolveSession finds "last", an id or a unique id prefix; nil when there is none.
+	ResolveSession(selector string, opts SessionLookup) *transcript.SessionRef
+	ListSessions(opts SessionLookup) []transcript.SessionRef
+	ParseSession(ref transcript.SessionRef, opts transcript.SessionOpts) transcript.Session
+	// LastCacheTTL is the TTL the main thread last wrote its cache with ("5m" or "1h").
+	LastCacheTTL(path string) (string, bool)
+}
+
+// Ledger is rtk's savings ledger, read only.
+type Ledger interface {
+	// Rows are the commands in [since, until] (epoch ms, nil is open); false when it cannot be read.
+	Rows(since, until *int64) ([]report.LedgerRow, bool)
+	// Unavailable says why Rows would fail: "no-db" or "".
+	Unavailable() string
+	// DBPath is where the ledger is looked for.
+	DBPath() string
+}
 
 // ErrActiveFeature is what CreateFeature returns when the repo already has a feature that is not done.
 var ErrActiveFeature = errors.New("repo already has an active feature")

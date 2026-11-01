@@ -186,4 +186,31 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 
 **A validar en vivo:** `/clear` con el planner en background justo tras cerrar; el peso de las referencias en el prompt del planner (≈25 KB con 50 mensajes); que nxy no valida la sintaxis d2 (un bloque roto se ve recién al renderizarlo a mano).
 
+## F3.2: stats, trend y statusline
+
+Los tres reportes de la 1.x ya corren en el binario de Go y imprimen lo mismo que la 1.x con las mismas entradas (texto y `--json` byte a byte, probado con golden generados por la 1.x). Todavía no hay slash commands ni instalación de la statusline: eso es F3.4.
+
+**Cómo probarlos.** Con el binario compilado (`go build -o nxy ./cmd/nxy`):
+
+- `nxy stats` (sesión actual; también `last`, un id, `--all`, `--no-agents`, `--json`).
+- `nxy trend` (`--by day|week|session|model|agent`, `--here`, `--since 7d` o una fecha, `--json`).
+- `echo '{"session_id":"x","cwd":"<tu repo>","model":{"id":"claude-sonnet-4-6"}}' | nxy statusline`, o `nxy statusline < payload.json` con un JSON de los que manda Claude Code.
+
+Qué ves: las mismas tablas y la misma línea de la 1.x; lo que nxy no puede saber se muestra como `?`, nunca un número inventado. Qué hacer: nada que configurar, leen `metrics.*` de tu `config.json` como la 1.x.
+
+**Lo que no es igual todavía.**
+
+- La línea "broad searches in the main thread" de `nxy stats` (y `broadSearches.count` en `--json`) no sale hasta F3.3: hoy siempre es 0.
+- Las sesiones del v2 muestran `FILTER …: 0` y la columna nxy de `trend` cuenta sólo skills `nxy:`: el filtro del v2 todavía no escribe filas (es F4).
+- Si falta rtk, `trend --by day` sigue diciendo "install Node ≥ 22.13" (texto de la 1.x).
+- La statusline no se instala sola ni la llama Claude Code todavía (F3.4): el shim `bin/nxy.cmd` sólo corre `hook`.
+
+**Estado de la statusline.** Cada render lee sólo los bytes nuevos del transcript, así que guarda el avance por sesión:
+
+- Dónde: `~/.nxy/cache/statusline-v2/<session>.json` (el id con todo lo que no sea `A-Za-z0-9_-` cambiado por `_`) y el último payload recibido en `~/.nxy/cache/statusline-v2-input.json` (para soporte: "¿por qué no veo X?"). `NXY_HOME` cambia `~/.nxy`.
+- Cuánto pesa (estimación): ~7 KB por sesión; hasta ~130 KB con 30 subagentes. Con el borrado de abajo quedan ≤ ~70 archivos y ≤ 1 MB.
+- Cuándo se borra: al crear el estado de una sesión nueva, nxy borra los archivos de esa carpeta con más de 7 días. Cuesta un listado y ≤ ~70 stats, una vez por sesión nueva. Una sesión que vuelve después de 7 días reconstruye su estado con los mismos números (relee el transcript una vez).
+- Los archivos de la 1.x (`~/.nxy/cache/statusline-*.json`) no se leen ni se escriben: la primera vez de cada sesión se relee el transcript entero (estimado 20–150 ms con 5–20 MB).
+- El camino caliente no lanza procesos, no abre la db de nxy y no llama al motor del filtro; si algo falla imprime `nxy ?` (con `NXY_DEBUG` ves la causa por stderr).
+
 `NXY_BIN` wins over everything. To test the download path (binary under `~/.nxy/bin/2.0.0-dev/`, fetched from the GitHub release), unset it first: a leftover `NXY_BIN` silently runs a stale build.

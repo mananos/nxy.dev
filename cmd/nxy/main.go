@@ -14,19 +14,22 @@ import (
 type command func(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 
 var commands = map[string]command{
-	"affected": runAffected,
-	"batch":    runBatch,
-	"bench":    runBench,
-	"design":   runDesign,
-	"feature":  runFeature,
-	"hook":     runHook,
-	"plan":     runPlan,
-	"review":   runReview,
-	"status":   runStatus,
-	"version":  runVersion,
+	"affected":   runAffected,
+	"batch":      runBatch,
+	"bench":      runBench,
+	"design":     runDesign,
+	"feature":    runFeature,
+	"hook":       runHook,
+	"plan":       runPlan,
+	"review":     runReview,
+	"stats":      runStats,
+	"status":     runStatus,
+	"statusline": runStatusline,
+	"trend":      runTrend,
+	"version":    runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|batch red|green|affected|status|feature stop|version>"
+const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|batch red|green|affected|status|stats|trend|statusline|feature stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))

@@ -1,6 +1,11 @@
 package metrics
 
-import "github.com/mananos/nxy.dev/internal/pricing"
+import (
+	"bytes"
+	"encoding/json"
+
+	"github.com/mananos/nxy.dev/internal/pricing"
+)
 
 // BreakCauses are the causes of a cache rebuild, in report order.
 var BreakCauses = []string{"idle", "subagent", "compact", "start", "other"}
@@ -87,4 +92,43 @@ func SummarizeBreaks(breaks []Break) BreakSummary {
 		}
 	}
 	return BreakSummary{ByCause: by, TTL: ttl, AvoidableUSD: by["idle"].USD + by["subagent"].USD}
+}
+
+// MarshalJSON writes byCause in BreakCauses order (a JS object), not the sorted order of a Go map.
+func (s BreakSummary) MarshalJSON() ([]byte, error) {
+	var b bytes.Buffer
+	b.WriteString(`{"byCause":{`)
+	first := true
+	for _, c := range BreakCauses {
+		g, ok := s.ByCause[c]
+		if !ok {
+			continue
+		}
+		raw, err := json.Marshal(g)
+		if err != nil {
+			return nil, err
+		}
+		if !first {
+			b.WriteByte(',')
+		}
+		first = false
+		k, _ := json.Marshal(c)
+		b.Write(k)
+		b.WriteByte(':')
+		b.Write(raw)
+	}
+	b.WriteString(`},"ttl":`)
+	ttl, err := json.Marshal(s.TTL)
+	if err != nil {
+		return nil, err
+	}
+	b.Write(ttl)
+	b.WriteString(`,"avoidableUsd":`)
+	avoid, err := json.Marshal(s.AvoidableUSD)
+	if err != nil {
+		return nil, err
+	}
+	b.Write(avoid)
+	b.WriteByte('}')
+	return b.Bytes(), nil
 }

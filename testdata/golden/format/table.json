@@ -1,0 +1,8 @@
+[
+{"name":"table:last column left is trimmed","input":{"cols":[{"label":"k","align":"right"},{"label":"value"}],"rows":[["a","x  "],["bb",""],["ccc"," "]]},"output":{"s":"  k  value\n---  -----\n  a  x\n bb\nccc"}},
+{"name":"table:no rows","input":{"cols":[{"label":"name"},{"label":"calls","align":"right"}],"rows":[]},"output":{"s":"name  calls\n----  -----"}},
+{"name":"table:plain","input":{"cols":[{"label":"name"},{"label":"n","align":"right"}],"rows":[["alpha","1"],["b","12345"],["","0"]]},"output":{"s":"name       n\n-----  -----\nalpha      1\nb      12345\n           0"}},
+{"name":"table:right aligned last","input":{"cols":[{"label":"tool"},{"label":"chars","align":"right"}],"rows":[["Bash","1,200"],["Read","12"]]},"output":{"s":"tool  chars\n----  -----\nBash  1,200\nRead     12"}},
+{"name":"table:single column","input":{"cols":[{"label":"only a label that is long"}],"rows":[["a"],["bb"]]},"output":{"s":"only a label that is long\n-------------------------\na\nbb"}},
+{"name":"table:wide and astral","input":{"cols":[{"label":"model"},{"label":"$","align":"right"},{"label":"bar"}],"rows":[["sonnet ñ","$1.20","▰▰▱▱"],["日本語","$0.004","😀 ok"],["x","?",""]]},"output":{"s":"model          $  bar\n--------  ------  -----\nsonnet ñ   $1.20  ▰▰▱▱\n日本語       $0.004  😀 ok\nx              ?"}}
+]

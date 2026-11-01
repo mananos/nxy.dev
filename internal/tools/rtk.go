@@ -131,6 +131,29 @@ func Rewrite(rtkPath, cmd string) (filter.RewriteResult, error) {
 	return filter.RewriteResult{Code: 0, Stdout: stdout.String()}, nil
 }
 
+// gainTimeout bounds `rtk gain`.
+const gainTimeout = 10 * time.Second
+
+// Gain runs `rtk gain <args> --format json` in cwd and decodes the answer. False on a failure to
+// run, a timeout, a non-zero exit, empty stdout or bad JSON (rtk.mjs rtkGain).
+func Gain(rtkPath string, args []string, cwd string) (any, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), gainTimeout)
+	defer cancel()
+	c := exec.CommandContext(ctx, rtkPath, append(append([]string{"gain"}, args...), "--format", "json")...)
+	c.Dir = cwd
+	hideWindow(c)
+	var stdout bytes.Buffer
+	c.Stdout = &stdout
+	if c.Run() != nil || stdout.Len() == 0 {
+		return nil, false
+	}
+	var v any
+	if json.Unmarshal(stdout.Bytes(), &v) != nil {
+		return nil, false
+	}
+	return v, true
+}
+
 // warnMarkerPath is rtk's `.hook_warn_last` under the per-OS data dir.
 func warnMarkerPath(goos string, getenv func(string) string) string {
 	home := homeOf(getenv)

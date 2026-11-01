@@ -1,0 +1,199 @@
+{
+  "_doc": "Corpus of scripts/golden/report.mjs: inputs of the text helpers, ledger maths, daily rtk gain and db path. Sets built from the metrics corpus (break lists, scenarios, timing runs) are added by the generator.",
+  "breakTotals": [0, -1, 0.5, 12.345, 1000, 0.0001],
+  "breakLists": [
+    {
+      "name": "all-causes-heavy",
+      "breaks": [
+        { "ts": 1, "uncached": 1500000, "total": 1600000, "agentType": null, "cause": "idle", "ttl": "5m", "usd": 12.125 },
+        { "ts": 2, "uncached": 25000000, "total": 26000000, "agentType": "Plan", "cause": "subagent", "ttl": "1h", "usd": 33.335 },
+        { "ts": 3, "uncached": 999999, "total": 1000000, "agentType": null, "cause": "compact", "ttl": "5m", "usd": 1.005 },
+        { "ts": 4, "uncached": 100000, "total": 100000, "agentType": null, "cause": "start", "ttl": "5m", "usd": 0.995 },
+        { "ts": 5, "uncached": 4200, "total": 9000, "agentType": null, "cause": "other", "ttl": "5m", "usd": 0.0049 }
+      ]
+    },
+    {
+      "name": "only-idle",
+      "breaks": [
+        { "ts": 1, "uncached": 100000, "total": 120000, "agentType": null, "cause": "idle", "ttl": "5m", "usd": 0.1 },
+        { "ts": 2, "uncached": 100000, "total": 120000, "agentType": null, "cause": "idle", "ttl": "5m", "usd": 0.2 }
+      ]
+    },
+    {
+      "name": "only-start-no-usd",
+      "breaks": [{ "ts": 1, "uncached": 9500, "total": 9500, "agentType": null, "cause": "start", "ttl": "1h", "usd": null }]
+    }
+  ],
+  "ttlWhatIf": [
+    { "name": "worth-it", "w": { "actualUsd": 10, "hourUsd": 8, "writes5m": 4, "rebuildsAvoided": 3 } },
+    { "name": "worth-it-one-rebuild", "w": { "actualUsd": 10, "hourUsd": 8.5, "writes5m": 1, "rebuildsAvoided": 1 } },
+    { "name": "worth-it-no-rebuilds", "w": { "actualUsd": 3.33, "hourUsd": 1, "writes5m": 9, "rebuildsAvoided": 0 } },
+    { "name": "exactly-minus-one", "w": { "actualUsd": 100, "hourUsd": 99, "writes5m": 2, "rebuildsAvoided": 2 } },
+    { "name": "about-the-same", "w": { "actualUsd": 100, "hourUsd": 99.5, "writes5m": 2, "rebuildsAvoided": 5 } },
+    { "name": "about-the-same-one", "w": { "actualUsd": 100, "hourUsd": 99.999, "writes5m": 2, "rebuildsAvoided": 1 } },
+    { "name": "zero-diff", "w": { "actualUsd": 12.5, "hourUsd": 12.5, "writes5m": 2, "rebuildsAvoided": 0 } },
+    { "name": "not-worth", "w": { "actualUsd": 5, "hourUsd": 6.25, "writes5m": 7, "rebuildsAvoided": 0 } },
+    { "name": "not-worth-rounds", "w": { "actualUsd": 0.123, "hourUsd": 0.1236, "writes5m": 7, "rebuildsAvoided": 0 } },
+    { "name": "no-5m-writes", "w": { "actualUsd": 5, "hourUsd": 4, "writes5m": 0, "rebuildsAvoided": 0 } },
+    { "name": "no-cost", "w": { "actualUsd": 0, "hourUsd": 0, "writes5m": 3, "rebuildsAvoided": 0 } },
+    { "name": "tie-rounding", "w": { "actualUsd": 1.005, "hourUsd": 0.995, "writes5m": 1, "rebuildsAvoided": 0 } }
+  ],
+  "timing": [
+    {
+      "name": "one-type-slowest",
+      "runs": [
+        {
+          "agentType": "Explore",
+          "timing": {
+            "wallMs": 125000, "modelMs": 60000, "bashMs": 20000, "toolMs": 5000, "waitMs": 40000,
+            "limitStops": 0, "limitMs": 0, "locateCalls": 2, "nudges": 0,
+            "slowest": [
+              { "tool": "Bash", "text": "npm  test\t--  --watch=false\nfoo", "ms": 65000 },
+              { "tool": "Bash", "text": "a\u00a0b\u2028c\ufeffd\u2003e", "ms": 3500 },
+              { "tool": "Bash", "text": "", "ms": 999 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "long-and-wide-text",
+      "runs": [
+        {
+          "agentType": "Plan",
+          "timing": {
+            "wallMs": 7300000, "modelMs": 1000, "bashMs": 0, "toolMs": 0, "waitMs": 3,
+            "limitStops": 2, "limitMs": 1000, "locateCalls": 0, "nudges": 1,
+            "slowest": [
+              { "tool": "Bash", "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ms": 90000000 },
+              { "tool": "Bash", "text": "ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú ñandú x", "ms": 1500 },
+              { "tool": "Grep", "text": "x😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀", "ms": 1499 },
+              { "tool": "Grep", "text": "漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字漢字", "ms": 1498 },
+              { "tool": "Read", "text": "exactly seventy chars exactly seventy chars exactly seventy chars!!", "ms": 1497 },
+              { "tool": "Read", "text": "sixth is cut", "ms": 1 }
+            ]
+          }
+        },
+        { "agentType": "Plan", "timing": { "wallMs": 10, "modelMs": 0, "bashMs": 0, "toolMs": 0, "waitMs": 0, "limitStops": 1, "limitMs": 5, "locateCalls": 1, "nudges": 0, "slowest": [] } }
+      ]
+    },
+    {
+      "name": "zero-total-ms",
+      "runs": [{ "agentType": "Explore", "timing": { "wallMs": 0, "modelMs": 0, "bashMs": 0, "toolMs": 0, "waitMs": 0, "limitStops": 0, "limitMs": 0, "locateCalls": 0, "nudges": 0, "slowest": [] } }]
+    },
+    {
+      "name": "many-types-and-tie",
+      "runs": [
+        { "agentType": "Zeta", "timing": { "wallMs": 1000, "modelMs": 333, "bashMs": 333, "toolMs": 333, "waitMs": 1, "limitStops": 0, "limitMs": 0, "locateCalls": 1, "nudges": 0, "slowest": [{ "tool": "Bash", "text": "z", "ms": 1000 }] } },
+        { "agentType": "alpha", "timing": { "wallMs": 2000, "modelMs": 1, "bashMs": 2, "toolMs": 3, "waitMs": 4, "limitStops": 0, "limitMs": 0, "locateCalls": 0, "nudges": 0, "slowest": [{ "tool": "Bash", "text": "a", "ms": 2000 }] } },
+        { "agentType": "Beta", "timing": { "wallMs": 62000, "modelMs": 50000, "bashMs": 10000, "toolMs": 1000, "waitMs": 1000, "limitStops": 0, "limitMs": 0, "locateCalls": 1, "nudges": 2, "slowest": [{ "tool": "Bash", "text": "b", "ms": 61000 }] } },
+        { "agentType": "Beta", "timing": { "wallMs": 3600000, "modelMs": 1800000, "bashMs": 1800000, "toolMs": 0, "waitMs": 0, "limitStops": 0, "limitMs": 0, "locateCalls": 0, "nudges": 0, "slowest": [{ "tool": "Bash", "text": "bb", "ms": 3500000 }] } },
+        { "agentType": "", "timing": { "wallMs": 86400000, "modelMs": 1, "bashMs": 1, "toolMs": 1, "waitMs": 1, "limitStops": 0, "limitMs": 0, "locateCalls": 0, "nudges": 0, "slowest": [] } }
+      ]
+    }
+  ],
+  "broad": [
+    { "name": "mixed", "rows": [
+      { "ts": 1, "tool": "Grep", "kind": "grep", "contextTokens": 120000 },
+      { "ts": 2, "tool": "PowerShell", "kind": "rg", "contextTokens": 130000.5 },
+      { "ts": 3, "tool": "Bash", "kind": "find", "contextTokens": 140000 },
+      { "ts": 0, "tool": "Read", "kind": null, "contextTokens": 100000 },
+      { "ts": 5, "tool": "Glob", "kind": "glob", "contextTokens": 0 }
+    ] },
+    { "name": "empty", "rows": [] },
+    { "name": "only-powershell", "rows": [{ "ts": 1, "tool": "PowerShell", "kind": "rg", "contextTokens": 7 }] }
+  ],
+  "broadThresholds": [0, -5, 100000, 1.5],
+  "ledgerPaths": [
+    "",
+    "C:\\Work\\Dev\\Project",
+    "C:\\Work\\Dev\\Project\\",
+    "C:/Work/Dev/Project//",
+    "\\\\?\\C:\\Work\\Dev\\Project",
+    "\\\\?\\UNC\\server\\share\\Repo\\",
+    "/srv/dev/Code/My-App",
+    "/srv/dev/Code/My-App/",
+    "/",
+    "\\",
+    "/Srv/DEV/Ñandú/ÀB",
+    "relative\\path/mixed\\",
+    "\\\\?\\\\?\\twice"
+  ],
+  "underPairs": [
+    ["c:/work/dev/project", "C:\\Work\\Dev\\Project"],
+    ["c:/work/dev/project/sub", "C:\\Work\\Dev\\Project"],
+    ["c:/work/dev/project2", "C:\\Work\\Dev\\Project"],
+    ["/srv/dev/code/my-app/sub", "/srv/dev/code/my-app/"],
+    ["/srv/dev/Code/My-App/sub", "/srv/dev/code/my-app"],
+    ["/srv/dev/Code/My-App", "/srv/dev/Code/My-App"],
+    ["/anything", ""],
+    ["/anything", "/"],
+    ["", "/home"],
+    ["/srv/dev/Code/My-App/", "/srv/dev/Code/My-App"]
+  ],
+  "ledgerRows": [
+    { "name": "empty", "rows": [] },
+    { "name": "mixed-projects", "rows": [
+      { "ts": 1000, "project": "c:/work/dev/project", "input": 1000, "output": 400, "saved": 600 },
+      { "ts": 1005000, "project": "/srv/dev/code/my-app", "input": 500, "output": 100, "saved": 400 },
+      { "ts": 1060000, "project": "/srv/dev/code/my-app/sub", "input": 77, "output": 7, "saved": 70 },
+      { "ts": 1060001, "project": "c:/work/dev/project/sub", "input": 10, "output": 10, "saved": 0 },
+      { "ts": 995000, "project": "c:/work/dev/project", "input": 3, "output": 1, "saved": 2 },
+      { "ts": 994999, "project": "c:/work/dev/project", "input": 99, "output": 0, "saved": 99 }
+    ] },
+    { "name": "zero-input", "rows": [{ "ts": 1, "project": "/x", "input": 0, "output": 0, "saved": 0 }] },
+    { "name": "fractions", "rows": [
+      { "ts": 1, "project": "/x", "input": 0.1, "output": 0.05, "saved": 0.05 },
+      { "ts": 2, "project": "/x", "input": 0.2, "output": 0.1, "saved": 0.1 },
+      { "ts": 3, "project": "/x", "input": 0.30000000000000004, "output": 0.1, "saved": 0.2 }
+    ] }
+  ],
+  "sessions": [
+    { "name": "window", "cwd": "C:\\Work\\Dev\\Project", "firstTs": 1000000, "lastTs": 1000000 },
+    { "name": "linux-cwd", "cwd": "/srv/dev/code/my-app", "firstTs": 1000000, "lastTs": 1000000 },
+    { "name": "no-cwd", "cwd": null, "firstTs": 1000000, "lastTs": 1000000 },
+    { "name": "empty-cwd", "cwd": "", "firstTs": 990000, "lastTs": 1000000 },
+    { "name": "no-first", "cwd": "/x", "firstTs": null, "lastTs": 1 },
+    { "name": "no-last", "cwd": "/x", "firstTs": 1, "lastTs": null }
+  ],
+  "gains": [
+    { "name": "normal", "gain": { "daily": [
+      { "date": "2026-09-01", "commands": 3, "input_tokens": 1000, "output_tokens": 300, "saved_tokens": 700 },
+      { "date": "2026-09-02", "commands": 1, "input_tokens": 50, "output_tokens": 10, "saved_tokens": 40 }
+    ] } },
+    { "name": "repeated-date", "gain": { "daily": [
+      { "date": "2026-09-01", "commands": 1, "input_tokens": 1, "output_tokens": 1, "saved_tokens": 0 },
+      { "date": "2026-09-02", "commands": 2, "input_tokens": 2, "output_tokens": 2, "saved_tokens": 0 },
+      { "date": "2026-09-01", "commands": 9, "input_tokens": 9, "output_tokens": 9, "saved_tokens": 9 }
+    ] } },
+    { "name": "missing-and-bad-fields", "gain": { "daily": [
+      { "date": "2026-09-01" },
+      { "date": "2026-09-02", "commands": "5", "input_tokens": " 12 ", "output_tokens": "abc", "saved_tokens": "0x10" },
+      { "date": "2026-09-03", "commands": null, "input_tokens": true, "output_tokens": false, "saved_tokens": -4 },
+      { "date": "2026-09-04", "commands": 0.5, "input_tokens": 1e21, "output_tokens": 1e-7, "saved_tokens": "" }
+    ] } },
+    { "name": "odd-entries", "gain": { "daily": [
+      null, 5, "str", [], { "date": "" }, { "date": 0 }, { "date": null }, { "date": false },
+      { "date": 20260101, "commands": 1, "input_tokens": 2, "output_tokens": 1, "saved_tokens": 1 },
+      { "date": true, "commands": 2 },
+      { "date": "2026-09-05", "commands": 1 }
+    ] } },
+    { "name": "daily-null", "gain": { "daily": null } },
+    { "name": "daily-missing", "gain": {} },
+    { "name": "daily-empty", "gain": { "daily": [] } },
+    { "name": "gain-null", "gain": null },
+    { "name": "gain-number", "gain": 7 },
+    { "name": "gain-array", "gain": [] }
+  ],
+  "dbEnvs": [
+    { "name": "rtk-db-path", "env": { "RTK_DB_PATH": "/custom/history.db", "HOME": "/srv/x" } },
+    { "name": "rtk-db-path-empty", "env": { "RTK_DB_PATH": "", "HOME": "/srv/x" } },
+    { "name": "home-only", "env": { "HOME": "/srv/x" } },
+    { "name": "userprofile-only", "env": { "USERPROFILE": "C:\\Work\\x" } },
+    { "name": "home-wins", "env": { "HOME": "/srv/x", "USERPROFILE": "C:\\Work\\y" } },
+    { "name": "localappdata", "env": { "HOME": "/srv/x", "LOCALAPPDATA": "D:\\Data\\Local" } },
+    { "name": "xdg", "env": { "HOME": "/srv/x", "XDG_DATA_HOME": "/srv/xdg" } },
+    { "name": "xdg-empty", "env": { "HOME": "/srv/x", "XDG_DATA_HOME": "" } }
+  ],
+  "dbPlatforms": ["win32", "linux", "darwin"]
+}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -122,6 +123,32 @@ func Check(t testing.TB, c Case, got map[string]any) {
 			t.Errorf("%s/%s: port computes %q the golden does not have", c.File, c.Name, key)
 		}
 	}
+}
+
+// NormRootText is normRootText of scripts/golden/fixtures.mjs: the root, raw or as embedded in a
+// JSON string, becomes "<root>" followed by the rest of the path with forward slashes, and the
+// root's project slug becomes "<rootslug>".
+func NormRootText(text, root string) string {
+	out := text
+	esc, _ := json.Marshal(root)
+	jsonRoot := string(esc[1 : len(esc)-1])
+	if jsonRoot != root {
+		re := regexp.MustCompile(regexp.QuoteMeta(jsonRoot) + `((?:\\\\|[^\s"\\),;])*)`)
+		out = re.ReplaceAllStringFunc(out, func(m string) string {
+			return "<root>" + strings.ReplaceAll(m[len(jsonRoot):], `\\`, "/")
+		})
+	}
+	re := regexp.MustCompile(regexp.QuoteMeta(root) + `([^\s"'),;]*)`)
+	out = re.ReplaceAllStringFunc(out, func(m string) string {
+		return "<root>" + strings.ReplaceAll(m[len(root):], `\`, "/")
+	})
+	slug := []rune(root)
+	for i, r := range slug {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9') {
+			slug[i] = '-'
+		}
+	}
+	return strings.ReplaceAll(out, string(slug), "<rootslug>")
 }
 
 // NormRoot turns every string starting with root into "<root>" + rest, backslashes as slashes.

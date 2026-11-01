@@ -1,0 +1,299 @@
+[
+  {
+    "name": "space:00:\"\"",
+    "input": {
+      "s": ""
+    },
+    "output": {
+      "collapsed": "",
+      "trim": "",
+      "trimEnd": ""
+    }
+  },
+  {
+    "name": "space:01:\" \"",
+    "input": {
+      "s": " "
+    },
+    "output": {
+      "collapsed": " ",
+      "trim": "",
+      "trimEnd": ""
+    }
+  },
+  {
+    "name": "space:02:\"a\"",
+    "input": {
+      "s": "a"
+    },
+    "output": {
+      "collapsed": "a",
+      "trim": "a",
+      "trimEnd": "a"
+    }
+  },
+  {
+    "name": "space:03:\"a b\"",
+    "input": {
+      "s": "a b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a b",
+      "trimEnd": "a b"
+    }
+  },
+  {
+    "name": "space:04:\"a  b\"",
+    "input": {
+      "s": "a  b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a  b",
+      "trimEnd": "a  b"
+    }
+  },
+  {
+    "name": "space:05:\"a \\t\\n b\"",
+    "input": {
+      "s": "a \t\n b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a \t\n b",
+      "trimEnd": "a \t\n b"
+    }
+  },
+  {
+    "name": "space:06:\"  lead\"",
+    "input": {
+      "s": "  lead"
+    },
+    "output": {
+      "collapsed": " lead",
+      "trim": "lead",
+      "trimEnd": "  lead"
+    }
+  },
+  {
+    "name": "space:07:\"trail  \"",
+    "input": {
+      "s": "trail  "
+    },
+    "output": {
+      "collapsed": "trail ",
+      "trim": "trail",
+      "trimEnd": "trail"
+    }
+  },
+  {
+    "name": "space:08:\"  both  \"",
+    "input": {
+      "s": "  both  "
+    },
+    "output": {
+      "collapsed": " both ",
+      "trim": "both",
+      "trimEnd": "  both"
+    }
+  },
+  {
+    "name": "space:09:\" nb sp \"",
+    "input": {
+      "s": " nb sp "
+    },
+    "output": {
+      "collapsed": " nb sp ",
+      "trim": "nb sp",
+      "trimEnd": " nb sp"
+    }
+  },
+  {
+    "name": "space:10:\"a b c\"",
+    "input": {
+      "s": "a b c"
+    },
+    "output": {
+      "collapsed": "a b c",
+      "trim": "a b c",
+      "trimEnd": "a b c"
+    }
+  },
+  {
+    "name": "space:11:\"﻿bom﻿\"",
+    "input": {
+      "s": "﻿bom﻿"
+    },
+    "output": {
+      "collapsed": " bom ",
+      "trim": "bom",
+      "trimEnd": "﻿bom"
+    }
+  },
+  {
+    "name": "space:12:\"a           b\"",
+    "input": {
+      "s": "a           b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a           b",
+      "trimEnd": "a           b"
+    }
+  },
+  {
+    "name": "space:13:\"a b\"",
+    "input": {
+      "s": "a b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a b",
+      "trimEnd": "a b"
+    }
+  },
+  {
+    "name": "space:14:\"a b\"",
+    "input": {
+      "s": "a b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a b",
+      "trimEnd": "a b"
+    }
+  },
+  {
+    "name": "space:15:\"a b\"",
+    "input": {
+      "s": "a b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a b",
+      "trimEnd": "a b"
+    }
+  },
+  {
+    "name": "space:16:\"a　b\"",
+    "input": {
+      "s": "a　b"
+    },
+    "output": {
+      "collapsed": "a b",
+      "trim": "a　b",
+      "trimEnd": "a　b"
+    }
+  },
+  {
+    "name": "space:17:\"a᠎b\"",
+    "input": {
+      "s": "a᠎b"
+    },
+    "output": {
+      "collapsed": "a᠎b",
+      "trim": "a᠎b",
+      "trimEnd": "a᠎b"
+    }
+  },
+  {
+    "name": "space:18:\"a​b\"",
+    "input": {
+      "s": "a​b"
+    },
+    "output": {
+      "collapsed": "a​b",
+      "trim": "a​b",
+      "trimEnd": "a​b"
+    }
+  },
+  {
+    "name": "space:19:\"ab\"",
+    "input": {
+      "s": "ab"
+    },
+    "output": {
+      "collapsed": "ab",
+      "trim": "ab",
+      "trimEnd": "ab"
+    }
+  },
+  {
+    "name": "space:20:\"a\\u000bb\\fc\\rd\"",
+    "input": {
+      "s": "a\u000bb\fc\rd"
+    },
+    "output": {
+      "collapsed": "a b c d",
+      "trim": "a\u000bb\fc\rd",
+      "trimEnd": "a\u000bb\fc\rd"
+    }
+  },
+  {
+    "name": "space:21:\"\\r\\nline1\\r\\nline2\\r\\n\"",
+    "input": {
+      "s": "\r\nline1\r\nline2\r\n"
+    },
+    "output": {
+      "collapsed": " line1 line2 ",
+      "trim": "line1\r\nline2",
+      "trimEnd": "\r\nline1\r\nline2"
+    }
+  },
+  {
+    "name": "space:22:\"😀 😀\"",
+    "input": {
+      "s": "😀 😀"
+    },
+    "output": {
+      "collapsed": "😀 😀",
+      "trim": "😀 😀",
+      "trimEnd": "😀 😀"
+    }
+  },
+  {
+    "name": "space:23:\"  é  é  \"",
+    "input": {
+      "s": "  é  é  "
+    },
+    "output": {
+      "collapsed": " é é ",
+      "trim": "é  é",
+      "trimEnd": "  é  é"
+    }
+  },
+  {
+    "name": "space:24:\"tab\\tseparated\\tvalues\"",
+    "input": {
+      "s": "tab\tseparated\tvalues"
+    },
+    "output": {
+      "collapsed": "tab separated values",
+      "trim": "tab\tseparated\tvalues",
+      "trimEnd": "tab\tseparated\tvalues"
+    }
+  },
+  {
+    "name": "space:25:\"     \"",
+    "input": {
+      "s": "     "
+    },
+    "output": {
+      "collapsed": " ",
+      "trim": "",
+      "trimEnd": ""
+    }
+  },
+  {
+    "name": "space:26:\"x   y  \\t z\"",
+    "input": {
+      "s": "x   y  \t z"
+    },
+    "output": {
+      "collapsed": "x y z",
+      "trim": "x   y  \t z",
+      "trimEnd": "x   y  \t z"
+    }
+  }
+]
