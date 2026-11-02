@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/review"
 )
 
@@ -137,8 +138,17 @@ func (h Hooks) ensureReview(ctx context.Context, f domain.Feature) domain.Featur
 // afterAdvance does the work a transition leaves for nxy itself: preparing the review when the
 // feature enters reviewing, writing the full review document at the findings checkpoint and
 // cleaning up when it closes. It runs after the transition, never inside it.
-func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain.Action) domain.Feature {
+//
+// It returns the feature and the actions of the step it stands in: when it looked for docs, the
+// ones of the step after that (the docs question or the close), not CheckDocs.
+func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain.Action) (domain.Feature, []domain.Action) {
 	f = h.ensureReview(ctx, f)
+	if f.State.Phase == domain.PhaseDocsCheck {
+		if nf, nacts, ok := h.checkDocs(ctx, f); ok {
+			return nf, nacts
+		}
+		return f, acts
+	}
 	for _, a := range acts {
 		switch {
 		case a.Kind == domain.AskFindings && h.ReviewFiles != nil && f.Review != nil:
@@ -163,6 +173,59 @@ func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain
 				_ = h.ReviewFiles.Discard(f.ID)
 			}
 		}
+	}
+	return f, acts
+}
+
+// changedPaths are the files the feature changed since its base (git), or the ones its plan names.
+func (h Hooks) changedPaths(ctx context.Context, f domain.Feature) []string {
+	if h.Changes != nil {
+		if c, err := h.Changes.Changed(ctx, f.ProjectDir, f.Base); err == nil {
+			out := make([]string, 0, len(c))
+			for _, p := range c {
+				out = append(out, filepath.ToSlash(p))
+			}
+			return out
+		}
+	}
+	paths := planChangePaths(f)
+	for i, p := range paths {
+		paths[i] = reviewPath(p)
+	}
+	return paths
+}
+
+// checkDocs is the CheckDocs step, done by nxy itself outside any transition: it looks for the
+// docs that name what the feature changed, stores them and applies DocsChecked (no docs closes
+// the feature, docs ask the user). ok is false when the transition did not happen.
+func (h Hooks) checkDocs(ctx context.Context, f domain.Feature) (domain.Feature, []domain.Action, bool) {
+	var found domain.Docs
+	if h.Docs != nil && f.ProjectDir != "" {
+		found = h.Docs.Find(ctx, f.ProjectDir, h.changedPaths(ctx, f))
+	}
+	nf, acts, err := h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
+		if g.State.Phase != domain.PhaseDocsCheck {
+			return nil, errSkipEvent // another hook handled it
+		}
+		if len(found.Docs) > 0 {
+			g.Docs = &found
+		}
+		return []flow.Event{{Kind: flow.DocsChecked, Docs: len(found.Docs) > 0}}, nil
+	})
+	if err != nil {
+		return f, nil, false
+	}
+	return nf, acts, true
+}
+
+// ensureDocs runs the docs check of a feature left in docs_check (the process died between the
+// transition and the check); any hook that reads the feature calls it.
+func (h Hooks) ensureDocs(ctx context.Context, f domain.Feature) domain.Feature {
+	if f.State.Phase != domain.PhaseDocsCheck {
+		return f
+	}
+	if nf, _, ok := h.checkDocs(ctx, f); ok {
+		return nf
 	}
 	return f
 }

@@ -66,7 +66,8 @@ func (h Hooks) advanceSteps(ctx context.Context, id string, fn func(*domain.Feat
 	if err != nil {
 		return domain.Feature{}, nil, err
 	}
-	return h.afterAdvance(ctx, out, acts), acts, nil
+	nf, as := h.afterAdvance(ctx, out, acts)
+	return nf, as, nil
 }
 
 // mutate changes the feature atomically without moving the flow. fn returns false to store

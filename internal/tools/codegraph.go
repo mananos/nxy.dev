@@ -10,9 +10,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mananos/nxy.dev/internal/jscompat"
 	"github.com/mananos/nxy.dev/internal/platform"
 )
 
@@ -147,6 +149,13 @@ func pathCandidates(goos string, getenv func(string) string) []string {
 // FindCodegraph locates codegraph: NXY_CODEGRAPH_PATH, then PATH, then the known install locations.
 // argv is the launcher prefix to run it (no shell).
 func FindCodegraph(getenv func(string) string) (argv []string, version string, ok bool) {
+	argv, version, _, ok = FindCodegraphLabeled(getenv)
+	return argv, version, ok
+}
+
+// FindCodegraphLabeled is FindCodegraph plus the label the 1.x shows for the path: NXY_CODEGRAPH_PATH
+// as given, "codegraph" when it was found on PATH, or the known location with forward slashes.
+func FindCodegraphLabeled(getenv func(string) string) (argv []string, version, label string, ok bool) {
 	try := func(bin string) ([]string, string, bool) {
 		a, ok := ResolveLauncher(runtime.GOOS, bin, os.ReadFile, fileExists)
 		if !ok {
@@ -156,11 +165,15 @@ func FindCodegraph(getenv func(string) string) (argv []string, version string, o
 		return a, v, ok
 	}
 	if p := getenv("NXY_CODEGRAPH_PATH"); p != "" {
-		return try(p)
+		a, v, ok := try(p)
+		if !ok {
+			return nil, "", "", false
+		}
+		return a, v, p, true
 	}
 	for _, bin := range pathCandidates(runtime.GOOS, getenv) {
 		if a, v, ok := try(bin); ok {
-			return a, v, true
+			return a, v, "codegraph", true
 		}
 	}
 	for _, bin := range KnownCodegraphLocations(runtime.GOOS, homeOf(getenv), getenv) {
@@ -168,10 +181,10 @@ func FindCodegraph(getenv func(string) string) (argv []string, version string, o
 			continue
 		}
 		if a, v, ok := try(bin); ok {
-			return a, v, true
+			return a, v, strings.ReplaceAll(bin, `\`, "/"), true
 		}
 	}
-	return nil, "", false
+	return nil, "", "", false
 }
 
 // indexDirs are the names the codegraph index may have in a repo.
@@ -336,6 +349,75 @@ func (g *Graph) Affected(ctx context.Context, root string, changed []string) Gra
 	}
 	res.Tests = tests
 	return res
+}
+
+// Budgets and cap of Explore/Relations (core/scout/codegraph.mjs runCodegraph): the payload is dense,
+// but it dies with the scout that reads it.
+const exploreMaxChars = 24_000
+
+// ExploreBudget is the time a codegraph explore/relations query gets. A var so a test can shrink it.
+var ExploreBudget = 20 * time.Second
+
+// QueryResult is the answer of Explore/Relations. Reason is "ok", "not-installed", "no-index",
+// "spawn-failed", "timeout", "exit-N" or "empty"; Text is trimmed and capped at 24 000 UTF-16 units.
+type QueryResult struct {
+	OK        bool
+	Reason    string
+	Text      string
+	Truncated bool
+	Ms        int64
+}
+
+// Explore runs `codegraph explore <question>` in root. It never fails: every failure is a Reason, so
+// the caller can declare the fallback instead of losing the answer.
+func (g *Graph) Explore(ctx context.Context, root, question string) QueryResult {
+	return g.query(ctx, root, "explore", question)
+}
+
+// Relations runs `codegraph callers|callees|impact <symbol>` in root, with the same caps as Explore.
+func (g *Graph) Relations(ctx context.Context, root, kind, symbol string) QueryResult {
+	return g.query(ctx, root, kind, symbol)
+}
+
+func (g *Graph) query(ctx context.Context, root string, args ...string) QueryResult {
+	if len(g.Argv) == 0 {
+		return QueryResult{Reason: "not-installed"}
+	}
+	if !HasIndex(root, g.getenv) {
+		return QueryResult{Reason: "no-index"}
+	}
+	start := time.Now()
+	exit, out, err := g.run(ctx, ExploreBudget, root, "", args...)
+	ms := time.Since(start).Milliseconds()
+	switch {
+	case timedOut(err):
+		return QueryResult{Reason: "timeout", Ms: ms}
+	case err != nil:
+		return QueryResult{Reason: "spawn-failed", Ms: ms}
+	case exit != 0:
+		return QueryResult{Reason: "exit-" + strconv.Itoa(exit), Ms: ms}
+	}
+	raw := jscompat.Trim(out)
+	if raw == "" {
+		return QueryResult{Reason: "empty", Ms: ms}
+	}
+	res := QueryResult{OK: true, Reason: "ok", Text: raw, Ms: ms}
+	if jscompat.UTF16Len(raw) > exploreMaxChars {
+		res.Truncated, res.Text = true, jscompat.UTF16Prefix(raw, exploreMaxChars)
+	}
+	return res
+}
+
+// DescribeCodegraph is the status line of `nxy locate --status`, as the 1.x describeCodegraph.
+func (g *Graph) DescribeCodegraph(root string) string {
+	_, version, label, ok := FindCodegraphLabeled(g.getenv)
+	if !ok {
+		return "codegraph:    not installed (scout falls back to the repo map + rg)"
+	}
+	if !HasIndex(root, g.getenv) {
+		return "codegraph:    " + label + " " + version + " — but this repo has no index; run `codegraph init` to enable it"
+	}
+	return "codegraph:    " + label + " " + version + " — indexed"
 }
 
 // ParseAffected reads the affectedTests of `codegraph affected --json`. It tolerates text around the

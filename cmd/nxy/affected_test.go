@@ -11,13 +11,29 @@ import (
 // planning, approval and the red/green of its batch; the feature ends at the affected tests.
 func affectedFeature(t *testing.T, suite string) (repo, id string) {
 	t.Helper()
+	return affectedFeatureWith(t, suite, "cmd/main.go", nil)
+}
+
+// affectedFeatureWith is affectedFeature where the plan changes the file `changed` and the repo
+// holds `files` (path -> text) before the feature starts.
+func affectedFeatureWith(t *testing.T, suite, changed string, files map[string]string) (repo, id string) {
+	t.Helper()
 	needSh(t)
 	repo = flowRepo(t)
 	t.Setenv("NXY_CODEGRAPH_PATH", filepath.Join(repo, "no-such-codegraph"))
+	for p, body := range files {
+		full := filepath.Join(repo, filepath.FromSlash(p))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
 	id = featureID(t)
 	agentPre(t, repo, "nxy:planner", "feature "+id)
-	p := batchPlan("test -f done.txt")
+	p := strings.Replace(batchPlan("test -f done.txt"), "cmd/main.go:10", changed+":10", 1)
 	if suite != "" {
 		p = strings.Replace(p, `"risk":"low"}]}`, `"risk":"low"}],"suite":`+strconvQuote(suite)+`}`, 1)
 	}

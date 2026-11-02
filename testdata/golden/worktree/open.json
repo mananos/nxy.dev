@@ -1,0 +1,7 @@
+[
+{"name":"open:000","input":{"path":"/srv/dev/repo.worktrees/x","shell":"posix"},"output":{"command":"cd '/srv/dev/repo.worktrees/x' && claude"}},
+{"name":"open:001","input":{"path":"/srv/dev/repo.worktrees/x","shell":"powershell"},"output":{"command":"cd '/srv/dev/repo.worktrees/x'; claude"}},
+{"name":"open:002","input":{"path":"C:/work/dev/my repo.worktrees/x","shell":"powershell"},"output":{"command":"cd 'C:/work/dev/my repo.worktrees/x'; claude"}},
+{"name":"open:003","input":{"path":"/srv/o'brien/repo.worktrees/x","shell":"posix"},"output":{"command":"cd '/srv/o'\\''brien/repo.worktrees/x' && claude"}},
+{"name":"open:004","input":{"path":"/srv/o'brien/repo.worktrees/x","shell":"powershell"},"output":{"command":"cd '/srv/o''brien/repo.worktrees/x'; claude"}}
+]

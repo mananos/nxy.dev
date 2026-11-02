@@ -36,15 +36,20 @@ type Result struct {
 // regexQuery is /^\/(.*)\/([gimsuy]*)$/ with JS's `.` (no line terminators).
 var regexQuery = regexp.MustCompile(`^/([^\n\r\x{2028}\x{2029}]*)/([gimsuy]*)$`)
 
-// compileQuery is the 1.x `new RegExp(m[1], flags.replace(/g/g, ”) + 'i')`: a flag given twice
-// is invalid in JS, so `/x/i` (which becomes "ii") falls back to substring there, and so does a
-// pattern RE2 cannot compile. nil means substring.
+// compileQuery is the 1.x `new RegExp(m[1], flags.replace(/g/g, ”) + 'i')` with one wanted
+// difference: the 1.x added "i" even when the query already had it, and a flag given twice is
+// invalid in JS, so `/x/i` fell back to substring there. Here an explicit `i` is not doubled and
+// `/x/i` is a regex. A flag repeated by the user, or a pattern RE2 cannot compile, still means
+// substring (nil).
 func compileQuery(query string) *regexp.Regexp {
 	m := regexQuery.FindStringSubmatch(jscompat.Trim(query))
 	if m == nil {
 		return nil
 	}
-	flags := strings.ReplaceAll(m[2], "g", "") + "i"
+	flags := strings.ReplaceAll(m[2], "g", "")
+	if !strings.Contains(flags, "i") {
+		flags += "i"
+	}
 	seen := map[rune]bool{}
 	prefix := "(?i"
 	for _, f := range flags {

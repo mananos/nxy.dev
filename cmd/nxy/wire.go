@@ -13,6 +13,7 @@ import (
 
 	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/configedit"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/host/claudecode"
@@ -32,6 +33,13 @@ type filterConfig struct{}
 
 func (filterConfig) Filter(projectDir string) filter.Settings {
 	return platform.LoadFilterSettings(projectDir, os.Getenv)
+}
+
+// roleConfig is the role table of the merged config (roles.<role>.model / effort).
+type roleConfig struct{}
+
+func (roleConfig) Role(projectDir, role string) (string, string) {
+	return configedit.RoleOf(platform.LoadConfig(projectDir, os.Getenv), role)
 }
 
 type permissionRules struct{}
@@ -284,6 +292,18 @@ func (fileProbe) IsDir(path string) bool {
 	return err == nil && fi.IsDir()
 }
 
+func (fileProbe) Exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// docsFinder looks for the docs a feature changes with rg, or by walking the repo's .md files.
+type docsFinder struct{}
+
+func (docsFinder) Find(ctx context.Context, root string, changed []string) domain.Docs {
+	return tools.FindDocs(ctx, platform.NativePath(root), changed)
+}
+
 // lensDirs reads the lens files of a folder; an invalid one is skipped and named in the warning.
 type lensDirs struct{}
 
@@ -405,9 +425,9 @@ func exePath() string {
 func newHooksStore() (app.Hooks, *lazyStore) {
 	st := &lazyStore{}
 	return app.Hooks{
-		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{},
+		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{}, Roles: roleConfig{},
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
-		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{},
+		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
 	}, st
 }

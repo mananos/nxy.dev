@@ -1,0 +1,8 @@
+[
+{"name":"shell:000","input":{"platform":"win32","env":{}},"output":{"shell":"powershell"}},
+{"name":"shell:001","input":{"platform":"win32","env":{"SHELL":"/usr/bin/bash"}},"output":{"shell":"posix"}},
+{"name":"shell:002","input":{"platform":"win32","env":{"SHELL":""}},"output":{"shell":"powershell"}},
+{"name":"shell:003","input":{"platform":"linux","env":{}},"output":{"shell":"posix"}},
+{"name":"shell:004","input":{"platform":"darwin","env":{"SHELL":"/bin/zsh"}},"output":{"shell":"posix"}},
+{"name":"shell:005","input":{"platform":"linux","env":{"SHELL":"/bin/bash"}},"output":{"shell":"posix"}}
+]

@@ -133,11 +133,17 @@ func runShim(t *testing.T, sh shellSpec, env map[string]string) result {
 
 func runShimIn(t *testing.T, sh shellSpec, env map[string]string, stdin string) result {
 	t.Helper()
+	return runShimLine(t, sh, env, stdin, hookLine)
+}
+
+// runShimLine runs format (a %s for the shim path) under sh.
+func runShimLine(t *testing.T, sh shellSpec, env map[string]string, stdin, format string) result {
+	t.Helper()
 	shim := filepath.Join(repoRoot(t), "bin", "nxy.cmd")
 	if !sh.ps {
 		shim = filepath.ToSlash(shim)
 	}
-	line := strings.Replace(hookLine, "%s", shim, 1)
+	line := strings.Replace(format, "%s", shim, 1)
 	cmd := exec.Command(sh.argv[0], append(append([]string{}, sh.argv[1:]...), line)...)
 	for _, kv := range os.Environ() {
 		if !strings.HasPrefix(kv, "NXY_") {
@@ -365,6 +371,64 @@ func TestShimInstalledBinary(t *testing.T) {
 				t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
 			}
 			assertMark(t, mark)
+		})
+	}
+}
+
+// With arguments the shim runs that command (slash commands, statusline): args and stdin get through,
+// the exit code comes back, and a missing binary is a plain stderr line with exit 1 (no hook JSON).
+func TestShimCommandArgs(t *testing.T) {
+	fake := buildFake(t)
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			if sh.name == "dash" {
+				// dash's `.` takes no arguments: slash commands run in bash/zsh/PowerShell, and the
+				// statusline line on Linux runs the shim as a script (TestShimAsScript covers dash).
+				t.Skip("dash does not pass arguments to a sourced file")
+			}
+			h := t.TempDir()
+			mark := filepath.Join(t.TempDir(), "mark")
+			copyFile(t, fake, filepath.Join(h, "bin", version.Version, exeName("nxy")))
+			env := map[string]string{"NXY_HOME": home(sh, h), "NXY_MARK": mark, "NXY_FAKE_EXIT": "3"}
+			r := runShimLine(t, sh, env, "payload", `. "%s" locate "where is x"; exit $LASTEXITCODE`)
+			if r.code != 3 || r.stdout != "" {
+				t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+			}
+			b, err := os.ReadFile(mark)
+			if err != nil {
+				t.Fatalf("binary did not run: %v", err)
+			}
+			if string(b) != "locate where is x\npayload" {
+				t.Fatalf("mark = %q", b)
+			}
+			r = runShimLine(t, sh, map[string]string{"NXY_HOME": home(sh, t.TempDir()), "NXY_RELEASE_URL": "file:///nonexistent"},
+				"", `. "%s" stats; exit $LASTEXITCODE`)
+			if r.code != 1 || strings.Contains(r.stdout, "systemMessage") || !strings.Contains(r.stderr, "nxy: ") {
+				t.Fatalf("missing binary: code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+			}
+		})
+	}
+}
+
+// The statusline on Linux/macOS runs the shim as a script (`sh <shim> statusline`), not sourced.
+func TestShimAsScript(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the statusline line on Windows sources the shim")
+	}
+	fake := buildFake(t)
+	for _, sh := range shells(t) {
+		t.Run(sh.name, func(t *testing.T) {
+			h := t.TempDir()
+			mark := filepath.Join(t.TempDir(), "mark")
+			copyFile(t, fake, filepath.Join(h, "bin", version.Version, exeName("nxy")))
+			line := sh.argv[0] + ` "%s" statusline`
+			r := runShimLine(t, sh, map[string]string{"NXY_HOME": home(sh, h), "NXY_MARK": mark}, "{}", line)
+			if r.code != 0 {
+				t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+			}
+			if b, _ := os.ReadFile(mark); string(b) != "statusline\n{}" {
+				t.Fatalf("mark = %q", b)
+			}
 		})
 	}
 }

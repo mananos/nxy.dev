@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/mananos/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/version"
 )
 
@@ -17,11 +18,15 @@ var commands = map[string]command{
 	"affected":   runAffected,
 	"batch":      runBatch,
 	"bench":      runBench,
+	"config":     runConfig,
 	"design":     runDesign,
 	"feature":    runFeature,
+	"filter":     runFilter,
 	"hook":       runHook,
+	"locate":     runLocate,
 	"plan":       runPlan,
 	"review":     runReview,
+	"setup":      runSetup,
 	"stats":      runStats,
 	"status":     runStatus,
 	"statusline": runStatusline,
@@ -29,7 +34,7 @@ var commands = map[string]command{
 	"version":    runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|batch red|green|affected|status|stats|trend|statusline|feature stop|version>"
+const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|docs|batch red|green|affected|status|stats|trend|statusline|setup status|run|filter status|on|off|config show|set|cache-ttl|locate|feature list|new|pause|resume|close|stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
@@ -65,6 +70,11 @@ func runHook(_ []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	if err != nil {
 		fmt.Fprintf(stderr, "nxy hook: %v\n", err)
 		return 0
+	}
+	if ev.Name == "SessionStart" {
+		if u, err := platform.UserDir(); err == nil {
+			refreshStableShim(u)
+		}
 	}
 	h, st := newHooksStore()
 	defer st.Close()

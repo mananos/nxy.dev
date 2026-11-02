@@ -23,7 +23,7 @@ func isEditTool(tool string) bool {
 
 // preToolEdit refuses edits inside the repo from the main thread while a feature is active.
 func (h Hooks) preToolEdit(ctx context.Context, ev HookEvent) HookResponse {
-	if ev.FilePath == "" || (ev.AgentID != "" && ev.AgentType != roleImplementer) {
+	if ev.FilePath == "" || (ev.AgentID != "" && ev.AgentType != roleImplementer && ev.AgentType != roleDocumenter) {
 		return HookResponse{}
 	}
 	f, ok := h.activeFeature(ctx, ev)
@@ -38,6 +38,16 @@ func (h Hooks) preToolEdit(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	if ev.AgentID != "" {
+		if ev.AgentType == roleDocumenter {
+			if f.State.Phase != domain.PhaseDocumenting {
+				return HookResponse{}
+			}
+			if h.docsNamesFile(f, ev) {
+				return HookResponse{AllowReason: "nxy: feature " + f.ID + " updates this doc"}
+			}
+			return HookResponse{Deny: "nxy: feature " + f.ID + " — the documenter only edits the docs nxy listed in its prompt" +
+				docsWikiHint(f) + "; this file is not one of them"}
+		}
 		if f.State.Phase == domain.PhaseRunningBatch {
 			h.noteWrite(ctx, f.ID)
 			if ev.AgentType == roleImplementer && h.batchNamesFile(f, ev) {
@@ -105,6 +115,57 @@ func (h Hooks) fixNamesFile(f domain.Feature, ev HookEvent) bool {
 		}
 	}
 	return false
+}
+
+// docsWikiHint is the part of the documenter's refusal that names the wiki folder, if any.
+func docsWikiHint(f domain.Feature) string {
+	if f.Docs == nil || f.Docs.WikiDir == "" {
+		return ""
+	}
+	return " (or one new .md page inside " + f.Docs.WikiDir + "/)"
+}
+
+// docsNamesFile reports whether the edited file is one of the docs the feature found, or a new
+// .md/.mdx page inside the folder the CI publishes to the wiki.
+func (h Hooks) docsNamesFile(f domain.Feature, ev HookEvent) bool {
+	if f.Docs == nil {
+		return false
+	}
+	root := normPath(f.ProjectDir, "")
+	target := normPath(ev.FilePath, ev.Cwd)
+	if !within(root, target) {
+		return false
+	}
+	for _, d := range f.Docs.Docs {
+		p := d.Path
+		if h.Files != nil {
+			p = h.Files.NativePath(p)
+		}
+		if normPath(p, f.ProjectDir) == target {
+			return true
+		}
+	}
+	if f.Docs.WikiDir == "" || !isMarkdown(target) {
+		return false
+	}
+	w := f.Docs.WikiDir
+	if h.Files != nil {
+		w = h.Files.NativePath(w)
+	}
+	wiki := normPath(w, f.ProjectDir)
+	if !within(wiki, target) || target == wiki {
+		return false
+	}
+	// A page that already exists is an edit of a doc nxy did not list.
+	if h.Files != nil && h.Files.Exists(target) {
+		return false
+	}
+	return true
+}
+
+func isMarkdown(p string) bool {
+	p = strings.ToLower(p)
+	return strings.HasSuffix(p, ".md") || strings.HasSuffix(p, ".mdx")
 }
 
 // changePath drops a trailing :line or :line-line from a change location.

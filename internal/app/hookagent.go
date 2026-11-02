@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
@@ -17,6 +18,7 @@ const (
 	roleReviewerQuick = "nxy:reviewer-quick"
 	roleRefuter       = "nxy:refuter"
 	roleScout         = "nxy:scout"
+	roleDocumenter    = "nxy:documenter"
 )
 
 // roleFor is the nxy subagent each dispatch action expects.
@@ -27,6 +29,7 @@ var roleFor = map[domain.ActionKind]string{
 	domain.DispatchReviewer:    roleReviewer,
 	domain.DispatchRefuter:     roleRefuter,
 	domain.DispatchFixer:       roleImplementer,
+	domain.DispatchDocumenter:  roleDocumenter,
 }
 
 // roleInfo is what nxy does with a subagent that can run in the background: the phase it works
@@ -47,6 +50,9 @@ var roles = map[string]roleInfo{
 		},
 	},
 	roleRefuter: {domain.PhaseRefuting: refuterReturned},
+	roleDocumenter: {domain.PhaseDocumenting: func(*domain.Feature) []flow.Event {
+		return []flow.Event{{Kind: flow.DocumenterReturned}}
+	}},
 }
 
 // batchReturned judges the batch from the proof the binary recorded: BatchReturned, then Green
@@ -117,12 +123,72 @@ func (h Hooks) activeFeature(ctx context.Context, ev HookEvent) (domain.Feature,
 	if err != nil || !found {
 		return domain.Feature{}, false
 	}
-	return h.ensureReview(ctx, f), true
+	return h.ensureDocs(ctx, h.ensureReview(ctx, f)), true
 }
 
 // preToolAgent handles PreToolUse Agent/Task from the main thread: it injects the planner's
 // prompt and refuses nxy roles that are not the next step.
 func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
+	resp := h.preToolAgentFlow(ctx, ev)
+	if resp.Deny != "" || ev.AgentID != "" || !strings.HasPrefix(ev.Subagent, "nxy:") {
+		return resp
+	}
+	if ev.Subagent == roleScout && resp.Prompt == "" && h.Exe != "" {
+		resp.Prompt = scoutPrompt(ev.AgentPrompt, h.Exe)
+	}
+	if h.Roles == nil {
+		return resp
+	}
+	// The role table of the config fills what the dispatch does not say; the dispatch wins.
+	dir := ev.ProjectDir
+	if dir == "" {
+		dir = ev.Cwd
+	}
+	model, effort := h.Roles.Role(dir, strings.TrimPrefix(ev.Subagent, "nxy:"))
+	if ev.AgentModel == "" {
+		resp.Model = model
+	}
+	if ev.AgentEffort == "" {
+		resp.Effort = effort
+	}
+	return resp
+}
+
+// scoutQuestion is the dispatch prompt as one line the scout can pass to `locate`: characters a shell
+// would read as syntax become spaces (so the command stays one plain call nxy can pre-approve) and
+// it is cut at 200 characters, enough for the eight terms the search takes.
+func scoutQuestion(prompt string) string {
+	var b strings.Builder
+	for _, r := range prompt {
+		// the curly quotes U+2018..U+201E are quotes for PowerShell
+		if strings.ContainsRune("\"'$`\\;&|<>()", r) || r < ' ' || (r >= '‘' && r <= '„') {
+			r = ' '
+		}
+		b.WriteRune(r)
+	}
+	q := strings.Join(strings.Fields(b.String()), " ")
+	if rs := []rune(q); len(rs) > 200 {
+		q = strings.TrimSpace(string(rs[:200]))
+	}
+	return q
+}
+
+// scoutPrompt is the dispatch prompt of the scout plus the exact command to run before it reads
+// anything: the model-free search, whose dense output dies with the scout.
+func scoutPrompt(prompt, exe string) string {
+	exe = strings.ReplaceAll(exe, `\`, "/")
+	q := scoutQuestion(prompt)
+	if q == "" {
+		q = "<question>"
+	}
+	return strings.TrimRight(prompt, " \t\r\n") + "\n\n" +
+		"nxy: before you read any file or use Grep, run this and read only what it points at (in PowerShell, start it with `& `):\n" +
+		"\"" + exe + "\" locate \"" + q + "\"\n" +
+		"For who-calls, what-it-calls or what-breaks questions use `\"" + exe + "\" locate --callers <symbol>` (or `--callees`, `--impact`). It never changes the repo."
+}
+
+// preToolAgentFlow is the part of preToolAgent that belongs to the feature flow.
+func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse {
 	if ev.AgentID != "" || !strings.HasPrefix(ev.Subagent, "nxy:") || ev.Subagent == roleScout {
 		return HookResponse{}
 	}
@@ -140,6 +206,8 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{Prompt: plan.PlannerPrompt(f, h.Exe)}
 	case ev.Subagent == roleRefuter && f.State.Phase == domain.PhaseRefuting:
 		return HookResponse{Prompt: review.RefuterPrompt(f, h.Exe)}
+	case ev.Subagent == roleDocumenter && f.State.Phase == domain.PhaseDocumenting:
+		return HookResponse{Prompt: docs.DocumenterPrompt(f, h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseFixing:
 		return HookResponse{Prompt: review.FixPrompt(f, h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:

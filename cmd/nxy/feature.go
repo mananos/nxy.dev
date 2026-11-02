@@ -71,10 +71,18 @@ func runStatus(_ []string, _ io.Reader, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// runFeature is `nxy feature stop`.
+// runFeature is `nxy feature list|new|pause|resume|close` (worktree.go) and `nxy feature stop`.
 func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
-	if len(args) != 1 || args[0] != "stop" {
-		fmt.Fprintln(stderr, "usage: nxy feature stop")
+	action := "list"
+	if len(args) > 0 {
+		action = args[0]
+		args = args[1:]
+	}
+	if code, handled := featureWorktrees(action, args, stdout, stderr); handled {
+		return code
+	}
+	if action != "stop" || len(args) != 0 {
+		fmt.Fprintln(stderr, featureUsage)
 		return 1
 	}
 	dir, err := os.Getwd()

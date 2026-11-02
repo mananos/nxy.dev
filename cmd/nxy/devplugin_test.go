@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -70,6 +71,12 @@ func TestDevPluginAgentAndCommand(t *testing.T) {
 			}
 		}
 	}
+	doc := frontmatter(t, filepath.Join(dir, "agents", "documenter.md"))
+	for _, want := range []string{"name: documenter\n", "description:", "tools: Bash, Read, Edit, Write, Grep, Glob", "model: sonnet", "effort: low"} {
+		if !strings.Contains(doc+"\n", want) {
+			t.Errorf("agents/documenter.md frontmatter misses %q", want)
+		}
+	}
 	scout := frontmatter(t, filepath.Join(dir, "agents", "scout.md"))
 	for _, want := range []string{"name: scout\n", "description:", "tools: Read, Grep, Glob, Bash", "model: sonnet"} {
 		if !strings.Contains(scout+"\n", want) {
@@ -131,5 +138,42 @@ func TestDevPluginNoPersonalPaths(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Every `!` block of a dev command runs the binary through the shim, and allowed-tools covers it:
+// Claude Code runs a `!` command only when a Bash(<prefix>:*) rule matches.
+func TestDevCommandsRunTheShim(t *testing.T) {
+	const shim = `. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd"`
+	dir := filepath.Join(devPluginDir(t), "commands")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bang := regexp.MustCompile("!`([^`]+)`")
+	allowed := regexp.MustCompile(`(?m)^allowed-tools: Bash\((.+):\*\)$`)
+	seen := 0
+	for _, e := range entries {
+		p := filepath.Join(dir, e.Name())
+		b, _ := os.ReadFile(p)
+		s := string(b)
+		for _, m := range bang.FindAllStringSubmatch(s, -1) {
+			seen++
+			if !strings.HasPrefix(m[1], shim+" ") {
+				t.Errorf("%s: `!` block %q does not run the shim", e.Name(), m[1])
+			}
+			a := allowed.FindStringSubmatch(frontmatter(t, p))
+			if a == nil || !strings.HasPrefix(m[1], a[1]) {
+				t.Errorf("%s: allowed-tools does not cover %q", e.Name(), m[1])
+			}
+		}
+	}
+	for _, name := range []string{"stats", "trend", "setup", "filter", "statusline", "config", "locate", "worktree"} {
+		if _, err := os.Stat(filepath.Join(dir, name+".md")); err != nil {
+			t.Errorf("commands/%s.md missing", name)
+		}
+	}
+	if seen < 7 {
+		t.Errorf("only %d `!` blocks found", seen)
 	}
 }

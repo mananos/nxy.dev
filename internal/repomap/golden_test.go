@@ -1,10 +1,25 @@
 package repomap
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/internal/jscompat"
 )
+
+func TestExplicitIFlagIsRegex(t *testing.T) {
+	mapText := "a.go\t1\tfunc\tAppRun\tfunc AppRun()\nb.go\t2\tfunc\tother\tfunc other()\n"
+	for _, q := range []string{"/^app/i", "/^APP/gi"} {
+		r := Query(mapText, q, Opts{})
+		if len(r.Rows) != 1 || r.Rows[0].Name != "AppRun" {
+			t.Errorf("%s: rows = %+v, want only AppRun", q, r.Rows)
+		}
+	}
+	if re := compileQuery("/^app/ii"); re != nil {
+		t.Error("a flag repeated by the user must still mean substring")
+	}
+}
 
 func kinds(rs []Rule) any {
 	if rs == nil {
@@ -72,6 +87,9 @@ func TestGolden(t *testing.T) {
 				c.In(t, "map", &mapText)
 				c.In(t, "query", &query)
 				c.In(t, "opts", &opts)
+				if m := regexQuery.FindStringSubmatch(jscompat.Trim(query)); m != nil && strings.Contains(m[2], "i") {
+					t.Skip("explicit i flag: the 1.x doubled it and fell back to substring; here it is a regex (TestExplicitIFlagIsRegex)")
+				}
 				r := Query(mapText, query, Opts{Limit: opts.Limit, Kind: opts.Kind, Path: opts.Path})
 				rows := []any{}
 				for _, x := range r.Rows {

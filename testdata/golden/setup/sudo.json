@@ -1,0 +1,15 @@
+[
+{"name":"sudo:000","input":{"text":""},"output":{"sudo":false}},
+{"name":"sudo:001","input":{"text":"sudo: a password is required"},"output":{"sudo":true}},
+{"name":"sudo:002","input":{"text":"sudo: sorry, you must have a tty... no tty present and no askpass program specified"},"output":{"sudo":true}},
+{"name":"sudo:003","input":{"text":"sudo: a terminal is required to read the password"},"output":{"sudo":true}},
+{"name":"sudo:004","input":{"text":"sudo: Password is Required"},"output":{"sudo":true}},
+{"name":"sudo:005","input":{"text":"sudo: se requiere una contraseña"},"output":{"sudo":true}},
+{"name":"sudo:006","input":{"text":"sudo: se requiere una terminal para leer la contraseña"},"output":{"sudo":true}},
+{"name":"sudo:007","input":{"text":"sudo: requiere una contraseña"},"output":{"sudo":true}},
+{"name":"sudo:008","input":{"text":"sudo: requiere la contraseña"},"output":{"sudo":true}},
+{"name":"sudo:009","input":{"text":"sudo: requiere xxxxxxxxxxxxxxxxxxxxxxxxx contraseña"},"output":{"sudo":false}},
+{"name":"sudo:010","input":{"text":"sudo: requiere\ncontraseña"},"output":{"sudo":false}},
+{"name":"sudo:011","input":{"text":"E: Unable to locate package ripgrep"},"output":{"sudo":false}},
+{"name":"sudo:012","input":{"text":"permission denied"},"output":{"sudo":false}}
+]

@@ -52,6 +52,8 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		Command      json.RawMessage `json:"command"`
 		SubagentType string          `json:"subagent_type"`
 		Prompt       string          `json:"prompt"`
+		Model        string          `json:"model"`
+		Effort       string          `json:"effort"`
 		FilePath     string          `json:"file_path"`
 		NotebookPath string          `json:"notebook_path"`
 		Questions    []struct {
@@ -65,6 +67,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 			ev.Command, ev.HasCommand = s, true
 		}
 		ev.Subagent, ev.AgentPrompt = ti.SubagentType, ti.Prompt
+		ev.AgentModel, ev.AgentEffort = ti.Model, ti.Effort
 		ev.FilePath = ti.FilePath
 		if ev.FilePath == "" {
 			ev.FilePath = ti.NotebookPath
@@ -120,18 +123,34 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 		out = map[string]any{"decision": "block", "reason": resp.Deny}
 	case resp.Rewrite != nil:
 		return encodeRewrite(w, ev, resp)
-	case ev.Name == "PreToolUse" && resp.Prompt != "":
+	case ev.Name == "PreToolUse" && (resp.Prompt != "" || resp.Model != "" || resp.Effort != ""):
 		fields := map[string]json.RawMessage{}
 		_ = json.Unmarshal(ev.ToolInput, &fields)
-		p, err := marshal(resp.Prompt)
-		if err != nil {
-			return err
+		for key, val := range map[string]string{"prompt": resp.Prompt, "model": resp.Model, "effort": resp.Effort} {
+			if val == "" {
+				continue
+			}
+			b, err := marshal(val)
+			if err != nil {
+				return err
+			}
+			fields[key] = b
 		}
-		fields["prompt"] = p
+		reason := "nxy: prompt written by nxy"
+		if resp.Prompt == "" {
+			var set []string
+			if resp.Model != "" {
+				set = append(set, "model")
+			}
+			if resp.Effort != "" {
+				set = append(set, "effort")
+			}
+			reason = "nxy: roles." + strings.TrimPrefix(ev.Subagent, "nxy:") + "." + strings.Join(set, "/")
+		}
 		out = map[string]any{"hookSpecificOutput": map[string]any{
 			"hookEventName":            "PreToolUse",
 			"permissionDecision":       "allow",
-			"permissionDecisionReason": "nxy: prompt written by nxy",
+			"permissionDecisionReason": reason,
 			"updatedInput":             fields,
 		}}
 	case ev.Name == "Stop" && resp.Next != nil:

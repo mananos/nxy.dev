@@ -1,0 +1,11 @@
+[
+{"name":"command:000","input":{"argv":["git","worktree","add","-b","feature/x","/r.worktrees/x","main"],"shell":"posix"},"output":{"text":"git worktree add -b feature/x /r.worktrees/x main"}},
+{"name":"command:001","input":{"argv":["git","worktree","add","-b","feature/#14_x","/r.worktrees/14_x","main"],"shell":"posix"},"output":{"text":"git worktree add -b 'feature/#14_x' /r.worktrees/14_x main"}},
+{"name":"command:002","input":{"argv":["git","worktree","add","-b","feature/#14_x","/r.worktrees/14_x","main"],"shell":"powershell"},"output":{"text":"git worktree add -b 'feature/#14_x' /r.worktrees/14_x main"}},
+{"name":"command:003","input":{"argv":["git","worktree","remove","C:/work/dev/my repo.worktrees/x"],"shell":"powershell"},"output":{"text":"git worktree remove 'C:/work/dev/my repo.worktrees/x'"}},
+{"name":"command:004","input":{"argv":["git","worktree","remove","/srv/o'brien/repo.worktrees/x"],"shell":"posix"},"output":{"text":"git worktree remove '/srv/o'\\''brien/repo.worktrees/x'"}},
+{"name":"command:005","input":{"argv":["git","worktree","remove","/srv/o'brien/repo.worktrees/x"],"shell":"powershell"},"output":{"text":"git worktree remove '/srv/o''brien/repo.worktrees/x'"}},
+{"name":"command:006","input":{"argv":["echo",""],"shell":"posix"},"output":{"text":"echo ''"}},
+{"name":"command:007","input":{"argv":["a=b","c:d","e@f","100%","x+y","a,b","p/q-r_s.t"],"shell":"posix"},"output":{"text":"a=b c:d e@f 100% x+y a,b p/q-r_s.t"}},
+{"name":"command:008","input":{"argv":["a;b","$HOME","a b","\"q\""],"shell":"posix"},"output":{"text":"'a;b' '$HOME' 'a b' '\"q\"'"}}
+]

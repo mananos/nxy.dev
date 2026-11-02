@@ -10,8 +10,8 @@ import (
 // runReview is `nxy review save --feature <id> --lens <name>` and `nxy review refute --feature <id>`:
 // the JSON of the reviewer or the refuter comes on stdin.
 func runReview(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	const usage = "usage: nxy review save --feature <id> --lens <name> | nxy review refute --feature <id>  (JSON on stdin)"
-	if len(args) == 0 || (args[0] != "save" && args[0] != "refute") {
+	const usage = "usage: nxy review save --feature <id> --lens <name> | nxy review refute --feature <id>  (JSON on stdin) | nxy review docs --feature <id>"
+	if len(args) == 0 || (args[0] != "save" && args[0] != "refute" && args[0] != "docs") {
 		fmt.Fprintln(stderr, usage)
 		return 1
 	}
@@ -30,6 +30,15 @@ func runReview(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	h, st := newHooksStore()
 	defer st.Close()
 	ctx := context.Background()
+	if sub == "docs" {
+		text, err := h.DocsPacket(ctx, *id)
+		if err != nil {
+			fmt.Fprintf(stderr, "nxy review docs: %v\n", err)
+			return 1
+		}
+		fmt.Fprintln(stdout, text)
+		return 0
+	}
 	if sub == "refute" {
 		n, err := h.SaveRefute(ctx, *id, stdin)
 		if err != nil {

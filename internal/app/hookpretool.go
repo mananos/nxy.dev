@@ -46,6 +46,11 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r
 	}
+	if ev.AgentID != "" && ev.AgentType == roleDocumenter && h.shellWrites(ev) {
+		if f, ok := h.activeFeature(ctx, ev); ok && f.ProjectDir != "" {
+			return HookResponse{Deny: "nxy: feature " + f.ID + " — the documenter edits docs with Edit/Write, not through the shell"}
+		}
+	}
 	if (ev.AgentID == "" || ev.AgentType == roleImplementer) && h.shellWrites(ev) {
 		if f, ok := h.activeFeature(ctx, ev); ok && f.ProjectDir != "" {
 			if ev.AgentID == "" {

@@ -22,6 +22,9 @@ const (
 	DispatchRefuter     ActionKind = "dispatch_refuter"
 	AskFindings         ActionKind = "ask_findings"
 	DispatchFixer       ActionKind = "dispatch_fixer"
+	CheckDocs           ActionKind = "check_docs"
+	AskDocs             ActionKind = "ask_docs"
+	DispatchDocumenter  ActionKind = "dispatch_documenter"
 	Close               ActionKind = "close"
 	Notify              ActionKind = "notify"
 )
@@ -55,6 +58,9 @@ var actionTable = map[ActionKind]actionInfo{
 	DispatchRefuter:     {true, "Refutar"},
 	AskFindings:         {true, "Elegir hallazgos"},
 	DispatchFixer:       {true, "Arreglar hallazgos"},
+	CheckDocs:           {false, "Buscar docs"},
+	AskDocs:             {true, "Actualizar docs"},
+	DispatchDocumenter:  {true, "Actualizar docs"},
 	Close:               {false, "Cerrar"},
 	Notify:              {false, "Avisar"},
 }

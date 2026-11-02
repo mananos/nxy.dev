@@ -207,7 +207,10 @@ func newStatusline(getenv func(string) string, getwd func() string, clock func()
 	}
 }
 
-func runStatusline(_ []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func runStatusline(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "setup" {
+		return runStatuslineSetup(args[1:], stdout, stderr)
+	}
 	data, _ := io.ReadAll(stdin)
 	return printOutput(newStatusline(os.Getenv, osGetwd, time.Now).Run(data), stdout, stderr)
 }

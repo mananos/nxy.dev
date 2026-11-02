@@ -30,6 +30,9 @@ type HookEvent struct {
 	// Subagent and AgentPrompt are tool_input.subagent_type / prompt of Agent/Task.
 	Subagent    string
 	AgentPrompt string
+	// AgentModel and AgentEffort are tool_input.model / effort of the dispatch, when it carries them.
+	AgentModel  string
+	AgentEffort string
 	// FilePath is tool_input.file_path (or notebook_path).
 	FilePath string
 	// Questions are the AskUserQuestion question texts; InputHasAnswers is true when
@@ -65,6 +68,9 @@ type HookResponse struct {
 	AllowReason string
 	// Prompt replaces tool_input.prompt (PreToolUse Agent), keeping the rest of the input.
 	Prompt string
+	// Model and Effort set tool_input.model / effort (PreToolUse Agent) from the config's role table.
+	Model  string
+	Effort string
 	// Next is the instruction for the main thread.
 	Next *Next
 	// Notice is shown to the user.
@@ -78,6 +84,8 @@ type Hooks struct {
 	Config      FilterConfig
 	Engine      FilterEngine
 	Permissions PermissionRules
+	// Roles gives the model and effort the user chose per role; nil leaves every role as its frontmatter.
+	Roles Roles
 	// Store, Repos, Legacy and Viewer serve the feature flow; a nil Store answers nothing there.
 	Store  Store
 	Repos  Repos
@@ -101,6 +109,8 @@ type Hooks struct {
 	Diffs       Diffs
 	ReviewLog   ReviewLog
 	ReviewFiles ReviewFiles
+	// Docs finds the docs a finished feature changes; nil means there are none to look for.
+	Docs Docs
 }
 
 // Handle answers a hook event, one use case per event/tool.

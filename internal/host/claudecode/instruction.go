@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/design"
+	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/review"
@@ -158,6 +159,10 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 			lead = "the fixes did not pass the check; nxy retries once — dispatch it again the same way"
 		}
 		s = fmt.Sprintf("nxy: feature %s — %s: ONE Agent tool call, subagent_type `nxy:implementer`, prompt `feature %s review fix`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, lead, f.ID)
+	case domain.AskDocs:
+		s = "nxy: feature " + f.ID + " — " + docsAsk(f, stop)
+	case domain.DispatchDocumenter:
+		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:documenter`, prompt `feature %s docs`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, f.ID)
 	case domain.Close:
 		if f.State.Outcome == domain.OutcomeSuccess {
 			s = fmt.Sprintf("nxy: feature %s — Listo. Next: tell the user this line verbatim, without summarizing or reformatting, and stop here:\n%s", f.ID, review.Summary(f))
@@ -171,6 +176,28 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 		s += "\n" + note
 	}
 	return s
+}
+
+// docsAsk words the AskDocs step: the question about the docs that name the change, copied as is.
+func docsAsk(f domain.Feature, stop bool) string {
+	var paths []string
+	if f.Docs != nil {
+		paths = f.Docs.Paths()
+	}
+	q := docs.Question(f.ID, paths)
+	opts := make([]askOption, len(q.Options))
+	for i, o := range q.Options {
+		opts[i] = askOption{o.Label, o.Description}
+	}
+	var b strings.Builder
+	b.WriteString("Next: the review is done and some docs of the repo name what changed; ask the user with AskUserQuestion, copying the question and its options as they are, with exactly this input.\n")
+	if stop {
+		b.WriteString("Input:\n")
+	} else {
+		b.WriteString("Then nothing else: nxy continues with the answer. Input:\n")
+	}
+	b.WriteString(askInput([]askQuestion{{Question: q.Question, Header: q.Header, Options: opts}}))
+	return b.String()
 }
 
 func checkpointAndAsk(f domain.Feature, input string, stop bool) string {

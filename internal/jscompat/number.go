@@ -54,6 +54,9 @@ func Round(x float64) float64 {
 	return f
 }
 
+// IsSpace is the JS \s set (WhiteSpace + LineTerminator) for one rune.
+func IsSpace(r rune) bool { return isSpace(r) }
+
 // isSpace is the JS \s / WhiteSpace + LineTerminator set.
 func isSpace(r rune) bool {
 	switch r {

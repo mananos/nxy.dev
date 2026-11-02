@@ -30,6 +30,8 @@ type Feature struct {
 	Mode Mode `json:"mode,omitempty"`
 	// Design is the design debate of an engineer feature.
 	Design *Design `json:"design,omitempty"`
+	// Docs are the docs of the repo that name what the feature changed, found when it closes.
+	Docs *Docs `json:"docs,omitempty"`
 	// OfferAnswered is true once the user answered the "Pasar a engineer" offer.
 	OfferAnswered bool `json:"offer_answered,omitempty"`
 }

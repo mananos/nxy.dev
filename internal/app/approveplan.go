@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/design"
+	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
@@ -23,6 +24,9 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
 		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) ||
 		q == plan.FixesFailedQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) {
+		return true
+	}
+	if q == docs.QuestionText(f.ID) {
 		return true
 	}
 	if q == design.CloseQuestion(f.ID) || q == design.OfferQuestion(f.ID) ||
@@ -115,6 +119,9 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if ans, found := decisionAnswer(f, ev.Answers); found {
 		return h.answerDecision(ctx, f, ans)
 	}
+	if ans, found := ev.Answers[docs.QuestionText(f.ID)]; found && f.State.Phase == domain.PhaseDocs {
+		return h.answerDocs(ctx, f, ans)
+	}
 	if f.State.Phase == domain.PhaseDesigning {
 		return h.answerDesign(ctx, f, ev.Answers)
 	}
@@ -125,6 +132,24 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 		return h.answerFindings(ctx, f, ev.Answers)
 	}
 	return HookResponse{}
+}
+
+// answerDocs turns the answer to the docs question into DocsAnswered; anything that is not one of
+// the two options asks again.
+func (h Hooks) answerDocs(ctx context.Context, f domain.Feature, answer string) HookResponse {
+	var update bool
+	switch strings.TrimSpace(answer) {
+	case docs.LabelUpdate:
+		update = true
+	case docs.LabelLeave:
+	default:
+		return HookResponse{Next: &Next{Feature: f, Note: "pick one of the options"}}
+	}
+	nf, _, err := h.advance(ctx, f.ID, flow.Event{Kind: flow.DocsAnswered, Update: update})
+	if err != nil {
+		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
+	}
+	return HookResponse{Next: &Next{Feature: nf}}
 }
 
 // answerFindings reads which offered findings the user picked (the ids H<n> in every answer of

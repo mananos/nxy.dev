@@ -1,0 +1,40 @@
+{
+  "fields": [
+    "modules.filter",
+    "roles.planner.model", "roles.planner.effort",
+    "roles.implementer.model", "roles.implementer.effort",
+    "roles.reviewer.model", "roles.reviewer.effort",
+    "roles.scout.model", "roles.scout.effort",
+    "roles.documenter.model", "roles.documenter.effort"
+  ],
+  "sourceFields": ["modules.filter", "roles.planner.model", "roles.scout.model", "roles.documenter.effort"],
+  "unknownFields": ["nope", "roles.planner", "modules"],
+  "values": [null, "haiku", "fable", "medium", "auto", true, false, 3],
+  "setPath": [
+    {"obj": {}, "path": ["modules", "filter"], "value": false},
+    {"obj": {"modules": {"filter": true, "metrics": false}}, "path": ["modules", "filter"], "value": null},
+    {"obj": {"modules": {"filter": true}}, "path": ["modules", "filter"], "value": null},
+    {"obj": {"roles": {"planner": {"model": "opus"}}, "other": 1}, "path": ["roles", "planner", "effort"], "value": "high"},
+    {"obj": {"roles": {"planner": {"model": "opus"}}, "other": 1}, "path": ["roles", "planner", "model"], "value": null},
+    {"obj": {"roles": {"planner": {"model": "opus"}, "scout": {"effort": "low"}}}, "path": ["roles", "planner", "model"], "value": null},
+    {"obj": {"roles": "x"}, "path": ["roles", "scout", "model"], "value": "haiku"},
+    {"obj": {"roles": ["a"]}, "path": ["roles", "scout", "model"], "value": "haiku"},
+    {"obj": {"a": 1}, "path": [], "value": "x"},
+    {"obj": {"a": {"b": {"c": 1}}}, "path": ["a", "b", "c"], "value": null},
+    {"obj": {"a": {"b": {"c": 1, "d": 2}}}, "path": ["a", "b", "c"], "value": null},
+    {"obj": {}, "path": ["a", "b", "c"], "value": null},
+    {"obj": {"a": 1}, "path": ["b"], "value": null},
+    {"obj": null, "path": ["a", "b"], "value": 5}
+  ],
+  "sources": [
+    {"files": {}, "env": {}},
+    {"files": {"user": {"modules": {"filter": false}, "roles": {"planner": {"model": "opus"}}}}, "env": {}},
+    {"files": {"repo": {"modules": {"filter": false}, "roles": {"planner": {"effort": "low"}}}}, "env": {}},
+    {"files": {"user": {"modules": {"filter": true}, "roles": {"planner": {"model": "opus"}}}, "repo": {"modules": {"filter": false}, "roles": {"planner": {"model": "haiku"}}}}, "env": {}},
+    {"files": {"user": {"roles": {"scout": {"model": "haiku"}}}}, "env": {"NXY_FILTER": "0"}},
+    {"files": {"repo": {"modules": {"filter": true}}}, "env": {"NXY_FILTER": "1"}},
+    {"files": {"user": {"modules": {"filter": true}}}, "env": {"NXY_FILTER": "2"}},
+    {"files": {"user": {"modules": "x", "roles": null}}, "env": {}},
+    {"files": {"user": {"roles": {"documenter": {"model": null}}}}, "env": {}}
+  ]
+}

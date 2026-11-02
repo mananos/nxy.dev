@@ -18,6 +18,16 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 	if ev.Tool != "PowerShell" {
 		cdDir, cmd, hasCd = splitLeadingCd(cmd)
 	}
+	if ev.AgentID != "" && ev.AgentType == roleScout {
+		// The scout's own search needs no feature: it only reads and writes the repo map.
+		if !h.parseLocate(cmd, ev.Tool == "PowerShell") {
+			return HookResponse{}, false
+		}
+		if hasCd && h.normDir(cdDir) != h.normDir(ev.Cwd) {
+			return HookResponse{}, false
+		}
+		return HookResponse{AllowReason: "nxy: its own locate for the scout"}, true
+	}
 	var id string
 	switch {
 	case ev.AgentID == "" || ev.AgentType == roleImplementer:
@@ -37,6 +47,8 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 		id = h.parseSave(cmd, ev.Tool == "PowerShell", h.reviewSaveWords)
 	case ev.AgentType == roleRefuter:
 		id = h.parseSave(cmd, ev.Tool == "PowerShell", h.reviewRefuteWords)
+	case ev.AgentType == roleDocumenter:
+		id = h.parseDocsStep(cmd, ev.Tool == "PowerShell")
 	}
 	if id == "" {
 		return HookResponse{}, false
@@ -71,6 +83,51 @@ func (h Hooks) parseBatchStep(cmd string, ps bool) string {
 		return ""
 	}
 	return toks[4]
+}
+
+// parseDocsStep returns the feature id of `"<exe>" review docs --feature <id>` (a leading `& `
+// only in PowerShell), or "".
+func (h Hooks) parseDocsStep(cmd string, ps bool) string {
+	if strings.ContainsAny(cmd, "\r\n") {
+		return ""
+	}
+	toks, ok := shellWords(cmd)
+	if !ok {
+		return ""
+	}
+	if ps && len(toks) > 0 && toks[0] == "&" {
+		toks = toks[1:]
+	}
+	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "review" || toks[2] != "docs" || toks[3] != "--feature" {
+		return ""
+	}
+	return toks[4]
+}
+
+// parseLocate reports whether cmd is a search the scout may run on its own: `"<exe>" locate "<question>"`,
+// `"<exe>" locate --callers|--callees|--impact <symbol>` or `"<exe>" locate --status` (a leading `& `
+// only in PowerShell). Anything with more words, or with another flag, is not pre-approved.
+func (h Hooks) parseLocate(cmd string, ps bool) bool {
+	if strings.ContainsAny(cmd, "\r\n") {
+		return false
+	}
+	toks, ok := shellWords(cmd)
+	if !ok {
+		return false
+	}
+	if ps && len(toks) > 0 && toks[0] == "&" {
+		toks = toks[1:]
+	}
+	if len(toks) < 3 || !h.isExe(toks[0]) || toks[1] != "locate" {
+		return false
+	}
+	switch toks[2] {
+	case "--status":
+		return len(toks) == 3
+	case "--callers", "--callees", "--impact":
+		return len(toks) == 4 && toks[3] != "" && !strings.HasPrefix(toks[3], "--")
+	}
+	return len(toks) == 3 && toks[2] != "" && !strings.HasPrefix(toks[2], "--")
 }
 
 // parseAffectedStep returns the feature id of `"<exe>" affected --feature <id>` (a leading `& `

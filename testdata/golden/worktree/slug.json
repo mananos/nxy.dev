@@ -1,0 +1,21 @@
+[
+{"name":"slug:000","input":{"text":"Mi Feature"},"output":{"slug":"mi_feature"}},
+{"name":"slug:001","input":{"text":"  Login con Google!  "},"output":{"slug":"login_con_google"}},
+{"name":"slug:002","input":{"text":"Ñandú Rápido, ¿sí?"},"output":{"slug":"nandu_rapido_si"}},
+{"name":"slug:003","input":{"text":"Crème brûlée à la façon d'Ünïcode"},"output":{"slug":"creme_brulee_a_la_facon_d_unicode"}},
+{"name":"slug:004","input":{"text":""},"output":{"slug":""}},
+{"name":"slug:005","input":{"text":"   "},"output":{"slug":""}},
+{"name":"slug:006","input":{"text":"---"},"output":{"slug":""}},
+{"name":"slug:007","input":{"text":"a--b__c  d"},"output":{"slug":"a_b_c_d"}},
+{"name":"slug:008","input":{"text":"__x__"},"output":{"slug":"x"}},
+{"name":"slug:009","input":{"text":"ÀÉÎÕÜ"},"output":{"slug":"aeiou"}},
+{"name":"slug:010","input":{"text":"ĀĂĄĆĈĊČĎĒĔĖĘĚĜĞĠĢĤĨĪĬĮİĴĶĹĻĽŃŅŇŌŎŐŔŖŘŚŜŞŠŢŤŨŪŬŮŰŲŴŶŸŹŻŽ"},"output":{"slug":"aaaccccdeeeeegggghiiiiijklllnnnooorrrssssttuuuuuuw"}},
+{"name":"slug:011","input":{"text":"øßæðþłđ"},"output":{"slug":""}},
+{"name":"slug:012","input":{"text":"feature 2024 v2"},"output":{"slug":"feature_2024_v2"}},
+{"name":"slug:013","input":{"text":"école"},"output":{"slug":"ecole"}},
+{"name":"slug:014","input":{"text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa b"},"output":{"slug":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+{"name":"slug:015","input":{"text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bbb"},"output":{"slug":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+{"name":"slug:016","input":{"text":"un nombre larguísimo que pasa de los cincuenta caracteres sin problema alguno"},"output":{"slug":"un_nombre_larguisimo_que_pasa_de_los_cincuenta_car"}},
+{"name":"slug:017","input":{"text":"日本語 text"},"output":{"slug":"text"}},
+{"name":"slug:018","input":{"text":"feature/login"},"output":{"slug":"feature_login"}}
+]

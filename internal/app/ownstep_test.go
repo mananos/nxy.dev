@@ -77,6 +77,13 @@ func TestOwnStepAllow(t *testing.T) {
 		{"review refute powershell", "PowerShell", roleRefuter, "$OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n@'\n{}\n'@ | & \"/opt/nxy/nxy\" review refute --feature ID", true, true},
 		{"review refute reviewer", "Bash", roleReviewer, "\"/opt/nxy/nxy\" review refute --feature ID <<'JSON'\n{}\nJSON", true, false},
 		{"review refute other id", "Bash", roleRefuter, "\"/opt/nxy/nxy\" review refute --feature other <<'JSON'\n{}\nJSON", true, false},
+		{"review docs documenter", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature ID`, true, true},
+		{"review docs documenter ps", "PowerShell", roleDocumenter, `& "/opt/nxy/nxy" review docs --feature ID`, true, true},
+		{"review docs main thread", "Bash", "", `"/opt/nxy/nxy" review docs --feature ID`, true, false},
+		{"review docs reviewer", "Bash", roleReviewer, `"/opt/nxy/nxy" review docs --feature ID`, true, false},
+		{"review docs other id", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature other`, true, false},
+		{"review docs chained", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature ID && rm x`, true, false},
+		{"review docs extra arg", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature ID --x`, true, false},
 		{"plain command", "Bash", "", `git status`, true, false},
 	}
 	for _, c := range cases {
@@ -128,7 +135,8 @@ func (slashFiles) NativePath(p string) string {
 	}
 	return p
 }
-func (slashFiles) IsDir(string) bool { return true }
+func (slashFiles) IsDir(string) bool  { return true }
+func (slashFiles) Exists(string) bool { return false }
 
 func TestOwnStepLeadingCd(t *testing.T) {
 	old := goos

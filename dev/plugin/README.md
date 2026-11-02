@@ -1,6 +1,6 @@
 # nxy 2.0 dev plugin
 
-Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1–F2.5 flow (`/nxy:feature` or `/nxy:engineer` → planner → `nxy plan save` → approval → batches → affected tests → review) and the Bash filter from F1; other events answer nothing.
+Dev only. Same hook events as the 1.x plugin, but each one runs the Go binary through the shim `bin/nxy.cmd`. The binary runs the F2.1–F2.5 flow (`/nxy:feature` or `/nxy:engineer` → planner → `nxy plan save` → approval → batches → affected tests → review) and the Bash filter from F1; other events answer nothing. It also runs the F3 utility commands (stats, trend, statusline, setup, filter, config, locate, worktrees, docs).
 
 Try it:
 
@@ -214,3 +214,53 @@ Qué ves: las mismas tablas y la misma línea de la 1.x; lo que nxy no puede sab
 - El camino caliente no lanza procesos, no abre la db de nxy y no llama al motor del filtro; si algo falla imprime `nxy ?` (con `NXY_DEBUG` ves la causa por stderr).
 
 `NXY_BIN` wins over everything. To test the download path (binary under `~/.nxy/bin/2.0.0-dev/`, fetched from the GitHub release), unset it first: a leftover `NXY_BIN` silently runs a stale build.
+
+## F3.4: comandos utilitarios
+
+Los comandos utilitarios de la 1.x corren en el binario de Go y se llaman desde el plugin dev con slash commands. Todos usan el shim con argumentos: `bin/nxy.cmd <comando> …` corre ese comando del binario; si falla, escribe una línea en stderr y sale con 1. Los `!` de los slash commands necesitan bash/zsh o PowerShell (dash no pasa argumentos a `.`).
+
+**Slash commands.** `/nxy:stats`, `/nxy:trend`, `/nxy:setup`, `/nxy:filter`, `/nxy:statusline`, `/nxy:config`, `/nxy:locate` y `/nxy:worktree`. Qué ves: la salida del comando correspondiente en el chat. Qué hacer: pasarles los mismos argumentos que al binario (`/nxy:trend --by week`).
+
+### /nxy:statusline [install|remove]
+
+Qué ves: sin argumento, el bloque `statusLine` que se escribiría en `~/.claude/settings.json` y si ya está instalada. `install` escribe `statusLine`, imprime la ruta del shim y el backup, y pide reiniciar Claude Code. `remove` la quita (sólo si es la de nxy).
+
+- Copia estable del shim: `~/.nxy/bin/nxy.cmd` (~13 KB). Sólo existe si instalaste la statusline; SessionStart la pone al día con la versión del binario; `remove` la borra.
+- Backup de `settings.json`: `bak-nxy-<ms>` junto al archivo, del tamaño del settings; se conservan los 3 últimos.
+
+### /nxy:setup
+
+Qué ves: el estado de rtk, rg y codegraph (instalados o no, de dónde, con pistas de instalación). Qué significa: nxy detecta, no instala solo. Qué hacer: `setup run <rtk|rg|codegraph> --yes` instala con tu sí (sin `--yes` muestra los pasos y no hace nada; con `--dry-run` los lista sin correrlos). Un `sudo` sin terminal te devuelve el comando para correr a mano. No escribe archivos propios.
+
+### /nxy:filter status|on|off
+
+Qué ves: el motor del filtro (rtk o no), rg, lo excluido y el escape hatch. `on` / `off` escriben `modules.filter` en tu config de usuario (`~/.nxy/config.json`) por defecto y en el `.nxy/config.json` de este repo con `--repo`, conservando las otras claves y su orden (~100 B; es tuyo, no se borra solo), y refrescan el cache del motor. Si ese archivo de config está roto no se toca: lo dice (`<ruta> está roto; no se toca`) y sale con error; arreglalo a mano y repetí el comando.
+
+### /nxy:config
+
+- `show`: cada clave que la v2 lee, con su valor y de dónde viene (default, usuario, repo).
+- `set <clave> <valor|default> [--repo]`: escribe `~/.nxy/config.json` por defecto; con `--repo`, `.nxy/config.json`. `default` borra la clave. Menos de 1 KB.
+- `cache-ttl 1h|off`: escribe o quita `promptCacheTtl` en `~/.claude/settings.json`, con backup `bak-nxy-<ms>` (se conservan 3).
+
+Roles: `roles.<rol>.model` (haiku, sonnet, opus, fable) y `roles.<rol>.effort` (low, medium, high) para planner, implementer, reviewer, reviewer-quick, refuter, scout y documenter se aplican al despachar cada agente de nxy. Si el despacho ya trae model o effort, gana el del despacho. Sin config no se toca nada y queda el frontmatter del agente. **Riesgo:** si Claude Code ignora `effort` en el despacho, el rol corre con el del frontmatter; a validar en vivo.
+
+### /nxy:locate y el scout
+
+`nxy locate "<consulta>"` busca sin modelo con el repo map, rg y codegraph; `--callers|--callees|--impact <símbolo>` pide relaciones, `--status` muestra el estado, `--index` reconstruye el índice y `--json` da salida de máquina. El scout (`nxy:scout`) corre ese comando, que nxy le inyecta, antes de leer archivos.
+
+- Índice compartido con la 1.x: `.nxy/local/index/repomap.tsv` y `repomap.meta.json`. Pesa en proporción al repo, se reconstruye de forma incremental y se borra con `.nxy/local`.
+- `/regex/i` ahora sí es regex (en la 1.x caía a substring).
+
+### Worktrees: /nxy:worktree o `nxy feature list|new|pause|resume|close`
+
+Qué ves: la lista de worktrees y, en cada acción, el comando git que corrió. `new --name <n> --base <rama> [--issue <n>]` (o `new --branch <b>`) crea el worktree con base explícita. nxy nunca commitea ni pushea.
+
+- `pause` / `resume`: la pausa es una marca en `.nxy/local/features/paused.json` (~100 B); se borra al `resume` o al `close`.
+- `close --path <wt>`: con cambios sin guardar pide `--force`; no cierra el worktree principal, el de esta sesión ni uno con una feature sin terminar.
+- El handoff al pausar llega con la memoria v2.
+
+### Docs y documenter
+
+Qué ves: al cerrar con éxito, si hay docs de usuario que nombran el cambio, una pregunta con **Actualizar docs** o **Dejar**. Qué significa: **Actualizar docs** despacha `nxy:documenter`, que sólo puede editar esos docs (y una página nueva en la carpeta wiki del CI); cualquier otro archivo se le niega. **Dejar** cierra. Sin docs que nombren el cambio no pregunta nada y cierra con "Listo".
+
+Costo de la búsqueda: con rg, milisegundos; sin rg, un recorrido con tope de 5000 archivos / 1 MB. Una vez por feature. No escribe archivos fuera de los docs que apruebes.

@@ -14,6 +14,9 @@ set "NXY_T="
 set "NXY_EV="
 set "NXY_X1="
 set "NXY_X2="
+rem With arguments the shim runs that nxy command (slash commands, statusline) instead of the hook.
+set "NXY_CLI="
+if not "%~1"=="" set "NXY_CLI=1"
 if defined NXY_HOME (set "NXY_DIR=%NXY_HOME%") else (set "NXY_DIR=%USERPROFILE%\.nxy")
 set "NXY_EXE=%NXY_DIR%\bin\%NXY_VERSION%\nxy.exe"
 if defined NXY_BIN (set "NXY_RUN=%NXY_BIN%") else (set "NXY_RUN=%NXY_EXE%")
@@ -55,6 +58,7 @@ if not defined NXY_FAIL if not exist "%NXY_RUN%" set "NXY_HINT=1" & set "NXY_FAI
 rem Failures must be visible: stdout JSON {"systemMessage"} is shown to the user (stderr is not). Delayed expansion keeps & and ) in paths harmless.
 if defined NXY_FAIL setlocal EnableDelayedExpansion
 if defined NXY_FAIL echo nxy: !NXY_FAIL! 1>&2
+if defined NXY_FAIL if defined NXY_CLI exit /b 1
 if defined NXY_FAIL set "NXY_FAIL=!NXY_FAIL:\=/!"
 if defined NXY_FAIL if defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL!"}
 rem Hard failure: tell the model too (SessionStart / UserPromptSubmit / PostToolUse only). Needs compact one-line JSON; otherwise systemMessage only.
@@ -69,7 +73,8 @@ if defined NXY_HINT set "NXY_X1= Si en Windows el binario no corre o desaparece,
 if defined NXY_EV set NXY_X2=,"hookSpecificOutput":{"hookEventName":"!NXY_EV!","additionalContext":"nxy no est\u00e1 corriendo (!NXY_FAIL!): sus hooks no hacen nada. Dec\u00edselo al usuario y no sigas ni diagnostiques pasos de nxy hasta que lo arregle."}
 if defined NXY_FAIL if not defined NXY_SOFT echo {"systemMessage":"nxy: !NXY_FAIL! - nxy hooks do nothing until this is fixed!NXY_X1!"!NXY_X2!}
 if defined NXY_FAIL exit /b 0
-"%NXY_RUN%" hook
+if not defined NXY_CLI "%NXY_RUN%" hook
+if defined NXY_CLI "%NXY_RUN%" %*
 set "NXY_CODE=%ERRORLEVEL%"
 rem 9009 not found, 193 / 216 not a valid executable for this Windows: the binary could not run at all.
 set "NXY_BAD="
@@ -81,6 +86,7 @@ if defined NXY_BAD set "NXY_RUN=!NXY_RUN:\=/!"
 if defined NXY_BAD set "NXY_FAIL=could not run !NXY_RUN! (exit %NXY_CODE%)"
 if defined NXY_BAD set "NXY_HINT=1"
 if defined NXY_BAD echo nxy: !NXY_FAIL! 1>&2
+if defined NXY_BAD if defined NXY_CLI exit /b 1
 if defined NXY_BAD powershell -NoProfile -NonInteractive -Command "exit ([int](-not [Console]::IsInputRedirected))" && set /p NXY_IN=
 if defined NXY_BAD if defined NXY_IN set "NXY_T=!NXY_IN:*hook_event_name=!"
 if defined NXY_T if "!NXY_T:~3,11!"=="PostToolUse" set "NXY_EV=PostToolUse"
@@ -99,6 +105,8 @@ NXY_VERSION=2.0.0-dev
 # A failure must be visible: the stdout JSON is shown to the user by Claude Code, stderr is not.
 nxy_say() {
   echo "nxy: $*" >&2
+  # A command (not a hook): the stderr line is the whole report, and the exit code says it failed.
+  if [ -n "$nxy_cli" ]; then nxy_failed=1; return 0; fi
   msg=$(printf '%s' "$*" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
   # The model is told too, but only on the events the Go encoder answers with additionalContext.
   # stdin is read only here (the binary never ran, so it is untouched), 2 KB at most: the event name is near the start.
@@ -131,6 +139,7 @@ nxy_say() {
 # A held download lock is transient (another hook is fetching the binary), not a broken install.
 nxy_skip() {
   echo "nxy: $*" >&2
+  if [ -n "$nxy_cli" ]; then nxy_failed=1; return 0; fi
   msg=$(printf '%s' "$*" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
   printf '{"systemMessage":"nxy: %s"}\n' "$msg"
 }
@@ -216,7 +225,7 @@ nxy_main() {
     nxy_say "binary not found at $bin"
     return 0
   fi
-  "$bin" hook
+  if [ -n "$nxy_cli" ]; then "$bin" "$@"; else "$bin" hook; fi
   rc=$?
   # 126 / 127: the binary could not run at all (not executable, wrong format, not found).
   if [ "$rc" = 126 ] || [ "$rc" = 127 ]; then
@@ -227,5 +236,11 @@ nxy_main() {
   return $rc
 }
 
-nxy_main
-exit $?
+# With arguments the shim runs that nxy command (slash commands, statusline) instead of the hook.
+nxy_cli=
+nxy_failed=
+[ "$#" -gt 0 ] && nxy_cli=1
+nxy_main "$@"
+nxy_rc=$?
+[ -n "$nxy_failed" ] && nxy_rc=1
+exit $nxy_rc

@@ -1,0 +1,12 @@
+[
+{"name":"default:000","input":{"originHead":"origin/main","mainBranch":"develop","branches":["develop","main"]},"output":{"branch":"main"}},
+{"name":"default:001","input":{"originHead":"origin/trunk","mainBranch":"develop","branches":["develop","main"]},"output":{"branch":"develop"}},
+{"name":"default:002","input":{"originHead":"origin/trunk","mainBranch":null,"branches":["main","master"]},"output":{"branch":"main"}},
+{"name":"default:003","input":{"originHead":"origin/release/1.x","mainBranch":null,"branches":["release/1.x","main"]},"output":{"branch":"release/1.x"}},
+{"name":"default:004","input":{"originHead":"main","mainBranch":null,"branches":["main"]},"output":{"branch":"main"}},
+{"name":"default:005","input":{"originHead":"  ","mainBranch":"feature/x","branches":["main"]},"output":{"branch":"feature/x"}},
+{"name":"default:006","input":{"originHead":null,"mainBranch":null,"branches":["master","other"]},"output":{"branch":"master"}},
+{"name":"default:007","input":{"originHead":null,"mainBranch":null,"branches":["other"]},"output":{"branch":null}},
+{"name":"default:008","input":{"originHead":"origin/","mainBranch":null,"branches":[]},"output":{"branch":null}},
+{"name":"default:009","input":{"originHead":null,"mainBranch":"","branches":["main","master"]},"output":{"branch":"main"}}
+]

@@ -1,0 +1,86 @@
+{
+  "matrix": {
+    "tools": ["rtk", "codegraph"],
+    "oses": ["win32", "darwin", "linux"],
+    "rg": [
+      ["win32", [null, "winget"], [false, true]],
+      ["darwin", [null, "brew"], [false, true]],
+      ["linux", [null, "apt-get", "dnf", "pacman", "brew"], [false]],
+      ["linux", ["apt-get", "brew"], [true]]
+    ]
+  },
+  "plans": [
+    ["unknown", {"platform": "linux"}],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true}],
+    ["rtk", {"platform": "win32", "found": true, "conflict": true, "rtkPath": "C:/Program Files/rtk/rtk.exe"}],
+    ["rtk", {"platform": "linux", "found": false, "conflict": true}],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true, "hookScopes": ["project"]}],
+    ["rtk", {"platform": "darwin", "found": true, "conflict": true, "hookScopes": ["user", "project"], "rtkPath": "/opt/homebrew/bin/rtk"}],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true, "hookScopes": []}],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true, "rtkPath": null}],
+    ["rtk", {"platform": "linux", "found": false, "conflict": false, "hookScopes": ["project"]}],
+    ["codegraph", {"platform": "linux", "found": true, "conflict": "mcp", "mcpScope": "user"}],
+    ["codegraph", {"platform": "win32", "found": true, "conflict": "mcp", "mcpScope": "local"}],
+    ["codegraph", {"platform": "darwin", "found": false, "conflict": "mcp", "mcpScope": "project"}],
+    ["codegraph", {"platform": "linux", "found": true, "conflict": "mcp", "mcpScope": null}],
+    ["codegraph", {"platform": "linux", "found": true, "conflict": "hooks"}],
+    ["codegraph", {"platform": "win32", "found": false, "conflict": true}],
+    ["codegraph", {"platform": "linux", "found": true, "conflict": false, "mcpScope": "user"}],
+    ["rg", {"platform": "linux", "pm": "apt-get", "found": true, "conflict": true}],
+    ["rg", {"platform": "linux", "pm": "zypper"}],
+    ["rg", {"platform": "freebsd", "pm": "pacman"}]
+  ],
+  "pm": {
+    "platforms": ["win32", "darwin", "linux", "freebsd"],
+    "has": [[], ["winget"], ["brew"], ["apt-get"], ["dnf", "pacman"], ["pacman", "brew"], ["brew", "apt-get"], ["dnf", "apt-get"]]
+  },
+  "detect": [
+    {"settings": [], "mcp": [], "obj": null},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": "rtk hook claude"}]}]}}], "mcp": [], "obj": {}},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": "C:\\bin\\rtk.exe hook claude"}]}]}}], "mcp": [], "obj": {"mcpServers": {}}},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": "myrtk hook"}]}]}}], "mcp": [], "obj": {"mcpServers": {"codegraph": {"command": "codegraph"}}}},
+    {"settings": [{"hooks": {"PostToolUse": [{"hooks": [{"command": "rtk hook claude"}]}]}}], "mcp": [], "obj": {"mcpServers": {"other": {}}}},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": 42}, {"command": null}, {}]}, {}, null]}}], "mcp": [], "obj": {"mcpServers": {"codegraph": null}}},
+    {"settings": [{"hooks": {"PreToolUse": "rtk hook"}}], "mcp": [], "obj": {"mcpServers": ["codegraph"]}},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": "rtk\nhook"}]}]}}], "mcp": [], "obj": {"mcpServers": "codegraph"}},
+    {"settings": [null, 3, "x", []], "mcp": [null, []], "obj": []},
+    {"settings": [{"hooks": {"SessionStart": [{"hooks": [{"command": "node CodeGraph/sync.js"}]}]}}], "mcp": [], "obj": null},
+    {"settings": [{"hooks": {"PostToolUse": [{"hooks": [{"command": "codegraph sync"}, {"command": "other"}]}]}}], "mcp": [{}], "obj": null},
+    {"settings": [{"hooks": [{"command": "codegraph"}]}], "mcp": [], "obj": null},
+    {"settings": [{"hooks": {"Stop": [{"hooks": "codegraph"}]}}], "mcp": [], "obj": null},
+    {"settings": [{"theme": "dark"}], "mcp": [{"mcpServers": {"codegraph": {}}}], "obj": null},
+    {"settings": [{"mcpServers": {"codegraph": {}}}], "mcp": [], "obj": null},
+    {"settings": [{"hooks": {"PreToolUse": [{"hooks": [{"command": "rtk hook"}]}], "Stop": [{"hooks": [{"command": "codegraph x"}]}]}}], "mcp": [{"projects": {}}], "obj": null}
+  ],
+  "sudo": [
+    "",
+    "sudo: a password is required",
+    "sudo: sorry, you must have a tty... no tty present and no askpass program specified",
+    "sudo: a terminal is required to read the password",
+    "sudo: Password is Required",
+    "sudo: se requiere una contraseña",
+    "sudo: se requiere una terminal para leer la contraseña",
+    "sudo: requiere una contraseña",
+    "sudo: requiere la contraseña",
+    "sudo: requiere xxxxxxxxxxxxxxxxxxxxxxxxx contraseña",
+    "sudo: requiere\ncontraseña",
+    "E: Unable to locate package ripgrep",
+    "permission denied"
+  ],
+  "run": [
+    ["rtk", {"platform": "linux"}, [{"stdout": "installed\n"}]],
+    ["rtk", {"platform": "win32"}, [{"stdout": "  \n ok \n\n", "stderr": "warn\n"}]],
+    ["rg", {"platform": "linux", "pm": "apt-get"}, [{"stderr": "sudo: a password is required\n", "status": 1}]],
+    ["rg", {"platform": "linux", "pm": "dnf"}, [{"stderr": "sudo: se requiere una contraseña", "status": 1}]],
+    ["rg", {"platform": "linux", "pm": "pacman"}, [{"stderr": "error: could not lock database", "status": 1}]],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true}, [{}, {"stderr": "curl: (22) 404", "status": 22}]],
+    ["rtk", {"platform": "linux", "found": true, "conflict": true}, [{"stdout": "no hook", "status": 3}, {"stdout": "never"}]],
+    ["rtk", {"platform": "darwin"}, [{"status": null, "error": {"message": "spawnSync brew ENOENT"}}]],
+    ["rtk", {"platform": "darwin"}, [{"status": null, "stdout": "partial"}]],
+    ["codegraph", {"platform": "win32", "found": true, "conflict": "mcp", "mcpScope": "user"}, [{"stdout": "removed"}, {"stdout": "done"}]],
+    ["codegraph", {"platform": "linux", "found": true, "conflict": "mcp", "mcpScope": "user"}, [{"stdout": "removed"}, {"stderr": "boom", "status": 1}]],
+    ["rtk", {"platform": "linux"}, [{"stdoutRepeat": ["x", 1600]}]],
+    ["rtk", {"platform": "linux"}, [{"stdoutRepeat": ["\ud83d\ude00", 800]}]],
+    ["rg", {"platform": "linux", "pm": "apt-get"}, [{"stdoutRepeat": ["y", 1600], "stderr": "sudo: a password is required", "status": 1}]]
+  ]
+}

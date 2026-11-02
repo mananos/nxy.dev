@@ -58,6 +58,24 @@ func finish(o domain.Outcome) func(state, Event) (state, []action) {
 	}
 }
 
+// closeOK is the end of a feature that went well: the docs that name the change are looked for
+// first, and the feature closes after that step.
+var closeOK = to(domain.PhaseDocsCheck, domain.CheckDocs)
+
+func docsChecked(s state, ev Event) (state, []action) {
+	if ev.Docs {
+		return to(domain.PhaseDocs, domain.AskDocs, domain.Notify)(s, ev)
+	}
+	return finish(domain.OutcomeSuccess)(s, ev)
+}
+
+func docsAnswered(s state, ev Event) (state, []action) {
+	if ev.Update {
+		return to(domain.PhaseDocumenting, domain.DispatchDocumenter)(s, ev)
+	}
+	return finish(domain.OutcomeSuccess)(s, ev)
+}
+
 // retryAs moves to phase p with the retry attempt used.
 func retryAs(p domain.Phase, kind domain.ActionKind, batch bool) func(state, Event) (state, []action) {
 	return func(s state, _ Event) (state, []action) {
@@ -139,14 +157,14 @@ func afterFindings(s state, ev Event) (state, []action) {
 	if ev.Findings {
 		return to(domain.PhaseChoosingFindings, domain.AskFindings, domain.Notify)(s, ev)
 	}
-	return finish(domain.OutcomeSuccess)(s, ev)
+	return closeOK(s, ev)
 }
 
 func chosen(s state, ev Event) (state, []action) {
 	if ev.Findings {
 		return to(domain.PhaseFixing, domain.DispatchFixer)(s, ev)
 	}
-	return finish(domain.OutcomeSuccess)(s, ev)
+	return closeOK(s, ev)
 }
 
 func changeRequested(s state, ev Event) (state, []action) {
@@ -250,16 +268,19 @@ var table = map[domain.Phase][]row{
 		{FixesReturned, always, verifyFixes},
 	},
 	domain.PhaseFixVerify: {
-		{Green, always, finish(domain.OutcomeSuccess)},
+		{Green, always, closeOK},
 		{Red, attempt(0), retryAs(domain.PhaseFixing, domain.DispatchFixer, false)},
 		{Red, attempt(1), failTo(domain.PhaseFixesFailed)},
 		{Unverified, always, failTo(domain.PhaseFixesFailed)},
 	},
 	domain.PhaseFixesFailed: {
 		{Decided, decided(DecisionRetry), to(domain.PhaseFixing, domain.DispatchFixer)},
-		{Decided, decided(DecisionContinue), finish(domain.OutcomeSuccess)},
+		{Decided, decided(DecisionContinue), closeOK},
 		{Decided, decided(DecisionStop), stop},
 	},
+	domain.PhaseDocsCheck:   {{DocsChecked, always, docsChecked}},
+	domain.PhaseDocs:        {{DocsAnswered, always, docsAnswered}},
+	domain.PhaseDocumenting: {{DocumenterReturned, always, finish(domain.OutcomeSuccess)}},
 }
 
 // common rows apply to every non-terminal phase, so they are not repeated.

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/setup"
 )
 
 // SettingsFiles are the Claude Code settings files that can carry hooks and permissions, in precedence order.
@@ -77,6 +78,75 @@ func strList(v any) []string {
 		}
 	}
 	return out
+}
+
+// SetupInfo is what the Claude Code config files say about rtk's hook and the codegraph MCP server
+// (hosts/claude-code/setup-state.mjs). Broken or missing files are ignored; nothing is written.
+type SetupInfo struct {
+	Settings   []any    // parsed settings.json files that exist
+	MCP        []any    // parsed ~/.claude.json and .mcp.json
+	MCPScope   string   // where the codegraph MCP lives as `claude mcp remove -s` names it: user, local, project or ""
+	HasMCP     bool     // codegraph registered as MCP anywhere
+	HookScopes []string // where rtk's hook lives: user and/or project; ["user"] when nowhere
+}
+
+// SetupFacts reads the config files for home and the project dir cwd.
+func SetupFacts(home, cwd string) SetupInfo {
+	var info SetupInfo
+	loose := func(path string) map[string]any { return readSettings(path) }
+	for _, f := range SettingsFiles(home, cwd) {
+		if o := loose(f); o != nil {
+			info.Settings = append(info.Settings, o)
+		}
+	}
+	userJSON := loose(filepath.Join(home, ".claude.json"))
+	projectMCP := loose(filepath.Join(cwd, ".mcp.json"))
+	for _, o := range []map[string]any{userJSON, projectMCP} {
+		if o != nil {
+			info.MCP = append(info.MCP, o)
+		}
+	}
+	projects, _ := userJSON["projects"].(map[string]any)
+	local, _ := projects[cwd].(map[string]any)
+	switch {
+	case setup.DetectCodegraphMcp(userJSON):
+		info.MCPScope = "user"
+	case setup.DetectCodegraphMcp(local):
+		info.MCPScope = "local"
+	case setup.DetectCodegraphMcp(projectMCP):
+		info.MCPScope = "project"
+	}
+	info.HasMCP = setup.DetectCodegraphMcp(local)
+	for _, o := range append(append([]any{}, info.Settings...), info.MCP...) {
+		info.HasMCP = info.HasMCP || setup.DetectCodegraphMcp(o)
+	}
+	userSettings, _ := filepath.Abs(filepath.Join(home, ".claude", "settings.json"))
+	for _, f := range SettingsFiles(home, cwd) {
+		o := loose(f)
+		if o == nil || !setup.DetectRtkConflict([]any{o}) {
+			continue
+		}
+		scope := "project"
+		if abs, _ := filepath.Abs(f); abs == userSettings {
+			scope = "user"
+		}
+		if !contains(info.HookScopes, scope) {
+			info.HookScopes = append(info.HookScopes, scope)
+		}
+	}
+	if len(info.HookScopes) == 0 {
+		info.HookScopes = []string{"user"}
+	}
+	return info
+}
+
+func contains(list []string, s string) bool {
+	for _, e := range list {
+		if e == s {
+			return true
+		}
+	}
+	return false
 }
 
 // LoadPermissionRules reads permissions.allow / permissions.deny from the files (missing or broken skipped).

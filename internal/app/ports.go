@@ -9,9 +9,34 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/internal/repomap"
 	"github.com/mananos/nxy.dev/internal/report"
 	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/internal/scout"
 )
+
+// RepoIndex is the repo map of a project: structure, built by a script and queried by a script.
+type RepoIndex interface {
+	// Info is the existing index, ok false when there is none.
+	Info(dir string) (scout.IndexInfo, bool)
+	// Build builds the index (force: from scratch, otherwise only what changed).
+	Build(dir string, force bool) (scout.IndexInfo, error)
+	Query(dir, term string, limit int) []repomap.Row
+}
+
+// TextSearch is the exact-text search (rg): zero tokens, finds what the index misses.
+type TextSearch interface {
+	Available() bool
+	Search(ctx context.Context, dir, pattern string, o scout.RgOpts) scout.RgResult
+}
+
+// CodeExplorer is codegraph: relationships between symbols. Optional, capped, declares its fallback.
+type CodeExplorer interface {
+	Explore(ctx context.Context, dir, question string) scout.CodeResult
+	Relations(ctx context.Context, dir, kind, symbol string) scout.CodeResult
+	// Describe is the one-line status of codegraph in dir.
+	Describe(dir string) string
+}
 
 // SessionLookup selects the transcripts a report reads.
 type SessionLookup struct {
@@ -92,6 +117,12 @@ type FilterEngine interface {
 	Rewrite(info filter.EngineInfo, cmd string) (filter.RewriteResult, error)
 }
 
+// Roles gives the model and effort the config sets for a subagent role ("planner", "scout"...);
+// an empty string means the config says nothing and the role keeps its frontmatter.
+type Roles interface {
+	Role(projectDir, role string) (model, effort string)
+}
+
 // ShellResult is the outcome of a command run by Shell: Output is the tail of stdout and stderr.
 type ShellResult struct {
 	Exit   int
@@ -111,6 +142,8 @@ type Files interface {
 	// NativePath turns a Git Bash path (/c/x) into the native one.
 	NativePath(p string) string
 	IsDir(path string) bool
+	// Exists reports whether the path exists (file or directory).
+	Exists(path string) bool
 }
 
 // PermissionRules gives the host's allow/deny rules for a project.
@@ -170,6 +203,11 @@ type Lenses interface {
 // Diffs gives the diff of a project since a base, one entry per changed file.
 type Diffs interface {
 	Diff(ctx context.Context, dir, base string) ([]review.FileDiff, error)
+}
+
+// Docs finds the docs of a project that name what the changed files touched.
+type Docs interface {
+	Find(ctx context.Context, root string, changed []string) domain.Docs
 }
 
 // ReviewLog records which offered findings the user chose and which they ignored.

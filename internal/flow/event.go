@@ -26,6 +26,10 @@ const (
 	DesignClosed    EventKind = "design_closed"
 	GapsFound       EventKind = "gaps_found"
 	ToEngineer      EventKind = "to_engineer"
+
+	DocsChecked        EventKind = "docs_checked"
+	DocsAnswered       EventKind = "docs_answered"
+	DocumenterReturned EventKind = "documenter_returned"
 )
 
 // Kinds lists every event kind.
@@ -33,7 +37,7 @@ var Kinds = []EventKind{
 	Requested, PlanSaved, PlannerReturned, Answered, NoTestsAnswered, Approved,
 	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Unverified, Decided,
 	ReviewDone, RefuterDone, Chosen, FixesReturned, Stop,
-	DesignClosed, GapsFound, ToEngineer,
+	DesignClosed, GapsFound, ToEngineer, DocsChecked, DocsAnswered, DocumenterReturned,
 }
 
 // Decision is what the user picks after a step failed.
@@ -57,4 +61,6 @@ type Event struct {
 	Decision     Decision // Decided
 	Findings     bool     // ReviewDone, RefuterDone, Chosen: there are findings left
 	HighUnproven bool     // ReviewDone: high findings still unproven
+	Docs         bool     // DocsChecked: there are docs that name the change
+	Update       bool     // DocsAnswered: the user wants the docs updated
 }

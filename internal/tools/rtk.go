@@ -291,6 +291,17 @@ func (e Engine) Info(s filter.Settings, rtkHook func() bool) filter.EngineInfo {
 	return info
 }
 
+// Refresh resolves the engine now and rewrites the cache, so a change (an install, a config edit)
+// shows at once instead of when the cached verdict expires.
+func (e Engine) Refresh(s filter.Settings, rtkHook func() bool) filter.EngineInfo {
+	info := e.resolve(s, rtkHook)
+	if path := e.cachePath(); path != "" {
+		writeFileAtomic(path, engineCache{info.Engine, info.RtkPath, info.RtkVersion, info.RtkHookDetected,
+			info.Reason, info.ResolvedAt, s.Engine, e.getenv("NXY_RTK_PATH")})
+	}
+	return info
+}
+
 func (e Engine) resolve(s filter.Settings, rtkHook func() bool) filter.EngineInfo {
 	path, version, found := FindRtk(e.getenv)
 	hook := false
