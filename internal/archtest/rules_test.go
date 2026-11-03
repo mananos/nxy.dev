@@ -20,6 +20,8 @@ func TestCheck(t *testing.T) {
 		{"pure imports adapter", Pkg{ImportPath: m("internal/gate"), Imports: []string{m("internal/tools")}, Deps: []string{m("internal/tools")}}, true},
 		{"pure imports third party", Pkg{ImportPath: m("internal/filter"), Imports: []string{"example.com/x"}, Deps: []string{"example.com/x"}}, true},
 		{"pure imports pure and stdlib", Pkg{ImportPath: m("internal/flow"), Imports: []string{m("internal/domain"), "strings"}, Deps: []string{m("internal/domain"), "strings"}}, false},
+		{"memory imports host/claudecode/transcript", Pkg{ImportPath: m("internal/memory"), Imports: []string{m("internal/host/claudecode/transcript")}, Deps: []string{m("internal/host/claudecode/transcript")}}, true},
+		{"memory imports domain and strings", Pkg{ImportPath: m("internal/memory"), Imports: []string{m("internal/domain"), "strings"}, Deps: []string{m("internal/domain"), "strings"}}, false},
 		{"app imports store/sqlite", Pkg{ImportPath: m("internal/app"), Imports: []string{m("internal/store/sqlite")}}, true},
 		{"app imports platform", Pkg{ImportPath: m("internal/app"), Imports: []string{m("internal/platform")}}, true},
 		{"app depends on net", Pkg{ImportPath: m("internal/app"), Deps: []string{"net/http"}}, true},

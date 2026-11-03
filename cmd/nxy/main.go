@@ -24,6 +24,8 @@ var commands = map[string]command{
 	"filter":     runFilter,
 	"hook":       runHook,
 	"locate":     runLocate,
+	"mem":        runMem,
+	"note":       runNote,
 	"plan":       runPlan,
 	"review":     runReview,
 	"setup":      runSetup,
@@ -34,7 +36,7 @@ var commands = map[string]command{
 	"version":    runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|docs|batch red|green|affected|status|stats|trend|statusline|setup status|run|filter status|on|off|config show|set|cache-ttl|locate|feature list|new|pause|resume|close|stop|version>"
+const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|docs|batch red|green|affected|status|stats|trend|statusline|setup status|run|filter status|on|off|config show|set|cache-ttl|locate|mem rule|show|search|promote|related|export|import|note|note save|list|done|feature list|new|pause|resume|close|stop|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))

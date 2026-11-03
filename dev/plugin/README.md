@@ -219,7 +219,7 @@ Qué ves: las mismas tablas y la misma línea de la 1.x; lo que nxy no puede sab
 
 Los comandos utilitarios de la 1.x corren en el binario de Go y se llaman desde el plugin dev con slash commands. Todos usan el shim con argumentos: `bin/nxy.cmd <comando> …` corre ese comando del binario; si falla, escribe una línea en stderr y sale con 1. Los `!` de los slash commands necesitan bash/zsh o PowerShell (dash no pasa argumentos a `.`).
 
-**Slash commands.** `/nxy:stats`, `/nxy:trend`, `/nxy:setup`, `/nxy:filter`, `/nxy:statusline`, `/nxy:config`, `/nxy:locate` y `/nxy:worktree`. Qué ves: la salida del comando correspondiente en el chat. Qué hacer: pasarles los mismos argumentos que al binario (`/nxy:trend --by week`).
+**Slash commands.** `/nxy:stats`, `/nxy:trend`, `/nxy:setup`, `/nxy:filter`, `/nxy:statusline`, `/nxy:config`, `/nxy:locate`, `/nxy:worktree` y `/nxy:mem`. Qué ves: la salida del comando correspondiente en el chat. Qué hacer: pasarles los mismos argumentos que al binario (`/nxy:trend --by week`).
 
 ### /nxy:statusline [install|remove]
 
@@ -258,6 +258,21 @@ Qué ves: la lista de worktrees y, en cada acción, el comando git que corrió. 
 - `pause` / `resume`: la pausa es una marca en `.nxy/local/features/paused.json` (~100 B); se borra al `resume` o al `close`.
 - `close --path <wt>`: con cambios sin guardar pide `--force`; no cierra el worktree principal, el de esta sesión ni uno con una feature sin terminar.
 - El handoff al pausar llega con la memoria v2.
+
+### /nxy:mem
+
+Qué ves: la memoria del repo, guardada en la db global (`~/.nxy/nxy.db`). Qué significa: una regla (`K3`) es una decisión del repo y siempre dice la pregunta que resuelve; un aprendizaje (`A7`) es algo que notaste y todavía no es regla. Qué hacer:
+
+- `show`: las reglas con `delivered N` (cuántas veces se entregó a un agente) y `cited M`; `to review` marca las que llevan 90 días sin citarse. Debajo, los aprendizajes con `seen N times`: los más vistos son candidatos a promover.
+- `rule "<texto>" --question "<la pregunta que resuelve>" [--paths g1,g2]`: guarda una regla. Sin `--question` falla.
+- `note "<texto>" --files a,b`: guarda un aprendizaje; repetirlo suma `seen`, no crea otro.
+- `promote <A7> --question "<q>"`: lo convierte en regla y sale de la lista de aprendizajes.
+- `search <texto> [--all]` busca en la memoria del repo (con `--all`, en todos); `related <archivos…>` lista features cerradas y aprendizajes que tocaron esos archivos.
+- `export [--out archivo] [--notes]` escribe un JSON versionado; `import <archivo>` sin `--apply` sólo muestra qué cambiaría (nuevo, cambiado, borrado, repetido) y no escribe; con `--apply` lo aplica en una sola transacción. El más nuevo gana y los borrados viajan. Las notas temporales no viajan por defecto: duran 30 días y su carpeta es de esta máquina; `--notes` las incluye.
+
+Costo: una regla ~0,5 KB, un aprendizaje ~0,3 KB; 100 reglas y 500 aprendizajes caben en ~1 MB de la db. El export se escribe sólo a pedido y no se borra solo.
+
+**Notas temporales.** `nxy note save "<título>"` (cuerpo por stdin, hasta 2 KB), `nxy note list [--all]` y `nxy note done <id>`. Se ven desde la carpeta donde las guardaste y vencen a los 30 días. La pregunta al arrancar la sesión llega en F4.3.
 
 ### Docs y documenter
 

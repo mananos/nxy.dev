@@ -9,6 +9,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/repomap"
 	"github.com/mananos/nxy.dev/internal/report"
 	"github.com/mananos/nxy.dev/internal/review"
@@ -83,6 +84,24 @@ type Store interface {
 	LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error)
 	// Transition applies fn to the stored feature. fn must be pure: it can run more than once.
 	Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error
+}
+
+// MemoryStore persists the memory (rules, closed features, learnings, notes). The
+// Resolve-style references (K3, A7, N2, ULIDs) are resolved by the store.
+type MemoryStore interface {
+	AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error)
+	Rules(ctx context.Context, repo string) ([]memory.Rule, error)
+	AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error)
+	Learnings(ctx context.Context, repo string) ([]memory.Learning, error)
+	Promote(ctx context.Context, ref, question string, paths []string) (memory.Rule, error)
+	Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error)
+	Search(ctx context.Context, repo string, all bool, q string, limit int) ([]memory.Hit, error)
+	SaveNote(ctx context.Context, n memory.Note) (memory.Note, error)
+	Notes(ctx context.Context, folder string, foldCase bool, now time.Time) ([]memory.Note, error)
+	DeleteNote(ctx context.Context, ref string) error
+	ExportBundle(ctx context.Context, includeNotes bool) (memory.Bundle, error)
+	MemorySnapshot(ctx context.Context) (memory.Snapshot, error)
+	ApplyImport(ctx context.Context, d memory.Diff) error
 }
 
 // Repos gives the stable key of the repository a directory belongs to.
