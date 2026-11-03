@@ -67,6 +67,17 @@ func TestMemRuleShowSearchPromote(t *testing.T) {
 	}
 }
 
+func TestMemNoteOnPromotedExitsZero(t *testing.T) {
+	isolate(t)
+	work := t.TempDir()
+	mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
+	mustCLI(t, "", "mem", "promote", "A1", "--question", "what does the test need?", "--cwd", work)
+	out := mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
+	if !strings.Contains(out, "already rule K1") {
+		t.Fatalf("note on promoted: %q", out)
+	}
+}
+
 func TestMemExportImport(t *testing.T) {
 	isolate(t)
 	work := t.TempDir()

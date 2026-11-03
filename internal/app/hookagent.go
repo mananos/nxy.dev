@@ -123,7 +123,7 @@ func (h Hooks) activeFeature(ctx context.Context, ev HookEvent) (domain.Feature,
 	if err != nil || !found {
 		return domain.Feature{}, false
 	}
-	return h.ensureDocs(ctx, h.ensureReview(ctx, f)), true
+	return h.ensureRules(ctx, h.ensureDocs(ctx, h.ensureReview(ctx, f))), true
 }
 
 // preToolAgent handles PreToolUse Agent/Task from the main thread: it injects the planner's
@@ -203,13 +203,13 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 	case f.Background == ev.Subagent:
 		return HookResponse{Deny: backgroundWait(f.ID, ev.Subagent)}
 	case ev.Subagent == rolePlanner && f.State.Phase == domain.PhasePlanning:
-		return HookResponse{Prompt: plan.PlannerPrompt(f, h.Exe)}
+		return HookResponse{Prompt: plan.PlannerPrompt(f, h.Exe, h.memoryFor(ctx, f, rolePlanner, nil).Text)}
 	case ev.Subagent == roleRefuter && f.State.Phase == domain.PhaseRefuting:
 		return HookResponse{Prompt: review.RefuterPrompt(f, h.Exe)}
 	case ev.Subagent == roleDocumenter && f.State.Phase == domain.PhaseDocumenting:
 		return HookResponse{Prompt: docs.DocumenterPrompt(f, h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseFixing:
-		return HookResponse{Prompt: review.FixPrompt(f, h.Exe)}
+		return HookResponse{Prompt: review.FixPrompt(f, h.Exe, h.memoryFor(ctx, f, roleImplementer, findingFiles(f)).Text)}
 	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:
 		return HookResponse{Deny: "plan not approved; next step " + f.Next.Label()}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchImplementer:
@@ -223,9 +223,13 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 		if err != nil {
 			return HookResponse{}
 		}
-		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe)}
+		var files []string
+		if n := nf.Next.Batch; nf.Plan != nil && n >= 1 && n <= len(nf.Plan.Batches) {
+			files = batchFiles(nf.Plan.Batches[n-1])
+		}
+		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe, h.memoryFor(ctx, nf, roleImplementer, files).Text)}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchAffectedFix:
-		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe)}
+		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe, h.memoryFor(ctx, f, roleImplementer, h.changedPaths(ctx, f)).Text)}
 	case ev.Subagent != roleFor[f.Next.Kind]:
 		return HookResponse{Deny: "out of order: next step is " + f.Next.Label()}
 	}
@@ -264,7 +268,7 @@ func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 			if g.Background == backgroundEnded {
 				g.Background = ""
 			}
-			return returned(g), nil
+			return h.withCandidates(g, returned(g)), nil
 		})
 		if err != nil {
 			return HookResponse{}

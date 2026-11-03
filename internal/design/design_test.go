@@ -81,7 +81,7 @@ func TestApproveNumbers(t *testing.T) {
 func TestCloseNeedsDelegateForOpenForks(t *testing.T) {
 	d := &domain.Design{}
 	SetAgenda(d, []string{"a"})
-	c := domain.DesignClose{Rules: []domain.Rule{{ID: "R1", Text: "hace x"}}, D2: "a -> b"}
+	c := domain.DesignClose{Criteria: []domain.Criterion{{ID: "R1", Text: "hace x"}}, D2: "a -> b"}
 	if p := ValidateClose(d, c); len(p) == 0 {
 		t.Fatal("open fork without delegate accepted")
 	}
@@ -111,7 +111,7 @@ func TestSetAgendaRejectedWhilePending(t *testing.T) {
 
 func TestValidateCloseRejectsFencesInD2(t *testing.T) {
 	d := &domain.Design{}
-	c := domain.DesignClose{Rules: []domain.Rule{{ID: "R1", Text: "hace x"}}, D2: "a -> b\n```\nmalo"}
+	c := domain.DesignClose{Criteria: []domain.Criterion{{ID: "R1", Text: "hace x"}}, D2: "a -> b\n```\nmalo"}
 	if p := ValidateClose(d, c); len(p) == 0 {
 		t.Fatal("d2 with fence accepted")
 	}

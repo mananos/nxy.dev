@@ -56,19 +56,22 @@ func Validate(p domain.Plan) []Problem {
 		}
 		c.short(w+" text", d.Text)
 		c.short(w+" question", d.Question)
+		if d.Scope == domain.ScopeRepo && strings.TrimSpace(d.Question) == "" {
+			c.add(w+" question", "a repo decision needs the question it settles (it may become a rule)")
+		}
 		if d.ID != "" || d.By != "" || d.Dissent != "" {
 			c.add(w, "id, by and dissent are not yours to write: nxy sets them")
 		}
 	}
 
-	rules := map[string]domain.TestKind{}
-	if len(p.Rules) == 0 {
-		c.add("rules", "need at least one rule")
+	criteria := map[string]domain.TestKind{}
+	if len(p.Criteria) == 0 {
+		c.add("criteria", "need at least one criterion")
 	}
-	for i, r := range p.Rules {
+	for i, r := range p.Criteria {
 		w := r.ID
 		if w == "" {
-			w = fmt.Sprintf("rule %d", i+1)
+			w = fmt.Sprintf("criterion %d", i+1)
 		}
 		switch {
 		case !ruleIDRe.MatchString(r.ID):
@@ -76,10 +79,10 @@ func Validate(p domain.Plan) []Problem {
 		case r.ID != fmt.Sprintf("R%d", i+1):
 			c.add(w, "ids must be R1..Rn in order; expected R%d", i+1)
 		}
-		if _, dup := rules[r.ID]; dup {
-			c.add(w, "duplicate rule id")
+		if _, dup := criteria[r.ID]; dup {
+			c.add(w, "duplicate criterion id")
 		}
-		rules[r.ID] = r.Test
+		criteria[r.ID] = r.Test
 		if strings.TrimSpace(r.Text) == "" {
 			c.add(w, "text is empty")
 		}
@@ -88,7 +91,7 @@ func Validate(p domain.Plan) []Problem {
 		case domain.TestTDD, domain.TestExisting, domain.TestBuild:
 		case domain.TestManual:
 			if strings.TrimSpace(r.Check) == "" {
-				c.add(w, "manual rule needs check (what to look at)")
+				c.add(w, "manual criterion needs check (what to look at)")
 			}
 		default:
 			c.add(w, "test %q must be tdd, existing, build or manual", r.Test)
@@ -112,9 +115,9 @@ func Validate(p domain.Plan) []Problem {
 
 		onlyManual := len(b.Covers) > 0
 		for _, id := range b.Covers {
-			kind, ok := rules[id]
+			kind, ok := criteria[id]
 			if !ok {
-				c.add(w, "covers %s, which is not a rule", id)
+				c.add(w, "covers %s, which is not a criterion", id)
 				onlyManual = false
 				continue
 			}
@@ -124,7 +127,7 @@ func Validate(p domain.Plan) []Problem {
 			}
 		}
 		if len(b.Covers) == 0 {
-			c.add(w, "covers no rule")
+			c.add(w, "covers no criterion")
 		}
 
 		for _, rd := range b.Read {
@@ -154,7 +157,7 @@ func Validate(p domain.Plan) []Problem {
 			c.add(w, "test kind %q must be new or existing", b.Test.Kind)
 		}
 		if strings.TrimSpace(b.Test.Accept) == "" && !onlyManual {
-			c.add(w, "test.accept is required unless the batch only covers manual rules")
+			c.add(w, "test.accept is required unless the batch only covers manual criteria")
 		}
 		c.short(w+" test name", b.Test.Name)
 		c.short(w+" test accept", b.Test.Accept)
@@ -171,7 +174,7 @@ func Validate(p domain.Plan) []Problem {
 		}
 	}
 
-	for _, r := range p.Rules {
+	for _, r := range p.Criteria {
 		if r.ID != "" && !covered[r.ID] {
 			c.add(r.ID, "no batch covers it")
 		}

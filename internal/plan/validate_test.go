@@ -10,7 +10,7 @@ import (
 func valid() domain.Plan {
 	return domain.Plan{
 		Title: "Add thing",
-		Rules: []domain.Rule{
+		Criteria: []domain.Criterion{
 			{ID: "R1", Text: "does it", Test: domain.TestTDD},
 			{ID: "R2", Text: "looks ok", Test: domain.TestManual, Check: "the button"},
 		},
@@ -44,20 +44,20 @@ func TestValidate(t *testing.T) {
 		want string
 	}{
 		{"empty title", func(p *domain.Plan) { p.Title = "" }, "title: is empty"},
-		{"no rules", func(p *domain.Plan) { p.Rules = nil; p.Batches = nil }, "rules: need at least one rule"},
-		{"bad id", func(p *domain.Plan) { p.Rules[0].ID = "X1" }, "X1: id must look like R1, R2, ..."},
-		{"id order", func(p *domain.Plan) { p.Rules[1].ID = "R3"; p.Batches[1].Covers = []string{"R3"} }, "R3: ids must be R1..Rn in order; expected R2"},
-		{"dup id", func(p *domain.Plan) { p.Rules[1].ID = "R1" }, "R1: duplicate rule id"},
-		{"bad test kind", func(p *domain.Plan) { p.Rules[0].Test = "x" }, `R1: test "x" must be tdd, existing, build or manual`},
-		{"manual no check", func(p *domain.Plan) { p.Rules[1].Check = "" }, "R2: manual rule needs check (what to look at)"},
+		{"no criteria", func(p *domain.Plan) { p.Criteria = nil; p.Batches = nil }, "criteria: need at least one criterion"},
+		{"bad id", func(p *domain.Plan) { p.Criteria[0].ID = "X1" }, "X1: id must look like R1, R2, ..."},
+		{"id order", func(p *domain.Plan) { p.Criteria[1].ID = "R3"; p.Batches[1].Covers = []string{"R3"} }, "R3: ids must be R1..Rn in order; expected R2"},
+		{"dup id", func(p *domain.Plan) { p.Criteria[1].ID = "R1" }, "R1: duplicate criterion id"},
+		{"bad test kind", func(p *domain.Plan) { p.Criteria[0].Test = "x" }, `R1: test "x" must be tdd, existing, build or manual`},
+		{"manual no check", func(p *domain.Plan) { p.Criteria[1].Check = "" }, "R2: manual criterion needs check (what to look at)"},
 		{"uncovered", func(p *domain.Plan) { p.Batches[0].Covers = nil }, "R1: no batch covers it"},
-		{"covers unknown", func(p *domain.Plan) { p.Batches[0].Covers = []string{"R1", "R9"} }, "batch 1: covers R9, which is not a rule"},
+		{"covers unknown", func(p *domain.Plan) { p.Batches[0].Covers = []string{"R1", "R9"} }, "batch 1: covers R9, which is not a criterion"},
 		{"numbering", func(p *domain.Plan) { p.Batches[1].N = 5 }, "batch 2: n is 5; batches must be numbered 1..n in order"},
 		{"no change", func(p *domain.Plan) { p.Batches[0].Change = nil }, "batch 1: needs at least one change"},
 		{"bad at", func(p *domain.Plan) { p.Batches[0].Change[0].At = "a/b.go" }, `batch 1 change 1: at "a/b.go" must be path:line, path:a-b or path (new)`},
 		{"empty what", func(p *domain.Plan) { p.Batches[0].Change[0].What = "" }, "batch 1 change 1: what is empty"},
 		{"long what", func(p *domain.Plan) { p.Batches[0].Change[0].What = strings.Repeat("x", 201) }, "batch 1 change 1: what has 201 characters; keep it to 200"},
-		{"no accept", func(p *domain.Plan) { p.Batches[0].Test.Accept = "" }, "batch 1: test.accept is required unless the batch only covers manual rules"},
+		{"no accept", func(p *domain.Plan) { p.Batches[0].Test.Accept = "" }, "batch 1: test.accept is required unless the batch only covers manual criteria"},
 		{"bad test kind batch", func(p *domain.Plan) { p.Batches[0].Test.Kind = "" }, `batch 1: test kind "" must be new or existing`},
 		{"bad risk", func(p *domain.Plan) { p.Batches[0].Risk = "huge" }, `batch 1: risk "huge" must be low, medium or high`},
 		{"depends forward", func(p *domain.Plan) { p.Batches[0].Depends = []int{2} }, "batch 1: depends on batch 2; only earlier batches are allowed"},
@@ -69,7 +69,7 @@ func TestValidate(t *testing.T) {
 		{"no recommended", func(p *domain.Plan) { p.Questions = q(oth, oth) }, "question 1: needs exactly one recommended option; has 0"},
 		{"two recommended", func(p *domain.Plan) { p.Questions = q(rec, rec) }, "question 1: needs exactly one recommended option; has 2"},
 		{"recommended not first", func(p *domain.Plan) { p.Questions = q(oth, rec) }, "question 1: the recommended option must be the first"},
-		{"backtick", func(p *domain.Plan) { p.Rules[0].Text = "a ``` b" }, "R1 text: must not contain a triple backtick"},
+		{"backtick", func(p *domain.Plan) { p.Criteria[0].Text = "a ``` b" }, "R1 text: must not contain a triple backtick"},
 		{"newline", func(p *domain.Plan) { p.Title = "a\nb" }, "title: must be one line"},
 	}
 	for _, tc := range cases {

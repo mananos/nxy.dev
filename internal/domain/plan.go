@@ -37,13 +37,13 @@ const (
 
 // Plan is what the planner saves.
 type Plan struct {
-	Title     string     `json:"title"`
-	Decisions []Decision `json:"decisions,omitempty"`
-	Rules     []Rule     `json:"rules"`
-	Batches   []Batch    `json:"batches"`
-	Risks     []string   `json:"risks,omitempty"`
-	Questions []Question `json:"questions,omitempty"`
-	NoTests   bool       `json:"no_tests,omitempty"`
+	Title     string      `json:"title"`
+	Decisions []Decision  `json:"decisions,omitempty"`
+	Criteria  []Criterion `json:"criteria"`
+	Batches   []Batch     `json:"batches"`
+	Risks     []string    `json:"risks,omitempty"`
+	Questions []Question  `json:"questions,omitempty"`
+	NoTests   bool        `json:"no_tests,omitempty"`
 	// Suite is the full-suite command, used only when the affected tests cannot be worked out.
 	Suite string `json:"suite,omitempty"`
 	// RepoRunners are the rows of the repo's .nxy/runners.json, set by nxy (not the planner) when
@@ -58,8 +58,8 @@ type RepoRunner struct {
 	Command string `json:"command"`
 }
 
-// Rule is one behavior the feature must have.
-type Rule struct {
+// Criterion is one behavior the feature must have.
+type Criterion struct {
 	ID    string   `json:"id"` // "R1"
 	Text  string   `json:"text"`
 	Test  TestKind `json:"test"`

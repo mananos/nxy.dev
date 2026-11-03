@@ -142,7 +142,7 @@ func (h Hooks) ensureReview(ctx context.Context, f domain.Feature) domain.Featur
 // It returns the feature and the actions of the step it stands in: when it looked for docs, the
 // ones of the step after that (the docs question or the close), not CheckDocs.
 func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain.Action) (domain.Feature, []domain.Action) {
-	f = h.ensureReview(ctx, f)
+	f = h.ensureRules(ctx, h.ensureReview(ctx, f))
 	if f.State.Phase == domain.PhaseDocsCheck {
 		if nf, nacts, ok := h.checkDocs(ctx, f); ok {
 			return nf, nacts
@@ -166,6 +166,7 @@ func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain
 				f = nf
 			}
 		case a.Kind == domain.Close && f.State.Outcome == domain.OutcomeSuccess:
+			h.saveClosedFeature(ctx, f)
 			if h.Viewer != nil {
 				_ = h.Viewer.Discard(f.ID)
 			}
@@ -210,7 +211,7 @@ func (h Hooks) checkDocs(ctx context.Context, f domain.Feature) (domain.Feature,
 		if len(found.Docs) > 0 {
 			g.Docs = &found
 		}
-		return []flow.Event{{Kind: flow.DocsChecked, Docs: len(found.Docs) > 0}}, nil
+		return []flow.Event{{Kind: flow.DocsChecked, Docs: len(found.Docs) > 0, Candidates: h.hasCandidates(*g)}}, nil
 	})
 	if err != nil {
 		return f, nil, false

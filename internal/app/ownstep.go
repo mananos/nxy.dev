@@ -28,6 +28,15 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 		}
 		return HookResponse{AllowReason: "nxy: its own locate for the scout"}, true
 	}
+	if ev.AgentID == "" || ev.AgentType == rolePlanner {
+		// `mem related` only reads the memory: the planner and the main thread may run it on their own.
+		if h.parseMemRelated(cmd, ev.Tool == "PowerShell") {
+			if hasCd && h.normDir(cdDir) != h.normDir(ev.Cwd) {
+				return HookResponse{}, false
+			}
+			return HookResponse{AllowReason: "nxy: its own mem related"}, true
+		}
+	}
 	var id string
 	switch {
 	case ev.AgentID == "" || ev.AgentType == roleImplementer:
@@ -128,6 +137,30 @@ func (h Hooks) parseLocate(cmd string, ps bool) bool {
 		return len(toks) == 4 && toks[3] != "" && !strings.HasPrefix(toks[3], "--")
 	}
 	return len(toks) == 3 && toks[2] != "" && !strings.HasPrefix(toks[2], "--")
+}
+
+// parseMemRelated reports whether cmd is `"<exe>" mem related <path>...` with at least one path and
+// no flag (a leading `& ` only in PowerShell).
+func (h Hooks) parseMemRelated(cmd string, ps bool) bool {
+	if strings.ContainsAny(cmd, "\r\n") {
+		return false
+	}
+	toks, ok := shellWords(cmd)
+	if !ok {
+		return false
+	}
+	if ps && len(toks) > 0 && toks[0] == "&" {
+		toks = toks[1:]
+	}
+	if len(toks) < 4 || !h.isExe(toks[0]) || toks[1] != "mem" || toks[2] != "related" {
+		return false
+	}
+	for _, t := range toks[3:] {
+		if t == "" || strings.HasPrefix(t, "-") {
+			return false
+		}
+	}
+	return true
 }
 
 // parseAffectedStep returns the feature id of `"<exe>" affected --feature <id>` (a leading `& `

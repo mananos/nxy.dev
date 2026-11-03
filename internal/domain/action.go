@@ -25,6 +25,7 @@ const (
 	CheckDocs           ActionKind = "check_docs"
 	AskDocs             ActionKind = "ask_docs"
 	DispatchDocumenter  ActionKind = "dispatch_documenter"
+	AskRules            ActionKind = "ask_rules"
 	Close               ActionKind = "close"
 	Notify              ActionKind = "notify"
 )
@@ -61,6 +62,7 @@ var actionTable = map[ActionKind]actionInfo{
 	CheckDocs:           {false, "Buscar docs"},
 	AskDocs:             {true, "Actualizar docs"},
 	DispatchDocumenter:  {true, "Actualizar docs"},
+	AskRules:            {true, "Reglas del repo"},
 	Close:               {false, "Cerrar"},
 	Notify:              {false, "Avisar"},
 }

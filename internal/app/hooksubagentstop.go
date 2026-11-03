@@ -23,6 +23,9 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 	if !ok {
 		return HookResponse{}
 	}
+	if ev.AgentType == roleImplementer {
+		h.harvest(ctx, f, ev)
+	}
 	if _, in := role[f.State.Phase]; f.Background == "" && in {
 		// It ended before its launch hook ran (or it is a foreground one, whose
 		// PostToolUse clears this): remember it so a later async launch does not wait.
@@ -48,7 +51,7 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 		if !in {
 			return nil, errSkipEvent
 		}
-		return returned(g), nil
+		return h.withCandidates(g, returned(g)), nil
 	})
 	return HookResponse{}
 }

@@ -18,7 +18,7 @@ import (
 // any error. Nothing here commits or pushes, and pause only leaves a mark: the handoff comes with the
 // v2 memory.
 
-const featureUsage = "usage: nxy feature list | new --name <n> --base <rama> [--issue <n>] | new --branch <b> | pause|resume --path <wt> | close --path <wt> [--force] | stop"
+const featureUsage = "usage: nxy feature list | new --name <n> --base <rama> [--issue <n>] | new --branch <b> | pause|resume --path <wt> | close --path <wt> [--force] | rule \"<text>\" --question \"<q>\" | stop"
 
 const maxListedBases = 20
 

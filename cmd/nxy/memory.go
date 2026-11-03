@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -221,6 +222,11 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			return 1
 		}
 		l, err := m.AddLearning(ctx, cwd, strings.Join(pos, " "), repoRelative(cwd, splitList(optVal(opts, "files"))))
+		var already *memory.AlreadyRuleError
+		if errors.As(err, &already) {
+			fmt.Fprintln(stdout, already.Error())
+			return 0
+		}
 		if err != nil {
 			return memFail(stderr, err)
 		}

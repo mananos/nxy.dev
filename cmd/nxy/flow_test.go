@@ -75,7 +75,7 @@ func featureID(t *testing.T) string {
 	return ""
 }
 
-const flowPlan = `{"title":"Flag","rules":[{"id":"R1","text":"adds the flag","test":"tdd"}],` +
+const flowPlan = `{"title":"Flag","criteria":[{"id":"R1","text":"adds the flag","test":"tdd"}],` +
 	`"batches":[{"n":1,"title":"flag","covers":["R1"],"change":[{"at":"cmd/main.go:10","what":"parse the flag"}],` +
 	`"test":{"kind":"new","name":"TestFlag","accept":"go test ./cmd/"},"risk":"low"}]}`
 
@@ -103,7 +103,7 @@ func TestFeatureFlowEndToEnd(t *testing.T) {
 	if code, _, errb := runCmd(t, `{"title":"x","bogus":1}`, "plan", "save", "--feature", id); code != 1 || !strings.Contains(errb, "bogus") {
 		t.Fatalf("unknown field: code %d, stderr %q", code, errb)
 	}
-	if code, _, errb := runCmd(t, `{"title":"","rules":[],"batches":[]}`, "plan", "save", "--feature", id); code != 1 || errb == "" {
+	if code, _, errb := runCmd(t, `{"title":"","criteria":[],"batches":[]}`, "plan", "save", "--feature", id); code != 1 || errb == "" {
 		t.Fatalf("invalid plan: code %d, stderr %q", code, errb)
 	}
 	code, stdout, errb := runCmd(t, flowPlan, "plan", "save", "--feature", id)
@@ -222,7 +222,7 @@ func TestPlanSaveOnStoppedFeature(t *testing.T) {
 }
 
 func batchPlan(accept string) string {
-	return `{"title":"Flag","rules":[{"id":"R1","text":"adds the flag","test":"tdd"}],` +
+	return `{"title":"Flag","criteria":[{"id":"R1","text":"adds the flag","test":"tdd"}],` +
 		`"batches":[{"n":1,"title":"flag","covers":["R1"],"change":[{"at":"cmd/main.go:10","what":"parse the flag"}],` +
 		`"test":{"kind":"new","name":"TestFlag","accept":` + strconvQuote(accept) + `},"risk":"low"}]}`
 }
@@ -424,7 +424,7 @@ func engineerToPlanning(t *testing.T, repo string) string {
 	}
 	answer(t, repo, design.ProposeQuestion(id, 1), design.LabelSave)
 
-	code, so, errb = runCmd(t, `{"rules":[{"id":"R1","text":"adds the flag"}],"d2":"a -> b"}`, "design", "close", "--feature", id)
+	code, so, errb = runCmd(t, `{"criteria":[{"id":"R1","text":"adds the flag"}],"d2":"a -> b"}`, "design", "close", "--feature", id)
 	if code != 0 || !strings.Contains(so, "a -> b") {
 		t.Fatalf("close: code %d, out %q, err %q", code, so, errb)
 	}

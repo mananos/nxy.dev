@@ -9,11 +9,11 @@ import (
 	"github.com/mananos/nxy.dev/internal/review"
 )
 
-const baseWithFinding = `{"lens":"base","rules":[{"id":"R1","ok":true}],"findings":[` +
+const baseWithFinding = `{"lens":"base","criteria":[{"id":"R1","ok":true}],"findings":[` +
 	`{"severity":"medium","file":"cmd/main.go","line":10,"title":"flag sin validar",` +
 	`"scenario":"flag vacío → panic al parsear","fix":"validar antes de parsear"}]}`
 
-const baseClean = `{"lens":"base","rules":[{"id":"R1","ok":true}],"findings":[]}`
+const baseClean = `{"lens":"base","criteria":[{"id":"R1","ok":true}],"findings":[]}`
 
 func quickReview(t *testing.T, saveJSON string) (repo, id string) {
 	t.Helper()
@@ -154,6 +154,71 @@ func TestReviewDocsWithoutDocsSaysSo(t *testing.T) {
 	}
 	if code, _, errb := runCmd(t, "", "review", "docs", "--feature", "nope"); code != 1 || errb == "" {
 		t.Fatalf("unknown feature: code %d, err %q", code, errb)
+	}
+}
+
+func TestReviewShowAndStatus(t *testing.T) {
+	flowRepo(t)
+	if code, out, errb := runCmd(t, "", "review", "show"); code != 0 || !strings.Contains(out, "no review yet") {
+		t.Fatalf("show without feature: code %d, out %q, err %q", code, out, errb)
+	}
+	if code, out, errb := runCmd(t, "", "review", "status"); code != 0 || !strings.Contains(out, "no review activity") {
+		t.Fatalf("status empty: code %d, out %q, err %q", code, out, errb)
+	}
+}
+
+func TestReviewShowLastReview(t *testing.T) {
+	repo, _ := quickReview(t, baseClean)
+	agentPost(t, repo, "nxy:reviewer-quick", nil)
+	if code, out, errb := runCmd(t, "", "review", "show"); code != 0 || !strings.Contains(out, "Review completa") {
+		t.Fatalf("show last: code %d, out %q, err %q", code, out, errb)
+	}
+}
+
+func TestReviewEscapeWithoutFeatureSavesRule(t *testing.T) {
+	flowRepo(t)
+	if code, _, errb := runCmd(t, "", "review", "escape", "validate the flag"); code != 1 || !strings.Contains(errb, "usage") {
+		t.Fatalf("escape without --question: code %d, err %q", code, errb)
+	}
+	code, out, errb := runCmd(t, "", "review", "escape", "validate every flag", "--question", "Where are flags checked?")
+	if code != 0 || !strings.Contains(out, "escape saved as rule K1") {
+		t.Fatalf("escape: code %d, out %q, err %q", code, out, errb)
+	}
+	if _, out, _ := runCmd(t, "", "mem", "show"); !strings.Contains(out, "validate every flag") {
+		t.Fatalf("rule not saved: %q", out)
+	}
+	if _, out, _ := runCmd(t, "", "review", "status"); !strings.Contains(out, "base: 0 chosen, 0 ignored, 1 escapes") {
+		t.Fatalf("escape not counted: %q", out)
+	}
+}
+
+func TestReviewEscapeWithFeatureIsACandidate(t *testing.T) {
+	repo := flowRepo(t)
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
+	id := featureID(t)
+	code, out, errb := runCmd(t, "", "review", "escape", "validate every flag", "--question", "Where are flags checked?")
+	if code != 0 || !strings.Contains(out, "escape noted for feature "+id) {
+		t.Fatalf("escape: code %d, out %q, err %q", code, out, errb)
+	}
+	if _, out, _ := runCmd(t, "", "mem", "show"); strings.Contains(out, "validate every flag") {
+		t.Fatalf("a rule was saved before the closing question: %q", out)
+	}
+	if _, out, _ := runCmd(t, "", "review", "status"); !strings.Contains(out, "1 escapes") {
+		t.Fatalf("escape not counted: %q", out)
+	}
+}
+
+func TestFeatureRule(t *testing.T) {
+	repo := flowRepo(t)
+	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 1 || !strings.Contains(errb, "no active feature") {
+		t.Fatalf("without feature: code %d, err %q", code, errb)
+	}
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
+	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog"); code != 1 || !strings.Contains(errb, "usage") {
+		t.Fatalf("without question: code %d, err %q", code, errb)
+	}
+	if code, out, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 0 || !strings.Contains(out, "rule candidate noted") {
+		t.Fatalf("with feature: code %d, out %q, err %q", code, out, errb)
 	}
 }
 

@@ -16,19 +16,19 @@ const (
 	NoneLabel = "Ninguno"
 )
 
-// RuleLine shows the rule checks of the review: "R1 ✔ · R2 ✘". A rule the base
+// CriterionLine shows the criterion checks of the review: "R1 ✔ · R2 ✘". A criterion the base
 // pass did not answer shows "?".
-func RuleLine(rv domain.Review, rules []domain.Rule) string {
-	answered := map[string]domain.RuleCheck{}
-	for _, rc := range rv.Rules {
+func CriterionLine(rv domain.Review, criteria []domain.Criterion) string {
+	answered := map[string]domain.CriterionCheck{}
+	for _, rc := range rv.Criteria {
 		answered[rc.ID] = rc
 	}
-	ids := make([]string, 0, len(rules))
-	for _, r := range rules {
+	ids := make([]string, 0, len(criteria))
+	for _, r := range criteria {
 		ids = append(ids, r.ID)
 	}
-	if len(rules) == 0 {
-		for _, rc := range rv.Rules {
+	if len(criteria) == 0 {
+		for _, rc := range rv.Criteria {
 			ids = append(ids, rc.ID)
 		}
 	}
@@ -46,11 +46,11 @@ func RuleLine(rv domain.Review, rules []domain.Rule) string {
 	return strings.Join(parts, " · ")
 }
 
-func rulesOf(f domain.Feature) []domain.Rule {
+func criteriaOf(f domain.Feature) []domain.Criterion {
 	if f.Plan == nil {
 		return nil
 	}
-	return f.Plan.Rules
+	return f.Plan.Criteria
 }
 
 func where(f domain.Finding) string {
@@ -107,8 +107,8 @@ func Checkpoint(f domain.Feature) string {
 	if rv.Warning != "" {
 		fmt.Fprintf(&b, "Aviso: %s\n\n", rv.Warning)
 	}
-	if line := RuleLine(rv, rulesOf(f)); line != "" {
-		fmt.Fprintf(&b, "Reglas: %s\n\n", line)
+	if line := CriterionLine(rv, criteriaOf(f)); line != "" {
+		fmt.Fprintf(&b, "Criterios: %s\n\n", line)
 	}
 	if f.Mode == domain.ModeEngineer && len(rv.Decisions) > 0 {
 		b.WriteString("### Diff por decisión\n\n")
@@ -290,12 +290,12 @@ func Markdown(f domain.Feature) string {
 		}
 		fmt.Fprintf(&b, "Lentes: %s\n", strings.Join(names, ", "))
 	}
-	b.WriteString("\n### Reglas\n\n")
-	answered := map[string]domain.RuleCheck{}
-	for _, rc := range rv.Rules {
+	b.WriteString("\n### Criterios\n\n")
+	answered := map[string]domain.CriterionCheck{}
+	for _, rc := range rv.Criteria {
 		answered[rc.ID] = rc
 	}
-	for _, r := range rulesOf(f) {
+	for _, r := range criteriaOf(f) {
 		mark := "?"
 		why := ""
 		if rc, ok := answered[r.ID]; ok {
@@ -337,9 +337,9 @@ func Markdown(f domain.Feature) string {
 	return b.String()
 }
 
-// ruleProof is how a rule was proved: the name of the test of the batch that
+// criterionProof is how a criterion was proved: the name of the test of the batch that
 // covers it, or its kind (manual, build).
-func ruleProof(p *domain.Plan, r domain.Rule) string {
+func criterionProof(p *domain.Plan, r domain.Criterion) string {
 	if p != nil && r.Test != domain.TestManual {
 		for _, bt := range p.Batches {
 			for _, c := range bt.Covers {
@@ -352,25 +352,25 @@ func ruleProof(p *domain.Plan, r domain.Rule) string {
 	return string(r.Test)
 }
 
-// Summary is the "Listo" line, which starts with the word "Listo": the rules that held with how each was proved,
-// the rules that did not, and the fixes applied from the review.
+// Summary is the "Listo" line, which starts with the word "Listo": the criteria that held with how each was proved,
+// the criteria that did not, and the fixes applied from the review.
 func Summary(f domain.Feature) string {
 	rv := domain.Review{}
 	if f.Review != nil {
 		rv = *f.Review
 	}
-	answered := map[string]domain.RuleCheck{}
-	for _, rc := range rv.Rules {
+	answered := map[string]domain.CriterionCheck{}
+	for _, rc := range rv.Criteria {
 		answered[rc.ID] = rc
 	}
 	var parts []string
-	for _, r := range rulesOf(f) {
+	for _, r := range criteriaOf(f) {
 		rc, ok := answered[r.ID]
 		switch {
 		case !ok:
 			parts = append(parts, r.ID+" ?")
 		case rc.OK:
-			parts = append(parts, r.ID+" ✔ "+ruleProof(f.Plan, r))
+			parts = append(parts, r.ID+" ✔ "+criterionProof(f.Plan, r))
 		default:
 			parts = append(parts, r.ID+" ✘")
 		}
@@ -383,8 +383,8 @@ func Summary(f domain.Feature) string {
 		b.WriteString(s)
 	}
 	b.WriteString(strings.Join(append([]string{"Listo"}, parts...), " · "))
-	if f.Review == nil || len(rv.Rules) == 0 {
-		line("La review no corrió: las reglas quedan sin chequear (?).")
+	if f.Review == nil || len(rv.Criteria) == 0 {
+		line("La review no corrió: los criterios quedan sin chequear (?).")
 	}
 	if rv.Warning != "" {
 		line("Aviso: " + rv.Warning)

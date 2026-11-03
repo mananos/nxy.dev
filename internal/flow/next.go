@@ -62,18 +62,26 @@ func finish(o domain.Outcome) func(state, Event) (state, []action) {
 // first, and the feature closes after that step.
 var closeOK = to(domain.PhaseDocsCheck, domain.CheckDocs)
 
+// closeSuccess ends a feature that went well: with rule candidates it asks which to keep first.
+func closeSuccess(s state, ev Event) (state, []action) {
+	if ev.Candidates {
+		return to(domain.PhaseRules, domain.AskRules, domain.Notify)(s, ev)
+	}
+	return finish(domain.OutcomeSuccess)(s, ev)
+}
+
 func docsChecked(s state, ev Event) (state, []action) {
 	if ev.Docs {
 		return to(domain.PhaseDocs, domain.AskDocs, domain.Notify)(s, ev)
 	}
-	return finish(domain.OutcomeSuccess)(s, ev)
+	return closeSuccess(s, ev)
 }
 
 func docsAnswered(s state, ev Event) (state, []action) {
 	if ev.Update {
 		return to(domain.PhaseDocumenting, domain.DispatchDocumenter)(s, ev)
 	}
-	return finish(domain.OutcomeSuccess)(s, ev)
+	return closeSuccess(s, ev)
 }
 
 // retryAs moves to phase p with the retry attempt used.
@@ -280,7 +288,8 @@ var table = map[domain.Phase][]row{
 	},
 	domain.PhaseDocsCheck:   {{DocsChecked, always, docsChecked}},
 	domain.PhaseDocs:        {{DocsAnswered, always, docsAnswered}},
-	domain.PhaseDocumenting: {{DocumenterReturned, always, finish(domain.OutcomeSuccess)}},
+	domain.PhaseDocumenting: {{DocumenterReturned, always, closeSuccess}},
+	domain.PhaseRules:       {{RulesAnswered, always, finish(domain.OutcomeSuccess)}},
 }
 
 // common rows apply to every non-terminal phase, so they are not repeated.

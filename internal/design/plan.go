@@ -41,7 +41,7 @@ func ValidateGaps(titles []string) []domain.Problem {
 	return out
 }
 
-// CheckPlan checks that the planner of an engineer feature did not change the design: same rules,
+// CheckPlan checks that the planner of an engineer feature did not change the design: same criteria,
 // no questions, and decisions of its own only for forks the user delegated.
 func CheckPlan(d *domain.Design, p domain.Plan) []domain.Problem {
 	var out []domain.Problem
@@ -51,15 +51,15 @@ func CheckPlan(d *domain.Design, p domain.Plan) []domain.Problem {
 	if len(p.Questions) > 0 {
 		add("questions", "an engineer plan asks nothing: a design hole goes to `plan gaps`")
 	}
-	if len(p.Rules) != len(d.Rules) {
-		add("rules", "the design approved %d rules; the plan has %d (copy them as they are)", len(d.Rules), len(p.Rules))
+	if len(p.Criteria) != len(d.Criteria) {
+		add("criteria", "the design approved %d criteria; the plan has %d (copy them as they are)", len(d.Criteria), len(p.Criteria))
 	}
-	for i, r := range p.Rules {
-		if i >= len(d.Rules) {
+	for i, r := range p.Criteria {
+		if i >= len(d.Criteria) {
 			break
 		}
-		if r.ID != d.Rules[i].ID || r.Text != d.Rules[i].Text {
-			add(d.Rules[i].ID, "the rule text is the one the user approved; copy it unchanged")
+		if r.ID != d.Criteria[i].ID || r.Text != d.Criteria[i].Text {
+			add(d.Criteria[i].ID, "the criterion text is the one the user approved; copy it unchanged")
 		}
 	}
 	for i, x := range p.Decisions {

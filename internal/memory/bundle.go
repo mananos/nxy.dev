@@ -147,6 +147,7 @@ type Alias struct {
 	ID        string // ULID of the foreign learning
 	Into      string // ULID of the local learning that absorbed it
 	UpdatedAt int64
+	Seen      int // Seen of the incoming row when last folded: counting does not move UpdatedAt, so growth is read here
 }
 
 // ChangeKind is what importing a row does.
@@ -166,6 +167,7 @@ type Change[T any] struct {
 	Deleted       bool   // the incoming row is a tombstone
 	ReassignShort bool   // its Short collides with another local row: assign a new one
 	FoldInto      string // Folded: ULID of the local learning that absorbs it
+	Counters      bool   // Skipped: the incoming row has a larger counter than the local one (max is kept)
 }
 
 // Diff is the result of merging a bundle: what applying it would do.
@@ -204,19 +206,31 @@ func (d Diff) Count(k ChangeKind) int {
 
 // Writes counts the changes that touch the database.
 func (d Diff) Writes() int {
-	return d.Count(New) + d.Count(Changed) + d.Count(Folded)
+	n := d.Count(New) + d.Count(Changed) + d.Count(Folded)
+	for _, c := range d.Rules {
+		if c.Counters {
+			n++
+		}
+	}
+	for _, c := range d.Learnings {
+		if c.Counters {
+			n++
+		}
+	}
+	return n
 }
 
-type rowInfo struct {
+type rowInfo[T any] struct {
 	updated int64
 	short   string
+	row     T
 }
 
-func mergeRows[T any](local []T, in []T, id func(T) string, meta func(T) Meta, short func(T) string) []Change[T] {
-	known := map[string]rowInfo{}
+func mergeRows[T any](local []T, in []T, id func(T) string, meta func(T) Meta, short func(T) string, counters func(local, in T) bool) []Change[T] {
+	known := map[string]rowInfo[T]{}
 	taken := map[string]string{} // short -> id
 	for _, r := range local {
-		known[id(r)] = rowInfo{meta(r).UpdatedAt, short(r)}
+		known[id(r)] = rowInfo[T]{meta(r).UpdatedAt, short(r), r}
 		if s := short(r); s != "" {
 			taken[s] = id(r)
 		}
@@ -229,6 +243,7 @@ func mergeRows[T any](local []T, in []T, id func(T) string, meta func(T) Meta, s
 				c.Kind = Changed
 			} else {
 				c.Kind = Skipped
+				c.Counters = counters != nil && !c.Deleted && counters(k.row, r)
 			}
 		} else {
 			c.Kind = New
@@ -254,13 +269,17 @@ func mergeRows[T any](local []T, in []T, id func(T) string, meta func(T) Meta, s
 func Merge(local Snapshot, in Bundle) Diff {
 	var d Diff
 	d.Rules = mergeRows(local.Rules, in.Rules,
-		func(r Rule) string { return r.ID }, func(r Rule) Meta { return r.Meta }, func(r Rule) string { return r.Short })
+		func(r Rule) string { return r.ID }, func(r Rule) Meta { return r.Meta }, func(r Rule) string { return r.Short },
+		func(l, i Rule) bool {
+			return i.Deliveries > l.Deliveries || i.Citations > l.Citations || i.LastCitedAt > l.LastCitedAt
+		})
 	d.Features = mergeRows(local.Features, in.Features,
-		func(f ClosedFeature) string { return f.ID }, func(f ClosedFeature) Meta { return f.Meta }, func(ClosedFeature) string { return "" })
+		func(f ClosedFeature) string { return f.ID }, func(f ClosedFeature) Meta { return f.Meta }, func(ClosedFeature) string { return "" }, nil)
 	d.Learnings = mergeRows(local.Learnings, in.Learnings,
-		func(l Learning) string { return l.ID }, func(l Learning) Meta { return l.Meta }, func(l Learning) string { return l.Short })
+		func(l Learning) string { return l.ID }, func(l Learning) Meta { return l.Meta }, func(l Learning) string { return l.Short },
+		func(l, i Learning) bool { return i.Seen > l.Seen || i.LastSeenAt > l.LastSeenAt })
 	d.Notes = mergeRows(local.Notes, in.Notes,
-		func(n Note) string { return n.ID }, func(n Note) Meta { return n.Meta }, func(n Note) string { return n.Short })
+		func(n Note) string { return n.ID }, func(n Note) Meta { return n.Meta }, func(n Note) string { return n.Short }, nil)
 
 	live := map[[2]string]string{} // (repo, hash) -> local id
 	for _, l := range local.Learnings {
@@ -279,7 +298,7 @@ func Merge(local Snapshot, in Bundle) Diff {
 		if a, ok := aliases[c.Row.ID]; ok { // already folded once: only a newer row folds again
 			d.Learnings[i].ReassignShort = false
 			d.Learnings[i].FoldInto = a.Into
-			if c.Row.UpdatedAt > a.UpdatedAt && !c.Deleted {
+			if (c.Row.UpdatedAt > a.UpdatedAt || c.Row.Seen > a.Seen) && !c.Deleted {
 				d.Learnings[i].Kind = Folded
 			} else {
 				d.Learnings[i].Kind = Skipped

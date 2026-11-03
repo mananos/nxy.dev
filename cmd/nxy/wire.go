@@ -17,6 +17,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/review"
@@ -138,6 +139,96 @@ func (l *lazyStore) RecordPicks(ctx context.Context, featureID, repo string, pic
 		return err
 	}
 	return s.RecordPicks(ctx, featureID, repo, picks)
+}
+
+var _ app.FlowMemory = (*lazyStore)(nil)
+
+func (l *lazyStore) Rules(ctx context.Context, repo string) ([]memory.Rule, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.Rules(ctx, repo)
+}
+
+func (l *lazyStore) Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.Related(ctx, repo, paths)
+}
+
+func (l *lazyStore) AddLearning(ctx context.Context, x memory.Learning) (memory.Learning, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return memory.Learning{}, err
+	}
+	return s.AddLearning(ctx, x)
+}
+
+func (l *lazyStore) AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return memory.Rule{}, err
+	}
+	return s.AddRule(ctx, r)
+}
+
+func (l *lazyStore) SaveClosedFeature(ctx context.Context, f memory.ClosedFeature) (memory.ClosedFeature, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return memory.ClosedFeature{}, err
+	}
+	return s.SaveClosedFeature(ctx, f)
+}
+
+func (l *lazyStore) CountDeliveries(ctx context.Context, ids []string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.CountDeliveries(ctx, ids)
+}
+
+func (l *lazyStore) Cite(ctx context.Context, repo string, shorts []string, at int64) ([]string, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.Cite(ctx, repo, shorts, at)
+}
+
+func (l *lazyStore) MarkObsolete(ctx context.Context, repo string, refs []string, at int64) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.MarkObsolete(ctx, repo, refs, at)
+}
+
+func (l *lazyStore) SimilarRules(ctx context.Context, repo, text string, limit int) ([]memory.Rule, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.SimilarRules(ctx, repo, text, limit)
+}
+
+func (l *lazyStore) RecordEscape(ctx context.Context, featureID, repo, lens, text string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.RecordEscape(ctx, featureID, repo, lens, text)
+}
+
+func (l *lazyStore) ReviewStats(ctx context.Context, repo string, since int64) ([]domain.LensStat, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.ReviewStats(ctx, repo, since)
 }
 
 func (l *lazyStore) Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error {
@@ -429,5 +520,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
+		Memory: st,
 	}, st
 }

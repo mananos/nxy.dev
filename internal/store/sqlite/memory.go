@@ -213,7 +213,8 @@ func upsertRule(ctx context.Context, q queryer, r memory.Rule) error {
 	_, err := q.ExecContext(ctx, `INSERT INTO mem_rules (`+ruleCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET repo=excluded.repo, text=excluded.text, question=excluded.question,
 		origin=excluded.origin, feature_id=excluded.feature_id, paths=excluded.paths, supersedes=excluded.supersedes,
-		deliveries=excluded.deliveries, citations=excluded.citations, last_cited_at=excluded.last_cited_at,
+		deliveries=MAX(mem_rules.deliveries, excluded.deliveries), citations=MAX(mem_rules.citations, excluded.citations),
+		last_cited_at=MAX(mem_rules.last_cited_at, excluded.last_cited_at),
 		created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
 		machine_id=excluded.machine_id`,
 		r.ID, r.Short, r.Repo, r.Text, question, r.Origin, r.FeatureID, encodeStrings(r.Paths), r.Supersedes,
@@ -295,7 +296,8 @@ func upsertLearning(ctx context.Context, q queryer, l memory.Learning) error {
 	}
 	_, err := q.ExecContext(ctx, `INSERT INTO mem_learnings (`+learningCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET repo=excluded.repo, text=excluded.text, files=excluded.files,
-		feature_id=excluded.feature_id, hash=excluded.hash, seen=excluded.seen, last_seen_at=excluded.last_seen_at,
+		feature_id=excluded.feature_id, hash=excluded.hash, seen=MAX(mem_learnings.seen, excluded.seen),
+		last_seen_at=MAX(mem_learnings.last_seen_at, excluded.last_seen_at),
 		obsolete_at=excluded.obsolete_at, promoted_to=excluded.promoted_to, created_at=excluded.created_at,
 		updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, machine_id=excluded.machine_id`,
 		l.ID, l.Short, l.Repo, l.Text, encodeStrings(l.Files), l.FeatureID, l.Hash, l.Seen, l.LastSeenAt,
@@ -353,8 +355,8 @@ func (s *Store) AddLearning(ctx context.Context, l memory.Learning) (memory.Lear
 		found = nil
 	}
 	if len(found) > 0 {
-		if _, err := tx.ExecContext(ctx, `UPDATE mem_learnings SET seen=seen+1, last_seen_at=?, updated_at=? WHERE id=?`,
-			now, now, found[0].ID); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE mem_learnings SET seen=seen+1, last_seen_at=? WHERE id=?`,
+			now, found[0].ID); err != nil {
 			return memory.Learning{}, err
 		}
 		got, err := queryLearnings(ctx, tx, `WHERE id=?`, found[0].ID)
@@ -858,14 +860,14 @@ func (s *Store) MemorySnapshot(ctx context.Context) (memory.Snapshot, error) {
 		return memory.Snapshot{}, err
 	}
 	snap := memory.Snapshot{Rules: b.Rules, Features: b.Features, Learnings: b.Learnings, Notes: b.Notes}
-	rows, err := s.db.QueryContext(ctx, `SELECT alias_id, learning_id, alias_updated_at FROM mem_learning_aliases ORDER BY alias_id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT alias_id, learning_id, alias_updated_at, alias_seen FROM mem_learning_aliases ORDER BY alias_id`)
 	if err != nil {
 		return snap, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var a memory.Alias
-		if err := rows.Scan(&a.ID, &a.Into, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.Into, &a.UpdatedAt, &a.Seen); err != nil {
 			return snap, err
 		}
 		snap.Aliases = append(snap.Aliases, a)
@@ -886,8 +888,8 @@ func (s *Store) foldLearning(ctx context.Context, q queryer, into string, in mem
 	case !errors.Is(err, sql.ErrNoRows):
 		return err
 	}
-	if _, err := q.ExecContext(ctx, `UPDATE mem_learnings SET seen=seen+?, last_seen_at=MAX(last_seen_at, ?), updated_at=? WHERE id=?`,
-		add, in.LastSeenAt, now, into); err != nil {
+	if _, err := q.ExecContext(ctx, `UPDATE mem_learnings SET seen=seen+?, last_seen_at=MAX(last_seen_at, ?) WHERE id=?`,
+		add, in.LastSeenAt, into); err != nil {
 		return err
 	}
 	_, err = q.ExecContext(ctx, `INSERT INTO mem_learning_aliases (alias_id, learning_id, alias_updated_at, alias_seen) VALUES (?,?,?,?)
@@ -913,6 +915,13 @@ func (s *Store) ApplyImport(ctx context.Context, d memory.Diff) error {
 		}
 	}
 	for _, c := range d.Rules {
+		if c.Kind == memory.Skipped && c.Counters {
+			if _, err := tx.ExecContext(ctx, `UPDATE mem_rules SET deliveries=MAX(deliveries, ?), citations=MAX(citations, ?),
+				last_cited_at=MAX(last_cited_at, ?) WHERE id=?`, c.Row.Deliveries, c.Row.Citations, c.Row.LastCitedAt, c.Row.ID); err != nil {
+				return err
+			}
+			continue
+		}
 		if c.Kind != memory.New && c.Kind != memory.Changed {
 			continue
 		}
@@ -929,6 +938,13 @@ func (s *Store) ApplyImport(ctx context.Context, d memory.Diff) error {
 	for _, c := range d.Learnings {
 		l := c.Row
 		switch c.Kind {
+		case memory.Skipped:
+			if c.Counters {
+				if _, err := tx.ExecContext(ctx, `UPDATE mem_learnings SET seen=MAX(seen, ?), last_seen_at=MAX(last_seen_at, ?) WHERE id=?`,
+					l.Seen, l.LastSeenAt, l.ID); err != nil {
+					return err
+				}
+			}
 		case memory.Folded:
 			if err := s.foldLearning(ctx, tx, c.FoldInto, l, now); err != nil {
 				return err

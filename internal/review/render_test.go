@@ -67,22 +67,22 @@ func testFeature() domain.Feature {
 				{Scope: domain.ScopeRepo, Text: "usar tabs"},
 				{Scope: domain.ScopeTask, Text: "en inglés"},
 			},
-			Rules: []domain.Rule{
+			Criteria: []domain.Criterion{
 				{ID: "R1", Text: "saluda", Test: domain.TestTDD},
 				{ID: "R2", Text: "README", Test: domain.TestManual},
 			},
 			Batches: []domain.Batch{{N: 1, Covers: []string{"R1", "R2"}, Test: domain.BatchTest{Name: "TestGreet"}}},
 		},
 		Review: &domain.Review{
-			Risk:  domain.RiskHigh,
-			Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", OK: true}},
+			Risk:     domain.RiskHigh,
+			Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", OK: true}},
 		},
 	}
 }
 
 func TestReviewerPromptBaseHasRulesAndBothSaveForms(t *testing.T) {
 	f := testFeature()
-	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base", Body: "cuerpo"}, []FileDiff{{Path: "a.go", Status: "M", Text: "@@ -1 +1 @@\n+x\n"}}, `C:\bin\nxy.exe`)
+	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base", Body: "cuerpo"}, []FileDiff{{Path: "a.go", Status: "M", Text: "@@ -1 +1 @@\n+x\n"}}, `C:\bin\nxy.exe`, "")
 	for _, want := range []string{
 		"haceme un saludo", "R1: saluda", "R2: README", "usar tabs", "a.go",
 		`"C:/bin/nxy.exe" review save --feature f1 --lens base <<'JSON'`,
@@ -98,20 +98,20 @@ func TestReviewerPromptBaseHasRulesAndBothSaveForms(t *testing.T) {
 }
 
 func TestReviewerPromptOtherLensHasNoRules(t *testing.T) {
-	p := ReviewerPrompt(testFeature(), Lens{Name: "api", Title: "API"}, nil, "nxy")
+	p := ReviewerPrompt(testFeature(), Lens{Name: "api", Title: "API"}, nil, "nxy", "")
 	if strings.Contains(p, "R1") || strings.Contains(p, "saluda") {
 		t.Error("only the base pass gets the rules")
 	}
 	f := testFeature()
 	f.Plan.Decisions = nil
-	if p := ReviewerPrompt(f, Lens{Name: "api"}, nil, "nxy"); !strings.Contains(p, "ninguna registrada") {
+	if p := ReviewerPrompt(f, Lens{Name: "api"}, nil, "nxy", ""); !strings.Contains(p, "ninguna registrada") {
 		t.Error("no conventions must say so")
 	}
 }
 
 func TestReviewerPromptListsCutFiles(t *testing.T) {
 	big := FileDiff{Path: "big.go", Status: "M", Text: strings.Repeat("+x\n", MaxDiffLines+5)}
-	p := ReviewerPrompt(testFeature(), Lens{Name: "api"}, []FileDiff{big, {Path: "s.go", Status: "M", Text: "+y\n"}}, "nxy")
+	p := ReviewerPrompt(testFeature(), Lens{Name: "api"}, []FileDiff{big, {Path: "s.go", Status: "M", Text: "+y\n"}}, "nxy", "")
 	if !strings.Contains(p, "read them yourself") || !strings.Contains(p, "- big.go") {
 		t.Error("cut file not listed")
 	}
@@ -128,7 +128,7 @@ func TestRefuterAndFixPrompts(t *testing.T) {
 	if !strings.Contains(r, "H1") || strings.Contains(r, "### H2") || !strings.Contains(r, "review refute --feature f1 <<'JSON'") || !strings.Contains(r, "| & \"nxy\" review refute --feature f1") {
 		t.Errorf("refuter prompt wrong:\n%s", r)
 	}
-	fx := FixPrompt(f, "nxy")
+	fx := FixPrompt(f, "nxy", "")
 	for _, want := range []string{"H1", "H2", "a.go:3", "arreglar", `"nxy" affected --feature f1`} {
 		if !strings.Contains(fx, want) {
 			t.Errorf("fix prompt lacks %q", want)
@@ -139,20 +139,20 @@ func TestRefuterAndFixPrompts(t *testing.T) {
 	}
 	f.State.Attempt = 1
 	f.Affected = &domain.AffectedRun{Failure: "FAIL TestX"}
-	if fx := FixPrompt(f, "nxy"); !strings.Contains(fx, "FAIL TestX") {
+	if fx := FixPrompt(f, "nxy", ""); !strings.Contains(fx, "FAIL TestX") {
 		t.Error("retry must carry the failure")
 	}
 }
 
-func TestRuleLineAndSummary(t *testing.T) {
+func TestCriterionLineAndSummary(t *testing.T) {
 	f := testFeature()
-	f.Review.Rules = []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", Why: "x"}}
-	if got := RuleLine(*f.Review, f.Plan.Rules); got != "R1 ✔ · R2 ✘" {
-		t.Errorf("RuleLine = %q", got)
+	f.Review.Criteria = []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", Why: "x"}}
+	if got := CriterionLine(*f.Review, f.Plan.Criteria); got != "R1 ✔ · R2 ✘" {
+		t.Errorf("CriterionLine = %q", got)
 	}
-	f.Review.Rules = nil
-	if got := RuleLine(*f.Review, f.Plan.Rules); got != "R1 ? · R2 ?" {
-		t.Errorf("unanswered RuleLine = %q", got)
+	f.Review.Criteria = nil
+	if got := CriterionLine(*f.Review, f.Plan.Criteria); got != "R1 ? · R2 ?" {
+		t.Errorf("unanswered CriterionLine = %q", got)
 	}
 	f = testFeature()
 	f.Review.Findings = []domain.Finding{{ID: "H1", Title: "boom"}}
@@ -219,7 +219,7 @@ func TestCheckpointAndMarkdown(t *testing.T) {
 		{ID: "H4", Lens: "api", Severity: domain.SeverityHigh, Cause: domain.CauseChange, File: "c.go", Line: 2, Title: "falso", Scenario: "a -> b", Verdict: domain.VerdictRefuted, VerdictWhy: "no pasa"},
 	}
 	c := Checkpoint(f)
-	for _, want := range []string{"Reglas: R1 ✔ · R2 ✔", "H1", "Escenario: x -> y", "Arreglo: arreglar", "Ya estaban", "H2", "1 descartados", "1 refutados", "Ver completo: /tmp/f1.md"} {
+	for _, want := range []string{"Criterios: R1 ✔ · R2 ✔", "H1", "Escenario: x -> y", "Arreglo: arreglar", "Ya estaban", "H2", "1 descartados", "1 refutados", "Ver completo: /tmp/f1.md"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("checkpoint lacks %q:\n%s", want, c)
 		}
@@ -256,7 +256,7 @@ func TestEngineerCheckpointAndPrompt(t *testing.T) {
 		t.Error("delegate checkpoint must not show the diff by decision")
 	}
 	f.Mode = domain.ModeEngineer
-	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy")
+	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy", "")
 	if !strings.Contains(p, "Decisiones del diseño") || !strings.Contains(p, "D1: usar cola") || !strings.Contains(p, "lesson") {
 		t.Errorf("base prompt of engineer:\n%s", p)
 	}
@@ -264,7 +264,7 @@ func TestEngineerCheckpointAndPrompt(t *testing.T) {
 
 func TestEngineerBaseExampleWithoutDecisions(t *testing.T) {
 	f := domain.Feature{ID: "f1", Mode: domain.ModeEngineer, Plan: &domain.Plan{}}
-	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy")
+	p := ReviewerPrompt(f, Lens{Name: BaseLens, Title: "Base"}, nil, "nxy", "")
 	if strings.Contains(p, `"decisions"`) {
 		t.Errorf("example lists decisions although the design has none:\n%s", p)
 	}

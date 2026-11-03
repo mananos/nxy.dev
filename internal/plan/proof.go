@@ -22,7 +22,7 @@ func NeedOf(p domain.Plan, n int) Need {
 	need := Need{Green: b.Test.Accept != ""}
 	if need.Green && b.Test.Kind == domain.BatchTestNew {
 		kinds := map[string]domain.TestKind{}
-		for _, r := range p.Rules {
+		for _, r := range p.Criteria {
 			kinds[r.ID] = r.Test
 		}
 		for _, id := range b.Covers {

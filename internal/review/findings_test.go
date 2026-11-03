@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/plan"
 )
 
@@ -76,7 +77,7 @@ func TestClassify(t *testing.T) {
 func TestAssembleNumbersAndRules(t *testing.T) {
 	good := "in → out"
 	rv := domain.Review{
-		Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", OK: false, Why: "no valida", File: "a.go", Line: 4}},
+		Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", OK: false, Why: "no valida", File: "a.go", Line: 4}},
 		Findings: []domain.Finding{
 			{Lens: "api", Severity: domain.SeverityLow, File: "a.go", Line: 1, Scenario: good, Cause: domain.CauseChange},
 			{Lens: "api", Severity: domain.SeverityHigh, File: "a.go", Line: 1, Scenario: good, Cause: domain.CausePreexisting},
@@ -84,12 +85,12 @@ func TestAssembleNumbersAndRules(t *testing.T) {
 			{Lens: "api", Severity: domain.SeverityMedium, File: "a.go", Line: 2, Scenario: good, Cause: domain.CauseChange},
 		},
 	}
-	rules := []domain.Rule{{ID: "R1", Text: "uno"}, {ID: "R2", Text: "dos"}}
+	rules := []domain.Criterion{{ID: "R1", Text: "uno"}, {ID: "R2", Text: "dos"}}
 	got := Assemble(rv, rules).Findings
 	if len(got) != 5 {
 		t.Fatalf("got %d findings", len(got))
 	}
-	if got[0].Rule != "R2" || got[0].Lens != "base" || got[0].Severity != domain.SeverityHigh || got[0].Dropped != "" || got[0].ID != "H1" {
+	if got[0].Criterion != "R2" || got[0].Lens != "base" || got[0].Severity != domain.SeverityHigh || got[0].Dropped != "" || got[0].ID != "H1" {
 		t.Errorf("first must be the failed rule as high base finding: %+v", got[0])
 	}
 	if !strings.Contains(got[0].Title, "dos") {
@@ -132,8 +133,8 @@ func TestHighUnproven(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	rules := []domain.Rule{{ID: "R1"}, {ID: "R2"}}
-	good := Submission{Lens: "base", Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", OK: false, Why: "x"}}}
+	rules := []domain.Criterion{{ID: "R1"}, {ID: "R2"}}
+	good := Submission{Lens: "base", Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", OK: false, Why: "x"}}}
 	if p := Validate(good, "base", rules, true, nil, false); len(p) != 0 {
 		t.Fatalf("good: %v", p)
 	}
@@ -144,14 +145,14 @@ func TestValidate(t *testing.T) {
 		want string
 	}{
 		{"lens", Submission{Lens: "api"}, false, "must be"},
-		{"rules fuera de base", Submission{Lens: "api", Rules: good.Rules}, false, "only the base"},
-		{"falta regla", Submission{Lens: "base", Rules: good.Rules[:1]}, true, "R2 is missing"},
-		{"repetida", Submission{Lens: "base", Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R1", OK: true}, {ID: "R2", OK: true}}}, true, "more than once"},
-		{"ajena", Submission{Lens: "base", Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2", OK: true}, {ID: "R9", OK: true}}}, true, "not a rule"},
-		{"x sin why", Submission{Lens: "base", Rules: []domain.RuleCheck{{ID: "R1", OK: true}, {ID: "R2"}}}, true, "needs a why"},
+		{"criteria fuera de base", Submission{Lens: "api", Criteria: good.Criteria}, false, "only the base"},
+		{"falta criterio", Submission{Lens: "base", Criteria: good.Criteria[:1]}, true, "R2 is missing"},
+		{"repetida", Submission{Lens: "base", Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R1", OK: true}, {ID: "R2", OK: true}}}, true, "more than once"},
+		{"ajena", Submission{Lens: "base", Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", OK: true}, {ID: "R9", OK: true}}}, true, "not a criterion"},
+		{"x sin why", Submission{Lens: "base", Criteria: []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2"}}}, true, "needs a why"},
 		{"severidad", Submission{Lens: "api", Findings: []domain.Finding{{Severity: "bad", Title: "t"}}}, false, "severity"},
 		{"id", Submission{Lens: "api", Findings: []domain.Finding{{ID: "H9", Severity: "high", Title: "t"}}}, false, "findings[0].id"},
-		{"rule", Submission{Lens: "api", Findings: []domain.Finding{{Rule: "R1", Severity: "high", Title: "t"}}}, false, "findings[0].rule"},
+		{"criterion", Submission{Lens: "api", Findings: []domain.Finding{{Criterion: "R1", Severity: "high", Title: "t"}}}, false, "findings[0].criterion"},
 		{"dropped", Submission{Lens: "api", Findings: []domain.Finding{{Dropped: "x", Severity: "high", Title: "t"}}}, false, "findings[0].dropped"},
 		{"verdict", Submission{Lens: "api", Findings: []domain.Finding{{Verdict: "refuted", Severity: "high", Title: "t"}}}, false, "findings[0].verdict"},
 		{"verdict_why", Submission{Lens: "api", Findings: []domain.Finding{{VerdictWhy: "x", Severity: "high", Title: "t"}}}, false, "findings[0].verdict_why"},
@@ -271,5 +272,40 @@ func TestCut(t *testing.T) {
 	}
 	if len(cut) != 1 || cut[0] != "big.go" {
 		t.Errorf("cut %v", cut)
+	}
+}
+
+func TestValidateMemory(t *testing.T) {
+	sub := Submission{
+		Findings:  []domain.Finding{{Rule: "k1"}, {}},
+		Learnings: []memory.LearningIn{{Text: "ok"}},
+		False:     []string{"A7"},
+	}
+	if p := ValidateMemory(sub, []string{"K1", "A7"}); len(p) != 0 {
+		t.Errorf("valid refused: %v", p)
+	}
+	if p := ValidateMemory(sub, []string{"K1"}); len(p) != 1 {
+		t.Errorf("undelivered false accepted: %v", p)
+	}
+	sub.Findings[0].Rule = "K2"
+	sub.Learnings = append(sub.Learnings, memory.LearningIn{Text: " "})
+	sub.False = append(sub.False, "K1")
+	if p := ValidateMemory(sub, []string{"K1"}); len(p) != 4 {
+		t.Errorf("problems = %v", p)
+	}
+}
+
+func TestAssembleRuleRaisesLowToMedium(t *testing.T) {
+	rv := domain.Review{Findings: []domain.Finding{
+		{Severity: domain.SeverityLow, Rule: "K1", File: "a.go", Line: 1, Scenario: "x -> y", Cause: domain.CauseChange},
+		{Severity: domain.SeverityLow, File: "a.go", Line: 2, Scenario: "x -> y", Cause: domain.CauseChange},
+	}}
+	got := Assemble(rv, nil).Findings
+	sev := map[string]domain.Severity{}
+	for _, f := range got {
+		sev[f.File+":"+f.Rule] = f.Severity
+	}
+	if sev["a.go:K1"] != domain.SeverityMedium || sev["a.go:"] != domain.SeverityLow {
+		t.Errorf("severities = %v", sev)
 	}
 }

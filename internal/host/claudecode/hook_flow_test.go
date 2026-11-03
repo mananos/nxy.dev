@@ -172,8 +172,8 @@ func approvalFeature() domain.Feature {
 	return domain.Feature{
 		ID: "f1", PlanRev: 2,
 		Plan: &domain.Plan{
-			Title: "Titulo del plan",
-			Rules: []domain.Rule{{ID: "R1", Text: "comportamiento uno", Test: "tdd"}},
+			Title:    "Titulo del plan",
+			Criteria: []domain.Criterion{{ID: "R1", Text: "comportamiento uno", Test: "tdd"}},
 		},
 		Next: domain.Action{Kind: domain.AskApproval},
 	}
@@ -220,7 +220,7 @@ func TestDesignInstructions(t *testing.T) {
 	if s := CloseInstruction(f); !strings.Contains(s, "Cerrar y planificar") {
 		t.Errorf("close: %s", s)
 	}
-	f.Plan = &domain.Plan{Title: "T", Rules: []domain.Rule{{ID: "R1", Text: "regla", Test: "tdd"}}}
+	f.Plan = &domain.Plan{Title: "T", Criteria: []domain.Criterion{{ID: "R1", Text: "regla", Test: "tdd"}}}
 	f.Next = domain.Action{Kind: domain.AskApproval}
 	if s := Instruction(f, ""); strings.Contains(s, "R1") {
 		t.Errorf("engineer checkpoint should omit rules: %s", s)

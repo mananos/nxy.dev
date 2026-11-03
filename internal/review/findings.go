@@ -5,25 +5,75 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/plan"
 )
 
 // NearLines is how far from a hunk a finding still counts as caused by the change.
 const NearLines = 3
 
-// BaseLens is the lens that answers the rules of the plan.
+// BaseLens is the lens that answers the criteria of the plan.
 const BaseLens = "base"
 
 // Submission is what one reviewer saves.
 type Submission struct {
-	Lens      string                 `json:"lens"`
-	Rules     []domain.RuleCheck     `json:"rules,omitempty"`
-	Decisions []domain.DecisionCheck `json:"decisions,omitempty"`
-	Findings  []domain.Finding       `json:"findings"`
+	Lens      string                  `json:"lens"`
+	Criteria  []domain.CriterionCheck `json:"criteria,omitempty"`
+	Decisions []domain.DecisionCheck  `json:"decisions,omitempty"`
+	Findings  []domain.Finding        `json:"findings"`
+	Learnings []memory.LearningIn     `json:"learnings,omitempty"`
+	False     []string                `json:"false,omitempty"` // A<n> the reviewer checked and found false
+}
+
+var shortRe = regexp.MustCompile(`^[KA]\d+$`)
+
+// ValidateMemory lists what is wrong with the memory parts of a submission: a finding's rule must
+// be a K<n> delivered to this reviewer, learnings stay within the report limits and false only
+// names A<n>.
+func ValidateMemory(sub Submission, delivered []string) []plan.Problem {
+	var out []plan.Problem
+	add := func(where, format string, a ...any) {
+		out = append(out, plan.Problem{Where: where, Msg: fmt.Sprintf(format, a...)})
+	}
+	got := map[string]bool{}
+	for _, k := range delivered {
+		got[strings.ToUpper(k)] = true
+	}
+	for i, f := range sub.Findings {
+		if f.Rule == "" {
+			continue
+		}
+		r := strings.ToUpper(strings.TrimSpace(f.Rule))
+		if !strings.HasPrefix(r, "K") || !got[r] {
+			add(fmt.Sprintf("findings[%d].rule", i), "%q is not a rule delivered to you", f.Rule)
+		}
+	}
+	if len(sub.Learnings) > memory.ReportMaxLearnings {
+		add("learnings", "at most %d learnings", memory.ReportMaxLearnings)
+	}
+	for i, l := range sub.Learnings {
+		where := fmt.Sprintf("learnings[%d].text", i)
+		switch {
+		case strings.TrimSpace(l.Text) == "":
+			add(where, "is empty")
+		case len([]rune(l.Text)) > memory.ReportMaxRunes:
+			add(where, "is longer than %d characters", memory.ReportMaxRunes)
+		}
+	}
+	for i, a := range sub.False {
+		u := strings.ToUpper(strings.TrimSpace(a))
+		if !shortRe.MatchString(u) || !strings.HasPrefix(u, "A") {
+			add(fmt.Sprintf("false[%d]", i), "%q is not an A<n> learning", a)
+		} else if !got[u] {
+			add(fmt.Sprintf("false[%d]", i), "%q is not a learning delivered to you", a)
+		}
+	}
+	return out
 }
 
 // DesignDecisions are the decisions of the design a feature carries (the ones
@@ -66,12 +116,12 @@ func validSeverity(s domain.Severity) bool {
 	return s == domain.SeverityHigh || s == domain.SeverityMedium || s == domain.SeverityLow
 }
 
-// Validate lists what is wrong with a submission for lens. Rules must be
+// Validate lists what is wrong with a submission for lens. Criteria must be
 // answered, once each and only those of the plan, in the base pass; no other
-// pass may carry rules. In an engineer feature the base pass also answers each
+// pass may carry criteria. In an engineer feature the base pass also answers each
 // decision once and every finding carries a why and a lesson; decisions are
 // refused outside the base pass of an engineer feature.
-func Validate(sub Submission, lens string, rules []domain.Rule, base bool, decisions []domain.Decision, engineer bool) []plan.Problem {
+func Validate(sub Submission, lens string, criteria []domain.Criterion, base bool, decisions []domain.Decision, engineer bool) []plan.Problem {
 	var out []plan.Problem
 	add := func(where, format string, a ...any) {
 		out = append(out, plan.Problem{Where: where, Msg: fmt.Sprintf(format, a...)})
@@ -80,31 +130,31 @@ func Validate(sub Submission, lens string, rules []domain.Rule, base bool, decis
 		add("lens", "must be %q, got %q", lens, sub.Lens)
 	}
 	if !base {
-		if len(sub.Rules) > 0 {
-			add("rules", "only the base pass answers the rules")
+		if len(sub.Criteria) > 0 {
+			add("criteria", "only the base pass answers the criteria")
 		}
 	} else {
 		want := map[string]bool{}
-		for _, r := range rules {
+		for _, r := range criteria {
 			want[r.ID] = true
 		}
 		seen := map[string]bool{}
-		for i, rc := range sub.Rules {
-			where := fmt.Sprintf("rules[%d]", i)
+		for i, rc := range sub.Criteria {
+			where := fmt.Sprintf("criteria[%d]", i)
 			switch {
 			case !want[rc.ID]:
-				add(where, "%q is not a rule of the plan", rc.ID)
+				add(where, "%q is not a criterion of the plan", rc.ID)
 			case seen[rc.ID]:
 				add(where, "%s answered more than once", rc.ID)
 			}
 			seen[rc.ID] = true
 			if !rc.OK && strings.TrimSpace(rc.Why) == "" {
-				add(where, "a failed rule needs a why")
+				add(where, "a failed criterion needs a why")
 			}
 		}
-		for _, r := range rules {
+		for _, r := range criteria {
 			if !seen[r.ID] {
-				add("rules", "%s is missing", r.ID)
+				add("criteria", "%s is missing", r.ID)
 			}
 		}
 	}
@@ -154,7 +204,7 @@ func Validate(sub Submission, lens string, rules []domain.Rule, base bool, decis
 			add(where+".title", "is empty")
 		}
 		for _, x := range []struct{ name, val string }{
-			{"id", f.ID}, {"rule", f.Rule}, {"dropped", f.Dropped},
+			{"id", f.ID}, {"criterion", f.Criterion}, {"dropped", f.Dropped},
 			{"verdict", string(f.Verdict)}, {"verdict_why", f.VerdictWhy},
 		} {
 			if x.val != "" {
@@ -236,33 +286,36 @@ func sevRank(s domain.Severity) int {
 	return 2
 }
 
-// Assemble puts the findings of all lenses together: every failed rule becomes
+// Assemble puts the findings of all lenses together: every failed criterion becomes
 // a high finding of the base lens (exempt from the precision filter); the rest
 // is filtered and numbered H1..Hn, change first and then by severity. The
 // findings of rv.Findings are expected already classified.
-func Assemble(rv domain.Review, rules []domain.Rule) domain.Review {
+func Assemble(rv domain.Review, criteria []domain.Criterion) domain.Review {
 	text := map[string]string{}
-	for _, r := range rules {
+	for _, r := range criteria {
 		text[r.ID] = r.Text
 	}
 	var all []domain.Finding
-	for _, rc := range rv.Rules {
+	for _, rc := range rv.Criteria {
 		if rc.OK {
 			continue
 		}
-		title := "Regla " + rc.ID + " no se cumple"
+		title := "Criterio " + rc.ID + " no se cumple"
 		if t := text[rc.ID]; t != "" {
 			title += ": " + t
 		}
 		cause := domain.CauseChange
 		all = append(all, domain.Finding{
 			Lens: BaseLens, Severity: domain.SeverityHigh, File: rc.File, Line: rc.Line,
-			Title: title, Scenario: rc.Why, Cause: cause, Rule: rc.ID,
+			Title: title, Scenario: rc.Why, Cause: cause, Criterion: rc.ID,
 		})
 	}
 	for _, f := range rv.Findings {
-		if f.Rule == "" {
+		if f.Criterion == "" {
 			f.Dropped = Precision(f)
+		}
+		if f.Rule != "" && f.Severity == domain.SeverityLow {
+			f.Severity = domain.SeverityMedium
 		}
 		all = append(all, f)
 	}

@@ -85,6 +85,14 @@ func TestOwnStepAllow(t *testing.T) {
 		{"review docs chained", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature ID && rm x`, true, false},
 		{"review docs extra arg", "Bash", roleDocumenter, `"/opt/nxy/nxy" review docs --feature ID --x`, true, false},
 		{"plain command", "Bash", "", `git status`, true, false},
+		{"mem related main", "Bash", "", `"/opt/nxy/nxy" mem related a.go b/c.go`, true, true},
+		{"mem related planner", "Bash", rolePlanner, `"/opt/nxy/nxy" mem related a.go`, true, true},
+		{"mem related ps", "PowerShell", rolePlanner, `& "/opt/nxy/nxy" mem related a.go`, true, true},
+		{"mem related no path", "Bash", "", `"/opt/nxy/nxy" mem related`, true, false},
+		{"mem related flag", "Bash", "", `"/opt/nxy/nxy" mem related --x`, true, false},
+		{"mem related chained", "Bash", "", `"/opt/nxy/nxy" mem related a.go && rm x`, true, false},
+		{"mem related implementer", "Bash", roleImplementer, `"/opt/nxy/nxy" mem related a.go`, true, false},
+		{"mem rule main", "Bash", "", `"/opt/nxy/nxy" mem rule x`, true, false},
 	}
 	for _, c := range cases {
 		h, st := flowHooks(false)

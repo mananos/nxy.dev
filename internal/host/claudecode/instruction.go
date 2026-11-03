@@ -161,6 +161,8 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 		s = fmt.Sprintf("nxy: feature %s — %s: ONE Agent tool call, subagent_type `nxy:implementer`, prompt `feature %s review fix`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, lead, f.ID)
 	case domain.AskDocs:
 		s = "nxy: feature " + f.ID + " — " + docsAsk(f, stop)
+	case domain.AskRules:
+		s = "nxy: feature " + f.ID + " — " + rulesAsk(f, stop)
 	case domain.DispatchDocumenter:
 		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:documenter`, prompt `feature %s docs`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, f.ID)
 	case domain.Close:
@@ -197,6 +199,32 @@ func docsAsk(f domain.Feature, stop bool) string {
 		b.WriteString("Then nothing else: nxy continues with the answer. Input:\n")
 	}
 	b.WriteString(askInput([]askQuestion{{Question: q.Question, Header: q.Header, Options: opts}}))
+	return b.String()
+}
+
+// rulesAsk words the AskRules step: the multiSelect questions with the rule candidates, copied as
+// they are. Stopping the feature instead saves no rule.
+func rulesAsk(f domain.Feature, stop bool) string {
+	groups := plan.RuleGroups(f.RuleOffer)
+	qs := make([]askQuestion, 0, len(groups))
+	for i, g := range groups {
+		q := askQuestion{Question: plan.RulesQuestion(f.ID, i+1, len(groups)), Header: g.Header, MultiSelect: true}
+		for _, o := range g.Options {
+			q.Options = append(q.Options, askOption{o.Label, o.Description})
+		}
+		qs = append(qs, q)
+	}
+	var b strings.Builder
+	b.WriteString("Next: the feature is done and some of its decisions may become rules of the repo; ask the user with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\n")
+	if stop {
+		b.WriteString("Input:\n")
+	} else {
+		b.WriteString("Then nothing else: nxy saves the rules the user picks and closes the feature. Input:\n")
+	}
+	b.WriteString(askInput(qs))
+	if n := len(f.RuleOffer) - len(plan.RuleShown(f.RuleOffer)); n > 0 {
+		fmt.Fprintf(&b, "\nQuedan %d candidatas fuera de las preguntas (no caben): tell the user so after asking.", n)
+	}
 	return b.String()
 }
 

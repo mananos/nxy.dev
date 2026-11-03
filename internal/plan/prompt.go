@@ -29,12 +29,13 @@ type affectedFixData struct {
 	Exe       string
 	Decisions []domain.Decision
 	Failure   string
+	Mem       string
 }
 
 // AffectedFixPrompt builds the prompt of the implementer that fixes the
-// failing affected tests of the feature.
-func AffectedFixPrompt(f domain.Feature, exe string) string {
-	d := affectedFixData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/")}
+// failing affected tests of the feature. mem is the memory packet (empty prints no section).
+func AffectedFixPrompt(f domain.Feature, exe, mem string) string {
+	d := affectedFixData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/"), Mem: mem}
 	if f.Plan != nil {
 		d.Decisions = f.Plan.Decisions
 	}
@@ -52,7 +53,7 @@ func AffectedFixPrompt(f domain.Feature, exe string) string {
 const plannerExample = `{
   "title": "Greet by name",
   "decisions": [{"scope": "task", "text": "Greeting stays English", "question": "Which language?"}],
-  "rules": [
+  "criteria": [
     {"id": "R1", "text": "greet(name) returns \"Hello, <name>\"", "test": "tdd"},
     {"id": "R2", "text": "The README shows the new greeting", "test": "manual", "check": "README usage section"}
   ],
@@ -92,7 +93,7 @@ var plannerEngineerTmpl = template.Must(template.New("planner-engineer").Parse(p
 // engineerExample is the example plan of the engineer prompt: no questions, no decisions of its own.
 const engineerExample = `{
   "title": "Greet by name",
-  "rules": [
+  "criteria": [
     {"id": "R1", "text": "greet(name) returns \"Hello, <name>\"", "test": "tdd"}
   ],
   "batches": [
@@ -118,15 +119,17 @@ type plannerData struct {
 	NotesJoined []string
 	Design      *domain.Design
 	Delegated   []domain.Fork
+	Mem         string
 }
 
 // PlannerPrompt builds the full prompt of the planner: the literal request,
 // what the user answered, the previous plan if any, and how to save. An engineer feature gets
-// the design instead of the conversation.
-func PlannerPrompt(f domain.Feature, exe string) string {
+// the design instead of the conversation. mem is the memory packet (empty prints no section).
+func PlannerPrompt(f domain.Feature, exe, mem string) string {
 	engineer := f.Mode == domain.ModeEngineer
 	d := plannerData{
 		Feature:     f,
+		Mem:         mem,
 		Exe:         strings.ReplaceAll(exe, `\`, "/"),
 		Example:     plannerExample,
 		NotesJoined: f.ChangeNotes,
@@ -154,11 +157,11 @@ func PlannerPrompt(f domain.Feature, exe string) string {
 					x.ID, x.By, x.Dissent = "", "", ""
 					prev.Decisions = append(prev.Decisions, x)
 				}
-				// rules are the approved ones and there are no questions in engineer.
+				// criteria are the approved ones and there are no questions in engineer.
 				prev.Questions = nil
-				prev.Rules = nil
+				prev.Criteria = nil
 				if f.Design != nil {
-					prev.Rules = f.Design.Rules
+					prev.Criteria = f.Design.Criteria
 				}
 			}
 		}
@@ -179,16 +182,17 @@ type implementerData struct {
 	Batch     domain.Batch
 	Total     int
 	Decisions []domain.Decision
-	Rules     []domain.Rule
+	Criteria  []domain.Criterion
 	Accept    string
 	Need      Need
 	Failure   string
 	RedDone   bool
+	Mem       string
 }
 
 // ImplementerPrompt builds the full prompt of the implementer for the batch
-// the feature is on (f.Next.Batch).
-func ImplementerPrompt(f domain.Feature, exe string) string {
+// the feature is on (f.Next.Batch). mem is the memory packet (empty prints no section).
+func ImplementerPrompt(f domain.Feature, exe, mem string) string {
 	if f.Plan == nil || f.Next.Batch < 1 || f.Next.Batch > len(f.Plan.Batches) {
 		return "nxy: could not build the implementer prompt: no batch to implement"
 	}
@@ -196,6 +200,7 @@ func ImplementerPrompt(f domain.Feature, exe string) string {
 	p := *f.Plan
 	d := implementerData{
 		Feature:   f,
+		Mem:       mem,
 		Exe:       strings.ReplaceAll(exe, `\`, "/"),
 		Batch:     p.Batches[n-1],
 		Total:     len(p.Batches),
@@ -204,9 +209,9 @@ func ImplementerPrompt(f domain.Feature, exe string) string {
 		Need:      NeedOf(p, n),
 	}
 	for _, id := range d.Batch.Covers {
-		for _, r := range p.Rules {
+		for _, r := range p.Criteria {
 			if r.ID == id {
-				d.Rules = append(d.Rules, r)
+				d.Criteria = append(d.Criteria, r)
 			}
 		}
 	}

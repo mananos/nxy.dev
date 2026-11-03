@@ -27,6 +27,9 @@ type hookInput struct {
 	Source         string          `json:"source"`
 	ToolUseID      string          `json:"tool_use_id"`
 	ToolResponse   json.RawMessage `json:"tool_response"`
+
+	LastAssistantMessage string `json:"last_assistant_message"`
+	AgentTranscriptPath  string `json:"agent_transcript_path"`
 }
 
 // Decode reads a Claude Code hook payload. Unknown fields are ignored.
@@ -91,6 +94,12 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 	}
 	if ev.Name == "PostToolUse" && (ev.Tool == "Agent" || ev.Tool == "Task") {
 		ev.AgentAsync = asyncLaunch(in.ToolResponse)
+	}
+	if ev.Name == "SubagentStop" {
+		ev.AgentResult = in.LastAssistantMessage
+		if ev.AgentResult == "" {
+			ev.AgentResult = lastAssistantText(in.AgentTranscriptPath)
+		}
 	}
 	dir := os.Getenv("CLAUDE_PROJECT_DIR")
 	if dir == "" {
@@ -305,6 +314,79 @@ func transcriptAnswers(path, toolUseID string) map[string]string {
 			return found
 		}
 	}
+}
+
+// transcriptTailBytes is how much of the end of a subagent transcript is read for its last message.
+const transcriptTailBytes = 256 << 10
+
+// lastAssistantText is the text of the last assistant message of a transcript, read from its tail.
+// Errors give "".
+func lastAssistantText(path string) string {
+	if path == "" {
+		return ""
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+	size, truncated := st.Size(), false
+	if size > transcriptTailBytes {
+		if _, err := f.Seek(size-transcriptTailBytes, io.SeekStart); err != nil {
+			return ""
+		}
+		truncated = true
+	}
+	tail, err := io.ReadAll(f)
+	if err != nil {
+		return ""
+	}
+	if truncated {
+		nl := bytes.IndexByte(tail, '\n')
+		if nl == -1 {
+			return ""
+		}
+		tail = tail[nl+1:]
+	}
+	lines := bytes.Split(tail, []byte{'\n'})
+	for i := len(lines) - 1; i >= 0; i-- {
+		if len(lines[i]) == 0 {
+			continue
+		}
+		var e struct {
+			Type    string `json:"type"`
+			Message struct {
+				Content json.RawMessage `json:"content"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(lines[i], &e) != nil || e.Type != "assistant" {
+			continue
+		}
+		var s string
+		if json.Unmarshal(e.Message.Content, &s) == nil && s != "" {
+			return s
+		}
+		var blocks []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}
+		if json.Unmarshal(e.Message.Content, &blocks) == nil {
+			var parts []string
+			for _, b := range blocks {
+				if b.Type == "text" && b.Text != "" {
+					parts = append(parts, b.Text)
+				}
+			}
+			if len(parts) > 0 {
+				return strings.Join(parts, "\n")
+			}
+		}
+	}
+	return ""
 }
 
 func marshal(v any) ([]byte, error) {

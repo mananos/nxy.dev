@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/memory"
 )
 
 // runPlan is `nxy plan save --feature <id>`: the plan JSON comes on stdin.
@@ -71,7 +73,32 @@ func runStatus(_ []string, _ io.Reader, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// runFeature is `nxy feature list|new|pause|resume|close` (worktree.go) and `nxy feature stop`.
+const featureRuleUsage = `usage: nxy feature rule "<text>" --question "<what it settles>"`
+
+// featureRule is `nxy feature rule`: it raises a rule candidate (origin chat) on the active feature;
+// the closing question offers it, nothing is saved now.
+func featureRule(args []string, stdout, stderr io.Writer) int {
+	opts, pos, _ := memArgs(args)
+	if len(pos) == 0 || optVal(opts, "question") == "" {
+		fmt.Fprintln(stderr, featureRuleUsage)
+		return 1
+	}
+	h, st := newHooksStore()
+	defer st.Close()
+	f, err := h.AddRuleCandidate(context.Background(), memCwd(opts), strings.Join(pos, " "), optVal(opts, "question"), memory.OriginChat)
+	if errors.Is(err, app.ErrNoActiveFeature) {
+		fmt.Fprintln(stderr, "no active feature: use nxy mem rule")
+		return 1
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "nxy feature rule: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "rule candidate noted for feature %s: nxy asks about it when the feature closes\n", f.ID)
+	return 0
+}
+
+// runFeature is `nxy feature list|new|pause|resume|close` (worktree.go), `nxy feature rule` and `nxy feature stop`.
 func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	action := "list"
 	if len(args) > 0 {
@@ -80,6 +107,9 @@ func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	}
 	if code, handled := featureWorktrees(action, args, stdout, stderr); handled {
 		return code
+	}
+	if action == "rule" {
+		return featureRule(args, stdout, stderr)
 	}
 	if action != "stop" || len(args) != 0 {
 		fmt.Fprintln(stderr, featureUsage)

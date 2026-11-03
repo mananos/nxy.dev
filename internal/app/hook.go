@@ -23,6 +23,8 @@ type HookEvent struct {
 	// AgentID and AgentType are set only when the hook runs inside a subagent.
 	AgentID   string
 	AgentType string
+	// AgentResult is the last message of the subagent that stopped (SubagentStop).
+	AgentResult string
 	// Prompt is the user's prompt (UserPromptSubmit); Source is SessionStart's source.
 	Prompt    string
 	Source    string
@@ -111,6 +113,8 @@ type Hooks struct {
 	ReviewFiles ReviewFiles
 	// Docs finds the docs a finished feature changes; nil means there are none to look for.
 	Docs Docs
+	// Memory serves the repo memory inside the flow; nil means no memory: everything that uses it is skipped.
+	Memory FlowMemory
 }
 
 // Handle answers a hook event, one use case per event/tool.
@@ -132,10 +136,10 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		return h.deliverPending(ctx, ev, h.postToolAgent(ctx, ev))
 	case ev.Name == "UserPromptSubmit":
 		if r, ok := h.changeNote(ctx, ev); ok {
-			return h.deliverPending(ctx, ev, r)
+			return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
 		}
 		h.designRef(ctx, ev)
-		return h.deliverPending(ctx, ev, h.startFeature(ctx, ev))
+		return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, h.startFeature(ctx, ev)))
 	case ev.Name == "PreToolUse" && ev.Tool == toolAskUser:
 		return h.preToolAskUser(ctx, ev)
 	case ev.Name == "PostToolUse" && ev.Tool == toolAskUser:

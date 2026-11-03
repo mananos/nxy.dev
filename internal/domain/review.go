@@ -38,8 +38,9 @@ type Finding struct {
 	Evidence   string   `json:"evidence,omitempty"`
 	Fix        string   `json:"fix,omitempty"`
 	Cause      Cause    `json:"cause,omitempty"`
-	Rule       string   `json:"rule,omitempty"`    // set when it comes from a failed rule check
-	Dropped    string   `json:"dropped,omitempty"` // why the precision filter dropped it
+	Criterion  string   `json:"criterion,omitempty"` // set when it comes from a failed criterion check
+	Rule       string   `json:"rule,omitempty"`      // K<n> of the repo rule the change breaks
+	Dropped    string   `json:"dropped,omitempty"`   // why the precision filter dropped it
 	Verdict    Verdict  `json:"verdict,omitempty"`
 	VerdictWhy string   `json:"verdict_why,omitempty"`
 	Why        string   `json:"why,omitempty"`    // engineer: why it matters
@@ -55,8 +56,8 @@ type DecisionCheck struct {
 	How  string `json:"how,omitempty"`
 }
 
-// RuleCheck is the reviewer's answer for one rule of the plan.
-type RuleCheck struct {
+// CriterionCheck is the reviewer's answer for one criterion of the plan.
+type CriterionCheck struct {
 	ID   string `json:"id"` // "R1"
 	OK   bool   `json:"ok"`
 	Why  string `json:"why,omitempty"`
@@ -71,22 +72,23 @@ type LensRun struct {
 	Files      []string `json:"files,omitempty"`
 	Dispatched bool     `json:"dispatched,omitempty"`
 	Saved      bool     `json:"saved,omitempty"`
+	Delivered  []string `json:"delivered,omitempty"` // K<n> of the repo rules its reviewer received
 }
 
 // Review is the review of a finished feature.
 type Review struct {
-	Risk      Risk            `json:"risk"`
-	RiskWhy   string          `json:"risk_why,omitempty"`
-	Quick     bool            `json:"quick,omitempty"`
-	Lenses    []LensRun       `json:"lenses,omitempty"`
-	Returned  []string        `json:"returned,omitempty"` // agent ids that already stopped
-	Rules     []RuleCheck     `json:"rules,omitempty"`
-	Decisions []DecisionCheck `json:"decisions,omitempty"`
-	Findings  []Finding       `json:"findings,omitempty"`
-	Refuted   bool            `json:"refuted,omitempty"`
-	Chosen    []string        `json:"chosen,omitempty"`
-	FullPath  string          `json:"full_path,omitempty"`
-	Warning   string          `json:"warning,omitempty"` // invalid user/repo lens files, ignored
+	Risk      Risk             `json:"risk"`
+	RiskWhy   string           `json:"risk_why,omitempty"`
+	Quick     bool             `json:"quick,omitempty"`
+	Lenses    []LensRun        `json:"lenses,omitempty"`
+	Returned  []string         `json:"returned,omitempty"` // agent ids that already stopped
+	Criteria  []CriterionCheck `json:"criteria,omitempty"`
+	Decisions []DecisionCheck  `json:"decisions,omitempty"`
+	Findings  []Finding        `json:"findings,omitempty"`
+	Refuted   bool             `json:"refuted,omitempty"`
+	Chosen    []string         `json:"chosen,omitempty"`
+	FullPath  string           `json:"full_path,omitempty"`
+	Warning   string           `json:"warning,omitempty"` // invalid user/repo lens files, ignored
 }
 
 // Pick records whether the user chose to fix one offered finding.
@@ -95,4 +97,13 @@ type Pick struct {
 	Lens     string   `json:"lens"`
 	Severity Severity `json:"severity"`
 	Chosen   bool     `json:"chosen"`
+}
+
+// LensStat is what a lens did for a repo in a period: findings the user chose and ignored, and
+// escapes (problems it missed).
+type LensStat struct {
+	Lens    string
+	Chosen  int
+	Ignored int
+	Escapes int
 }

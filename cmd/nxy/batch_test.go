@@ -25,7 +25,7 @@ func TestBatchCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := &domain.Plan{
-		Rules: []domain.Rule{{ID: "R1", Text: "x", Test: domain.TestTDD}},
+		Criteria: []domain.Criterion{{ID: "R1", Text: "x", Test: domain.TestTDD}},
 		Batches: []domain.Batch{{N: 1, Covers: []string{"R1"},
 			Test: domain.BatchTest{Kind: domain.BatchTestNew, Accept: "exit 3"}}},
 	}

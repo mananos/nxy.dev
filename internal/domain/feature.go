@@ -34,6 +34,23 @@ type Feature struct {
 	Docs *Docs `json:"docs,omitempty"`
 	// OfferAnswered is true once the user answered the "Pasar a engineer" offer.
 	OfferAnswered bool `json:"offer_answered,omitempty"`
+	// Harvested are the ids of the implementer agents whose learnings were already saved.
+	Harvested []string `json:"harvested,omitempty"`
+	// Candidates are the rule candidates raised while the feature runs (review escapes, chat);
+	// RuleOffer is what the closing question offered (S1..).
+	Candidates []RuleCandidate `json:"candidates,omitempty"`
+	RuleOffer  []RuleCandidate `json:"rule_offer,omitempty"`
+}
+
+// RuleCandidate is a convention that may become a rule of the repo when the feature closes.
+type RuleCandidate struct {
+	ID             string `json:"id,omitempty"` // "S1", set when it is offered
+	Text           string `json:"text"`
+	Question       string `json:"question"`
+	Origin         string `json:"origin"`
+	Lens           string `json:"lens,omitempty"`
+	Supersedes     string `json:"supersedes,omitempty"`      // K<n> of the rule it would replace
+	SupersedesText string `json:"supersedes_text,omitempty"` // that rule's text, for the question
 }
 
 // Mode says how a feature is run.

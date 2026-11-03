@@ -25,7 +25,7 @@ func TestAgendaAndProposal(t *testing.T) {
 func TestCloseSummaryKeepsD2Source(t *testing.T) {
 	d := &domain.Design{}
 	SetAgenda(d, []string{"a"})
-	ApplyClose(d, domain.DesignClose{Rules: []domain.Rule{{ID: "R1", Text: "hace x"}}, D2: "a -> b", Delegate: true})
+	ApplyClose(d, domain.DesignClose{Criteria: []domain.Criterion{{ID: "R1", Text: "hace x"}}, D2: "a -> b", Delegate: true})
 	got := CloseSummary(domain.Feature{ID: "f", Design: d})
 	for _, w := range []string{"```d2\na -> b\n```", "R1 hace x", "Las elige el planner", "B1 a"} {
 		if !strings.Contains(got, w) {

@@ -104,6 +104,24 @@ type MemoryStore interface {
 	ApplyImport(ctx context.Context, d memory.Diff) error
 }
 
+// FlowMemory is what the feature flow needs from the memory; a nil one in Hooks skips it all.
+type FlowMemory interface {
+	Rules(ctx context.Context, repo string) ([]memory.Rule, error)
+	Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error)
+	AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error)
+	AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error)
+	SaveClosedFeature(ctx context.Context, f memory.ClosedFeature) (memory.ClosedFeature, error)
+	// CountDeliveries adds one delivery to each rule (ULIDs).
+	CountDeliveries(ctx context.Context, ids []string) error
+	// Cite counts a citation on each existing rule (K3) and returns the ones that exist; at is in ms.
+	Cite(ctx context.Context, repo string, shorts []string, at int64) ([]string, error)
+	// MarkObsolete marks learnings (A7) as obsolete; at is in ms.
+	MarkObsolete(ctx context.Context, repo string, refs []string, at int64) error
+	SimilarRules(ctx context.Context, repo, text string, limit int) ([]memory.Rule, error)
+	RecordEscape(ctx context.Context, featureID, repo, lens, text string) error
+	ReviewStats(ctx context.Context, repo string, since int64) ([]domain.LensStat, error)
+}
+
 // Repos gives the stable key of the repository a directory belongs to.
 type Repos interface {
 	Key(dir string) string

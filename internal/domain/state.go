@@ -28,6 +28,7 @@ const (
 	PhaseDocsCheck          Phase = "docs_check"
 	PhaseDocs               Phase = "docs"
 	PhaseDocumenting        Phase = "documenting"
+	PhaseRules              Phase = "rules"
 	PhaseDone               Phase = "done"
 )
 
@@ -37,7 +38,7 @@ var Phases = []Phase{
 	PhasePlannerFailed, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
 	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseAffectedUnverified, PhaseReviewing,
 	PhaseRefuting, PhaseChoosingFindings, PhaseFixing,
-	PhaseFixVerify, PhaseFixesFailed, PhaseDocsCheck, PhaseDocs, PhaseDocumenting, PhaseDone,
+	PhaseFixVerify, PhaseFixesFailed, PhaseDocsCheck, PhaseDocs, PhaseDocumenting, PhaseRules, PhaseDone,
 }
 
 // Public is the status the user sees.
@@ -79,6 +80,7 @@ var phaseTable = map[Phase]phaseInfo{
 	PhaseDocsCheck:          {Verifying, "Buscando docs"},
 	PhaseDocs:               {NeedsYou, "Actualizar docs"},
 	PhaseDocumenting:        {Working, "Actualizando docs"},
+	PhaseRules:              {NeedsYou, "Reglas del repo"},
 	PhaseDone:               {Finished, "Listo"},
 }
 

@@ -7,9 +7,16 @@ You are the nxy implementer for feature {{.Feature.ID}}, batch {{.Batch.N}} of {
 ## Decisions already made (do not reopen)
 {{range .Decisions}}
 - [{{.Scope}}] {{.Text}}{{end}}
+{{end}}{{if .Mem}}
+## Repo rules and learnings (nxy memory)
+
+{{.Mem}}
+
+K<n> are rules of this repo: follow them. A<n> are learnings, not rules: use them as hints.
+If you find out something true and not obvious that cost you to discover, add a line to your final reply: `learned: <text> | files: a, b`. If a learning above is false, add `false: A7`. Nothing else.
 {{end}}
-## Rules this batch covers
-{{range .Rules}}
+## Criteria this batch covers
+{{range .Criteria}}
 - {{.ID}}: {{.Text}} (test: {{.Test}}{{if .Check}}; check: {{.Check}}{{end}}){{end}}
 {{if .Batch.Read}}
 ## Read first
@@ -46,4 +53,4 @@ Run each nxy command exactly as written, as its own Bash call, without `cd` or a
 
 {{.Failure}}
 {{end}}
-Your final reply is one line.
+Your final reply is one line{{if .Mem}} (plus the `learned:` / `false:` lines, if any){{end}}.

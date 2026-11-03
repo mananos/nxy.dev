@@ -114,16 +114,23 @@ func RenderSearch(hits []Hit) string {
 	return b.String()
 }
 
-func diffLine(b *strings.Builder, label string, counts [5]int) {
-	fmt.Fprintf(b, "%s: %d new, %d changed, %d deleted, %d folded, %d skipped\n", label, counts[0], counts[1], counts[2], counts[3], counts[4])
+func diffLine(b *strings.Builder, label string, counts [6]int) {
+	fmt.Fprintf(b, "%s: %d new, %d changed, %d deleted, %d folded, %d skipped", label, counts[0], counts[1], counts[2], counts[3], counts[4])
+	if counts[5] > 0 {
+		fmt.Fprintf(b, ", %d counters updated", counts[5])
+	}
+	b.WriteString("\n")
 }
 
-func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun string) [5]int {
-	var c [5]int
+func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun string) [6]int {
+	var c [6]int
 	for _, ch := range cs {
 		switch {
 		case ch.Kind == Skipped:
 			c[4]++
+			if ch.Counters {
+				c[5]++
+			}
 			continue
 		case ch.Kind == Folded:
 			c[3]++

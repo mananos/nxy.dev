@@ -36,7 +36,7 @@ func TestSuiteValidation(t *testing.T) {
 func TestAffectedFixPrompt(t *testing.T) {
 	f := sampleFeature(t)
 	f.Affected = &domain.AffectedRun{Failure: "`go test ./x/` (exit 1):\nFAIL TestX"}
-	got := AffectedFixPrompt(f, `C:\bin\nxy.exe`)
+	got := AffectedFixPrompt(f, `C:\bin\nxy.exe`, "")
 	for _, want := range []string{"feature f1", "add greeting", "Greeting stays English", "FAIL TestX", "C:/bin/nxy.exe\" affected --feature f1", "only reports and records nothing"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("prompt lacks %q:\n%s", want, got)

@@ -26,7 +26,7 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 		q == plan.FixesFailedQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) {
 		return true
 	}
-	if q == docs.QuestionText(f.ID) {
+	if q == docs.QuestionText(f.ID) || strings.HasPrefix(q, plan.RulesQuestionPrefix(f.ID)) {
 		return true
 	}
 	if q == design.CloseQuestion(f.ID) || q == design.OfferQuestion(f.ID) ||
@@ -131,6 +131,9 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if f.State.Phase == domain.PhaseChoosingFindings && f.Review != nil {
 		return h.answerFindings(ctx, f, ev.Answers)
 	}
+	if f.State.Phase == domain.PhaseRules {
+		return h.answerRules(ctx, f, ev.Answers)
+	}
 	return HookResponse{}
 }
 
@@ -145,7 +148,10 @@ func (h Hooks) answerDocs(ctx context.Context, f domain.Feature, answer string) 
 	default:
 		return HookResponse{Next: &Next{Feature: f, Note: "pick one of the options"}}
 	}
-	nf, _, err := h.advance(ctx, f.ID, flow.Event{Kind: flow.DocsAnswered, Update: update})
+	nf, _, err := h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
+		// Candidates are read off the stored feature, which may have changed since the hook read it.
+		return []flow.Event{{Kind: flow.DocsAnswered, Update: update, Candidates: h.hasCandidates(*g)}}, nil
+	})
 	if err != nil {
 		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 	}
@@ -296,7 +302,7 @@ func (h Hooks) answerQuestions(ctx context.Context, f domain.Feature, answers ma
 		if err != nil {
 			return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 		}
-		return HookResponse{Next: &Next{Feature: nf}}
+		return HookResponse{Next: &Next{Feature: nf, Note: h.engineerMemoryNote(ctx, nf)}}
 	}
 	merge := func(x *domain.Feature) error {
 		if x.Plan == nil || x.State.Phase != domain.PhaseQuestions {

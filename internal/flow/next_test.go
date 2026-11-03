@@ -150,6 +150,16 @@ func TestNextTable(t *testing.T) {
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
 		{"documenter returned", st{Phase: domain.PhaseDocumenting}, Event{Kind: DocumenterReturned},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
+		{"no docs with candidates", st{Phase: domain.PhaseDocsCheck}, Event{Kind: DocsChecked, Candidates: true},
+			st{Phase: domain.PhaseRules}, acs(domain.AskRules, domain.Notify)},
+		{"docs leave with candidates", st{Phase: domain.PhaseDocs}, Event{Kind: DocsAnswered, Candidates: true},
+			st{Phase: domain.PhaseRules}, acs(domain.AskRules, domain.Notify)},
+		{"documenter returned with candidates", st{Phase: domain.PhaseDocumenting}, Event{Kind: DocumenterReturned, Candidates: true},
+			st{Phase: domain.PhaseRules}, acs(domain.AskRules, domain.Notify)},
+		{"docs update ignores candidates", st{Phase: domain.PhaseDocs}, Event{Kind: DocsAnswered, Update: true, Candidates: true},
+			st{Phase: domain.PhaseDocumenting}, acs(domain.DispatchDocumenter)},
+		{"rules answered", st{Phase: domain.PhaseRules}, Event{Kind: RulesAnswered},
+			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}, acs(domain.Close)},
 		{"fixes failed stop", st{Phase: domain.PhaseFixesFailed}, Event{Kind: Decided, Decision: DecisionStop},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}, acs(domain.Close)},
 	}
@@ -256,6 +266,7 @@ func TestOutOfOrderIsExhaustive(t *testing.T) {
 		domain.PhaseDocsCheck:          {DocsChecked},
 		domain.PhaseDocs:               {DocsAnswered},
 		domain.PhaseDocumenting:        {DocumenterReturned},
+		domain.PhaseRules:              {RulesAnswered},
 	}
 	phases := append([]domain.Phase{domain.PhaseNone}, domain.Phases...)
 	for _, p := range phases {

@@ -19,7 +19,7 @@ func reviewingFeature(t *testing.T, h Hooks, st *memStore, quick bool, lenses ..
 	}
 	id, err := st.CreateFeature(context.Background(), domain.Feature{
 		Repo: h.Repos.Key("/p"), ProjectDir: "/p", Request: "do it", PlanRev: 1,
-		Plan:   &domain.Plan{Rules: []domain.Rule{{ID: "R1", Text: "adds the flag", Test: domain.TestTDD}}},
+		Plan:   &domain.Plan{Criteria: []domain.Criterion{{ID: "R1", Text: "adds the flag", Test: domain.TestTDD}}},
 		State:  domain.State{Phase: domain.PhaseReviewing},
 		Next:   domain.Action{Kind: domain.DispatchReviewer},
 		Review: rv,
@@ -30,7 +30,7 @@ func reviewingFeature(t *testing.T, h Hooks, st *memStore, quick bool, lenses ..
 	return id
 }
 
-const baseOK = `{"lens":"base","rules":[{"id":"R1","ok":true}],"findings":[]}`
+const baseOK = `{"lens":"base","criteria":[{"id":"R1","ok":true}],"findings":[]}`
 
 func finding(lens, sev, line string) string {
 	return `{"lens":"` + lens + `","findings":[{"severity":"` + sev + `","file":"a.go","line":` + line +
@@ -214,7 +214,7 @@ func TestFailedRuleBecomesHighFinding(t *testing.T) {
 	h, st := flowHooks(false)
 	ctx := context.Background()
 	id := reviewingFeature(t, h, st, true, "base")
-	body := `{"lens":"base","rules":[{"id":"R1","ok":false,"why":"no flag in README","file":"README.md","line":3}],"findings":[]}`
+	body := `{"lens":"base","criteria":[{"id":"R1","ok":false,"why":"no flag in README","file":"README.md","line":3}],"findings":[]}`
 	if _, err := h.SaveReview(ctx, id, "base", strings.NewReader(body)); err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestFailedRuleBecomesHighFinding(t *testing.T) {
 		t.Fatalf("stored = %+v", got)
 	}
 	f := got.Review.Findings[0]
-	if f.Severity != domain.SeverityHigh || f.Rule != "R1" || f.Lens != "base" || f.Dropped != "" {
+	if f.Severity != domain.SeverityHigh || f.Criterion != "R1" || f.Lens != "base" || f.Dropped != "" {
 		t.Errorf("finding = %+v", f)
 	}
 }

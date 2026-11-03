@@ -340,6 +340,58 @@ func TestMemImportTwiceChangesNothing(t *testing.T) {
 	}
 }
 
+func TestMemSeenDoesNotMoveUpdatedAt(t *testing.T) {
+	s, clock := newMem(t)
+	l := memory.Learning{Repo: "r", Text: "counting is not editing"}
+	first, _ := s.AddLearning(ctx, l)
+	*clock = clock.Add(time.Hour)
+	again, err := s.AddLearning(ctx, l)
+	if err != nil || again.Seen != 2 || again.UpdatedAt != first.UpdatedAt || again.LastSeenAt <= first.LastSeenAt {
+		t.Fatalf("%+v %v", again, err)
+	}
+}
+
+func TestMemImportKeepsMaxCounters(t *testing.T) {
+	a, _ := newMem(t)
+	b, _ := newMem(t)
+	r, _ := a.AddRule(ctx, rule("r", "shared", "q"))
+	l, _ := a.AddLearning(ctx, memory.Learning{Repo: "r", Text: "lesson"})
+	transfer(t, a, b, false)
+
+	// a counted more: the row is Skipped but its counters travel, without touching updated_at
+	a.db.Exec(`UPDATE mem_rules SET deliveries=5, citations=2, last_cited_at=77 WHERE id=?`, r.ID)
+	a.db.Exec(`UPDATE mem_learnings SET seen=4 WHERE id=?`, l.ID)
+	d := transfer(t, a, b, false)
+	if !d.Rules[0].Counters || d.Rules[0].Kind != memory.Skipped || !d.Learnings[0].Counters || d.Writes() != 2 {
+		t.Fatalf("diff %+v", d)
+	}
+	var del, cit, cited, upd int64
+	b.db.QueryRow(`SELECT deliveries, citations, last_cited_at, updated_at FROM mem_rules WHERE id=?`, r.ID).Scan(&del, &cit, &cited, &upd)
+	if del != 5 || cit != 2 || cited != 77 || upd != r.UpdatedAt {
+		t.Errorf("rule counters %d %d %d updated %d", del, cit, cited, upd)
+	}
+	var seen int
+	b.db.QueryRow(`SELECT seen FROM mem_learnings WHERE id=?`, l.ID).Scan(&seen)
+	if seen != 4 {
+		t.Errorf("seen %d", seen)
+	}
+	if d := transfer(t, a, b, false); d.Writes() != 0 {
+		t.Errorf("second import writes %d", d.Writes())
+	}
+
+	// a newer row with smaller counters does not lower them
+	b.db.Exec(`UPDATE mem_rules SET deliveries=9 WHERE id=?`, r.ID)
+	a.db.Exec(`UPDATE mem_rules SET text='edited', updated_at=updated_at+1000 WHERE id=?`, r.ID)
+	d = transfer(t, a, b, false)
+	if d.Rules[0].Kind != memory.Changed {
+		t.Fatalf("kind %s", d.Rules[0].Kind)
+	}
+	b.db.QueryRow(`SELECT deliveries FROM mem_rules WHERE id=?`, r.ID).Scan(&del)
+	if del != 9 {
+		t.Errorf("deliveries lowered to %d", del)
+	}
+}
+
 func (s *Store) mustLearningID(t *testing.T) string {
 	t.Helper()
 	var id string
@@ -515,7 +567,7 @@ func TestMigrate4To5KeepsFeatures(t *testing.T) {
 	if f, err := s2.Feature(ctx, id); err != nil || f.Request != "keep" {
 		t.Fatalf("%+v %v", f, err)
 	}
-	if v := version(t, s2); v != 5 {
+	if v := version(t, s2); v != len(migs) {
 		t.Errorf("version %d", v)
 	}
 	if _, err := s2.AddRule(ctx, rule("r", "t", "q")); err != nil {

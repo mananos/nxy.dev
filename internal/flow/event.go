@@ -30,6 +30,7 @@ const (
 	DocsChecked        EventKind = "docs_checked"
 	DocsAnswered       EventKind = "docs_answered"
 	DocumenterReturned EventKind = "documenter_returned"
+	RulesAnswered      EventKind = "rules_answered"
 )
 
 // Kinds lists every event kind.
@@ -38,6 +39,7 @@ var Kinds = []EventKind{
 	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Unverified, Decided,
 	ReviewDone, RefuterDone, Chosen, FixesReturned, Stop,
 	DesignClosed, GapsFound, ToEngineer, DocsChecked, DocsAnswered, DocumenterReturned,
+	RulesAnswered,
 }
 
 // Decision is what the user picks after a step failed.
@@ -63,4 +65,5 @@ type Event struct {
 	HighUnproven bool     // ReviewDone: high findings still unproven
 	Docs         bool     // DocsChecked: there are docs that name the change
 	Update       bool     // DocsAnswered: the user wants the docs updated
+	Candidates   bool     // DocsChecked, DocsAnswered, DocumenterReturned: there are rule candidates to ask about
 }

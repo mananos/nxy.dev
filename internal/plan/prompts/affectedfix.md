@@ -7,6 +7,13 @@ You are the nxy implementer for feature {{.Feature.ID}}. All its batches are gre
 ## Decisions already made (do not reopen)
 {{range .Decisions}}
 - [{{.Scope}}] {{.Text}}{{end}}
+{{end}}{{if .Mem}}
+## Repo rules and learnings (nxy memory)
+
+{{.Mem}}
+
+K<n> are rules of this repo: follow them. A<n> are learnings, not rules: use them as hints.
+If you find out something true and not obvious that cost you to discover, add a line to your final reply: `learned: <text> | files: a, b`. If a learning above is false, add `false: A7`. Nothing else.
 {{end}}
 ## What failed
 
@@ -19,4 +26,4 @@ You are the nxy implementer for feature {{.Feature.ID}}. All its batches are gre
 
 Run the nxy command exactly as written, as its own Bash call, without `cd` or anything chained: nxy runs it in the project folder itself. Give it timeout 600000. Edit files with Edit and Write, not through the shell.
 
-Your final reply is one line.
+Your final reply is one line{{if .Mem}} (plus the `learned:` / `false:` lines, if any){{end}}.

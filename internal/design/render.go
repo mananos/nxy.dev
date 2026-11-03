@@ -73,7 +73,7 @@ func pendingState(d *domain.Design) string {
 	}
 	if d.Close != nil {
 		b.WriteString("\n\nCierre esperando respuesta del usuario")
-		for _, r := range d.Close.Rules {
+		for _, r := range d.Close.Criteria {
 			fmt.Fprintf(&b, "\n- %s %s", r.ID, r.Text)
 		}
 	}
@@ -136,12 +136,12 @@ func CloseSummary(f domain.Feature) string {
 			fmt.Fprintf(&b, " (Claude mantiene su desacuerdo: %s)", x.Dissent)
 		}
 	}
-	rules, d2, delegate := d.Rules, d.D2, d.Delegate
+	criteria, d2, delegate := d.Criteria, d.D2, d.Delegate
 	if d.Close != nil {
-		rules, d2, delegate = d.Close.Rules, d.Close.D2, d.Close.Delegate
+		criteria, d2, delegate = d.Close.Criteria, d.Close.D2, d.Close.Delegate
 	}
-	b.WriteString("\n\nReglas")
-	for _, r := range rules {
+	b.WriteString("\n\nCriterios")
+	for _, r := range criteria {
 		fmt.Fprintf(&b, "\n- %s %s", r.ID, r.Text)
 	}
 	if strings.TrimSpace(d2) != "" {

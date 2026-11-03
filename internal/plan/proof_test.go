@@ -9,7 +9,7 @@ import (
 
 func proofPlan() domain.Plan {
 	return domain.Plan{
-		Rules: []domain.Rule{
+		Criteria: []domain.Criterion{
 			{ID: "R1", Test: domain.TestTDD},
 			{ID: "R2", Test: domain.TestExisting},
 			{ID: "R3", Test: domain.TestManual, Check: "look"},

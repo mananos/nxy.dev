@@ -40,7 +40,7 @@ const reviewerExample = `{
 
 const reviewerBaseExample = `{
   "lens": "base",
-  "rules": [
+  "criteria": [
     {"id": "R1", "ok": true},
     {"id": "R2", "ok": false, "why": "the README does not mention the greeting", "file": "README.md", "line": 30}
   ],
@@ -66,7 +66,7 @@ const reviewerEngineerExample = `{
 
 const reviewerEngineerBaseExample = `{
   "lens": "base",
-  "rules": [
+  "criteria": [
     {"id": "R1", "ok": true}
   ],
   "decisions": [
@@ -87,8 +87,9 @@ type reviewerData struct {
 	Feature     domain.Feature
 	Exe         string
 	Lens        Lens
-	Rules       []domain.Rule
+	Criteria    []domain.Criterion
 	Conventions []string
+	Mem         string
 	Files       []string
 	Diffs       []FileDiff
 	Cut         []string
@@ -98,10 +99,12 @@ type reviewerData struct {
 }
 
 // ReviewerPrompt builds the prompt of the reviewer of one lens. Only the base
-// lens gets the rules of the plan. The diff is cut to MaxDiffLines; what does
-// not fit is listed for the reviewer to read on its own.
-func ReviewerPrompt(f domain.Feature, lens Lens, diffs []FileDiff, exe string) string {
+// lens gets the criteria of the plan. The diff is cut to MaxDiffLines; what does
+// not fit is listed for the reviewer to read on its own. mem is the memory packet of the diff
+// (repo rules and learnings; empty prints no section).
+func ReviewerPrompt(f domain.Feature, lens Lens, diffs []FileDiff, exe, mem string) string {
 	d := reviewerData{
+		Mem:     mem,
 		Feature: f,
 		Exe:     strings.ReplaceAll(exe, `\`, "/"),
 		Lens:    lens,
@@ -114,7 +117,7 @@ func ReviewerPrompt(f domain.Feature, lens Lens, diffs []FileDiff, exe string) s
 			}
 		}
 		if lens.Name == BaseLens {
-			d.Rules = f.Plan.Rules
+			d.Criteria = f.Plan.Criteria
 			d.Example = reviewerBaseExample
 		}
 	}
@@ -172,12 +175,14 @@ type fixData struct {
 	Decisions []domain.Decision
 	Findings  []domain.Finding
 	Failure   string
+	Mem       string
 }
 
 // FixPrompt builds the prompt of the single implementer that fixes every chosen
-// finding. On a retry (an attempt already used) it carries what failed.
-func FixPrompt(f domain.Feature, exe string) string {
-	d := fixData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/")}
+// finding. On a retry (an attempt already used) it carries what failed. mem is the memory
+// packet (empty prints no section).
+func FixPrompt(f domain.Feature, exe, mem string) string {
+	d := fixData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/"), Mem: mem}
 	if f.Plan != nil {
 		d.Decisions = f.Plan.Decisions
 	}

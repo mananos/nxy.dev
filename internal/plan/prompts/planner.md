@@ -15,14 +15,20 @@ You are the nxy planner for feature {{.Feature.ID}}. Plan the request below. Do 
 ## Previous plan (revise it, do not start over)
 
 {{.PrevJSON}}
+{{end}}{{if .Mem}}
+## Repo rules (nxy memory)
+
+{{.Mem}}
+
+Plan inside these rules. When you know which files the change touches, run `"{{.Exe}}" mem related <file> [<file>...]` (its own Bash call) to see the closed features and learnings of those files.
 {{end}}
 ## How to plan
 
 Explore the repo with Read, Grep and Glob, then write the plan.
 
 - A batch is one unit of behavior: code, its test and its docs together. Not "a few files".
-- Rules (R1..Rn) are the verifiable things that come out of the request. Every rule needs a batch that covers it.
-- Each rule has a test kind: tdd (a new test, red first), existing (a test that already exists), build (compiles or typechecks) or manual (a person looks; say what in "check").
+- Criteria (R1..Rn) are the verifiable things that come out of the request. Every criterion needs a batch that covers it.
+- Each criterion has a test kind: tdd (a new test, red first), existing (a test that already exists), build (compiles or typechecks) or manual (a person looks; say what in "check").
 - test.accept is the smallest command that proves the batch, not the whole suite.
 - "read" lists exact ranges, path:a-b. "change" entries are "path:line" plus a short "what" (path (new) for new files).
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
@@ -33,7 +39,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 
 ## Plan format (JSON)
 
-Fields: title, decisions[{scope repo|task, text, question}], rules[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
+Fields: title, decisions[{scope repo|task, text, question (required when scope is repo: the question the decision settles)}], criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
 
 Example of a valid plan:
 
@@ -54,4 +60,4 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 { ...your plan... }
 '@ | & "{{.Exe}}" plan save --feature {{.Feature.ID}}
 
-If it prints problems, fix them and save again in the same turn. When it succeeds, your final reply is exactly the line `plan save` printed (plan rN saved...) and nothing else. No rules, batches, questions or summary: nxy shows the plan to the user itself.
+If it prints problems, fix them and save again in the same turn. When it succeeds, your final reply is exactly the line `plan save` printed (plan rN saved...) and nothing else. No criteria, batches, questions or summary: nxy shows the plan to the user itself.

@@ -29,9 +29,9 @@ type Fork struct {
 
 // DesignClose is what the main thread proposes when closing the design.
 type DesignClose struct {
-	Rules    []Rule `json:"rules"`
-	D2       string `json:"d2,omitempty"`
-	Delegate bool   `json:"delegate,omitempty"`
+	Criteria []Criterion `json:"criteria"`
+	D2       string      `json:"d2,omitempty"`
+	Delegate bool        `json:"delegate,omitempty"`
 }
 
 // Design is the debate of an engineer feature, kept in the db as it happens.
@@ -40,7 +40,7 @@ type Design struct {
 	Decisions []Decision   `json:"decisions,omitempty"`
 	Pending   *Decision    `json:"pending,omitempty"`
 	Close     *DesignClose `json:"close,omitempty"`
-	Rules     []Rule       `json:"rules,omitempty"`
+	Criteria  []Criterion  `json:"criteria,omitempty"`
 	D2        string       `json:"d2,omitempty"`
 	Delegate  bool         `json:"delegate,omitempty"`
 	Refs      []string     `json:"refs,omitempty"`

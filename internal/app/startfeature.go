@@ -86,5 +86,9 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	f.ID = id
-	return HookResponse{Next: &Next{Feature: f}}
+	n := &Next{Feature: f}
+	if engineer {
+		n.Note = h.engineerMemoryNote(ctx, f)
+	}
+	return HookResponse{Next: n}
 }

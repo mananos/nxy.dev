@@ -31,8 +31,8 @@ func batchFeature(t *testing.T, kind domain.BatchTestKind, accept string) (Hooks
 	sh := &fakeShell{}
 	h.Shell = sh
 	p := &domain.Plan{
-		Rules:   []domain.Rule{{ID: "R1", Text: "x", Test: domain.TestTDD}},
-		Batches: []domain.Batch{{N: 1, Covers: []string{"R1"}, Test: domain.BatchTest{Kind: kind, Accept: accept}}},
+		Criteria: []domain.Criterion{{ID: "R1", Text: "x", Test: domain.TestTDD}},
+		Batches:  []domain.Batch{{N: 1, Covers: []string{"R1"}, Test: domain.BatchTest{Kind: kind, Accept: accept}}},
 	}
 	id, err := st.CreateFeature(context.Background(), domain.Feature{
 		Repo: "r", ProjectDir: "/p", Plan: p,

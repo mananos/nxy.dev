@@ -14,8 +14,8 @@ import (
 
 func validPlan() domain.Plan {
 	return domain.Plan{
-		Title: "Flag",
-		Rules: []domain.Rule{{ID: "R1", Text: "adds the flag", Test: domain.TestTDD}},
+		Title:    "Flag",
+		Criteria: []domain.Criterion{{ID: "R1", Text: "adds the flag", Test: domain.TestTDD}},
 		Batches: []domain.Batch{{
 			N: 1, Title: "flag", Covers: []string{"R1"},
 			Change: []domain.Change{{At: "cmd/main.go:10", What: "parse the flag"}},
@@ -56,7 +56,7 @@ func planningEngineer(t *testing.T) (Hooks, *memStore, string) {
 	_, _ = h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["a","b"]}`))
 	_, _ = h.ProposeDecision(ctx, id, strings.NewReader(`{"fork":"B1","text":"x","why":"y","scope":"task"}`))
 	answer(h, design.ProposeQuestion(id, 1), design.LabelSave)
-	if res, err := h.ProposeClose(ctx, id, strings.NewReader(`{"rules":[{"id":"R1","text":"r"}],"delegate":true}`)); err != nil || len(res.Problems) > 0 {
+	if res, err := h.ProposeClose(ctx, id, strings.NewReader(`{"criteria":[{"id":"R1","text":"r"}],"delegate":true}`)); err != nil || len(res.Problems) > 0 {
 		t.Fatalf("close: %+v %v", res, err)
 	}
 	answer(h, design.CloseQuestion(id), design.LabelClose)
@@ -69,7 +69,7 @@ func planningEngineer(t *testing.T) (Hooks, *memStore, string) {
 func TestSavePlanEngineerMergesDecisions(t *testing.T) {
 	h, st, id := planningEngineer(t)
 	p := validPlan()
-	p.Rules[0].Text = "r"
+	p.Criteria[0].Text = "r"
 	p.Decisions = []domain.Decision{{Scope: domain.ScopeTask, Text: "pick z", Fork: "B2"}}
 	res, err := h.SavePlan(context.Background(), id, planReader(t, p))
 	if err != nil || len(res.Problems) != 0 {
@@ -84,24 +84,24 @@ func TestSavePlanEngineerMergesDecisions(t *testing.T) {
 func TestSavePlanEngineerRejects(t *testing.T) {
 	h, st, id := planningEngineer(t)
 	changed := validPlan()
-	changed.Rules[0].Text = "other"
+	changed.Criteria[0].Text = "other"
 	if res, _ := h.SavePlan(context.Background(), id, planReader(t, changed)); len(res.Problems) == 0 {
 		t.Error("changed rule accepted")
 	}
 	asks := validPlan()
-	asks.Rules[0].Text = "r"
+	asks.Criteria[0].Text = "r"
 	asks.Questions = []domain.Question{{Question: "q?", Header: "h", Options: []domain.Option{{Label: "a", Recommended: true}, {Label: "b"}}}}
 	if res, _ := h.SavePlan(context.Background(), id, planReader(t, asks)); len(res.Problems) == 0 {
 		t.Error("questions accepted")
 	}
 	own := validPlan()
-	own.Rules[0].Text = "r"
+	own.Criteria[0].Text = "r"
 	own.Decisions = []domain.Decision{{Scope: domain.ScopeTask, Text: "pick", Fork: "B1"}}
 	if res, _ := h.SavePlan(context.Background(), id, planReader(t, own)); len(res.Problems) == 0 {
 		t.Error("decision on a decided fork accepted")
 	}
 	forged := validPlan()
-	forged.Rules[0].Text = "r"
+	forged.Criteria[0].Text = "r"
 	forged.Decisions = []domain.Decision{{ID: "D9", Scope: domain.ScopeTask, Text: "pick", Fork: "B2"}}
 	if res, _ := h.SavePlan(context.Background(), id, planReader(t, forged)); len(res.Problems) == 0 {
 		t.Error("decision with id accepted")
@@ -134,7 +134,7 @@ func TestPlannerPromptEngineerHasNoConversation(t *testing.T) {
 	_, st, id := planningEngineer(t)
 	f := st.feats[id]
 	f.Design.Refs = []string{"usá este ejemplo"}
-	p := plan.PlannerPrompt(f, "/bin/nxy")
+	p := plan.PlannerPrompt(f, "/bin/nxy", "")
 	for _, want := range []string{"D1", "R1: r", "usá este ejemplo", "plan gaps", "B2: b"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt lacks %q", want)

@@ -168,7 +168,7 @@ func TestDevCommandsRunTheShim(t *testing.T) {
 			}
 		}
 	}
-	for _, name := range []string{"stats", "trend", "setup", "filter", "statusline", "config", "locate", "worktree", "mem"} {
+	for _, name := range []string{"stats", "trend", "setup", "filter", "statusline", "config", "locate", "worktree", "mem", "review"} {
 		if _, err := os.Stat(filepath.Join(dir, name+".md")); err != nil {
 			t.Errorf("commands/%s.md missing", name)
 		}

@@ -7,9 +7,9 @@ You are the nxy planner for feature {{.Feature.ID}}, an engineer feature: the us
 ## Decisions (the user approved each one; they are the authority, do not redo them)
 {{range .Design.Decisions}}
 - {{.ID}} [{{.Scope}}] {{.Text}} -- why: {{.Why}}{{if .Dissent}} (Claude disagreed: {{.Dissent}}){{end}}{{end}}
-{{end}}{{if .Design.Rules}}
-## Rules (approved by the user: copy them into "rules" exactly, same id and same text; you only set test and check)
-{{range .Design.Rules}}
+{{end}}{{if .Design.Criteria}}
+## Criteria (approved by the user: copy them into "criteria" exactly, same id and same text; you only set test and check)
+{{range .Design.Criteria}}
 - {{.ID}}: {{.Text}}{{end}}
 {{end}}{{if .Design.Refs}}
 ## What the user wrote while designing (verbatim; if it clashes with a decision, the decision wins)
@@ -33,6 +33,12 @@ You may decide only these. Put each in "decisions" with "fork" set to its id, sc
 ## Previous plan (revise it, do not start over)
 
 {{.PrevJSON}}
+{{end}}{{if .Mem}}
+## Repo rules (nxy memory)
+
+{{.Mem}}
+
+Plan inside these rules. When you know which files the change touches, run `"{{.Exe}}" mem related <file> [<file>...]` (its own Bash call) to see the closed features and learnings of those files.
 {{end}}
 ## How to plan
 
@@ -41,7 +47,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - Ask no questions: "questions" stays empty. A choice nobody made is a hole in the design: do not guess it, do not plan around it. Save the hole with `plan gaps` (below) and stop.
 - Do not write "id", "by" or "dissent" in decisions: nxy puts the design's decisions in the plan itself.
 - A batch is one unit of behavior: code, its test and its docs together. Not "a few files".
-- Every rule needs a batch that covers it. Each rule has a test kind: tdd (a new test, red first), existing, build or manual (say what to look at in "check").
+- Every criterion needs a batch that covers it. Each criterion has a test kind: tdd (a new test, red first), existing, build or manual (say what to look at in "check").
 - test.accept is the smallest command that proves the batch, not the whole suite.
 - "read" lists exact ranges, path:a-b. "change" entries are "path:line" plus a short "what" (path (new) for new files).
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
@@ -51,7 +57,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 
 ## Plan format (JSON)
 
-Fields: title, decisions[{scope repo|task, text, question, fork}] (only for delegated forks), rules[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, no_tests. Unknown fields are rejected.
+Fields: title, decisions[{scope repo|task, text, question, fork}] (only for delegated forks), criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, no_tests. Unknown fields are rejected.
 
 Example of a valid plan (an engineer plan has no questions and, unless a fork was delegated, no decisions):
 

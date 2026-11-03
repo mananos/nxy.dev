@@ -196,6 +196,21 @@ func TestEncodeBundleRoundTrip(t *testing.T) {
 	}
 }
 
+func TestMergeMarksCounters(t *testing.T) {
+	local := Snapshot{
+		Rules:     []Rule{{Meta: Meta{ID: "R1", UpdatedAt: 10}, Deliveries: 3}, {Meta: Meta{ID: "R2", UpdatedAt: 10}, Deliveries: 3}},
+		Learnings: []Learning{{Meta: Meta{ID: "L1", UpdatedAt: 10}, Repo: "r", Hash: "h", Seen: 2}},
+	}
+	in := Bundle{
+		Rules:     []Rule{{Meta: Meta{ID: "R1", UpdatedAt: 5}, Deliveries: 4}, {Meta: Meta{ID: "R2", UpdatedAt: 5}, Deliveries: 3}},
+		Learnings: []Learning{{Meta: Meta{ID: "L1", UpdatedAt: 5}, Repo: "r", Hash: "h", Seen: 3}},
+	}
+	d := Merge(local, in)
+	if !d.Rules[0].Counters || d.Rules[1].Counters || !d.Learnings[0].Counters || d.Writes() != 2 {
+		t.Errorf("counters: %+v %+v", d.Rules, d.Learnings)
+	}
+}
+
 func TestMerge(t *testing.T) {
 	local := Snapshot{
 		Rules: []Rule{
@@ -207,11 +222,11 @@ func TestMerge(t *testing.T) {
 	}
 	in := Bundle{
 		Rules: []Rule{
-			{Meta: Meta{ID: "R1", UpdatedAt: 20}, Short: "K1"},                 // newer
-			{Meta: Meta{ID: "R2", UpdatedAt: 5}, Short: "K2"},                  // older
+			{Meta: Meta{ID: "R1", UpdatedAt: 20}, Short: "K1"},                // newer
+			{Meta: Meta{ID: "R2", UpdatedAt: 5}, Short: "K2"},                 // older
 			{Meta: Meta{ID: "R3", UpdatedAt: 30, DeletedAt: 30}, Short: "K3"}, // delete
-			{Meta: Meta{ID: "R4", UpdatedAt: 1}, Short: "K1"},                  // new, short clash
-			{Meta: Meta{ID: "R5", UpdatedAt: 1, DeletedAt: 1}},                 // unknown tombstone
+			{Meta: Meta{ID: "R4", UpdatedAt: 1}, Short: "K1"},                 // new, short clash
+			{Meta: Meta{ID: "R5", UpdatedAt: 1, DeletedAt: 1}},                // unknown tombstone
 		},
 		Learnings: []Learning{
 			{Meta: Meta{ID: "L9"}, Short: "A1", Repo: "r", Hash: "h", Seen: 2}, // folds

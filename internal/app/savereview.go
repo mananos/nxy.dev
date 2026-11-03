@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/review"
 )
@@ -98,11 +100,11 @@ func (h Hooks) reviewDiffs(ctx context.Context, f domain.Feature) []review.FileD
 
 // finishReview puts the lenses together and returns the event that closes the review step.
 func finishReview(g *domain.Feature) []flow.Event {
-	var rules []domain.Rule
+	var criteria []domain.Criterion
 	if g.Plan != nil {
-		rules = g.Plan.Rules
+		criteria = g.Plan.Criteria
 	}
-	rv := review.Assemble(*g.Review, rules)
+	rv := review.Assemble(*g.Review, criteria)
 	g.Review = &rv
 	return []flow.Event{{Kind: flow.ReviewDone, Findings: len(review.Offered(rv)) > 0, HighUnproven: review.HighUnproven(rv)}}
 }
@@ -164,7 +166,74 @@ func (h Hooks) preReviewer(ctx context.Context, ev HookEvent, f domain.Feature) 
 	if !applied {
 		return HookResponse{Deny: "lens " + name + " is already dispatched or saved; pending lenses: " + pending}
 	}
-	return HookResponse{Prompt: review.ReviewerPrompt(nf, lens, h.reviewDiffs(ctx, nf), h.Exe)}
+	diffs := h.reviewDiffs(ctx, nf)
+	var paths []string
+	for _, d := range diffs {
+		paths = append(paths, d.Path)
+	}
+	if len(paths) == 0 {
+		// An empty diff still has files: the ones the feature changed or its plan names.
+		paths = h.changedPaths(ctx, nf)
+	}
+	pkt := h.memoryFor(ctx, nf, roleReviewer, paths)
+	{
+		// Delivered holds the K and A ids this reviewer saw: rule and false must come from it.
+		ks := pkt.Referenced
+		if len(ks) > 0 {
+			if mf, ok, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+				if g.Review == nil {
+					return false
+				}
+				for i := range g.Review.Lenses {
+					if g.Review.Lenses[i].Name == name {
+						g.Review.Lenses[i].Delivered = ks
+						return true
+					}
+				}
+				return false
+			}); err == nil && ok {
+				nf = mf
+			}
+		}
+	}
+	return HookResponse{Prompt: review.ReviewerPrompt(nf, lens, diffs, h.Exe, pkt.Text)}
+}
+
+// reviewMemory stores what a saved review gives the memory: a citation per K rule it named, the
+// learnings (their files cut to the diff) and the learnings it found false. A failing store never
+// fails the save.
+func (h Hooks) reviewMemory(ctx context.Context, f domain.Feature, sub review.Submission, allowed []string) {
+	if h.Memory == nil || h.Repos == nil || f.ProjectDir == "" {
+		return
+	}
+	repo := h.Repos.Key(f.ProjectDir)
+	now := time.Now().UnixMilli()
+	var cited []string
+	seen := map[string]bool{}
+	for _, fd := range sub.Findings {
+		k := strings.ToUpper(strings.TrimSpace(fd.Rule))
+		if k != "" && !seen[k] {
+			seen[k] = true
+			cited = append(cited, k)
+		}
+	}
+	if len(cited) > 0 {
+		_, _ = h.Memory.Cite(ctx, repo, cited, now)
+	}
+	for _, l := range sub.Learnings {
+		files := l.Files
+		if len(allowed) > 0 {
+			files = l.Within(allowed)
+		}
+		_, _ = h.Memory.AddLearning(ctx, memory.Learning{Repo: repo, Text: strings.TrimSpace(l.Text), Files: files, FeatureID: f.ID})
+	}
+	if len(sub.False) > 0 {
+		var fs []string
+		for _, a := range sub.False {
+			fs = append(fs, strings.ToUpper(strings.TrimSpace(a)))
+		}
+		_ = h.Memory.MarkObsolete(ctx, repo, fs, now)
+	}
 }
 
 // postReviewer answers PostToolUse of a reviewer: it never repeats the step (deliverPending
@@ -232,14 +301,23 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 	if err != nil {
 		return ReviewSaveResult{}, err
 	}
-	var rules []domain.Rule
+	var criteria []domain.Criterion
 	if f.Plan != nil {
-		rules = f.Plan.Rules
+		criteria = f.Plan.Criteria
 	}
 	engineer := f.Mode == domain.ModeEngineer
-	if probs := review.Validate(sub, lens, rules, lens == review.BaseLens, review.DesignDecisions(f), engineer); len(probs) > 0 {
+	probs := review.Validate(sub, lens, criteria, lens == review.BaseLens, review.DesignDecisions(f), engineer)
+	var delivered []string
+	for _, l := range f.Review.Lenses {
+		if l.Name == lens {
+			delivered = l.Delivered
+		}
+	}
+	probs = append(probs, review.ValidateMemory(sub, delivered)...)
+	if len(probs) > 0 {
 		return ReviewSaveResult{Problems: probs}, nil
 	}
+	var diffPaths []string
 	for i := range sub.Findings {
 		sub.Findings[i].Lens = lens
 	}
@@ -248,6 +326,7 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 		hunks := map[string][][2]int{}
 		for _, d := range diffs {
 			hunks[d.Path] = review.Hunks(d.Text)
+			diffPaths = append(diffPaths, d.Path)
 		}
 		sub.Findings = review.Classify(sub.Findings, hunks)
 	} else {
@@ -267,7 +346,7 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 			}
 		}
 		if lens == review.BaseLens {
-			rv.Rules = sub.Rules
+			rv.Criteria = sub.Criteria
 			rv.Decisions = sub.Decisions
 		}
 		rv.Findings = append(rv.Findings, sub.Findings...)
@@ -282,6 +361,7 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 		return ReviewSaveResult{}, err
 	}
 	out = nf
+	h.reviewMemory(ctx, out, sub, diffPaths)
 	return ReviewSaveResult{Saved: savedLenses(out.Review), Total: len(out.Review.Lenses)}, nil
 }
 

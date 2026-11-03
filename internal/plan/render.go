@@ -7,14 +7,14 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
-// Checkpoint is what the user needs to decide: rules and batches with what
+// Checkpoint is what the user needs to decide: criteria and batches with what
 // changes, the test, the command nxy runs for it (Accept) and the risk. It leaves
 // out the request and Read. The main thread copies it verbatim into the chat.
 func Checkpoint(p domain.Plan) string {
 	return checkpoint(p, true)
 }
 
-// CheckpointOf is the checkpoint of a feature: in engineer mode the rules were
+// CheckpointOf is the checkpoint of a feature: in engineer mode the criteria were
 // already approved when the design closed, so it shows only the batches (and what
 // the planner chose on its own); in delegate mode it is Checkpoint.
 func CheckpointOf(f domain.Feature) string {
@@ -28,11 +28,11 @@ func CheckpointOf(f domain.Feature) string {
 	return checkpoint(p, false)
 }
 
-func checkpoint(p domain.Plan, withRules bool) string {
+func checkpoint(p domain.Plan, withCriteria bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## %s\n\n", p.Title)
-	if withRules {
-		writeRules(&b, p.Rules)
+	if withCriteria {
+		writeCriteria(&b, p.Criteria)
 	} else {
 		var chosen []domain.Decision
 		for _, d := range p.Decisions {
@@ -121,7 +121,7 @@ func Markdown(f domain.Feature) string {
 		}
 	}
 	b.WriteString("\n")
-	writeRules(&b, p.Rules)
+	writeCriteria(&b, p.Criteria)
 	for _, bt := range p.Batches {
 		fmt.Fprintf(&b, "\n### Lote %d — %s\n", bt.N, bt.Title)
 		fmt.Fprintf(&b, "- Cubre: %s\n", strings.Join(bt.Covers, ", "))
@@ -197,9 +197,9 @@ func plannerChose(p domain.Plan, fork string) bool {
 	return false
 }
 
-func writeRules(b *strings.Builder, rules []domain.Rule) {
-	b.WriteString("### Reglas\n\n")
-	for _, r := range rules {
+func writeCriteria(b *strings.Builder, criteria []domain.Criterion) {
+	b.WriteString("### Criterios\n\n")
+	for _, r := range criteria {
 		fmt.Fprintf(b, "- %s: %s (%s)", r.ID, r.Text, r.Test)
 		if r.Test == domain.TestManual && r.Check != "" {
 			fmt.Fprintf(b, " — mirar: %s", r.Check)

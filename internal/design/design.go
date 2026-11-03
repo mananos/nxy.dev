@@ -212,11 +212,11 @@ func ValidateClose(d *domain.Design, c domain.DesignClose) []domain.Problem {
 	if strings.Contains(c.D2, "```") {
 		add("d2", "must not contain code fences (```)")
 	}
-	if len(c.Rules) == 0 {
-		add("rules", "at least one rule is needed")
+	if len(c.Criteria) == 0 {
+		add("criteria", "at least one criterion is needed")
 	}
-	for i, r := range c.Rules {
-		where := fmt.Sprintf("rules[%d]", i)
+	for i, r := range c.Criteria {
+		where := fmt.Sprintf("criteria[%d]", i)
 		if want := "R" + strconv.Itoa(i+1); r.ID != want {
 			add(where+".id", "must be %s", want)
 		}
@@ -238,7 +238,7 @@ func ValidateClose(d *domain.Design, c domain.DesignClose) []domain.Problem {
 
 // ApplyClose records the close; open forks become delegated when c.Delegate.
 func ApplyClose(d *domain.Design, c domain.DesignClose) {
-	d.Rules = c.Rules
+	d.Criteria = c.Criteria
 	d.D2 = c.D2
 	d.Delegate = c.Delegate
 	d.Close = nil

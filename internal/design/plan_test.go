@@ -14,19 +14,19 @@ func closedDesign() *domain.Design {
 			{ID: "B1", Status: domain.ForkDecided},
 			{ID: "B2", Status: domain.ForkDelegated},
 		},
-		Rules:  []domain.Rule{{ID: "R1", Text: "r"}},
-		Closed: true,
+		Criteria: []domain.Criterion{{ID: "R1", Text: "r"}},
+		Closed:   true,
 	}
 }
 
 func TestCheckPlanEngineer(t *testing.T) {
 	d := closedDesign()
-	ok := domain.Plan{Rules: []domain.Rule{{ID: "R1", Text: "r", Test: domain.TestTDD}}}
+	ok := domain.Plan{Criteria: []domain.Criterion{{ID: "R1", Text: "r", Test: domain.TestTDD}}}
 	if probs := CheckPlan(d, ok); len(probs) != 0 {
 		t.Errorf("problems = %v", probs)
 	}
 	bad := domain.Plan{
-		Rules:     []domain.Rule{{ID: "R1", Text: "changed"}},
+		Criteria:  []domain.Criterion{{ID: "R1", Text: "changed"}},
 		Questions: []domain.Question{{Question: "q"}},
 		Decisions: []domain.Decision{{Fork: "B1"}},
 	}

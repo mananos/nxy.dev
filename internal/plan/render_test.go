@@ -28,9 +28,9 @@ func TestValidateRejectsDesignOwnedFields(t *testing.T) {
 func TestPlannerPromptEngineerUsesDesignTemplate(t *testing.T) {
 	f := domain.Feature{ID: "f1", Request: "r", Mode: domain.ModeEngineer, Design: &domain.Design{
 		Decisions: []domain.Decision{{ID: "D1", Scope: domain.ScopeTask, Text: "x", Why: "y"}},
-		Rules:     []domain.Rule{{ID: "R1", Text: "rule"}},
+		Criteria:  []domain.Criterion{{ID: "R1", Text: "rule"}},
 	}}
-	p := PlannerPrompt(f, "nxy")
+	p := PlannerPrompt(f, "nxy", "")
 	if !strings.Contains(p, "D1 [task] x -- why: y") || !strings.Contains(p, "plan gaps") {
 		t.Errorf("prompt = %s", p)
 	}
@@ -40,9 +40,9 @@ func TestPlannerPromptEngineerPrevPlanUsesDesignRules(t *testing.T) {
 	f := sampleFeature(t)
 	f.Mode = domain.ModeEngineer
 	f.Plan.Questions = []domain.Question{{Question: "ZZQUESTIONZZ", Header: "h"}}
-	f.Plan.Rules = []domain.Rule{{ID: "R1", Text: "ZZDELEGATERULEZZ"}}
-	f.Design = &domain.Design{Rules: []domain.Rule{{ID: "R1", Text: "ZZDESIGNRULEZZ"}}}
-	p := PlannerPrompt(f, "nxy")
+	f.Plan.Criteria = []domain.Criterion{{ID: "R1", Text: "ZZDELEGATERULEZZ"}}
+	f.Design = &domain.Design{Criteria: []domain.Criterion{{ID: "R1", Text: "ZZDESIGNRULEZZ"}}}
+	p := PlannerPrompt(f, "nxy", "")
 	if strings.Contains(p, "ZZQUESTIONZZ") || strings.Contains(p, "ZZDELEGATERULEZZ") {
 		t.Errorf("prev plan leaks delegate rules/questions:\n%s", p)
 	}
@@ -112,7 +112,7 @@ func engineerSample(t *testing.T) domain.Feature {
 func TestCheckpointOfEngineerOmitsRules(t *testing.T) {
 	f := engineerSample(t)
 	cp := CheckpointOf(f)
-	if strings.Contains(cp, "### Reglas") {
+	if strings.Contains(cp, "### Criterios") {
 		t.Errorf("engineer checkpoint has rules:\n%s", cp)
 	}
 	for _, want := range []string{"Decisiones que eligió el planner", "D2 nombre del campo", "Lote 1"} {
@@ -157,10 +157,31 @@ func TestApprovalQuestion(t *testing.T) {
 	}
 }
 
+func TestPromptsPrintMemoryOnlyWhenGiven(t *testing.T) {
+	f := sampleFeature(t)
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
+	mem := "K1: always wrap errors"
+	if got := ImplementerPrompt(f, "nxy", mem); !strings.Contains(got, "## Repo rules and learnings (nxy memory)") || !strings.Contains(got, mem) || !strings.Contains(got, "learned:") {
+		t.Errorf("implementer prompt lacks the memory:\n%s", got)
+	}
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, "nxy memory") || strings.Contains(got, "learned:") {
+		t.Error("implementer prompt prints an empty memory section")
+	}
+	if got := PlannerPrompt(f, "nxy", mem); !strings.Contains(got, "## Repo rules (nxy memory)") || !strings.Contains(got, `"nxy" mem related`) {
+		t.Errorf("planner prompt lacks the memory:\n%s", got)
+	}
+	if got := PlannerPrompt(f, "nxy", ""); strings.Contains(got, "nxy memory") {
+		t.Error("planner prompt prints an empty memory section")
+	}
+	if got := AffectedFixPrompt(f, "nxy", mem); !strings.Contains(got, mem) {
+		t.Error("affected fix prompt lacks the memory")
+	}
+}
+
 func TestImplementerPrompt(t *testing.T) {
 	f := sampleFeature(t)
 	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
-	got := ImplementerPrompt(f, `C:\tools\nxy.exe`)
+	got := ImplementerPrompt(f, `C:\tools\nxy.exe`, "")
 	for _, want := range []string{
 		f.Request,
 		"batch 1 of 1",
@@ -181,28 +202,28 @@ func TestImplementerPrompt(t *testing.T) {
 	}
 
 	f.Proof = &domain.Proof{Batch: 1, Failure: "green failed (exit 2): boom"}
-	if got := ImplementerPrompt(f, "nxy"); !strings.Contains(got, "Previous attempt failed") || !strings.Contains(got, "boom") {
+	if got := ImplementerPrompt(f, "nxy", ""); !strings.Contains(got, "Previous attempt failed") || !strings.Contains(got, "boom") {
 		t.Error("retry prompt lacks the failure")
 	}
-	if got := ImplementerPrompt(f, "nxy"); !strings.Contains(got, `"nxy" batch red`) {
+	if got := ImplementerPrompt(f, "nxy", ""); !strings.Contains(got, `"nxy" batch red`) {
 		t.Error("retry without a recorded red lost the red step")
 	}
 	f.Proof.Red = &domain.Run{Exit: 1}
-	if got := ImplementerPrompt(f, "nxy"); strings.Contains(got, "batch red") || !strings.Contains(got, "batch green") {
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, "batch red") || !strings.Contains(got, "batch green") {
 		t.Errorf("retry with a recorded red must skip the red step:\n%s", got)
 	}
 	f.Proof.Red = nil
 	f.Proof.Batch = 2
-	if strings.Contains(ImplementerPrompt(f, "nxy"), "Previous attempt failed") {
+	if strings.Contains(ImplementerPrompt(f, "nxy", ""), "Previous attempt failed") {
 		t.Error("failure of another batch shown")
 	}
 
-	f.Plan.Rules[0].Test = domain.TestExisting
-	if got := ImplementerPrompt(f, "nxy"); strings.Contains(got, "batch red") || !strings.Contains(got, "batch green") {
+	f.Plan.Criteria[0].Test = domain.TestExisting
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, "batch red") || !strings.Contains(got, "batch green") {
 		t.Errorf("non-TDD prompt has the wrong steps:\n%s", got)
 	}
 	f.Plan.Batches[0].Test.Accept = ""
-	if got := ImplementerPrompt(f, "nxy"); strings.Contains(got, `"nxy" batch`) {
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, `"nxy" batch`) {
 		t.Errorf("manual prompt has a batch command:\n%s", got)
 	}
 }
@@ -220,7 +241,7 @@ func TestPlannerPrompt(t *testing.T) {
 	f := sampleFeature(t)
 	f.Answers = []domain.Answer{{Question: "Where?", Answer: "internal/greet"}}
 	f.ChangeNotes = []string{"split batch 1"}
-	got := PlannerPrompt(f, `C:\tools\nxy.exe`)
+	got := PlannerPrompt(f, `C:\tools\nxy.exe`, "")
 	for _, want := range []string{
 		f.Request,
 		`"C:/tools/nxy.exe" plan save --feature f1 <<'JSON'`,
@@ -236,7 +257,7 @@ func TestPlannerPrompt(t *testing.T) {
 		}
 	}
 	f.Plan, f.Answers, f.ChangeNotes = nil, nil, nil
-	if strings.Contains(PlannerPrompt(f, "nxy"), "Previous plan") {
+	if strings.Contains(PlannerPrompt(f, "nxy", ""), "Previous plan") {
 		t.Error("first prompt mentions a previous plan")
 	}
 }

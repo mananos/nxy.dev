@@ -107,10 +107,10 @@ func TestDesignCloseGoesToPlanning(t *testing.T) {
 	h, st, id := engineerFeature(t)
 	ctx := context.Background()
 	_, _ = h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["a"]}`))
-	if res, _ := h.ProposeClose(ctx, id, strings.NewReader(`{"rules":[{"id":"R1","text":"r"}]}`)); len(res.Problems) == 0 {
+	if res, _ := h.ProposeClose(ctx, id, strings.NewReader(`{"criteria":[{"id":"R1","text":"r"}]}`)); len(res.Problems) == 0 {
 		t.Error("close with an open fork accepted")
 	}
-	if res, err := h.ProposeClose(ctx, id, strings.NewReader("{\"rules\":[{\"id\":\"R1\",\"text\":\"r\"}],\"d2\":\"a -> b\",\"delegate\":true}")); err != nil || len(res.Problems) > 0 {
+	if res, err := h.ProposeClose(ctx, id, strings.NewReader("{\"criteria\":[{\"id\":\"R1\",\"text\":\"r\"}],\"d2\":\"a -> b\",\"delegate\":true}")); err != nil || len(res.Problems) > 0 {
 		t.Fatalf("close: %+v %v", res, err)
 	}
 	r := answer(h, design.CloseQuestion(id), design.LabelClose)

@@ -39,7 +39,7 @@ Cómo probar: `claude --plugin-dir dev/plugin` con la 1.x desactivada (ambas se 
 Qué ves:
 
 1. Escribís `/nxy:feature <pedido>`. nxy guarda el pedido literal y le da al hilo principal una instrucción que empieza con `nxy:` (despachar al planner). El planner arma el plan y lo guarda con `nxy plan save`; si el plan no valida, ve los problemas y lo corrige.
-2. El hilo principal copia el checkpoint tal cual (reglas con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta: **Approve**, **Change** o **Ver completo**. Ver completo abre el plan entero en tu editor y Claude te confirma en el chat que lo abrió, con la ruta. Change te pide una nota y el planner replanifica con ella.
+2. El hilo principal copia el checkpoint tal cual (criterios con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta: **Approve**, **Change** o **Ver completo**. Ver completo abre el plan entero en tu editor y Claude te confirma en el chat que lo abrió, con la ruta. Change te pide una nota y el planner replanifica con ella.
 3. Si el planner tiene preguntas, las respondés antes del checkpoint.
 
 Estados públicos (los de `nxy status`):
@@ -57,7 +57,7 @@ Dónde queda el plan: `~/.nxy/plans/<id>.md`, uno por feature, de unos 5 a 15 KB
 
 ## F2.2: los lotes
 
-Al aprobar el plan, nxy ejecuta los lotes de a uno, solo: el hilo principal despacha un `nxy:implementer` por lote y nxy le escribe el prompt (el pedido, las reglas que cubre el lote, qué cambiar y cómo probarlo). No tenés que hacer nada mientras tanto.
+Al aprobar el plan, nxy ejecuta los lotes de a uno, solo: el hilo principal despacha un `nxy:implementer` por lote y nxy le escribe el prompt (el pedido, los criterios que cubre el lote, qué cambiar y cómo probarlo). No tenés que hacer nada mientras tanto.
 
 Qué ves:
 
@@ -144,7 +144,7 @@ Después de los afectados en verde (o de elegir **Seguir**), la feature pasa por
 
 **Profundidad por riesgo.**
 
-- Bajo: un solo `nxy:reviewer-quick` con la lente base y las reglas del pedido, una por una.
+- Bajo: un solo `nxy:reviewer-quick` con la lente base y los criterios del pedido, uno por uno.
 - Medio: un `nxy:reviewer` por lente seleccionada, todos en paralelo.
 - Alto: lo mismo, y además un `nxy:refuter` que intenta refutar los hallazgos de severidad alta leyendo el código.
 
@@ -154,11 +154,11 @@ Mientras corren no tenés nada que hacer; el checkpoint llega solo cuando vuelve
 
 **Filtro de precisión.** Qué significa: nxy descarta sin preguntarle a ningún modelo los hallazgos sin `path:línea` o sin un escenario `entrada → resultado`. Qué hacer: nada; los descartados figuran en "Ver completo".
 
-**Checkpoint 2.** Qué ves: arriba la línea de reglas (`R1 ✔ · R2 ✘`), después los hallazgos con su escenario y su arreglo (H1, H2, …), los preexistentes sólo como información, y un conteo de descartados y refutados. Se elige con casillas (multiSelect), hasta 16 hallazgos en 4 preguntas de 4; un grupo de uno suma "Ninguno"; si hay más de 16, nxy te dice cuántos quedan fuera. Qué hacer: marcá los que querés arreglar o elegí "Ninguno". Los refutados y descartados no se ofrecen: están en **Ver completo**, `~/.nxy/reviews/<id>.md`.
+**Checkpoint 2.** Qué ves: arriba la línea de criterios (`R1 ✔ · R2 ✘`), después los hallazgos con su escenario y su arreglo (H1, H2, …), los preexistentes sólo como información, y un conteo de descartados y refutados. Se elige con casillas (multiSelect), hasta 16 hallazgos en 4 preguntas de 4; un grupo de uno suma "Ninguno"; si hay más de 16, nxy te dice cuántos quedan fuera. Qué hacer: marcá los que querés arreglar o elegí "Ninguno". Los refutados y descartados no se ofrecen: están en **Ver completo**, `~/.nxy/reviews/<id>.md`.
 
 **Arreglos.** Qué ves: un único `nxy:implementer` recibe todos los hallazgos elegidos y después nxy corre `nxy affected` de nuevo. Verde: la feature cierra. Rojo: un reintento; si sigue rojo (o queda sin verificar) ves **Arreglos fallidos** con la causa y **Reintentar**, **Seguir** (aceptar así) o **Parar**.
 
-**Listo.** Qué ves: el cierre, que empieza con la palabra (`Listo · R1 ✔ <test> · …`), con `R1 ✔ <test>` por regla y los arreglos aplicados. Se muestra una sola vez. Si hubo un "Aviso:" de lentes inválidas, se repite acá. Si los afectados quedaron en rojo (aceptados con Seguir) o sin verificar, lo dice, y los arreglos figuran como "Arreglos pedidos (sin verificar)" en vez de "Arreglos aplicados". Si la review no corrió, las reglas quedan con `?`. Qué hacer: si ves "sin verificar", corré tus tests a mano.
+**Listo.** Qué ves: el cierre, que empieza con la palabra (`Listo · R1 ✔ <test> · …`), con `R1 ✔ <test>` por regla y los arreglos aplicados. Se muestra una sola vez. Si hubo un "Aviso:" de lentes inválidas, se repite acá. Si los afectados quedaron en rojo (aceptados con Seguir) o sin verificar, lo dice, y los arreglos figuran como "Arreglos pedidos (sin verificar)" en vez de "Arreglos aplicados". Si la review no corrió, los criterios quedan con `?`. Qué hacer: si ves "sin verificar", corré tus tests a mano.
 
 **Qué se guarda.** Por lente, cuáles hallazgos elegiste y cuáles ignoraste, en la db (`~/.nxy`); se van a ver en `/nxy:trend` en F3.
 
@@ -176,11 +176,11 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 
 **Guardar cada decisión.** Qué ves: una pregunta `nxy feature <id>: ¿guardar la decisión D<n>?` con la decisión, el porqué y, si lo hay, "Claude mantiene su desacuerdo: …". **OK, guardar** la deja en la db en el acto; **Seguir debatiendo** (o escribir otra cosa) no guarda nada. Tus mensajes mientras diseñás se guardan tal cual como referencias para el planner.
 
-**Cerrar.** Cuando están todas decididas, Claude propone cerrar: ves las decisiones, las reglas R1…Rn y el diagrama D2 como fuente. **Cerrar y planificar** aprueba las reglas y arranca el planner; **Seguir diseñando** vuelve. Si decís "decidí vos el resto", las bifurcaciones abiertas quedan delegadas al planner y el plan las marca como "las eligió el planner".
+**Cerrar.** Cuando están todas decididas, Claude propone cerrar: ves las decisiones, los criterios R1…Rn y el diagrama D2 como fuente. **Cerrar y planificar** aprueba los criterios y arranca el planner; **Seguir diseñando** vuelve. Si decís "decidí vos el resto", las bifurcaciones abiertas quedan delegadas al planner y el plan las marca como "las eligió el planner".
 
 **/clear es seguro.** Las decisiones ya están en la db: después de un `/clear` la guía vuelve sola con la agenda, lo decidido y tus últimos 10 mensajes de este diseño (cada uno cortado si es largo). La propuesta de decisión y el resumen del cierre aparecen una sola vez en el chat.
 
-**Planner y huecos.** El planner sólo baja tu diseño a lotes, copia las reglas tal cual y no hace preguntas. Si encuentra un hueco de diseño, frena con `nxy plan gaps` y volvés a Diseñando con una bifurcación nueva. El checkpoint del plan muestra sólo los lotes (las reglas ya las aprobaste) y el plan .md suma una sección `### Diseño`.
+**Planner y huecos.** El planner sólo baja tu diseño a lotes, copia los criterios tal cual y no hace preguntas. Si encuentra un hueco de diseño, frena con `nxy plan gaps` y volvés a Diseñando con una bifurcación nueva. El checkpoint del plan muestra sólo los lotes (los criterios ya los aprobaste) y el plan .md suma una sección `### Diseño`.
 
 **Review.** El base pass explica el diff por decisión (`D1 → path:línea — cómo`), y cada hallazgo trae el porqué y una regla general para aprender de él.
 
@@ -279,3 +279,23 @@ Costo: una regla ~0,5 KB, un aprendizaje ~0,3 KB; 100 reglas y 500 aprendizajes 
 Qué ves: al cerrar con éxito, si hay docs de usuario que nombran el cambio, una pregunta con **Actualizar docs** o **Dejar**. Qué significa: **Actualizar docs** despacha `nxy:documenter`, que sólo puede editar esos docs (y una página nueva en la carpeta wiki del CI); cualquier otro archivo se le niega. **Dejar** cierra. Sin docs que nombren el cambio no pregunta nada y cierra con "Listo".
 
 Costo de la búsqueda: con rg, milisegundos; sin rg, un recorrido con tope de 5000 archivos / 1 MB. Una vez por feature. No escribe archivos fuera de los docs que apruebes.
+
+## F4.2: la memoria en el flujo
+
+Qué ves: las reglas del repo (`K3`) llegan solas a cada agente, sin que hagas nada. Los **criterios** del plan siguen llamándose R1…Rn (lo que tiene que cumplir esta feature); las **reglas** K son de todo el repo y viven entre features.
+
+- **Qué recibe cada agente.** El planner recibe todas las reglas; el implementer, las del área que toca el lote (las que tienen `--paths` que coinciden, más las que no tienen) y los aprendizajes de esos archivos; el reviewer, las reglas del diff. Siempre con el texto completo y con un tope de 3.000 caracteres (~750 tokens): lo que no entra queda en una línea "not shown (budget)" y lo ves con `nxy mem show`. En modo ingeniero, el hilo principal recibe las reglas al empezar el diseño. El planner y el modo ingeniero también corren `nxy mem related <archivos>` para ver features cerradas y aprendizajes de esos archivos.
+- **`delivered / cited / to review`** en `nxy mem show`: cuántas veces se entregó la regla a un agente, cuántas veces un reviewer la citó al encontrar que el cambio la rompía (un hallazgo que cita una regla sube a medium como mínimo) y si lleva 90 días sin citarse. Contar no cambia la fecha de la regla ni viaja distinto en el export.
+- **Aprendizajes.** El implementer puede cerrar su respuesta con líneas `learned: <texto> | files: a, b` (hasta 5) y `false: A7` si comprobó que un aprendizaje ya no es cierto. El reviewer lo manda en el JSON de `review save` (`learnings` y `false`). Un aprendizaje repetido suma `seen`; uno falso, o cuyos archivos ya no existen, queda obsoleto (se marca, no se borra).
+- **Pregunta del cierre.** Al terminar con éxito, si hay candidatas (las decisiones `repo` del plan o del diseño, lo que levantaste con `nxy feature rule` y los escapes), te pregunta qué guardar como regla del repo, de a 4 opciones por pregunta. Si una se parece a una regla existente, dice "reemplaza a K3": al elegirla la anterior queda reemplazada. Elegir "Ninguna" o parar la feature no guarda nada. La feature cerrada queda en la memoria con su título, decisiones, archivos y hallazgos.
+- **Aviso por palabra.** Si con una feature activa escribís "siempre", "nunca" o "de ahora en adelante" (o always / never / from now on), nxy le pide a Claude que te pregunte si es una regla del repo; nunca la guarda sin que lo confirmes. Para marcarla a mano: `nxy feature rule "<texto>" --question "<qué resuelve>"` (queda como candidata para el cierre; sin feature activa usá `nxy mem rule`).
+
+### /nxy:review
+
+Qué ves: lo que la review dejó. Qué hacer:
+
+- `show`: la review de la feature activa (o de la última); sin review dice "no review yet".
+- `status`: por lente, en los últimos 30 días, los hallazgos que elegiste arreglar, los que ignoraste y los escapes. Qué significa: una lente con muchos ignorados y ningún escape probablemente sobra; una con escapes le falta algo.
+- `escape "<texto>" --question "<qué resuelve>" [--lens base]`: avisás que la review dejó pasar un problema. Con una feature activa queda como candidata para la pregunta del cierre; sin feature activa (apareció en el PR) se guarda ya como regla con origen review y dice el K nuevo, o "similar to K3" si ya hay una parecida (no bloquea). Sin `--question` falla.
+
+Costo: un escape es una fila de ~200 B; las candidatas viajan en el JSON de la feature (hasta ~6 KB). Nada se borra solo.

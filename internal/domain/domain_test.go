@@ -51,7 +51,7 @@ func TestFeatureJSONRoundTrip(t *testing.T) {
 		Plan: &Plan{
 			Title:     "T",
 			Decisions: []Decision{{Scope: ScopeRepo, Text: "d", Question: "q"}},
-			Rules:     []Rule{{ID: "R1", Text: "r", Test: TestManual, Check: "look"}},
+			Criteria:  []Criterion{{ID: "R1", Text: "r", Test: TestManual, Check: "look"}},
 			Batches: []Batch{{
 				N: 1, Title: "b", Covers: []string{"R1"}, Read: []string{"a.go"},
 				Change:  []Change{{At: "a.go:1", What: "w"}},
@@ -69,9 +69,9 @@ func TestFeatureJSONRoundTrip(t *testing.T) {
 			Risk: RiskHigh, RiskWhy: "w", Quick: true,
 			Lenses:   []LensRun{{Name: "base", Title: "Base", Files: []string{"a.go"}, Dispatched: true, Saved: true}},
 			Returned: []string{"ag1"},
-			Rules:    []RuleCheck{{ID: "R1", OK: false, Why: "y", File: "a.go", Line: 3}},
+			Criteria: []CriterionCheck{{ID: "R1", OK: false, Why: "y", File: "a.go", Line: 3}},
 			Findings: []Finding{{ID: "H1", Lens: "base", Severity: SeverityHigh, File: "a.go", Line: 3,
-				Title: "t", Scenario: "a -> b", Evidence: "e", Fix: "f", Cause: CauseChange, Rule: "R1",
+				Title: "t", Scenario: "a -> b", Evidence: "e", Fix: "f", Cause: CauseChange, Criterion: "R1",
 				Dropped: "d", Verdict: VerdictRefuted, VerdictWhy: "v"}},
 			Refuted: true, Chosen: []string{"H1"}, FullPath: "/tmp/r.md",
 		},
