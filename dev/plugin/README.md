@@ -257,7 +257,7 @@ Qué ves: la lista de worktrees y, en cada acción, el comando git que corrió. 
 
 - `pause` / `resume`: la pausa es una marca en `.nxy/local/features/paused.json` (~100 B); se borra al `resume` o al `close`.
 - `close --path <wt>`: con cambios sin guardar pide `--force`; no cierra el worktree principal, el de esta sesión ni uno con una feature sin terminar.
-- El handoff al pausar llega con la memoria v2.
+- Al pausar, Claude te pregunta (opcional) «¿Algo para la próxima sesión?»; si contestás, queda como nota temporal de ese worktree (ver "F4.3: notas y para retomar"). Al cerrar el worktree se borran las notas de su carpeta.
 
 ### /nxy:mem
 
@@ -272,7 +272,13 @@ Qué ves: la memoria del repo, guardada en la db global (`~/.nxy/nxy.db`). Qué 
 
 Costo: una regla ~0,5 KB, un aprendizaje ~0,3 KB; 100 reglas y 500 aprendizajes caben en ~1 MB de la db. El export se escribe sólo a pedido y no se borra solo.
 
-**Notas temporales.** `nxy note save "<título>"` (cuerpo por stdin, hasta 2 KB), `nxy note list [--all]` y `nxy note done <id>`. Se ven desde la carpeta donde las guardaste y vencen a los 30 días. La pregunta al arrancar la sesión llega en F4.3.
+**Notas temporales.** `nxy note save "<título>"` (cuerpo por stdin, hasta 2 KB), `nxy note list [--all]` y `nxy note done <id>`. Se ven desde la carpeta donde las guardaste y vencen a los 30 días. La pregunta al arrancar la sesión está en "F4.3: notas y para retomar".
+
+### /nxy:mem bootstrap
+
+Qué ves: en un repo sin reglas guardadas, la primera `/nxy:feature` (o `/nxy:engineer`) pregunta «Este repo no tiene reglas guardadas. ¿Las propongo ahora?» con **Sí** (recomendada) y **No**. Qué significa: **Sí** manda al scout a leer el build, los linters, el CI, el README y una muestra del código, y a proponer hasta 10 reglas que ninguna herramienta ya hace cumplir (lo que cubre un linter queda como «correr X antes de cerrar»); cada una dice la pregunta que resuelve y dónde la vio (`archivo:línea`). Después elegís cuáles guardar en preguntas de a 4 (`B1`, `B2`…); las elegidas quedan como reglas con origen `bootstrap`, y recién entonces arranca tu feature, así el planner ya las ve. **No** arranca la feature en el acto. Qué hacer: contestá; si querés hacerlo más tarde o de nuevo, corré `/nxy:mem bootstrap`.
+
+Costo: ~30–60k tokens y 1–2 minutos, una sola vez por repo; no se vuelve a ofrecer (ni con Sí ni con No). El scout corre en primer plano: no lo mandes al fondo.
 
 ### Docs y documenter
 
@@ -299,3 +305,30 @@ Qué ves: lo que la review dejó. Qué hacer:
 - `escape "<texto>" --question "<qué resuelve>" [--lens base]`: avisás que la review dejó pasar un problema. Con una feature activa queda como candidata para la pregunta del cierre; sin feature activa (apareció en el PR) se guarda ya como regla con origen review y dice el K nuevo, o "similar to K3" si ya hay una parecida (no bloquea). Sin `--question` falla.
 
 Costo: un escape es una fila de ~200 B; las candidatas viajan en el JSON de la feature (hasta ~6 KB). Nada se borra solo.
+
+## F4.3: notas y para retomar
+
+Qué ves: las notas temporales (`N3`) son lo que dejaste a medias en una carpeta; sirven para retomar en otra sesión sin releer el chat.
+
+- **Al arrancar sin feature activa.** Si la carpeta tiene notas, tu primer mensaje dispara la pregunta «¿Con cuál seguimos?» (hasta 3 notas, con «hace 2 d», y «Ninguna, es otra cosa»). La elegida llega al contexto con su texto; «Ninguna» no inyecta nada. Si hacés `/clear` justo después de trabajar una nota, esa sale primera con «(recomendada)». Si hay más de 3, la descripción dice cuántas y `nxy note list` las muestra.
+- **Con una feature activa** no se pregunta nada: al arrancar (inicio, `resume`, `/clear`, compact) Claude recibe el «para retomar» armado desde la db: el pedido, el paso, «lote N de M», lo último que falló, las decisiones y las notas de esa feature; si hay otras notas en la carpeta, una línea «Hay N notas más». `nxy status` muestra lo mismo (lote, última falla y decisiones).
+- **Cómo se borran.** `nxy note done <id>` la borra; vencen a los 30 días sin escribirlas (elegir una no renueva el plazo); las de una feature se borran al terminarla o pararla; las de un worktree, al cerrarlo con `nxy feature close`.
+- **Pausar un worktree.** `nxy feature pause --path <wt>` termina con una línea para Claude: te pregunta «¿Algo para la próxima sesión?» y, si contestás, la guarda con `nxy note save "<título>" --cwd <wt> [--feature <id>]` (texto por stdin, hasta 2 KB). Si no querés nada, decí que no.
+
+Costo: leer las notas al arrancar es una consulta a la db (milisegundos); una nota pesa hasta 2 KB.
+
+## F4.3: write gate y read gate
+
+Qué te frena: sin feature activa, el hilo principal no edita archivos de código (los que el mapa del repo indexa más las extensiones de tus tests afectados, como `.kt`); docs y texto pasan, y el implementer nunca se frena. Lo mismo vale para una escritura por shell (`echo > x.go`). Con una feature activa el freno total no cambia. Además, con el contexto del hilo principal arriba de `gate.contextTokens` (100k por defecto), un Grep/Glob/`rg`/`find` amplio se frena y te manda al scout; archivos sueltos y `Read` con offset/limit nunca.
+
+Qué hacer cuando frena: `/nxy:feature` para algo con forma, o el implementer para un cambio puntual. Si de verdad conviene hacerlo en el hilo principal: `/nxy:gate once` deja pasar una sola edición de código (`/nxy:gate once search`, una sola búsqueda); vence a los 5 minutos. `/nxy:gate reads off` apaga el freno de búsquedas (`reads on` lo vuelve a prender); se escribe en tu config de usuario (`~/.nxy/config.json`), o sólo para este repo con `--repo` (`.nxy/config.json`).
+
+`/nxy:gate status` (o `nxy gate status`) muestra:
+- `write gate` y `read gate`: si están prendidos y desde qué umbral frena.
+- `one-shot edit` y `search escape`: si hay un `once` armado y cuántos minutos le quedan.
+- `decisions`: ediciones frenadas de cuántas pasaron por el gate; `context at edit`: el contexto (p10, p50, p90, máximo) en que editaste.
+- `searches`: búsquedas frenadas y dejadas pasar con `once search`.
+- `broad searches`: búsquedas amplias de los últimos 30 días (`--since 7d`) que corrieron sobre el umbral.
+`nxy stats` suma esas tres líneas del gate sólo si el repo ya tiene filas en el ledger.
+
+Costo: cada edición del hilo principal escribe una fila de ~150 B en `.nxy/local/metrics/gate.jsonl` (tope 256 KB, 90 días).

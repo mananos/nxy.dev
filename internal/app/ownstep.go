@@ -20,13 +20,18 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 	}
 	if ev.AgentID != "" && ev.AgentType == roleScout {
 		// The scout's own search needs no feature: it only reads and writes the repo map.
+		reason := "nxy: its own locate for the scout"
 		if !h.parseLocate(cmd, ev.Tool == "PowerShell") {
-			return HookResponse{}, false
+			// the bootstrap scout saves its candidates, only while the repo is in `scouting`
+			if !h.parseBootstrapSave(cmd, ev.Tool == "PowerShell") || h.bootstrapStatus(ctx, ev) != bootstrapScouting {
+				return HookResponse{}, false
+			}
+			reason = "nxy: its own bootstrap save for the scout"
 		}
 		if hasCd && h.normDir(cdDir) != h.normDir(ev.Cwd) {
 			return HookResponse{}, false
 		}
-		return HookResponse{AllowReason: "nxy: its own locate for the scout"}, true
+		return HookResponse{AllowReason: reason}, true
 	}
 	if ev.AgentID == "" || ev.AgentType == rolePlanner {
 		// `mem related` only reads the memory: the planner and the main thread may run it on their own.
@@ -36,6 +41,13 @@ func (h Hooks) ownStep(ctx context.Context, ev HookEvent) (HookResponse, bool) {
 			}
 			return HookResponse{AllowReason: "nxy: its own mem related"}, true
 		}
+	}
+	if ev.AgentID == "" && (h.parseNoteSave(cmd, ev.Tool == "PowerShell", ev.SessionID) || h.parseNoteDone(cmd, ev.Tool == "PowerShell")) {
+		// A note belongs to the folder, not to a feature: the main thread may run its own note commands.
+		if hasCd && h.normDir(cdDir) != h.normDir(ev.Cwd) {
+			return HookResponse{}, false
+		}
+		return HookResponse{AllowReason: "nxy: its own note command"}, true
 	}
 	var id string
 	switch {
@@ -192,6 +204,52 @@ func (h Hooks) parsePlanSave(cmd string, ps bool) string {
 // parseSave is parsePlanSave for any command that saves a JSON body: words judges the command
 // words (without the call operator) and returns the feature id, or "".
 func (h Hooks) parseSave(cmd string, ps bool, words func([]string) string) string {
+	return h.parseSaveDelim(cmd, ps, "JSON", words)
+}
+
+// parseNoteSave reports whether cmd is `"<exe>" note save "<title>" --session <this session> [--id N<n>]`
+// with its body in a NOTE heredoc (or a PowerShell here-string).
+func (h Hooks) parseNoteSave(cmd string, ps bool, session string) bool {
+	if session == "" {
+		return false
+	}
+	return h.parseSaveDelim(cmd, ps, "NOTE", func(toks []string) string {
+		if len(toks) != 6 && len(toks) != 8 {
+			return ""
+		}
+		if !h.isExe(toks[0]) || toks[1] != "note" || toks[2] != "save" || toks[3] == "" || strings.HasPrefix(toks[3], "-") ||
+			toks[4] != "--session" || toks[5] != session {
+			return ""
+		}
+		if len(toks) == 8 && (toks[6] != "--id" || !isNoteRef(toks[7])) {
+			return ""
+		}
+		return session
+	}) != ""
+}
+
+// parseNoteDone reports whether cmd is `"<exe>" note done N<n>` (a leading `& ` only in PowerShell).
+func (h Hooks) parseNoteDone(cmd string, ps bool) bool {
+	if strings.ContainsAny(cmd, "\r\n") {
+		return false
+	}
+	toks, ok := shellWords(cmd)
+	if !ok {
+		return false
+	}
+	if ps && len(toks) > 0 && toks[0] == "&" {
+		toks = toks[1:]
+	}
+	return len(toks) == 4 && h.isExe(toks[0]) && toks[1] == "note" && toks[2] == "done" && isNoteRef(toks[3])
+}
+
+// isNoteRef reports whether s is a note's short id: N followed by digits.
+func isNoteRef(s string) bool {
+	return len(s) >= 2 && s[0] == 'N' && strings.Trim(s[1:], "0123456789") == ""
+}
+
+// parseSaveDelim is parseSave for a Bash heredoc closed by delim.
+func (h Hooks) parseSaveDelim(cmd string, ps bool, delim string, words func([]string) string) string {
 	lines := strings.Split(strings.ReplaceAll(cmd, "\r\n", "\n"), "\n")
 	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
 		lines = lines[:len(lines)-1]
@@ -200,12 +258,12 @@ func (h Hooks) parseSave(cmd string, ps bool, words func([]string) string) strin
 		return ""
 	}
 	if !ps {
-		head, ok := strings.CutSuffix(strings.TrimSpace(lines[0]), " <<'JSON'")
-		if !ok || strings.TrimSpace(lines[len(lines)-1]) != "JSON" {
+		head, ok := strings.CutSuffix(strings.TrimSpace(lines[0]), " <<'"+delim+"'")
+		if !ok || strings.TrimSpace(lines[len(lines)-1]) != delim {
 			return ""
 		}
 		for _, l := range lines[1 : len(lines)-1] {
-			if strings.TrimSpace(l) == "JSON" {
+			if strings.TrimSpace(l) == delim {
 				return ""
 			}
 		}

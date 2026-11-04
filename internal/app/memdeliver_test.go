@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/memory"
@@ -19,6 +20,19 @@ type deliverMemory struct {
 	obsolete   []string
 	relatedFor []string
 }
+
+func (m *deliverMemory) Notes(context.Context, string, bool, time.Time) ([]memory.Note, error) {
+	return nil, nil
+}
+func (m *deliverMemory) Note(context.Context, string) (memory.Note, error) {
+	return memory.Note{}, memory.ErrNotFound
+}
+func (m *deliverMemory) SaveNote(_ context.Context, n memory.Note) (memory.Note, error) {
+	return n, nil
+}
+func (m *deliverMemory) SweepNotes(context.Context, time.Time) (int, error)          { return 0, nil }
+func (m *deliverMemory) DeleteNotesOfFeature(context.Context, string) (int, error)   { return 0, nil }
+func (m *deliverMemory) DeleteNotesUnder(context.Context, string, bool) (int, error) { return 0, nil }
 
 func (m *deliverMemory) Rules(context.Context, string) ([]memory.Rule, error) { return m.rules, nil }
 func (m *deliverMemory) Related(_ context.Context, _ string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error) {

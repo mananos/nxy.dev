@@ -70,6 +70,15 @@ func runStatus(_ []string, _ io.Reader, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "feature: %s\nrequest: %s\nstate: %s\nstep: %s\nnext: %s\n",
 		v.FeatureID, v.Request, v.Public, v.Phase, v.Next)
+	if v.Progress != "" {
+		fmt.Fprintf(stdout, "batch: %s\n", v.Progress)
+	}
+	if v.Failure != "" {
+		fmt.Fprintf(stdout, "last failure: %s\n", v.Failure)
+	}
+	for _, d := range v.Decisions {
+		fmt.Fprintf(stdout, "decision: %s\n", d)
+	}
 	return 0
 }
 

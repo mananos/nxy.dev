@@ -118,6 +118,38 @@ func TestFeatureWorktreeLifecycle(t *testing.T) {
 	}
 }
 
+func TestFeaturePauseAsksForNoteAndCloseDeletesNotes(t *testing.T) {
+	gitFeatureRepo(t)
+	code, out, errb := runCmd(t, "", "feature", "new", "--name", "notas", "--base", "dev")
+	if code != 0 {
+		t.Fatalf("new: code %d, out %q, err %q", code, out, errb)
+	}
+	wt := created(t, out)
+
+	code, out, errb = runCmd(t, "", "feature", "pause", "--path", wt)
+	if code != 0 || !strings.Contains(out, "¿Algo para la próxima sesión?") || !strings.Contains(out, "note save") || !strings.Contains(out, "--cwd") {
+		t.Fatalf("pause: code %d, out %q, err %q", code, out, errb)
+	}
+	if strings.Contains(out, "--feature") {
+		t.Fatalf("no feature is active in the worktree: %q", out)
+	}
+
+	if code, out, errb = runCmd(t, "falta el test", "note", "save", "retomar", "--cwd", wt); code != 0 {
+		t.Fatalf("note save: code %d, out %q, err %q", code, out, errb)
+	}
+	if _, out, _ = runCmd(t, "", "note", "list", "--cwd", wt); !strings.Contains(out, "retomar") {
+		t.Fatalf("note not listed: %q", out)
+	}
+
+	code, out, errb = runCmd(t, "", "feature", "close", "--path", wt)
+	if code != 0 || !strings.Contains(out, "Se borraron 1 notas temporales") {
+		t.Fatalf("close: code %d, out %q, err %q", code, out, errb)
+	}
+	if _, out, _ = runCmd(t, "", "note", "list", "--all"); strings.Contains(out, "retomar") {
+		t.Fatalf("note survived the close: %q", out)
+	}
+}
+
 func TestFeatureNewExistingBranch(t *testing.T) {
 	gitFeatureRepo(t)
 	code, out, errb := runCmd(t, "", "feature", "new", "--branch", "exist")

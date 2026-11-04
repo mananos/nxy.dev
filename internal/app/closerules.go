@@ -236,6 +236,15 @@ func (h Hooks) addRuleCandidate(ctx context.Context, dir, text, question, origin
 	return nf, nil
 }
 
+// deleteFeatureNotes drops the temporary notes of a feature that ended (done or stopped); failing
+// never stops the close.
+func (h Hooks) deleteFeatureNotes(ctx context.Context, featureID string) {
+	if h.Memory == nil || featureID == "" {
+		return
+	}
+	_, _ = h.Memory.DeleteNotesOfFeature(ctx, featureID)
+}
+
 // saveClosedFeature keeps what is left of a feature that closed well: its title, the decisions of
 // the task, the files it changed and the findings the user chose to fix. Failing to keep it never
 // stops the close.

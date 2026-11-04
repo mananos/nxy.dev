@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mananos/nxy.dev/internal/app"
 	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -403,6 +404,24 @@ func pendingQuestions(all []domain.Question, answered map[string]bool, max int) 
 		qs = append(qs, aq)
 	}
 	return qs
+}
+
+// askInstruction words an app.AskSpec as an instruction to ask it with AskUserQuestion.
+func askInstruction(a app.AskSpec) string {
+	var qs []askQuestion
+	for _, s := range append([]app.AskSpec{a}, a.More...) {
+		q := askQuestion{Question: s.Question, Header: s.Header, MultiSelect: s.MultiSelect}
+		for _, o := range s.Options {
+			q.Options = append(q.Options, askOption{o.Label, o.Description})
+		}
+		qs = append(qs, q)
+	}
+	after := a.After
+	if after == "" {
+		after = "and then carry on with their message using the answer"
+	}
+	return "nxy: before anything else, ask the user with AskUserQuestion, with exactly this input, " +
+		after + ":\n" + askInput(qs)
 }
 
 func askInput(qs []askQuestion) string {

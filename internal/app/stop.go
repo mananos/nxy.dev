@@ -25,6 +25,7 @@ func (h Hooks) StopFeature(ctx context.Context, dir string) (f domain.Feature, w
 	if err != nil {
 		return domain.Feature{}, nil, err
 	}
+	h.deleteFeatureNotes(ctx, f.ID)
 	if h.Viewer != nil {
 		warning = h.Viewer.Discard(f.ID)
 	}

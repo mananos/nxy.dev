@@ -8,6 +8,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/affected"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/gate"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/repomap"
@@ -120,6 +121,103 @@ type FlowMemory interface {
 	SimilarRules(ctx context.Context, repo, text string, limit int) ([]memory.Rule, error)
 	RecordEscape(ctx context.Context, featureID, repo, lens, text string) error
 	ReviewStats(ctx context.Context, repo string, since int64) ([]domain.LensStat, error)
+	// Temporary notes the flow reads and cleans up.
+	Notes(ctx context.Context, folder string, foldCase bool, now time.Time) ([]memory.Note, error)
+	Note(ctx context.Context, ref string) (memory.Note, error)
+	SaveNote(ctx context.Context, n memory.Note) (memory.Note, error)
+	SweepNotes(ctx context.Context, now time.Time) (int, error)
+	DeleteNotesOfFeature(ctx context.Context, featureID string) (int, error)
+	DeleteNotesUnder(ctx context.Context, folder string, foldCase bool) (int, error)
+}
+
+// SessionState is the local per-session state of the hooks; times are in ms (zero = never).
+type SessionState struct {
+	ID              string
+	Folder          string
+	Source          string
+	StartedAt       int64
+	NotesPending    bool
+	RecommendedNote string
+	NoteID          string
+	StopAsked       bool
+	LastEditAt      int64
+	ReadHintAt      int64
+	EndedAt         int64
+	EndReason       string
+}
+
+// Sessions keeps the per-session state of the hooks (local, never exported).
+type Sessions interface {
+	StartSession(ctx context.Context, s SessionState) error
+	Session(ctx context.Context, id string) (SessionState, bool, error)
+	// ConsumeNotesPending is true only the one time notes_pending was set.
+	ConsumeNotesPending(ctx context.Context, id string) (bool, error)
+	ChainNote(ctx context.Context, id, noteID string) error
+	MarkEdit(ctx context.Context, id, folder string, at int64) error
+	MarkStopAsked(ctx context.Context, id string) error
+	// MarkReadHint is true only the first time for the session.
+	MarkReadHint(ctx context.Context, id string, at int64) (bool, error)
+	EndSession(ctx context.Context, id, reason string, at int64) error
+	// RecentEnd finds the newest session of the folder that ended with reason at or after since (ms).
+	RecentEnd(ctx context.Context, folder, reason string, since int64, foldCase bool) (SessionState, bool, error)
+	PruneSessions(ctx context.Context, before time.Time) (int, error)
+}
+
+// BootstrapState is the bootstrap of the first rules of a repo: status is "", "scouting",
+// "confirming" or "done"; the pending request waits for it to finish.
+type BootstrapState struct {
+	Repo            string
+	OfferedAt       int64
+	Status          string
+	Candidates      []memory.BootstrapCandidate
+	PendingRequest  string
+	PendingEngineer bool
+}
+
+// Bootstrap keeps the bootstrap state per repo key (local, never exported).
+type Bootstrap interface {
+	Bootstrap(ctx context.Context, repo string) (BootstrapState, bool, error)
+	SaveBootstrap(ctx context.Context, b BootstrapState) error
+	// MarkOffered is true only the first time for the repo.
+	MarkOffered(ctx context.Context, repo string) (bool, error)
+}
+
+// GateEscape names a one-shot escape of the gate: edit or search.
+type GateEscape string
+
+const (
+	GateEscapeEdit   GateEscape = "edit"
+	GateEscapeSearch GateEscape = "search"
+)
+
+// GateRecord is one ledger row; Kind is "read" for a search and "" for an edit. Ts is epoch ms.
+type GateRecord struct {
+	Ts            int64
+	Tool          string
+	Allow         bool
+	Reason        string
+	ContextTokens *float64
+	Threshold     float64
+	Kind          string
+}
+
+// Gate serves the gate: its config, one-shot escapes and the ledger of decisions (per checkout).
+type Gate interface {
+	// Settings is the gate section of the merged config for dir.
+	Settings(dir string) gate.Config
+	// Arm arms an escape for the config window and returns when it expires (epoch ms).
+	Arm(dir string, kind GateEscape) (int64, error)
+	// Until is when the armed escape expires (epoch ms), 0 when there is none.
+	Until(dir string, kind GateEscape) int64
+	// Consume uses up the escape; true means let this one through.
+	Consume(dir string, kind GateEscape) bool
+	Record(dir string, r GateRecord)
+	Rows(dir string) []gate.Row
+}
+
+// ContextMeter measures the main thread's context from its transcript; ok is false when unknown.
+type ContextMeter interface {
+	MainContextTokens(transcriptPath string) (tokens float64, ok bool)
 }
 
 // Repos gives the stable key of the repository a directory belongs to.

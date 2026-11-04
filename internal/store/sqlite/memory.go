@@ -806,6 +806,65 @@ func (s *Store) DeleteNote(ctx context.Context, ref string) error {
 	return tx.Commit()
 }
 
+// Note reads one live note by N3 or ULID.
+func (s *Store) Note(ctx context.Context, ref string) (memory.Note, error) {
+	id, err := resolveRef(ctx, s.db, KindNote, ref)
+	if err != nil {
+		return memory.Note{}, err
+	}
+	got, err := queryNotes(ctx, s.db, `WHERE id=? AND deleted_at=0`, id)
+	if err != nil {
+		return memory.Note{}, err
+	}
+	if len(got) == 0 {
+		return memory.Note{}, memory.ErrNotFound
+	}
+	return got[0], nil
+}
+
+// DeleteNotesOfFeature turns the live notes of a feature into tombstones and returns how many.
+func (s *Store) DeleteNotesOfFeature(ctx context.Context, featureID string) (int, error) {
+	if featureID == "" {
+		return 0, nil
+	}
+	stamp := s.nowMs()
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE mem_notes SET deleted_at=?, updated_at=?, body='' WHERE deleted_at=0 AND feature_id=?`, stamp, stamp, featureID)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	return int(n), err
+}
+
+// DeleteNotesUnder turns the live notes whose folder is folder or inside it into tombstones and
+// returns how many.
+func (s *Store) DeleteNotesUnder(ctx context.Context, folder string, foldCase bool) (int, error) {
+	if folder == "" {
+		return 0, nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	all, err := queryNotes(ctx, tx, `WHERE deleted_at=0`)
+	if err != nil {
+		return 0, err
+	}
+	stamp, count := s.nowMs(), 0
+	for _, n := range all {
+		if !memory.FolderMatch(n.Folder, folder, foldCase) || len(n.Folder) < len(folder) {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE mem_notes SET deleted_at=?, updated_at=?, body='' WHERE id=?`, stamp, stamp, n.ID); err != nil {
+			return 0, err
+		}
+		count++
+	}
+	return count, tx.Commit()
+}
+
 // SweepNotes turns the notes not updated for memory.NoteTTL into tombstones and returns how many.
 func (s *Store) SweepNotes(ctx context.Context, now time.Time) (int, error) {
 	cutoff := now.Add(-memory.NoteTTL).UTC().UnixMilli()

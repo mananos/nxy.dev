@@ -25,6 +25,7 @@ type hookInput struct {
 	AgentType      string          `json:"agent_type"`
 	Prompt         string          `json:"prompt"`
 	Source         string          `json:"source"`
+	Reason         string          `json:"reason"`
 	ToolUseID      string          `json:"tool_use_id"`
 	ToolResponse   json.RawMessage `json:"tool_response"`
 
@@ -49,6 +50,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		AgentType:      in.AgentType,
 		Prompt:         in.Prompt,
 		Source:         in.Source,
+		Reason:         in.Reason,
 		ToolUseID:      in.ToolUseID,
 	}
 	var ti struct {
@@ -162,14 +164,19 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			"permissionDecisionReason": reason,
 			"updatedInput":             fields,
 		}}
+	case ev.Name == "Stop" && resp.Block != "":
+		out = map[string]any{"decision": "block", "reason": resp.Block}
 	case ev.Name == "Stop" && resp.Next != nil:
 		out = map[string]any{"decision": "block", "reason": StopInstruction(resp.Next.Feature, resp.Next.Note, resp.Next.Exe)}
-	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != "" || resp.Context != ""):
+	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != "" || resp.Context != "" || resp.Ask != nil):
 		out = map[string]any{}
-		if resp.Next != nil || resp.Context != "" {
+		if resp.Next != nil || resp.Context != "" || resp.Ask != nil {
 			var parts []string
 			if resp.Next != nil {
 				parts = append(parts, InstructionFor(resp.Next.Feature, resp.Next.Note, resp.Next.Exe))
+			}
+			if resp.Ask != nil {
+				parts = append(parts, askInstruction(*resp.Ask))
 			}
 			if resp.Context != "" {
 				parts = append(parts, resp.Context)

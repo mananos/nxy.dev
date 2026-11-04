@@ -20,9 +20,9 @@ import (
 // app cannot import adapters: the store meets the port here.
 var _ app.MemoryStore = (*sqlite.Store)(nil)
 
-const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b]>`
+const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
 
-const noteUsage = `usage: nxy note <save "<title>" [--id N2] [--feature id] [--session id] (body on stdin) | list [--all] | done <id>>`
+const noteUsage = `usage: nxy note <save "<title>" [--id N2] [--feature id] [--session id: folder and chain of that session] (body on stdin) | list [--all] | done <id>>`
 
 // openMemory opens the global database and wires the memory use cases.
 func openMemory(ctx context.Context) (app.Memory, *sqlite.Store, error) {
@@ -123,7 +123,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 	cwd := memCwd(opts)
 	ctx := context.Background()
 	switch sub {
-	case "rule", "show", "search", "promote", "related", "export", "import", "note":
+	case "rule", "show", "search", "promote", "related", "export", "import", "note", "bootstrap":
 	default:
 		fmt.Fprintln(stderr, memUsage)
 		return 1
@@ -135,6 +135,8 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 	defer st.Close()
 
 	switch sub {
+	case "bootstrap":
+		return runMemBootstrap(ctx, st, cwd, pos, stdin, stdout, stderr)
 	case "rule":
 		if len(pos) == 0 {
 			fmt.Fprintln(stderr, memUsage)
@@ -235,6 +237,49 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 	return 0
 }
 
+// runMemBootstrap is `nxy mem bootstrap [save]`: the bare form starts the scouting and prints what
+// the main thread does next; `save` takes the scout's JSON candidates from stdin.
+func runMemBootstrap(ctx context.Context, st *sqlite.Store, cwd string, pos []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	repo := repoKeys{}.Key(cwd)
+	cur, _, err := st.Bootstrap(ctx, repo)
+	if err != nil {
+		return memFail(stderr, err)
+	}
+	cur.Repo = repo
+	switch {
+	case len(pos) == 0:
+		if cur.OfferedAt == 0 {
+			cur.OfferedAt = time.Now().UnixMilli()
+		}
+		cur.Status, cur.Candidates = "scouting", nil
+		if err := st.SaveBootstrap(ctx, cur); err != nil {
+			return memFail(stderr, err)
+		}
+		fmt.Fprintln(stdout, app.BootstrapDispatch())
+	case len(pos) == 1 && pos[0] == "save":
+		if cur.Status != "scouting" {
+			return memFail(stderr, errors.New("bootstrap is not scouting; run `nxy mem bootstrap` first"))
+		}
+		data, err := io.ReadAll(stdin)
+		if err != nil {
+			return memFail(stderr, err)
+		}
+		cands, err := memory.DecodeBootstrap(data)
+		if err != nil {
+			return memFail(stderr, err)
+		}
+		cur.Status, cur.Candidates = "confirming", cands
+		if err := st.SaveBootstrap(ctx, cur); err != nil {
+			return memFail(stderr, err)
+		}
+		fmt.Fprintf(stdout, "saved %d candidates; nxy asks the user which to keep\n", len(cands))
+	default:
+		fmt.Fprintln(stderr, memUsage)
+		return 1
+	}
+	return 0
+}
+
 // runNote is `nxy note`: temporary notes, kept by folder (not by git repo) for 30 days.
 func runNote(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	defer func() {
@@ -273,7 +318,18 @@ func runNote(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		n, err := m.NoteSave(ctx, cwd, strings.Join(pos, " "), string(body), optVal(opts, "id"), optVal(opts, "feature"), optVal(opts, "session"))
+		session := optVal(opts, "session")
+		folder := cwd
+		if session != "" {
+			// the note belongs to the folder the session works in, wherever the command runs
+			if row, ok, err := st.Session(ctx, session); err == nil && ok && row.Folder != "" {
+				folder = row.Folder
+			}
+		}
+		n, err := m.NoteSave(ctx, folder, strings.Join(pos, " "), string(body), optVal(opts, "id"), optVal(opts, "feature"), session)
+		if err == nil && session != "" {
+			_ = st.ChainNote(ctx, session, n.Short)
+		}
 		if err != nil {
 			return memFail(stderr, err)
 		}

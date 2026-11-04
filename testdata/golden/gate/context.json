@@ -1,0 +1,13 @@
+[
+{"name":"context:empty","input":{"text":"","truncated":false},"output":{"tokens":null}},
+{"name":"context:garbage-lines","input":{"text":"{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":8,\"cache_read_input_tokens\":9}}}\nnot json\n{\"type\":\"assistant\",\"message\":{\"usage\":\n[1,2]\n\n","truncated":false},"output":{"tokens":17}},
+{"name":"context:missing-fields","input":{"text":"{\"type\":\"assistant\",\"message\":{\"usage\":{\"output_tokens\":5,\"cache_read_input_tokens\":777}}}\n","truncated":false},"output":{"tokens":777}},
+{"name":"context:newest-wins","input":{"text":"{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":1,\"cache_read_input_tokens\":2,\"cache_creation_input_tokens\":3}}}\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":100,\"cache_read_input_tokens\":20000,\"cache_creation_input_tokens\":0}}}\n{\"type\":\"user\",\"message\":{\"content\":\"later\"}}\n","truncated":false},"output":{"tokens":20100}},
+{"name":"context:no-usage","input":{"text":"{\"type\":\"assistant\",\"message\":{\"content\":\"x\"}}\n{\"type\":\"user\",\"message\":{\"usage\":{\"input_tokens\":99}}}\n","truncated":false},"output":{"tokens":null}},
+{"name":"context:plain","input":{"text":"{\"type\":\"user\",\"message\":{\"content\":\"hi\"}}\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":10,\"cache_read_input_tokens\":1000,\"cache_creation_input_tokens\":200}}}\n","truncated":false},"output":{"tokens":1210}},
+{"name":"context:sidechain-counts","input":{"text":"{\"type\":\"assistant\",\"isSidechain\":true,\"message\":{\"usage\":{\"input_tokens\":42}}}\n","truncated":false},"output":{"tokens":42}},
+{"name":"context:truncated-keeps-later","input":{"text":"tial line}}\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":1,\"cache_read_input_tokens\":50000}}}\n","truncated":true},"output":{"tokens":50001}},
+{"name":"context:truncated-only-partial","input":{"text":"ssistant\",\"message\":{\"usage\":{\"input_tokens\":999999}}}\n","truncated":true},"output":{"tokens":null}},
+{"name":"context:truncated-partial-first-line","input":{"text":"ssistant\",\"message\":{\"usage\":{\"input_tokens\":999999}}}\n{\"type\":\"user\",\"message\":{\"content\":\"x\"}}\n","truncated":true},"output":{"tokens":null}},
+{"name":"context:zero-total-falls-back","input":{"text":"{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":4,\"cache_read_input_tokens\":5,\"cache_creation_input_tokens\":6}}}\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0}}}\n{\"type\":\"assistant\",\"message\":{\"usage\":{}}}\n","truncated":false},"output":{"tokens":15}}
+]

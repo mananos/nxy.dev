@@ -192,7 +192,7 @@ func TestNormPathUNC(t *testing.T) {
 func TestStatus(t *testing.T) {
 	dir := t.TempDir()
 	h, st := flowHooks(false)
-	if v, err := h.Status(context.Background(), dir); err != nil || v != (StatusView{}) {
+	if v, err := h.Status(context.Background(), dir); err != nil || v.FeatureID != "" {
 		t.Fatalf("empty: %+v %v", v, err)
 	}
 	id := seed(t, h, st, dir, approvalState, approvalNext)

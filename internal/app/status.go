@@ -15,6 +15,9 @@ type StatusView struct {
 	Phase     string
 	Next      string
 	PlanRev   int
+	Progress  string   // "lote N de M" while batches run
+	Failure   string   // what failed last, empty when nothing did
+	Decisions []string // decisions of the plan and the design
 }
 
 // Status describes the active feature of the repo dir belongs to.
@@ -31,6 +34,9 @@ func (h Hooks) Status(ctx context.Context, dir string) (StatusView, error) {
 		Phase:     f.State.Phase.Label(),
 		Next:      nextSituation(f),
 		PlanRev:   f.PlanRev,
+		Progress:  batchProgress(f),
+		Failure:   lastFailure(f),
+		Decisions: featureDecisions(f),
 	}, nil
 }
 

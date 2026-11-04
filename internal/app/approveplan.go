@@ -109,6 +109,12 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if ev.AgentID != "" || len(ev.Answers) == 0 {
 		return HookResponse{}
 	}
+	if r, ok := h.answerNotes(ctx, ev); ok {
+		return r
+	}
+	if r, ok := h.answerBootstrap(ctx, ev); ok {
+		return r
+	}
 	f, ok := h.activeFeature(ctx, ev)
 	if !ok {
 		return HookResponse{}

@@ -1,9 +1,11 @@
 package app
 
 import (
+	"strings"
 	"time"
 
 	"github.com/mananos/nxy.dev/internal/format"
+	"github.com/mananos/nxy.dev/internal/gate"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/internal/jscompat"
 	"github.com/mananos/nxy.dev/internal/report"
@@ -20,11 +22,14 @@ type Usage struct {
 	// BroadSearches are the main-thread broad searches of a transcript at or above threshold.
 	BroadSearches func(path string, threshold float64) []report.BroadRow
 	// Gain is `rtk gain --all` (plus `--project` when here) run in cwd; false when rtk is missing or fails.
-	Gain   func(here bool, cwd string) (any, bool)
-	Getenv func(string) string
-	Getwd  func() string
-	Clock  func() time.Time
-	Loc    *time.Location
+	Gain func(here bool, cwd string) (any, bool)
+	// Gate serves the gate lines of stats; nil means none.
+	Gate    Gate
+	Context ContextMeter
+	Getenv  func(string) string
+	Getwd   func() string
+	Clock   func() time.Time
+	Loc     *time.Location
 	// GOOS is the operating system name (runtime.GOOS), for ledger path matching.
 	GOOS string
 }
@@ -109,5 +114,14 @@ func (u Usage) Stats(args []string) report.Output {
 			d.CacheTTL = &ttl
 		}
 	}
-	return report.Stats(d)
+	out := report.Stats(d)
+	if !asJSON && out.Code == 0 && u.Gate != nil {
+		if rows := u.Gate.Rows(dir); len(rows) > 0 {
+			if !strings.HasSuffix(out.Stdout, "\n") {
+				out.Stdout += "\n"
+			}
+			out.Stdout += "\n" + strings.Join(gate.Summary(rows), "\n") + "\n"
+		}
+	}
+	return out
 }

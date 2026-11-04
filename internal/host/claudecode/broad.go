@@ -42,9 +42,22 @@ func resolveLikeNode(cwd, p string) string {
 }
 
 // BroadSearchesInTranscript counts the broad searches of the main transcript at path made at or above
-// threshold. An unreadable file gives nil. (projectBroadSearches, the gate entry's consumer, is not ported.)
+// threshold. An unreadable file gives nil.
 func BroadSearchesInTranscript(path string, threshold float64) []report.BroadRow {
 	return broadSearchesSince(path, threshold, 0)
+}
+
+// ProjectBroadSearches is projectBroadSearches of the 1.x: the broad searches of every main session of
+// the project at cwd since sinceMs, summarized. A threshold not above zero gives an empty summary.
+func ProjectBroadSearches(cwd, projectsDir string, sinceMs int64, threshold float64) report.BroadSummary {
+	if !(threshold > 0) {
+		return report.BroadSummary{}
+	}
+	var rows []report.BroadRow
+	for _, s := range ListSessions(ListOpts{Cwd: cwd, ProjectsDir: projectsDir, Since: sinceMs}) {
+		rows = append(rows, broadSearchesSince(s.Path, threshold, float64(sinceMs))...)
+	}
+	return report.SummarizeBroadSearches(rows, threshold)
 }
 
 func broadSearchesSince(path string, threshold, sinceMs float64) []report.BroadRow {

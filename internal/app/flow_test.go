@@ -259,11 +259,11 @@ func TestSessionStartBackgroundPlannerWaits(t *testing.T) {
 	f.Background = rolePlanner
 	st.feats[id] = f
 	r := h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "clear", ProjectDir: "/p", Cwd: "/p"})
-	if r.Next != nil || r.Context != backgroundWait(id, rolePlanner) || !strings.Contains(r.Notice, "planner is still running") || strings.Contains(r.Notice, "pendiente") {
+	if r.Next != nil || !strings.HasPrefix(r.Context, backgroundWait(id, rolePlanner)) || !strings.Contains(r.Context, "para retomar") || !strings.Contains(r.Notice, "planner is still running") || strings.Contains(r.Notice, "pendiente") {
 		t.Errorf("response = %+v", r)
 	}
 	r = h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "resume", ProjectDir: "/p", Cwd: "/p"})
-	if r.Next != nil || r.Context != backgroundWait(id, rolePlanner) || r.Notice != "" {
+	if r.Next != nil || !strings.HasPrefix(r.Context, backgroundWait(id, rolePlanner)) || !strings.Contains(r.Context, "para retomar") || r.Notice != "" {
 		t.Errorf("resume = %+v", r)
 	}
 }
@@ -276,7 +276,7 @@ func TestSessionStartStartupClearsBackground(t *testing.T) {
 		f.Background = bg
 		st.feats[id] = f
 		r := h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "startup", ProjectDir: "/p", Cwd: "/p"})
-		if r.Next == nil || r.Context != "" || !strings.Contains(r.Notice, "pendiente") || st.feats[id].Background != "" {
+		if r.Next == nil || strings.Contains(r.Context, "still running") || !strings.Contains(r.Context, "para retomar") || !strings.Contains(r.Notice, "pendiente") || st.feats[id].Background != "" {
 			t.Errorf("bg=%q response = %+v stored=%q", bg, r, st.feats[id].Background)
 		}
 	}

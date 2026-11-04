@@ -17,8 +17,11 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 		dir = ev.Cwd
 	}
 	var r HookResponse
+	featureActive := false
+	defer func() { h.startNotesSession(ctx, ev, featureActive) }()
 	if h.Store != nil && h.Repos != nil {
 		if f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(dir)); err == nil && found {
+			featureActive = true
 			fresh := ev.Source == "startup" || ev.Source == ""
 			if fresh && f.Background != "" {
 				// A new process cannot have a planner still running from the old one.
@@ -63,6 +66,12 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 				r.Context = backgroundWait(f.ID, f.Background)
 			} else {
 				r.Next = &Next{Feature: f}
+			}
+			if resume := h.resumeContext(ctx, ev, f); resume != "" {
+				if r.Context != "" {
+					r.Context += "\n\n"
+				}
+				r.Context += resume
 			}
 			if fresh || ev.Source == "clear" {
 				if reviewing {

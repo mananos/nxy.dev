@@ -23,5 +23,5 @@
     },
     "cacheBreakThreshold": 100000
   },
-  "gate": { "contextTokens": 100000 }
+  "gate": { "enabled": true, "contextTokens": 100000, "escapeMinutes": 5, "reads": true }
 }

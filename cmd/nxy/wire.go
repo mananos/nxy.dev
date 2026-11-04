@@ -231,6 +231,167 @@ func (l *lazyStore) ReviewStats(ctx context.Context, repo string, since int64) (
 	return s.ReviewStats(ctx, repo, since)
 }
 
+func (l *lazyStore) Notes(ctx context.Context, folder string, foldCase bool, now time.Time) ([]memory.Note, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.Notes(ctx, folder, foldCase, now)
+}
+
+func (l *lazyStore) Note(ctx context.Context, ref string) (memory.Note, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return memory.Note{}, err
+	}
+	return s.Note(ctx, ref)
+}
+
+func (l *lazyStore) SaveNote(ctx context.Context, n memory.Note) (memory.Note, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return memory.Note{}, err
+	}
+	return s.SaveNote(ctx, n)
+}
+
+func (l *lazyStore) SweepNotes(ctx context.Context, now time.Time) (int, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.SweepNotes(ctx, now)
+}
+
+func (l *lazyStore) DeleteNotesOfFeature(ctx context.Context, featureID string) (int, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.DeleteNotesOfFeature(ctx, featureID)
+}
+
+func (l *lazyStore) DeleteNotesUnder(ctx context.Context, folder string, foldCase bool) (int, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.DeleteNotesUnder(ctx, folder, foldCase)
+}
+
+var _ app.Sessions = (*lazyStore)(nil)
+
+func toState(x sqlite.Session) app.SessionState { return app.SessionState(x) }
+
+func (l *lazyStore) StartSession(ctx context.Context, x app.SessionState) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.StartSession(ctx, sqlite.Session(x))
+}
+
+func (l *lazyStore) Session(ctx context.Context, id string) (app.SessionState, bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return app.SessionState{}, false, err
+	}
+	x, ok, err := s.Session(ctx, id)
+	return toState(x), ok, err
+}
+
+func (l *lazyStore) ConsumeNotesPending(ctx context.Context, id string) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.ConsumeNotesPending(ctx, id)
+}
+
+func (l *lazyStore) ChainNote(ctx context.Context, id, noteID string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.ChainNote(ctx, id, noteID)
+}
+
+func (l *lazyStore) MarkEdit(ctx context.Context, id, folder string, at int64) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.MarkEdit(ctx, id, folder, at)
+}
+
+func (l *lazyStore) MarkStopAsked(ctx context.Context, id string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.MarkStopAsked(ctx, id)
+}
+
+func (l *lazyStore) MarkReadHint(ctx context.Context, id string, at int64) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.MarkReadHint(ctx, id, at)
+}
+
+func (l *lazyStore) EndSession(ctx context.Context, id, reason string, at int64) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.EndSession(ctx, id, reason, at)
+}
+
+func (l *lazyStore) RecentEnd(ctx context.Context, folder, reason string, since int64, foldCase bool) (app.SessionState, bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return app.SessionState{}, false, err
+	}
+	x, ok, err := s.RecentEnd(ctx, folder, reason, since, foldCase)
+	return toState(x), ok, err
+}
+
+func (l *lazyStore) PruneSessions(ctx context.Context, before time.Time) (int, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.PruneSessions(ctx, before)
+}
+
+var _ app.Bootstrap = (*lazyStore)(nil)
+
+func (l *lazyStore) Bootstrap(ctx context.Context, repo string) (app.BootstrapState, bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return app.BootstrapState{}, false, err
+	}
+	b, ok, err := s.Bootstrap(ctx, repo)
+	return app.BootstrapState(b), ok, err
+}
+
+func (l *lazyStore) SaveBootstrap(ctx context.Context, b app.BootstrapState) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.SaveBootstrap(ctx, sqlite.BootstrapState(b))
+}
+
+func (l *lazyStore) MarkOffered(ctx context.Context, repo string) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.MarkOffered(ctx, repo)
+}
+
 func (l *lazyStore) Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error {
 	s, err := l.open(ctx)
 	if err != nil {
@@ -520,6 +681,7 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
-		Memory: st,
+		Memory: st, Sessions: st, Bootstrap: st,
+		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 	}, st
 }

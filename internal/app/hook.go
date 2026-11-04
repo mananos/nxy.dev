@@ -45,6 +45,26 @@ type HookEvent struct {
 	Answers map[string]string
 	// AgentAsync is true on PostToolUse Agent/Task when the agent was launched in the background.
 	AgentAsync bool
+	// Reason is SessionEnd's reason (clear, logout, other...).
+	Reason string
+}
+
+// AskOption is one option of a question nxy asks the user.
+type AskOption struct {
+	Label       string
+	Description string
+}
+
+// AskSpec is a question the main thread has to put to the user (AskUserQuestion).
+type AskSpec struct {
+	Question    string
+	Header      string
+	MultiSelect bool
+	Options     []AskOption
+	// More are further questions asked in the same AskUserQuestion call.
+	More []AskSpec
+	// After replaces the default tail of the instruction ("carry on with their message").
+	After string
 }
 
 // Next is the step the main thread has to take; the host adapter words it.
@@ -79,6 +99,10 @@ type HookResponse struct {
 	Notice string
 	// Context is a plain line for the main thread, with no step attached.
 	Context string
+	// Ask is a question for the main thread to ask the user before anything else.
+	Ask *AskSpec
+	// Block keeps the main thread from stopping (Stop), with this instruction as the reason.
+	Block string
 }
 
 // Hooks answers hook events with the ports it was given.
@@ -115,6 +139,15 @@ type Hooks struct {
 	Docs Docs
 	// Memory serves the repo memory inside the flow; nil means no memory: everything that uses it is skipped.
 	Memory FlowMemory
+	// Sessions keeps the per-session hook state; nil means no notes question, no chaining.
+	Sessions Sessions
+	// Bootstrap keeps the first-rules bootstrap per repo; nil means it is never offered.
+	Bootstrap Bootstrap
+	// Gate and Context serve the write and read gates; nil means the gate does not act.
+	Gate    Gate
+	Context ContextMeter
+	// Clock gives the time for notes and sessions; nil means the system clock.
+	Clock Clock
 }
 
 // Handle answers a hook event, one use case per event/tool.
@@ -130,11 +163,19 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 	switch {
 	case ev.Name == "PreToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
 		return h.preToolBash(ctx, ev)
+	case ev.Name == "PreToolUse" && (ev.Tool == "Grep" || ev.Tool == "Glob"):
+		return h.preToolSearch(ctx, ev)
 	case ev.Name == "PreToolUse" && isAgentTool(ev.Tool):
 		return h.preToolAgent(ctx, ev)
 	case ev.Name == "PostToolUse" && isAgentTool(ev.Tool):
+		if r, ok := h.bootstrapScoutDone(ctx, ev); ok {
+			return h.deliverPending(ctx, ev, r)
+		}
 		return h.deliverPending(ctx, ev, h.postToolAgent(ctx, ev))
 	case ev.Name == "UserPromptSubmit":
+		if r, ok := h.firstPromptNotes(ctx, ev); ok {
+			return r
+		}
 		if r, ok := h.changeNote(ctx, ev); ok {
 			return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
 		}
@@ -148,10 +189,18 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		return h.preToolEdit(ctx, ev)
 	case ev.Name == "SessionStart":
 		return h.deliverPending(ctx, ev, h.sessionStart(ctx, ev))
+	case ev.Name == "SessionEnd":
+		return h.sessionEnd(ctx, ev)
 	case ev.Name == "SubagentStop":
 		return h.subagentStop(ctx, ev)
 	case ev.Name == "Stop":
-		return h.deliverPending(ctx, ev, HookResponse{})
+		r := h.deliverPending(ctx, ev, HookResponse{})
+		if r.Next == nil {
+			if n, ok := h.stopNote(ctx, ev); ok {
+				return n
+			}
+		}
+		return r
 	}
 	return HookResponse{}
 }

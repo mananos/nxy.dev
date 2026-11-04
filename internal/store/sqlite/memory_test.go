@@ -235,6 +235,23 @@ func TestMemNotesFoldersAndExpiry(t *testing.T) {
 	}
 }
 
+func TestNoteOfDeletedIsNotFound(t *testing.T) {
+	s, _ := newMem(t)
+	n, err := s.SaveNote(ctx, memory.Note{Folder: "/w", Title: "t", Body: "b"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Note(ctx, n.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteNote(ctx, n.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Note(ctx, n.ID); err == nil {
+		t.Error("deleted note must not be returned")
+	}
+}
+
 func TestMemExportNotesOnlyOnRequest(t *testing.T) {
 	s, _ := newMem(t)
 	s.SaveNote(ctx, memory.Note{Folder: "/w", Title: "t", Body: "b"})

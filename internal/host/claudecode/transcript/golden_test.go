@@ -69,6 +69,30 @@ func TestGoldenFiles(t *testing.T) {
 	}
 }
 
+func TestGoldenContext(t *testing.T) {
+	n := 0
+	for _, c := range goldentest.Load(t, "gate") {
+		if c.File != "context.json" {
+			continue
+		}
+		n++
+		t.Run(c.Name, func(t *testing.T) {
+			var text string
+			var truncated bool
+			c.In(t, "text", &text)
+			c.In(t, "truncated", &truncated)
+			var tokens any
+			if v, ok := LastContextTokens([]byte(text), truncated); ok {
+				tokens = v
+			}
+			goldentest.Check(t, c, map[string]any{"tokens": tokens})
+		})
+	}
+	if n == 0 {
+		t.Fatal("no context cases")
+	}
+}
+
 func TestEvents(t *testing.T) {
 	got := Events([]byte("{\"a\":1}\nnope\n\n[2]\r\n{\"b\":\r\n"))
 	if len(got) != 2 {

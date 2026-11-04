@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mananos/nxy.dev/internal/store/sqlite"
 )
 
 // runCLI runs `nxy <args>` with stdin and returns exit code, stdout and stderr.
@@ -126,6 +129,66 @@ func TestMemExportImport(t *testing.T) {
 	}
 	if code, _, errs := runCLI(t, "", "mem", "import", bad); code != 1 || !strings.Contains(errs, "unsupported export version") {
 		t.Fatalf("bad version: exit %d, %q", code, errs)
+	}
+}
+
+func TestMemBootstrapManualThenSave(t *testing.T) {
+	isolate(t)
+	work := t.TempDir()
+	if code, _, errs := runCLI(t, "[]", "mem", "bootstrap", "save", "--cwd", work); code != 1 || !strings.Contains(errs, "scouting") {
+		t.Fatalf("save before start: exit %d, stderr %q", code, errs)
+	}
+	if out := mustCLI(t, "", "mem", "bootstrap", "--cwd", work); !strings.Contains(out, "nxy:scout") || !strings.Contains(out, "nxy bootstrap") {
+		t.Fatalf("start: %q", out)
+	}
+	if code, _, _ := runCLI(t, `[{"text":"x","question":"","evidence":["a:1"]}]`, "mem", "bootstrap", "save", "--cwd", work); code != 1 {
+		t.Fatalf("invalid candidates accepted: exit %d", code)
+	}
+	if out := mustCLI(t, `[{"text":"run make check","question":"what runs before closing?","evidence":["Makefile:3"]}]`,
+		"mem", "bootstrap", "save", "--cwd", work); !strings.Contains(out, "1 candidates") {
+		t.Fatalf("save: %q", out)
+	}
+	_, st, err := openMemory(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	b, ok, err := st.Bootstrap(context.Background(), repoKeys{}.Key(work))
+	if err != nil || !ok || b.Status != "confirming" || len(b.Candidates) != 1 || b.OfferedAt == 0 {
+		t.Fatalf("state = %+v ok=%v err=%v", b, ok, err)
+	}
+}
+
+func TestNoteSaveSessionUsesTheSessionFolderAndChains(t *testing.T) {
+	isolate(t)
+	work, elsewhere := t.TempDir(), t.TempDir()
+	ctx := context.Background()
+	_, st, err := openMemory(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.StartSession(ctx, sqlite.Session{ID: "s1", Folder: work}); err != nil {
+		t.Fatal(err)
+	}
+	st.Close()
+	// run from another folder: the note still goes to the session's folder
+	out := mustCLI(t, "falta el test", "note", "save", "login", "--session", "s1", "--cwd", elsewhere)
+	if !strings.Contains(out, "N1") {
+		t.Fatalf("save: %q", out)
+	}
+	if list := mustCLI(t, "", "note", "list", "--cwd", work); !strings.Contains(list, "login") {
+		t.Fatalf("list of the session folder: %q", list)
+	}
+	if list := mustCLI(t, "", "note", "list", "--cwd", elsewhere); strings.Contains(list, "login") {
+		t.Fatalf("list of the other folder: %q", list)
+	}
+	_, st, err = openMemory(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if s, ok, err := st.Session(ctx, "s1"); err != nil || !ok || s.NoteID != "N1" {
+		t.Errorf("session = %+v ok=%v err=%v", s, ok, err)
 	}
 }
 

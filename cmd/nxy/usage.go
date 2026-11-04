@@ -71,11 +71,13 @@ func newUsage(getenv func(string) string, getwd func() string, clock func() time
 			}
 			return tools.Gain(info.RtkPath, args, cwd)
 		},
-		Getenv: getenv,
-		Getwd:  getwd,
-		Clock:  clock,
-		Loc:    loc,
-		GOOS:   runtime.GOOS,
+		Gate:    gateFiles{getenv: getenv},
+		Context: claudeContext{},
+		Getenv:  getenv,
+		Getwd:   getwd,
+		Clock:   clock,
+		Loc:     loc,
+		GOOS:    runtime.GOOS,
 	}
 }
 

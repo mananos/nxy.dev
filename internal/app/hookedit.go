@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/gate"
+	"github.com/mananos/nxy.dev/internal/repomap"
 )
 
 // goos is the OS the path comparison follows; a variable so tests can pin it.
@@ -21,15 +23,108 @@ func isEditTool(tool string) bool {
 	return false
 }
 
-// preToolEdit refuses edits inside the repo from the main thread while a feature is active.
+// preToolEdit refuses edits inside the repo from the main thread while a feature is active; without
+// a feature the write gate stops code files (docs and text go through).
 func (h Hooks) preToolEdit(ctx context.Context, ev HookEvent) HookResponse {
-	if ev.FilePath == "" || (ev.AgentID != "" && ev.AgentType != roleImplementer && ev.AgentType != roleDocumenter) {
+	resp, active := h.preToolEditFeature(ctx, ev)
+	if ev.FilePath != "" && ev.AgentID == "" && h.Gate != nil && ev.ProjectDir != "" {
+		if active {
+			if within(normPath(ev.ProjectDir, ""), normPath(ev.FilePath, ev.Cwd)) {
+				h.recordEdit(ev, resp.Deny == "", "feature")
+			}
+		} else if r := h.writeGate(ctx, ev, ev.Tool, ev.FilePath); r.Deny != "" {
+			return r
+		}
+	}
+	if resp.Deny == "" && ev.FilePath != "" && (ev.AgentID == "" || ev.AgentType == roleImplementer || ev.AgentType == roleDocumenter) {
+		h.markEdit(ctx, ev)
+	}
+	return resp
+}
+
+// recordEdit writes one ledger row for an edit of the main thread, with the measured context.
+func (h Hooks) recordEdit(ev HookEvent, allow bool, reason string) {
+	cfg := h.Gate.Settings(ev.ProjectDir)
+	if !cfg.Enabled {
+		return
+	}
+	h.Gate.Record(ev.ProjectDir, GateRecord{
+		Ts: h.now().UnixMilli(), Tool: ev.Tool, Allow: allow, Reason: reason,
+		ContextTokens: h.mainContext(ev), Threshold: cfg.ContextTokens,
+	})
+}
+
+// mainContext is the measured context of the main thread, nil when unknown.
+func (h Hooks) mainContext(ev HookEvent) *float64 {
+	if h.Context == nil || ev.TranscriptPath == "" {
+		return nil
+	}
+	if n, ok := h.Context.MainContextTokens(ev.TranscriptPath); ok {
+		return &n
+	}
+	return nil
+}
+
+// codeExtensions is what the write gate calls code: the indexed languages plus the test globs of the runners.
+func (h Hooks) codeExtensions(dir string) []string {
+	var globs []string
+	if h.Runners != nil {
+		rows, _ := h.Runners.Rows(dir)
+		for _, r := range rows {
+			globs = append(globs, r.Tests...)
+		}
+	}
+	return gate.CodeExtensions(repomap.IndexedExtensions(), globs)
+}
+
+// writeGate is the write gate without a feature: a code file inside the repo is refused unless the
+// one-shot escape is armed. Called for the main thread only.
+func (h Hooks) writeGate(ctx context.Context, ev HookEvent, tool, file string) HookResponse {
+	return h.writeGateWith(ctx, ev, tool, file, nil)
+}
+
+// writeGateWith is writeGate where spent, when not nil, carries the escape across the targets of one
+// command: the first code target consumes it, the rest ride on it.
+func (h Hooks) writeGateWith(ctx context.Context, ev HookEvent, tool, file string, spent *bool) HookResponse {
+	cfg := h.Gate.Settings(ev.ProjectDir)
+	if !cfg.Enabled {
 		return HookResponse{}
+	}
+	inside := within(normPath(ev.ProjectDir, ""), normPath(file, ev.Cwd))
+	isCode := inside && gate.IsCodeFile(file, h.codeExtensions(ev.ProjectDir))
+	escape := false
+	if isCode {
+		if spent != nil && *spent {
+			escape = true
+		} else if escape = h.Gate.Consume(ev.ProjectDir, GateEscapeEdit); escape && spent != nil {
+			*spent = true
+		}
+	}
+	d := gate.DecideWrite(gate.WriteInput{InsideRepo: inside, IsCode: isCode, EscapeActive: escape}, cfg)
+	if inside {
+		h.Gate.Record(ev.ProjectDir, GateRecord{
+			Ts: h.now().UnixMilli(), Tool: tool, Allow: d.Allow, Reason: d.Reason,
+			ContextTokens: h.mainContext(ev), Threshold: cfg.ContextTokens,
+		})
+	}
+	if d.Allow {
+		return HookResponse{}
+	}
+	return HookResponse{Deny: gate.WriteGateMessage(tool, file)}
+}
+
+func (h Hooks) preToolEditFeature(ctx context.Context, ev HookEvent) (HookResponse, bool) {
+	if ev.FilePath == "" || (ev.AgentID != "" && ev.AgentType != roleImplementer && ev.AgentType != roleDocumenter) {
+		return HookResponse{}, false
 	}
 	f, ok := h.activeFeature(ctx, ev)
 	if !ok {
-		return HookResponse{}
+		return HookResponse{}, false
 	}
+	return h.featureEdit(ctx, ev, f), true
+}
+
+func (h Hooks) featureEdit(ctx context.Context, ev HookEvent, f domain.Feature) HookResponse {
 	root := f.ProjectDir
 	if root == "" {
 		return HookResponse{}

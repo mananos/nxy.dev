@@ -5,14 +5,15 @@ import (
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/internal/searchscope"
 )
 
-// shellWrites reports whether the command writes inside the repo (outside .git and .nxy). Pure
-// string work: commands without such targets never open the store.
-func (h Hooks) shellWrites(ev HookEvent) bool {
+// shellWrites returns the files the command writes inside the repo (outside .git and .nxy), in the
+// form normPath gives. Pure string work: commands without such targets never open the store.
+func (h Hooks) shellWrites(ev HookEvent) []string {
 	root := ev.ProjectDir
 	if root == "" {
-		return false
+		return nil
 	}
 	cwd := ev.Cwd
 	if cwd == "" {
@@ -24,16 +25,39 @@ func (h Hooks) shellWrites(ev HookEvent) bool {
 	}
 	targets := filter.WriteTargets(ev.Command, cwd, o)
 	if len(targets) == 0 {
-		return false
+		return nil
 	}
 	r := normPath(root, "")
+	var out []string
 	for _, t := range targets {
 		p := normPath(t, "")
 		if within(r, p) && !within(r+"/.git", p) && !within(r+"/.nxy", p) {
-			return true
+			out = append(out, p)
 		}
 	}
-	return false
+	return out
+}
+
+// shellCodeGate is the write gate for a shell write of the main thread without a feature: a write
+// to a code file is stopped like an Edit (same one-shot escape).
+func (h Hooks) shellCodeGate(ctx context.Context, ev HookEvent, targets []string) HookResponse {
+	if h.Gate == nil || len(targets) == 0 {
+		return HookResponse{}
+	}
+	// One escape lets the whole command through: it is spent once, by the first code target.
+	var first HookResponse
+	spent := false
+	for _, t := range targets {
+		if r := h.writeGateWith(ctx, ev, ev.Tool, t, &spent); r.Deny != "" && first.Deny == "" {
+			first = r
+		}
+	}
+	return first
+}
+
+// broadShellSearch is true for a broad grep/find/rg of the main thread, which goes to the read gate.
+func (h Hooks) broadShellSearch(ev HookEvent) bool {
+	return ev.AgentID == "" && h.Gate != nil && searchscope.IsBroadMainSearch(ev.Tool, map[string]any{"command": ev.Command})
 }
 
 // preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs: while a feature is active the
@@ -46,12 +70,18 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r
 	}
-	if ev.AgentID != "" && ev.AgentType == roleDocumenter && h.shellWrites(ev) {
+	if h.broadShellSearch(ev) {
+		if r, denied := h.readGate(ctx, ev, ev.Tool, map[string]any{"command": ev.Command}); denied {
+			return r
+		}
+	}
+	writes := h.shellWrites(ev)
+	if ev.AgentID != "" && ev.AgentType == roleDocumenter && len(writes) > 0 {
 		if f, ok := h.activeFeature(ctx, ev); ok && f.ProjectDir != "" {
 			return HookResponse{Deny: "nxy: feature " + f.ID + " — the documenter edits docs with Edit/Write, not through the shell"}
 		}
 	}
-	if (ev.AgentID == "" || ev.AgentType == roleImplementer) && h.shellWrites(ev) {
+	if (ev.AgentID == "" || ev.AgentType == roleImplementer) && len(writes) > 0 {
 		if f, ok := h.activeFeature(ctx, ev); ok && f.ProjectDir != "" {
 			if ev.AgentID == "" {
 				return HookResponse{Deny: mainThreadWriteDeny(f)}
@@ -59,7 +89,12 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 			if f.State.Phase == domain.PhaseRunningBatch {
 				h.noteWrite(ctx, f.ID)
 			}
+		} else if ev.AgentID == "" {
+			if r := h.shellCodeGate(ctx, ev, writes); r.Deny != "" {
+				return r
+			}
 		}
+		h.markEdit(ctx, ev)
 	}
 	s := h.Config.Filter(ev.ProjectDir)
 	if !s.Enabled {

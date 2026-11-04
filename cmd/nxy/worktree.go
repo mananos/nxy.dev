@@ -106,6 +106,7 @@ func featureWorktrees(action string, args []string, stdout, stderr io.Writer) (c
 		}
 		fmt.Fprintf(stdout, "Listo: %s quedó marcado como pausado.\nSólo se dejó la marca (~100 B en su .nxy/local); no se escribió ningún handoff ni se tocó git.\nPara abrirlo: %s\n",
 			wt.Path, worktree.OpenCommand(wt.Path, shell))
+		fmt.Fprintln(stdout, pauseNoteLine(ctx, wt.Path))
 		return 0, true
 	default: // close
 		if !given["path"] || *path == "" {
@@ -114,13 +115,44 @@ func featureWorktrees(action string, args []string, stdout, stderr io.Writer) (c
 		if err := checkNoActiveFeature(ctx, dir, *path); err != nil {
 			return fail(err), true
 		}
+		wtPath := *path
+		if wt, _, _, ok := platform.FindWorktree(ctx, dir, *path); ok {
+			wtPath = wt.Path
+		}
 		cmd, err := platform.RemoveWorktree(ctx, dir, *path, *force, shell)
 		if err != nil {
 			return fail(err), true
 		}
 		fmt.Fprintf(stdout, "Listo: worktree cerrado. La rama no se borra.\nComando que corrió: %s\n", cmd)
+		if n := deleteWorktreeNotes(ctx, wtPath); n > 0 {
+			fmt.Fprintf(stdout, "Se borraron %d notas temporales de esa carpeta.\n", n)
+		}
 		return 0, true
 	}
+}
+
+// pauseNoteLine is the last line of `pause`, addressed to the model: it asks the user, optionally,
+// for something to leave for the next session and says how to save it.
+func pauseNoteLine(ctx context.Context, wtPath string) string {
+	feature := ""
+	h, st := newHooksStore()
+	defer st.Close()
+	if f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(wtPath)); err == nil && found && platform.SamePath(f.ProjectDir, wtPath) {
+		feature = " --feature " + f.ID
+	}
+	return fmt.Sprintf("Para el modelo: preguntale al usuario, sin insistir, «¿Algo para la próxima sesión?». Si contesta, guardalo con `%s note save \"<título>\" --cwd \"%s\"%s` (el texto por stdin, 2 KB como máximo); si no, no hagas nada más.",
+		exePath(), wtPath, feature)
+}
+
+// deleteWorktreeNotes drops the temporary notes of a closed worktree's folder and says how many.
+func deleteWorktreeNotes(ctx context.Context, wtPath string) int {
+	h, st := newHooksStore()
+	defer st.Close()
+	n, err := h.Memory.DeleteNotesUnder(ctx, wtPath, runtime.GOOS == "windows")
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 // checkNoActiveFeature refuses to close a worktree that holds a v2 feature that is not done. The

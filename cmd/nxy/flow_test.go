@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,11 +57,28 @@ func hookCall(t *testing.T, payload map[string]any) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if p, _ := payload["prompt"].(string); strings.HasPrefix(p, "/nxy:feature") || strings.HasPrefix(p, "/nxy:engineer") {
+		skipBootstrapOffer(t, fmt.Sprint(payload["cwd"]))
+	}
 	code, out, errb := runCmd(t, string(b), "hook")
 	if code != 0 {
 		t.Fatalf("hook exit %d: %s", code, errb)
 	}
 	return out
+}
+
+// skipBootstrapOffer marks the first-rules bootstrap of the repo as already offered, so a feature
+// starts at once (the offer has its own tests).
+func skipBootstrapOffer(t *testing.T, dir string) {
+	t.Helper()
+	_, st, err := openMemory(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if _, err := st.MarkOffered(context.Background(), repoKeys{}.Key(dir)); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func featureID(t *testing.T) string {
@@ -146,8 +164,14 @@ func TestFeatureFlowEndToEnd(t *testing.T) {
 	if _, out, _ := runCmd(t, "", "status"); !strings.Contains(out, "no active feature") {
 		t.Fatalf("status after stop: %q", out)
 	}
-	if out := hookCall(t, edit); out != "" {
-		t.Fatalf("edit denied after stop: %q", out)
+	// Without a feature the frame is gone: text passes, code is the write gate's (by file type).
+	text := map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Edit", "cwd": repo,
+		"tool_input": map[string]any{"file_path": filepath.Join(repo, "notes.md")}}
+	if out := hookCall(t, text); out != "" {
+		t.Fatalf("text edit denied after stop: %q", out)
+	}
+	if out := hookCall(t, edit); !strings.Contains(out, "no feature is active") {
+		t.Fatalf("code edit after stop not stopped by the write gate: %q", out)
 	}
 	if code, _, _ := runCmd(t, "", "feature", "stop"); code != 1 {
 		t.Fatalf("second stop exit %d", code)

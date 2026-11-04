@@ -64,6 +64,15 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{Deny: "feature " + f.ID + " in progress (" + string(f.State.Phase.Public()) +
 			"); next step " + f.Next.Label() + "; to end it: `nxy feature stop`"}
 	}
+	if r, ok := h.offerBootstrap(ctx, repo, request, engineer); ok {
+		return r
+	}
+	return h.createFeature(ctx, dir, request, engineer)
+}
+
+// createFeature creates the feature of a request (the repo has no active one) and returns its first step.
+func (h Hooks) createFeature(ctx context.Context, dir, request string, engineer bool) HookResponse {
+	repo := h.Repos.Key(dir)
 	s, as, err := flow.Next(domain.State{}, flow.Event{Kind: flow.Requested, Engineer: engineer})
 	if err != nil {
 		return HookResponse{}

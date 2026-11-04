@@ -166,6 +166,7 @@ func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain
 				f = nf
 			}
 		case a.Kind == domain.Close && f.State.Outcome == domain.OutcomeSuccess:
+			h.deleteFeatureNotes(ctx, f.ID)
 			h.saveClosedFeature(ctx, f)
 			if h.Viewer != nil {
 				_ = h.Viewer.Discard(f.ID)

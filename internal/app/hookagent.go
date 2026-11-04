@@ -133,6 +133,9 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	if resp.Deny != "" || ev.AgentID != "" || !strings.HasPrefix(ev.Subagent, "nxy:") {
 		return resp
 	}
+	if ev.Subagent == roleScout && resp.Prompt == "" {
+		resp.Prompt = h.bootstrapPrompt(ctx, ev)
+	}
 	if ev.Subagent == roleScout && resp.Prompt == "" && h.Exe != "" {
 		resp.Prompt = scoutPrompt(ev.AgentPrompt, h.Exe)
 	}
