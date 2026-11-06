@@ -36,14 +36,14 @@ func ruleCandidates(f domain.Feature) []domain.RuleCandidate {
 		if f.Plan != nil {
 			for _, d := range f.Plan.Decisions {
 				if d.Scope == domain.ScopeRepo && d.By == domain.ByPlanner {
-					all = append(all, domain.RuleCandidate{Text: d.Text, Question: d.Question, Origin: memory.OriginPlan})
+					all = append(all, domain.RuleCandidate{Text: d.Text, Question: d.Question, Origin: memory.OriginPlan, Repo: d.Repo})
 				}
 			}
 		}
 	} else if f.Plan != nil {
 		for _, d := range f.Plan.Decisions {
 			if d.Scope == domain.ScopeRepo {
-				all = append(all, domain.RuleCandidate{Text: d.Text, Question: d.Question, Origin: memory.OriginPlan})
+				all = append(all, domain.RuleCandidate{Text: d.Text, Question: d.Question, Origin: memory.OriginPlan, Repo: d.Repo})
 			}
 		}
 	}
@@ -64,6 +64,19 @@ func ruleCandidates(f domain.Feature) []domain.RuleCandidate {
 		}
 	}
 	return out
+}
+
+// candidateKey is the memory key of the repo a rule candidate belongs to: the one it names, else the
+// first repo of the feature.
+func (h Hooks) candidateKey(f domain.Feature, c domain.RuleCandidate) string {
+	if h.Repos == nil {
+		return ""
+	}
+	mrs := h.memRepos(f)
+	if i := memRepoIndex(mrs, c.Repo); i >= 0 {
+		return mrs[i].Key
+	}
+	return mrs[0].Key
 }
 
 // hasCandidates is whether the closing question has something to ask; without memory it never has.
@@ -88,12 +101,9 @@ func (h Hooks) ensureRules(ctx context.Context, f domain.Feature) domain.Feature
 		return f
 	}
 	offer := ruleCandidates(f)
-	var repo string
-	if h.Repos != nil {
-		repo = h.Repos.Key(f.ProjectDir)
-	}
 	for i := range offer {
 		offer[i].ID = "S" + strconv.Itoa(i+1)
+		repo := h.candidateKey(f, offer[i])
 		if h.Memory == nil || repo == "" {
 			continue
 		}
@@ -158,15 +168,20 @@ func (h Hooks) answerRules(ctx context.Context, f domain.Feature, answers map[st
 		return HookResponse{Next: &Next{Feature: f}}
 	}
 	if h.Memory != nil && h.Repos != nil {
-		repo := h.Repos.Key(f.ProjectDir)
-		live := map[string]bool{}
-		if rules, err := h.Memory.Rules(ctx, repo); err == nil {
-			for _, r := range rules {
-				live[memory.NormalizeText(r.Text)] = true
-			}
-		}
+		liveByRepo := map[string]map[string]bool{}
 		for _, c := range shown {
+			repo := h.candidateKey(f, c)
 			key := memory.NormalizeText(c.Text)
+			live := liveByRepo[repo]
+			if live == nil {
+				live = map[string]bool{}
+				liveByRepo[repo] = live
+				if rules, err := h.Memory.Rules(ctx, repo); err == nil {
+					for _, r := range rules {
+						live[memory.NormalizeText(r.Text)] = true
+					}
+				}
+			}
 			if !picked[c.ID] || live[key] {
 				continue
 			}
@@ -252,15 +267,19 @@ func (h Hooks) saveClosedFeature(ctx context.Context, f domain.Feature) {
 	if h.Memory == nil || h.Repos == nil || f.Plan == nil || f.ProjectDir == "" {
 		return
 	}
-	repo := h.Repos.Key(f.ProjectDir)
-	cf := memory.ClosedFeature{Meta: memory.Meta{ID: f.ID}, Title: f.Plan.Title, Repos: []string{repo}}
+	mrs := h.memRepos(f)
+	cf := memory.ClosedFeature{Meta: memory.Meta{ID: f.ID}, Title: f.Plan.Title, Repos: h.memKeys(f)}
 	for _, d := range f.Plan.Decisions {
 		if d.Scope == domain.ScopeTask && strings.TrimSpace(d.Text) != "" {
 			cf.Decisions = append(cf.Decisions, d.Text)
 		}
 	}
 	for _, p := range h.changedPaths(ctx, f) {
-		cf.Files = append(cf.Files, memory.FileRef{Repo: repo, Path: p})
+		i, rel := h.splitLabel(f, mrs, p)
+		if i < 0 {
+			i = 0
+		}
+		cf.Files = append(cf.Files, memory.FileRef{Repo: mrs[i].Key, Path: rel})
 	}
 	if f.Review != nil {
 		chosen := map[string]bool{}

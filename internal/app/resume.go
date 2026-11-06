@@ -91,6 +91,12 @@ func resumeSummary(f domain.Feature, notes []memory.Note, otherNotes int) string
 	if step != "" {
 		b.WriteString("Paso: " + step + "\n")
 	}
+	if f.Paused {
+		b.WriteString("La feature está pausada: `nxy feature resume --feature " + f.ID + "` la retoma.\n")
+	}
+	for _, l := range RepoLines(f) {
+		b.WriteString("Repo: " + l + "\n")
+	}
 	if fail := lastFailure(f); fail != "" {
 		b.WriteString("Lo último que falló:\n" + fail + "\n")
 	}

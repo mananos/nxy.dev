@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/memory"
 )
 
@@ -572,10 +571,7 @@ func TestMigrate4To5KeepsFeatures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Request: "keep"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	id := rawOldFeature(t, s, "r", "keep")
 	s.Close()
 	s2 := mustOpen(t, path)
 	if _, err := os.Stat(path + ".bak"); err != nil {

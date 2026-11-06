@@ -73,6 +73,24 @@ func created(t *testing.T, out string) string {
 	return path
 }
 
+func TestWorktreeListFromParentFolder(t *testing.T) {
+	needSh(t)
+	parent := mrParent(t, "api", "web")
+	mrIn(t, parent, func() {
+		if code, _, _ := runCmd(t, "", "feature", "list"); code == 0 {
+			t.Fatalf("a parent folder without features should still fail")
+		}
+	})
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "session_id": "s1", "cwd": parent, "prompt": "/nxy:feature add a thing"})
+	id := featureID(t)
+	mrIn(t, parent, func() {
+		code, out, errb := runCmd(t, "", "feature", "list")
+		if code != 0 || !strings.Contains(out, id+" (activa)") {
+			t.Fatalf("list: code %d, out %q, err %q", code, out, errb)
+		}
+	})
+}
+
 func TestFeatureWorktreeLifecycle(t *testing.T) {
 	gitFeatureRepo(t)
 

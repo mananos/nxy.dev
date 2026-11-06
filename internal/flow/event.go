@@ -26,6 +26,8 @@ const (
 	DesignClosed    EventKind = "design_closed"
 	GapsFound       EventKind = "gaps_found"
 	ToEngineer      EventKind = "to_engineer"
+	ClashAnswered   EventKind = "clash_answered"
+	BranchReady     EventKind = "branch_ready"
 
 	DocsChecked        EventKind = "docs_checked"
 	DocsAnswered       EventKind = "docs_answered"
@@ -39,7 +41,7 @@ var Kinds = []EventKind{
 	ChangeRequested, ChangeNoted, ViewFull, BatchReturned, Green, Red, Unverified, Decided,
 	ReviewDone, RefuterDone, Chosen, FixesReturned, Stop,
 	DesignClosed, GapsFound, ToEngineer, DocsChecked, DocsAnswered, DocumenterReturned,
-	RulesAnswered,
+	RulesAnswered, ClashAnswered, BranchReady,
 }
 
 // Decision is what the user picks after a step failed.
@@ -56,9 +58,10 @@ const (
 type Event struct {
 	Kind         EventKind
 	Engineer     bool     // Requested: the request came through /nxy:engineer
-	Questions    bool     // PlanSaved: the plan has questions for the user
-	NoTests      bool     // PlanSaved: the plan has rules without tests to confirm
-	Batches      int      // PlanSaved: number of batches in the plan
+	Questions    bool     // PlanSaved, ClashAnswered: the plan has questions for the user
+	NoTests      bool     // PlanSaved, ClashAnswered: the plan has rules without tests to confirm
+	Batches      int      // PlanSaved, ClashAnswered: number of batches in the plan
+	Blocked      bool     // PlannerReturned: the plan was not saved because a repo is held by another feature
 	HasNote      bool     // ChangeRequested: the change note came with the answer
 	Decision     Decision // Decided
 	Findings     bool     // ReviewDone, RefuterDone, Chosen: there are findings left

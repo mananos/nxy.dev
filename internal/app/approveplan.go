@@ -10,6 +10,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
 	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/internal/repos"
 	"github.com/mananos/nxy.dev/internal/review"
 )
 
@@ -23,7 +24,8 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 	}
 	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
 		q == plan.AffectedFailedQuestion(f.ID) || q == plan.UnverifiedQuestion(f.ID) ||
-		q == plan.FixesFailedQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) {
+		q == plan.FixesFailedQuestion(f.ID) || q == plan.ClashQuestion(f.ID) || strings.HasPrefix(q, review.FixQuestionPrefix(f.ID)) ||
+		q == plan.BranchQuestion(f.ID) || strings.HasPrefix(q, plan.BasePrefix(f.ID)) {
 		return true
 	}
 	if q == docs.QuestionText(f.ID) || strings.HasPrefix(q, plan.RulesQuestionPrefix(f.ID)) {
@@ -122,6 +124,12 @@ func (h Hooks) postToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if ans, rev, found := approvalAnswer(f, ev.Answers); found {
 		return h.answerApproval(ctx, f, ans, rev)
 	}
+	if ans, found := ev.Answers[plan.ClashQuestion(f.ID)]; found && f.State.Phase == domain.PhaseRepoClash {
+		return h.answerClash(ctx, f, ans)
+	}
+	if f.State.Phase == domain.PhaseBranch && hasBranchAnswer(f, ev.Answers) {
+		return h.answerBranch(ctx, f, ev.Answers)
+	}
 	if ans, found := decisionAnswer(f, ev.Answers); found {
 		return h.answerDecision(ctx, f, ans)
 	}
@@ -211,7 +219,34 @@ func (h Hooks) answerFindings(ctx context.Context, f domain.Feature, answers map
 		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 	}
 	if h.ReviewLog != nil && len(picks) > 0 {
-		_ = h.ReviewLog.RecordPicks(ctx, f.ID, f.Repo, picks)
+		repoKey := f.Repo
+		if len(f.Repos) > 0 && f.Repos[0].Key != "" {
+			repoKey = f.Repos[0].Key
+		}
+		// Each pick goes with the repo of its finding's file; the first repo takes the rest.
+		byRepo := map[string][]domain.Pick{}
+		var order []string
+		fileOf := map[string]string{}
+		for _, fd := range offered {
+			fileOf[fd.ID] = fd.File
+		}
+		for _, p := range picks {
+			key := repoKey
+			if len(f.Repos) > 1 {
+				if name, _, ok := repos.Split(fileOf[p.Finding], featureRepoNames(f)); ok {
+					if r, ok := f.RepoByName(name); ok && r.Key != "" {
+						key = r.Key
+					}
+				}
+			}
+			if _, seen := byRepo[key]; !seen {
+				order = append(order, key)
+			}
+			byRepo[key] = append(byRepo[key], p)
+		}
+		for _, key := range order {
+			_ = h.ReviewLog.RecordPicks(ctx, f.ID, key, byRepo[key])
+		}
 	}
 	return HookResponse{Next: &Next{Feature: nf}}
 }
@@ -246,11 +281,18 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 	note := ""
 	switch answer {
 	case plan.Approve:
-		nf, _, err = h.advanceWith(ctx, f.ID, flow.Event{Kind: flow.Approved}, func(x *domain.Feature) error {
+		// The branch question is built from git before the transition; with nothing to ask the first
+		// batch starts right away, from the HEAD of the folder.
+		offer := h.branchOffer(ctx, f)
+		nf, _, err = h.advanceSteps(ctx, f.ID, func(x *domain.Feature) ([]flow.Event, error) {
+			x.BranchOffer = offer
+			if offer != nil {
+				return []flow.Event{{Kind: flow.Approved}}, nil
+			}
 			if x.Base == "" && h.Changes != nil {
 				x.Base = h.Changes.Head(x.ProjectDir)
 			}
-			return nil
+			return []flow.Event{{Kind: flow.Approved}, {Kind: flow.BranchReady}}, nil
 		})
 	case plan.ViewFull:
 		if h.Viewer != nil {

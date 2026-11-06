@@ -119,6 +119,46 @@ func hasBranch(ctx context.Context, root, branch string) bool {
 	return err == nil
 }
 
+// remoteBase is the start point for a base: the local branch, else origin/<base> when that remote-tracking
+// ref exists (git then sets tracking on the new branch). ok is false when neither exists.
+func remoteBase(ctx context.Context, root, base string) (string, bool) {
+	if hasBranch(ctx, root, base) {
+		return base, true
+	}
+	if base == "" {
+		return "", false
+	}
+	if _, err := gitOut(ctx, root, "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+base); err == nil {
+		return "origin/" + base, true
+	}
+	return "", false
+}
+
+// remoteOnlyBranches lists origin branches that have no local branch, to offer as bases.
+func remoteOnlyBranches(ctx context.Context, root string, local []string) []string {
+	out, err := gitOut(ctx, root, "for-each-ref", "refs/remotes/origin", "--sort=-committerdate", "--format=%(refname:short)")
+	if err != nil {
+		return nil
+	}
+	have := map[string]bool{}
+	for _, b := range local {
+		have[b] = true
+	}
+	var res []string
+	for _, l := range strings.Split(out, "\n") {
+		l = strings.TrimSpace(l)
+		name := strings.TrimPrefix(l, "origin/")
+		if l == "" || name == l || name == "HEAD" || have[name] {
+			continue
+		}
+		if len(local)+len(res) >= maxBranches {
+			break
+		}
+		res = append(res, name)
+	}
+	return res
+}
+
 // PauseMark is the content of <runtime>/features/paused.json (~100 bytes).
 type PauseMark struct {
 	At     int64  `json:"at"`
@@ -221,10 +261,7 @@ func ListWorktrees(ctx context.Context, cwd string) (WorktreeList, error) {
 		if m, ok := Paused(wt.Path); ok {
 			row.PausedAt = m.At
 		}
-		native := NativePath(wt.Path)
-		_, pkgErr := os.Stat(filepath.Join(native, "package.json"))
-		_, modErr := os.Stat(filepath.Join(native, "node_modules"))
-		row.MissingDeps = pkgErr == nil && modErr != nil
+		row.MissingDeps = MissingDeps(wt.Path)
 		res.Rows = append(res.Rows, row)
 	}
 	main := list[0]
@@ -247,11 +284,138 @@ func ListWorktrees(ctx context.Context, cwd string) (WorktreeList, error) {
 	return res, nil
 }
 
+// MissingDeps reports a package.json without node_modules next to it (a fresh worktree has none).
+func MissingDeps(path string) bool {
+	native := NativePath(path)
+	_, pkgErr := os.Stat(filepath.Join(native, "package.json"))
+	_, modErr := os.Stat(filepath.Join(native, "node_modules"))
+	return pkgErr == nil && modErr != nil
+}
+
+// RepoBranches is the local branches of the repo that holds dir plus its default branch ("" when none).
+func RepoBranches(ctx context.Context, dir string) (branches []string, def string) {
+	root, ok := GitRoot(NativePath(dir))
+	if !ok {
+		return nil, ""
+	}
+	list := gitWorktrees(ctx, root)
+	if len(list) == 0 {
+		return nil, ""
+	}
+	main := list[0]
+	branches = ListBranches(ctx, main.Path)
+	if main.Branch != "" {
+		found := false
+		for _, b := range branches {
+			found = found || b == main.Branch
+		}
+		if !found {
+			branches = append([]string{main.Branch}, branches...)
+		}
+	}
+	branches = append(branches, remoteOnlyBranches(ctx, main.Path, branches)...)
+	originHead, _ := gitOut(ctx, main.Path, "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD")
+	return branches, worktree.DefaultBranchOf(strings.TrimSpace(originHead), main.Branch, branches)
+}
+
+// CurrentBranch is the branch checked out in dir, "" when HEAD is detached or dir is no repo.
+func CurrentBranch(ctx context.Context, dir string) string {
+	root, ok := GitRoot(NativePath(dir))
+	if !ok {
+		return ""
+	}
+	out, err := gitOut(ctx, root, "symbolic-ref", "--short", "-q", "HEAD")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
+// Switched is what SwitchBranch did in the session's folder.
+type Switched struct {
+	Command string
+	Branch  string
+	Created bool
+}
+
+// SwitchBranch moves dir to branch: a free existing branch is switched to, a new one is created from the
+// local base. Never stash, never force: git refuses when changes would be lost and its words come back.
+func SwitchBranch(ctx context.Context, dir, branch, base string, shell worktree.Shell) (Switched, error) {
+	branch = strings.TrimSpace(branch)
+	if branch == "" {
+		return Switched{}, errors.New("elegí una rama")
+	}
+	root, ok := GitRoot(NativePath(dir))
+	if !ok {
+		return Switched{}, errors.New("no es un repo git")
+	}
+	exists := hasBranch(ctx, root, branch)
+	if exists {
+		for _, w := range gitWorktrees(ctx, root) {
+			if w.Branch == branch && !SamePath(w.Path, root) {
+				return Switched{}, fmt.Errorf("la rama %s ya está abierta en %s", branch, w.Path)
+			}
+		}
+	} else if rb, found := remoteBase(ctx, root, base); found {
+		base = rb
+	} else {
+		return Switched{}, fmt.Errorf("la base %s no existe ni como rama local ni en origin", base)
+	}
+	argv := worktree.SwitchArgv(branch, base, !exists)
+	if _, err := gitRetry(ctx, root, argv[1:]...); err != nil {
+		return Switched{}, errors.New(gitMessage(err, "git switch falló"))
+	}
+	return Switched{Command: worktree.CommandText(argv, shell), Branch: branch, Created: !exists}, nil
+}
+
 // Added is what AddWorktree created.
 type Added struct {
 	Command string
 	Path    string
 	Branch  string
+	Created bool // the branch was created by this call (undo with `git branch -d`)
+}
+
+// AddBranchWorktree opens a worktree of the given branch in <repo>.worktrees/<slug>: a free existing
+// branch is opened, a new one is created from the local base.
+func AddBranchWorktree(ctx context.Context, repoDir, branch, base string, shell worktree.Shell) (Added, error) {
+	root, ok := GitRoot(NativePath(repoDir))
+	var list []worktree.Worktree
+	if ok {
+		list = gitWorktrees(ctx, root)
+	}
+	if len(list) == 0 {
+		return Added{}, errors.New("no es un repo git")
+	}
+	main := list[0].Path
+	b := strings.TrimSpace(branch)
+	names := worktree.FeatureNamesOf(worktree.NamesInput{Branch: &b}, main)
+	if !names.OK {
+		return Added{}, errors.New(names.Error)
+	}
+	if _, err := os.Stat(NativePath(names.Path)); err == nil {
+		return Added{}, fmt.Errorf("la carpeta %s ya existe", names.Path)
+	}
+	exists := hasBranch(ctx, main, names.Branch)
+	if exists {
+		for _, w := range list {
+			if w.Branch == names.Branch {
+				return Added{}, fmt.Errorf("la rama %s ya está abierta en %s", names.Branch, w.Path)
+			}
+		}
+	} else if rb, found := remoteBase(ctx, main, base); found {
+		base = rb
+	} else {
+		return Added{}, fmt.Errorf("la base %s no existe ni como rama local ni en origin", base)
+	}
+	argv, err := worktree.AddArgv(names.Branch, names.Path, !exists, base)
+	if err != nil {
+		return Added{}, err
+	}
+	if _, err := gitRetry(ctx, main, argv[1:]...); err != nil {
+		return Added{}, errors.New(gitMessage(err, "git worktree add falló"))
+	}
+	return Added{Command: worktree.CommandText(argv, shell), Path: names.Path, Branch: names.Branch, Created: !exists}, nil
 }
 
 // AddWorktree creates a worktree: {Name, Base, Issue} is a new branch from the local Base, {Branch} an

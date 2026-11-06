@@ -1,0 +1,8 @@
+[
+{"name":"label:000","input":{"roots":["/work/api","/work/web"],"root":"/work/api","primary":true,"abs":"/work/api/src/Main.java"},"output":{"label":"src/Main.java"}},
+{"name":"label:001","input":{"roots":["/work/api","/work/web"],"root":"/work/web","primary":false,"abs":"/work/web/src/app.ts"},"output":{"label":"web/src/app.ts"}},
+{"name":"label:002","input":{"roots":["/work/api","/work/web"],"root":"/work/web","primary":false,"abs":"/work/web"},"output":{"label":"web"}},
+{"name":"label:003","input":{"roots":["/work/api","/work/web"],"root":"/work/api","primary":true,"abs":"/work/api"},"output":{"label":""}},
+{"name":"label:004","input":{"roots":["/clientX/api","/clientY/api"],"root":"/clientY/api","primary":false,"abs":"/clientY/api/a/b.go"},"output":{"label":"clientY/api/a/b.go"}},
+{"name":"label:005","input":{"roots":["/clientX/api","/clientY/api"],"root":"/clientX/api","primary":true,"abs":"/clientX/api/a/b.go"},"output":{"label":"a/b.go"}}
+]

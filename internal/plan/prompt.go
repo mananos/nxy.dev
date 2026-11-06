@@ -85,6 +85,40 @@ const plannerExample = `{
   ]
 }`
 
+// multiRepoExample is the example of a plan over two repos, with the session folder being "api"
+// ("." is it, "../web" its sibling); the tests check it is valid.
+const multiRepoExample = `{
+  "title": "Greeting endpoint and page",
+  "repos": [
+    {"path": ".", "role": "contract", "suite": "go test ./..."},
+    {"path": "../web", "role": "consumer", "suite": "npm test"}
+  ],
+  "decisions": [{"scope": "repo", "text": "Greeting is served as JSON", "question": "How does the API return the greeting?", "repo": "api"}],
+  "criteria": [
+    {"id": "R1", "text": "GET /greet returns the greeting", "test": "tdd"},
+    {"id": "R2", "text": "The page shows the greeting", "test": "tdd"}
+  ],
+  "batches": [
+    {
+      "n": 1,
+      "title": "Greeting endpoint",
+      "covers": ["R1"],
+      "change": [{"at": "api/internal/greet/handler.go (new)", "what": "serve GET /greet as JSON"}],
+      "test": {"kind": "new", "name": "TestGreetHandler", "accept": "go test ./internal/greet/"},
+      "risk": "low"
+    },
+    {
+      "n": 2,
+      "title": "Greeting page",
+      "covers": ["R2"],
+      "change": [{"at": "web/src/Greeting.tsx (new)", "what": "fetch /greet and show it"}],
+      "test": {"kind": "new", "name": "Greeting.test.tsx", "accept": "npm test -- Greeting"},
+      "risk": "low",
+      "depends": [1]
+    }
+  ]
+}`
+
 //go:embed prompts/planner-engineer.md
 var plannerEngineerTemplate string
 
@@ -112,14 +146,15 @@ const engineerExample = `{
 }`
 
 type plannerData struct {
-	Feature     domain.Feature
-	Exe         string
-	Example     string
-	PrevJSON    string
-	NotesJoined []string
-	Design      *domain.Design
-	Delegated   []domain.Fork
-	Mem         string
+	Feature      domain.Feature
+	Exe          string
+	Example      string
+	MultiExample string
+	PrevJSON     string
+	NotesJoined  []string
+	Design       *domain.Design
+	Delegated    []domain.Fork
+	Mem          string
 }
 
 // PlannerPrompt builds the full prompt of the planner: the literal request,
@@ -128,11 +163,12 @@ type plannerData struct {
 func PlannerPrompt(f domain.Feature, exe, mem string) string {
 	engineer := f.Mode == domain.ModeEngineer
 	d := plannerData{
-		Feature:     f,
-		Mem:         mem,
-		Exe:         strings.ReplaceAll(exe, `\`, "/"),
-		Example:     plannerExample,
-		NotesJoined: f.ChangeNotes,
+		Feature:      f,
+		Mem:          mem,
+		Exe:          strings.ReplaceAll(exe, `\`, "/"),
+		Example:      plannerExample,
+		MultiExample: multiRepoExample,
+		NotesJoined:  f.ChangeNotes,
 	}
 	tmpl := plannerTmpl
 	if engineer {
@@ -184,6 +220,7 @@ type implementerData struct {
 	Decisions []domain.Decision
 	Criteria  []domain.Criterion
 	Accept    string
+	RepoLine  string
 	Need      Need
 	Failure   string
 	RedDone   bool
@@ -207,6 +244,13 @@ func ImplementerPrompt(f domain.Feature, exe, mem string) string {
 		Decisions: p.Decisions,
 		Accept:    p.Batches[n-1].Test.Accept,
 		Need:      NeedOf(p, n),
+	}
+	if r, ok := f.RepoByName(d.Batch.Repo); ok && len(p.Repos) > 0 {
+		dir := r.Checkout
+		if dir == "" {
+			dir = r.Root
+		}
+		d.RepoLine = "This batch works in repo " + r.Name + ", checkout `" + strings.ReplaceAll(dir, `\`, "/") + "`: `" + r.Name + "/x` is `<checkout>/x`."
 	}
 	for _, id := range d.Batch.Covers {
 		for _, r := range p.Criteria {

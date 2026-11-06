@@ -20,13 +20,25 @@ type LearningIn struct {
 // Report is what an agent returns to the memory.
 type Report struct {
 	Learnings []LearningIn
-	False     []string // A<n> the agent found false
+	False     []string // A<n> the agent found false, or "<repo>:A<n>" when it named the repo
 }
 
 var (
-	learnedRe = regexp.MustCompile(`(?i)^\s*learned:\s*(.+?)\s*$`)
-	falseRe   = regexp.MustCompile(`(?i)^\s*false:\s*(A\d+)\b`)
+	learnedRe  = regexp.MustCompile(`(?i)^\s*learned:\s*(.+?)\s*$`)
+	falseRe    = regexp.MustCompile(`(?i)^\s*false:\s*(?:\[([^\]]+)\]\s*|([A-Za-z0-9_.-]+):\s*)?(A\d+)\b`)
+	falseRefRe = regexp.MustCompile(`(?i)^\s*(?:\[([^\]]+)\]\s*|([A-Za-z0-9_.-]+):\s*)?(A\d+)\s*$`)
 )
+
+// SplitFalse reads a false reference: "A3", "[api] A3" or "api:A3". The repo is empty for the plain
+// form; ok is false when it is none of them.
+func SplitFalse(s string) (repo, id string, ok bool) {
+	m := falseRefRe.FindStringSubmatch(s)
+	if m == nil {
+		return "", "", false
+	}
+	repo = strings.TrimSpace(m[1] + m[2])
+	return repo, strings.ToUpper(m[3]), true
+}
 
 // ParseReport reads "learned: <text> [| files: a, b]" and "false: A7" lines
 // anywhere in a response; the rest is ignored.
@@ -35,7 +47,11 @@ func ParseReport(text string) Report {
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimRight(line, "\r")
 		if m := falseRe.FindStringSubmatch(line); m != nil {
-			r.False = append(r.False, strings.ToUpper(m[1]))
+			ref := strings.ToUpper(m[3])
+			if repo := strings.TrimSpace(m[1] + m[2]); repo != "" {
+				ref = repo + ":" + ref
+			}
+			r.False = append(r.False, ref)
 			continue
 		}
 		m := learnedRe.FindStringSubmatch(line)

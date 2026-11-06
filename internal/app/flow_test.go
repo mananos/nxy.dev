@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,6 +25,13 @@ func newMemStore() *memStore {
 }
 
 func (m *memStore) CreateFeature(_ context.Context, f domain.Feature) (string, error) {
+	for _, held := range f.Held() {
+		for _, g := range m.feats {
+			if slices.Contains(g.Held(), held) {
+				return "", ErrActiveFeature
+			}
+		}
+	}
 	m.n++
 	f.ID = "F" + strconv.Itoa(m.n)
 	m.feats[f.ID] = f
@@ -42,7 +51,7 @@ func (m *memStore) ActiveFeature(_ context.Context, repo string) (domain.Feature
 	var best domain.Feature
 	found := false
 	for _, f := range m.feats {
-		if f.Repo == repo && f.State.Phase != domain.PhaseDone && (!found || f.ID > best.ID) {
+		if slices.Contains(f.Held(), repo) && (!found || f.ID > best.ID) {
 			best, found = f, true
 		}
 	}
@@ -58,6 +67,23 @@ func (m *memStore) LatestFeature(_ context.Context, repo string) (domain.Feature
 		}
 	}
 	return best, found, nil
+}
+
+func (m *memStore) Features(_ context.Context, flt FeatureFilter) ([]domain.Feature, error) {
+	var out []domain.Feature
+	for _, f := range m.feats {
+		if flt.Home != "" && f.Home != flt.Home && (f.Home != "" || f.Repo != flt.Home) {
+			continue
+		}
+		if flt.Active || flt.Paused {
+			if f.State.Phase == domain.PhaseDone || f.Paused != flt.Paused {
+				continue
+			}
+		}
+		out = append(out, f)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	return out, nil
 }
 
 func (m *memStore) Transition(_ context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error {
@@ -84,7 +110,11 @@ func (m *memStore) Transition(_ context.Context, id string, fn func(domain.Featu
 
 type fakeRepos struct{}
 
-func (fakeRepos) Key(dir string) string { return "repo:" + dir }
+func (fakeRepos) Key(dir string) string      { return "repo:" + dir }
+func (fakeRepos) Checkout(dir string) string { return "repo:" + dir }
+func (fakeRepos) Root(dir string) (string, bool) {
+	return dir, true
+}
 
 type fakeLegacy bool
 

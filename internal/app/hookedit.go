@@ -3,13 +3,16 @@ package app
 import (
 	"context"
 	"path"
+	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/gate"
 	"github.com/mananos/nxy.dev/internal/repomap"
+	"github.com/mananos/nxy.dev/internal/repos"
 )
 
 // goos is the OS the path comparison follows; a variable so tests can pin it.
@@ -129,8 +132,14 @@ func (h Hooks) featureEdit(ctx context.Context, ev HookEvent, f domain.Feature) 
 	if root == "" {
 		return HookResponse{}
 	}
-	if !within(normPath(root, ""), normPath(ev.FilePath, ev.Cwd)) {
-		return HookResponse{}
+	target := normPath(ev.FilePath, ev.Cwd)
+	if !inFeatureRoots(f, target) {
+		return h.undeclaredEdit(ctx, ev, f, target)
+	}
+	if ev.AgentID != "" && ev.AgentType == roleImplementer {
+		if wt, ok := originalOfWorktree(f, target); ok {
+			return HookResponse{Deny: "nxy: feature " + f.ID + " works in a worktree — edit in " + wt}
+		}
 	}
 	if ev.AgentID != "" {
 		if ev.AgentType == roleDocumenter {
@@ -163,24 +172,118 @@ func (h Hooks) batchNamesFile(f domain.Feature, ev HookEvent) bool {
 	if f.Plan == nil || f.State.Batch < 1 || f.State.Batch > len(f.Plan.Batches) {
 		return false
 	}
-	root := normPath(f.ProjectDir, "")
 	target := normPath(ev.FilePath, ev.Cwd)
-	if !within(root, target) {
+	if !inFeatureRoots(f, target) {
 		return false
 	}
+	var names []string
+	if len(f.Plan.Repos) > 0 {
+		for _, r := range f.Repos {
+			names = append(names, r.Name)
+		}
+	}
+	dir := batchDir(f, f.State.Batch)
 	for _, c := range f.Plan.Batches[f.State.Batch-1].Change {
 		p := changePath(c.At)
 		if p == "" {
 			continue
 		}
+		d := dir
+		if name, rel, ok := repos.Split(p, names); ok {
+			r, _ := f.RepoByName(name)
+			d, p = repoDir(r), rel
+		}
 		if h.Files != nil {
 			p = h.Files.NativePath(p)
 		}
-		if normPath(p, f.ProjectDir) == target {
+		if normPath(p, d) == target {
 			return true
 		}
 	}
 	return false
+}
+
+// inFeatureRoots reports whether target (normalized) is inside the session folder or a repo of the feature.
+func inFeatureRoots(f domain.Feature, target string) bool {
+	if f.ProjectDir != "" && within(normPath(f.ProjectDir, ""), target) {
+		return true
+	}
+	for _, r := range f.Repos {
+		for _, d := range []string{r.Checkout, r.Root} {
+			if d != "" && within(normPath(d, ""), target) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// originalOfWorktree is the worktree to edit in when target sits in the original checkout of a repo
+// that the feature works on in a worktree.
+func originalOfWorktree(f domain.Feature, target string) (string, bool) {
+	if !f.UsesWorktrees() {
+		return "", false
+	}
+	for _, r := range f.Repos {
+		if r.Root == "" || r.Checkout == "" || normPath(r.Root, "") == normPath(r.Checkout, "") {
+			continue
+		}
+		if within(normPath(r.Root, ""), target) && !within(normPath(r.Checkout, ""), target) {
+			return r.Checkout, true
+		}
+	}
+	return "", false
+}
+
+// undeclaredEdit handles an edit of the implementer outside the feature: when it lands in another git
+// repo, the repo is added to the feature once (Undeclared, from its HEAD) and the edit is allowed with
+// a notice; it takes the checkout only when no other feature holds it.
+func (h Hooks) undeclaredEdit(ctx context.Context, ev HookEvent, f domain.Feature, target string) HookResponse {
+	if ev.AgentID == "" || ev.AgentType != roleImplementer || h.Repos == nil || h.Store == nil || f.ProjectDir == "" {
+		return HookResponse{}
+	}
+	if f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseFixing {
+		return HookResponse{}
+	}
+	file := ev.FilePath
+	if !filepath.IsAbs(file) && ev.Cwd != "" {
+		file = filepath.Join(ev.Cwd, file)
+	}
+	root, ok := h.Repos.Root(filepath.Dir(file))
+	if !ok || root == "" || within(normPath(root, ""), normPath(f.ProjectDir, "")) {
+		return HookResponse{}
+	}
+	checkout := h.Repos.Checkout(root)
+	free := false
+	if other, found, err := h.Store.ActiveFeature(ctx, checkout); err == nil && (!found || other.ID == f.ID) {
+		free = true
+	}
+	name := filepath.Base(root)
+	_, applied, err := h.mutate(ctx, f.ID, func(x *domain.Feature) bool {
+		for _, r := range x.Repos {
+			if normPath(r.Root, "") == normPath(root, "") {
+				return false
+			}
+		}
+		if len(x.Repos) == 0 {
+			prim := x.RepoList()[0]
+			prim.Name = filepath.Base(prim.Root)
+			x.Repos = []domain.FeatureRepo{prim}
+		}
+		r := domain.FeatureRepo{Name: name, Key: h.Repos.Key(root), Root: root, Checkout: root, Undeclared: true}
+		if h.Changes != nil {
+			r.Base = h.Changes.Head(root)
+		}
+		x.Repos = append(x.Repos, r)
+		if free && !x.Paused {
+			x.Holds = append(slices.Clone(x.Holds), checkout)
+		}
+		return true
+	})
+	if err != nil || !applied {
+		return HookResponse{}
+	}
+	return HookResponse{AllowReason: "nxy: feature " + f.ID + " — " + name + " is a repo outside the plan; added to the feature as undeclared"}
 }
 
 // fixNamesFile reports whether the edited file is the file of a finding the user chose to fix.
@@ -190,7 +293,12 @@ func (h Hooks) fixNamesFile(f domain.Feature, ev HookEvent) bool {
 	}
 	root := normPath(f.ProjectDir, "")
 	target := normPath(ev.FilePath, ev.Cwd)
-	if !within(root, target) {
+	multi := len(f.Repos) > 1
+	if multi {
+		if !inFeatureRoots(f, target) {
+			return false
+		}
+	} else if !within(root, target) {
 		return false
 	}
 	chosen := map[string]bool{}
@@ -201,11 +309,18 @@ func (h Hooks) fixNamesFile(f domain.Feature, ev HookEvent) bool {
 		if !chosen[fd.ID] || fd.File == "" {
 			continue
 		}
-		p := fd.File
+		p, dir := fd.File, f.ProjectDir
+		if multi {
+			// A finding of a multi-repo review names its file as "<repo>/<path>".
+			if name, rel, ok := repos.Split(p, featureRepoNames(f)); ok {
+				r, _ := f.RepoByName(name)
+				p, dir = rel, repoDir(r)
+			}
+		}
 		if h.Files != nil {
 			p = h.Files.NativePath(p)
 		}
-		if normPath(p, f.ProjectDir) == target {
+		if normPath(p, dir) == target {
 			return true
 		}
 	}
@@ -226,28 +341,19 @@ func (h Hooks) docsNamesFile(f domain.Feature, ev HookEvent) bool {
 	if f.Docs == nil {
 		return false
 	}
-	root := normPath(f.ProjectDir, "")
 	target := normPath(ev.FilePath, ev.Cwd)
-	if !within(root, target) {
+	if !inFeatureRoots(f, target) {
 		return false
 	}
 	for _, d := range f.Docs.Docs {
-		p := d.Path
-		if h.Files != nil {
-			p = h.Files.NativePath(p)
-		}
-		if normPath(p, f.ProjectDir) == target {
+		if h.docsAbs(f, d.Path) == target {
 			return true
 		}
 	}
 	if f.Docs.WikiDir == "" || !isMarkdown(target) {
 		return false
 	}
-	w := f.Docs.WikiDir
-	if h.Files != nil {
-		w = h.Files.NativePath(w)
-	}
-	wiki := normPath(w, f.ProjectDir)
+	wiki := h.docsAbs(f, f.Docs.WikiDir)
 	if !within(wiki, target) || target == wiki {
 		return false
 	}
@@ -256,6 +362,44 @@ func (h Hooks) docsNamesFile(f domain.Feature, ev HookEvent) bool {
 		return false
 	}
 	return true
+}
+
+// docsAbs is the normalized absolute path of a doc (or the wiki folder) of f.Docs: with several repos
+// it carries the repo name ("<name>/<path>"), otherwise it is relative to the repo of the feature.
+func (h Hooks) docsAbs(f domain.Feature, p string) string {
+	dir := repoDir(f.RepoList()[0])
+	if dir == "" {
+		dir = f.ProjectDir
+	}
+	if len(f.Repos) > 1 {
+		if name, rel, ok := repos.Split(p, featureRepoNames(f)); ok {
+			r, _ := f.RepoByName(name)
+			dir, p = repoDir(r), rel
+		}
+	}
+	if h.Files != nil {
+		p = h.Files.NativePath(p)
+	}
+	return normPath(p, dir)
+}
+
+// docsAbsolute is f with the docs of several repos as absolute paths (the documenter edits in the
+// checkouts); with one repo it is f itself.
+func (h Hooks) docsAbsolute(f domain.Feature) domain.Feature {
+	if f.Docs == nil || len(f.Repos) <= 1 {
+		return f
+	}
+	d := *f.Docs
+	d.Docs = make([]domain.DocFile, len(f.Docs.Docs))
+	for i, x := range f.Docs.Docs {
+		x.Path = h.docsAbs(f, x.Path)
+		d.Docs[i] = x
+	}
+	if d.WikiDir != "" {
+		d.WikiDir = h.docsAbs(f, d.WikiDir)
+	}
+	f.Docs = &d
+	return f
 }
 
 func isMarkdown(p string) bool {

@@ -197,6 +197,140 @@ func TestWorktreeCloseRefusals(t *testing.T) {
 	}
 }
 
+func TestSwitchBranch(t *testing.T) {
+	repo := worktreeRepo(t)
+	ctx := context.Background()
+	// uncommitted changes travel with a new branch
+	writeFile(t, filepath.Join(repo, "wip.txt"), "w")
+	sw, err := SwitchBranch(ctx, repo, "feature/x", "dev", worktree.Posix)
+	if err != nil || !sw.Created || sw.Command != "git switch -c feature/x dev" {
+		t.Fatalf("create: %+v %v", sw, err)
+	}
+	if b, _ := GitBranch(repo); b != "feature/x" {
+		t.Fatalf("branch %q", b)
+	}
+	if _, err := os.Stat(filepath.Join(repo, "wip.txt")); err != nil {
+		t.Fatal("changes lost")
+	}
+	// a free existing branch is switched to
+	sw, err = SwitchBranch(ctx, repo, "exist", "main", worktree.Posix)
+	if err != nil || sw.Created || sw.Command != "git switch exist" {
+		t.Fatalf("existing: %+v %v", sw, err)
+	}
+	// a branch taken by another worktree, and a missing base
+	if _, err := AddWorktree(ctx, repo, worktree.NamesInput{Branch: newName("dev")}, worktree.Posix); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SwitchBranch(ctx, repo, "dev", "main", worktree.Posix); err == nil || !strings.Contains(err.Error(), "ya está abierta") {
+		t.Fatalf("taken: %v", err)
+	}
+	if _, err := SwitchBranch(ctx, repo, "new1", "nope", worktree.Posix); err == nil || !strings.Contains(err.Error(), "la base nope") {
+		t.Fatalf("base: %v", err)
+	}
+	if _, err := SwitchBranch(ctx, t.TempDir(), "x", "main", worktree.Posix); err == nil {
+		t.Fatal("outside a repo must fail")
+	}
+}
+
+func TestRemoteOnlyBase(t *testing.T) {
+	repo := worktreeRepo(t)
+	ctx := context.Background()
+	bare := filepath.Join(t.TempDir(), "origin.git")
+	run := func(dir string, args ...string) {
+		t.Helper()
+		c := exec.Command("git", args...)
+		c.Dir = dir
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	if err := os.MkdirAll(bare, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run(bare, "init", "-q", "--bare")
+	run(repo, "remote", "add", "origin", bare)
+	run(repo, "branch", "rel")
+	run(repo, "push", "-q", "origin", "main", "rel")
+	run(repo, "branch", "-D", "rel")
+
+	branches, _ := RepoBranches(ctx, repo)
+	found := false
+	for _, b := range branches {
+		found = found || b == "rel"
+	}
+	if !found {
+		t.Fatalf("remote-only base not offered: %v", branches)
+	}
+	sw, err := SwitchBranch(ctx, repo, "feature/r", "rel", worktree.Posix)
+	if err != nil || !sw.Created || sw.Command != "git switch -c feature/r origin/rel" {
+		t.Fatalf("switch: %+v %v", sw, err)
+	}
+	add, err := AddBranchWorktree(ctx, repo, "feature/w", "rel", worktree.Posix)
+	if err != nil || !add.Created {
+		t.Fatalf("worktree: %+v %v", add, err)
+	}
+}
+
+func TestSwitchBranchRefusedByChanges(t *testing.T) {
+	repo := worktreeRepo(t)
+	ctx := context.Background()
+	if _, err := SwitchBranch(ctx, repo, "other", "main", worktree.Posix); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(repo, "a.txt"), "other")
+	run := func(args ...string) {
+		c := exec.Command("git", args...)
+		c.Dir = repo
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("commit", "-q", "-am", "other")
+	if _, err := SwitchBranch(ctx, repo, "main", "main", worktree.Posix); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(repo, "a.txt"), "dirty")
+	if _, err := SwitchBranch(ctx, repo, "other", "main", worktree.Posix); err == nil {
+		t.Fatal("git must refuse to lose the changes")
+	}
+	if b, _ := GitBranch(repo); b != "main" {
+		t.Fatalf("branch %q", b)
+	}
+}
+
+func TestAddBranchWorktreeAndRepoBranches(t *testing.T) {
+	repo := worktreeRepo(t)
+	ctx := context.Background()
+	branches, def := RepoBranches(ctx, repo)
+	if def != "main" || len(branches) != 3 {
+		t.Fatalf("branches %v default %q", branches, def)
+	}
+	added, err := AddBranchWorktree(ctx, repo, "feature/api_x", "dev", worktree.Posix)
+	if err != nil || !added.Created || !strings.HasSuffix(added.Path, "/repo.worktrees/api_x") || !strings.HasSuffix(added.Command, " dev") {
+		t.Fatalf("create: %+v %v", added, err)
+	}
+	if _, err := os.Stat(NativePath(added.Path)); err != nil {
+		t.Fatal(err)
+	}
+	if MissingDeps(added.Path) {
+		t.Fatal("no package.json: nothing missing")
+	}
+	writeFile(t, filepath.Join(NativePath(added.Path), "package.json"), "{}")
+	if !MissingDeps(added.Path) {
+		t.Fatal("package.json without node_modules")
+	}
+	ex, err := AddBranchWorktree(ctx, repo, "exist", "main", worktree.Posix)
+	if err != nil || ex.Created || strings.Contains(ex.Command, " -b ") {
+		t.Fatalf("existing: %+v %v", ex, err)
+	}
+	if _, err := AddBranchWorktree(ctx, repo, "exist", "main", worktree.Posix); err == nil {
+		t.Fatal("a taken branch must fail")
+	}
+	if _, err := AddBranchWorktree(ctx, repo, "feature/z", "nope", worktree.Posix); err == nil || !strings.Contains(err.Error(), "la base nope") {
+		t.Fatalf("base: %v", err)
+	}
+}
+
 func TestGitMessage(t *testing.T) {
 	if got := gitMessage(os.ErrPermission, "x"); got != os.ErrPermission.Error() {
 		t.Errorf("plain error: %q", got)

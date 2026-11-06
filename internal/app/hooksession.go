@@ -9,6 +9,23 @@ import (
 
 const legacyNotice = "nxy 1.x is still enabled: disable it while testing the v2 (both answer the same hooks)"
 
+// carryLink hands the feature of the session that just ended in a /clear to the new session of the
+// same folder, so the feature follows it even when it holds no checkout of that folder.
+func (h Hooks) carryLink(ctx context.Context, ev HookEvent) {
+	if h.Sessions == nil || ev.SessionID == "" || ev.Source != "clear" {
+		return
+	}
+	if s, ok, err := h.Sessions.Session(ctx, ev.SessionID); err == nil && ok && s.FeatureID != "" {
+		return
+	}
+	since := h.now().Add(-clearPairWindow).UnixMilli()
+	old, ok, err := h.Sessions.RecentEnd(ctx, sessionFolder(ev), "clear", since, foldNoteFolders)
+	if err != nil || !ok || old.ID == ev.SessionID || old.FeatureID == "" {
+		return
+	}
+	_ = h.Sessions.LinkFeature(ctx, ev.SessionID, old.FeatureID)
+}
+
 // sessionStart handles SessionStart: it re-injects the step of the active feature (so it
 // survives /clear) and warns when the 1.x plugin is still on.
 func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
@@ -20,7 +37,8 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 	featureActive := false
 	defer func() { h.startNotesSession(ctx, ev, featureActive) }()
 	if h.Store != nil && h.Repos != nil {
-		if f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(dir)); err == nil && found {
+		h.carryLink(ctx, ev)
+		if f, found := h.featureFor(ctx, ev); found {
 			featureActive = true
 			fresh := ev.Source == "startup" || ev.Source == ""
 			if fresh && f.Background != "" {

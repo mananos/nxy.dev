@@ -74,15 +74,25 @@ type Ledger interface {
 // ErrActiveFeature is what CreateFeature returns when the repo already has a feature that is not done.
 var ErrActiveFeature = errors.New("repo already has an active feature")
 
+// FeatureFilter narrows Store.Features: Home is a folder key (empty = any); with neither Active nor
+// Paused every feature matches.
+type FeatureFilter struct {
+	Home   string
+	Active bool
+	Paused bool
+}
+
 // Store persists features. There is no Load/Save: changes go through Transition.
 type Store interface {
 	CreateFeature(ctx context.Context, f domain.Feature) (string, error)
 	// Feature reads one feature; it fails when the id is unknown.
 	Feature(ctx context.Context, id string) (domain.Feature, error)
-	// ActiveFeature is the most recent feature of the repo that is not done.
-	ActiveFeature(ctx context.Context, repo string) (domain.Feature, bool, error)
-	// LatestFeature is the most recent feature of the repo, done or not.
-	LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error)
+	// ActiveFeature is the feature that holds the checkout (one active feature per checkout).
+	ActiveFeature(ctx context.Context, checkout string) (domain.Feature, bool, error)
+	// LatestFeature is the most recent feature started from the folder key, done or not.
+	LatestFeature(ctx context.Context, key string) (domain.Feature, bool, error)
+	// Features lists features, newest first; Active excludes paused and done ones, Paused keeps only paused.
+	Features(ctx context.Context, f FeatureFilter) ([]domain.Feature, error)
 	// Transition applies fn to the stored feature. fn must be pure: it can run more than once.
 	Transition(ctx context.Context, id string, fn func(domain.Feature) (domain.Feature, error)) error
 }
@@ -144,6 +154,7 @@ type SessionState struct {
 	ReadHintAt      int64
 	EndedAt         int64
 	EndReason       string
+	FeatureID       string
 }
 
 // Sessions keeps the per-session state of the hooks (local, never exported).
@@ -153,6 +164,10 @@ type Sessions interface {
 	// ConsumeNotesPending is true only the one time notes_pending was set.
 	ConsumeNotesPending(ctx context.Context, id string) (bool, error)
 	ChainNote(ctx context.Context, id, noteID string) error
+	// LinkFeature ties the session to the feature it works on.
+	LinkFeature(ctx context.Context, sessionID, featureID string) error
+	// OtherLive is true when a session other than exceptID, not ended, is linked to the feature.
+	OtherLive(ctx context.Context, featureID, exceptID string) (bool, error)
 	MarkEdit(ctx context.Context, id, folder string, at int64) error
 	MarkStopAsked(ctx context.Context, id string) error
 	// MarkReadHint is true only the first time for the session.
@@ -223,6 +238,43 @@ type ContextMeter interface {
 // Repos gives the stable key of the repository a directory belongs to.
 type Repos interface {
 	Key(dir string) string
+	// Checkout is the key of the checkout (worktree root, or the folder when it is no repo) of dir.
+	Checkout(dir string) string
+	// Root is the git root of dir; ok is false when dir is not in a git repo.
+	Root(dir string) (string, bool)
+}
+
+// BranchInfo is what a repo offers for the branch question: its local branches (newest first), the
+// default one ("" when unknown) and the one checked out in dir ("" when detached).
+type BranchInfo struct {
+	Branches []string
+	Default  string
+	Current  string
+}
+
+// BranchChange is what Switch or AddWorktree did: the git command, the branch and, for a worktree,
+// its path. Created is true when the branch did not exist.
+type BranchChange struct {
+	Command string
+	Path    string
+	Branch  string
+	Created bool
+}
+
+// Branches runs the git of the branch step: the branch in the session's folder or a worktree per repo.
+// It never stashes and never forces; the errors are git's words in Spanish.
+type Branches interface {
+	List(ctx context.Context, dir string) BranchInfo
+	// Switch moves dir to branch (a free existing one) or creates it from the local base.
+	Switch(ctx context.Context, dir, branch, base string) (BranchChange, error)
+	// AddWorktree opens <repo>.worktrees/<slug> on the branch, creating it from base when it is new.
+	AddWorktree(ctx context.Context, repoDir, branch, base string) (BranchChange, error)
+	// RemoveWorktree removes a worktree opened by AddWorktree (it has no changes yet).
+	RemoveWorktree(ctx context.Context, cwd, path string) error
+	// OpenCommand is the command line that opens path in the user's editor.
+	OpenCommand(path string) string
+	// MissingDeps is true when path has a package.json without node_modules.
+	MissingDeps(path string) bool
 }
 
 // Legacy tells whether the 1.x plugin is still enabled for a project.

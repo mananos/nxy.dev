@@ -12,6 +12,8 @@ const (
 	AskNoTests          ActionKind = "ask_no_tests"
 	AskApproval         ActionKind = "ask_approval"
 	AskChangeNote       ActionKind = "ask_change_note"
+	AskClash            ActionKind = "ask_clash"
+	AskBranch           ActionKind = "ask_branch"
 	OpenPlan            ActionKind = "open_plan"
 	DispatchImplementer ActionKind = "dispatch_implementer"
 	VerifyBatch         ActionKind = "verify_batch"
@@ -49,6 +51,8 @@ var actionTable = map[ActionKind]actionInfo{
 	AskNoTests:          {true, "Decidir sin tests"},
 	AskApproval:         {true, "Aprobar plan"},
 	AskChangeNote:       {true, "Escribir el cambio"},
+	AskClash:            {true, "Repo ocupado"},
+	AskBranch:           {true, "Elegir rama"},
 	OpenPlan:            {false, "Abrir plan"},
 	DispatchImplementer: {true, "Lote"},
 	VerifyBatch:         {false, "Verificar lote"},

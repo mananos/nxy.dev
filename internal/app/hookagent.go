@@ -37,8 +37,9 @@ var roleFor = map[domain.ActionKind]string{
 type roleInfo map[domain.Phase]func(f *domain.Feature) []flow.Event
 
 var roles = map[string]roleInfo{
-	rolePlanner: {domain.PhasePlanning: func(*domain.Feature) []flow.Event {
-		return []flow.Event{{Kind: flow.PlannerReturned}}
+	rolePlanner: {domain.PhasePlanning: func(f *domain.Feature) []flow.Event {
+		// A plan held back by a busy repo is waiting for the user, not missing.
+		return []flow.Event{{Kind: flow.PlannerReturned, Blocked: len(f.Clash) > 0 && f.PendingPlan != nil}}
 	}},
 	roleImplementer: {
 		domain.PhaseRunningBatch: batchReturned,
@@ -110,20 +111,59 @@ func backgroundWait(id, role string) string {
 
 func isAgentTool(tool string) bool { return tool == "Agent" || tool == "Task" }
 
-// activeFeature is the active feature of the event's repo, if any.
+// activeFeature is the active feature of the event, if any.
 func (h Hooks) activeFeature(ctx context.Context, ev HookEvent) (domain.Feature, bool) {
+	f, found := h.featureFor(ctx, ev)
+	if !found {
+		return domain.Feature{}, false
+	}
+	return h.ensureRules(ctx, h.ensureDocs(ctx, h.ensureReview(ctx, f))), true
+}
+
+// featureFor finds the active feature an event belongs to, in this order: the one its session is
+// linked to (a subagent runs with the session of the main thread); the one holding the checkout of
+// its folder; the one holding the repo key (a feature from before the checkouts, adopted here); and
+// the newest active one started from the folder (it released it when it went to worktrees).
+func (h Hooks) featureFor(ctx context.Context, ev HookEvent) (domain.Feature, bool) {
 	if h.Store == nil || h.Repos == nil {
 		return domain.Feature{}, false
+	}
+	if f, ok := h.linkedFeature(ctx, ev); ok {
+		return f, true
 	}
 	dir := ev.ProjectDir
 	if dir == "" {
 		dir = ev.Cwd
 	}
-	f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(dir))
-	if err != nil || !found {
-		return domain.Feature{}, false
+	checkout := h.Repos.Checkout(dir)
+	if f, found, err := h.Store.ActiveFeature(ctx, checkout); err == nil && found {
+		return f, true
 	}
-	return h.ensureRules(ctx, h.ensureDocs(ctx, h.ensureReview(ctx, f))), true
+	if f, found, err := h.Store.ActiveFeature(ctx, h.Repos.Key(dir)); err == nil && found {
+		if f.Home == "" {
+			f = h.adoptFeature(ctx, f, checkout)
+		}
+		return f, true
+	}
+	if fs, err := h.Store.Features(ctx, FeatureFilter{Home: checkout, Active: true}); err == nil && len(fs) > 0 {
+		return fs[0], true
+	}
+	return domain.Feature{}, false
+}
+
+// adoptFeature gives a feature from before the checkouts its home and the hold of that checkout.
+func (h Hooks) adoptFeature(ctx context.Context, f domain.Feature, checkout string) domain.Feature {
+	g, ok, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
+		if g.Home != "" || g.State.Phase == domain.PhaseDone {
+			return false
+		}
+		g.Home, g.Holds = checkout, []string{checkout}
+		return true
+	})
+	if err == nil && (ok || g.ID != "") {
+		return g
+	}
+	return f
 }
 
 // preToolAgent handles PreToolUse Agent/Task from the main thread: it injects the planner's
@@ -210,9 +250,9 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 	case ev.Subagent == roleRefuter && f.State.Phase == domain.PhaseRefuting:
 		return HookResponse{Prompt: review.RefuterPrompt(f, h.Exe)}
 	case ev.Subagent == roleDocumenter && f.State.Phase == domain.PhaseDocumenting:
-		return HookResponse{Prompt: docs.DocumenterPrompt(f, h.Exe)}
+		return HookResponse{Prompt: docs.DocumenterPrompt(h.docsAbsolute(f), h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseFixing:
-		return HookResponse{Prompt: review.FixPrompt(f, h.Exe, h.memoryFor(ctx, f, roleImplementer, findingFiles(f)).Text)}
+		return HookResponse{Prompt: review.FixPrompt(f, h.Exe, h.implementerMemory(ctx, f, findingFiles(f)))}
 	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:
 		return HookResponse{Deny: "plan not approved; next step " + f.Next.Label()}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchImplementer:
@@ -230,9 +270,9 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 		if n := nf.Next.Batch; nf.Plan != nil && n >= 1 && n <= len(nf.Plan.Batches) {
 			files = batchFiles(nf.Plan.Batches[n-1])
 		}
-		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe, h.memoryFor(ctx, nf, roleImplementer, files).Text)}
+		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe, h.implementerMemory(ctx, nf, files))}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchAffectedFix:
-		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe, h.memoryFor(ctx, f, roleImplementer, h.changedPaths(ctx, f)).Text)}
+		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe, h.implementerMemory(ctx, f, h.changedPaths(ctx, f)))}
 	case ev.Subagent != roleFor[f.Next.Kind]:
 		return HookResponse{Deny: "out of order: next step is " + f.Next.Label()}
 	}

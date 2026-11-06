@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/repos"
 )
 
 const (
@@ -37,6 +38,63 @@ func (c *checker) short(where, s string) {
 	if strings.ContainsAny(s, "\r\n") {
 		c.add(where, "must be one line")
 	}
+}
+
+// ValidateRepos checks the multi-repo part of a plan. names[i] is the name nxy gave p.Repos[i].
+// Without repos, no decision may name a repo and nothing else is checked.
+func ValidateRepos(p domain.Plan, names []string) []Problem {
+	c := &checker{}
+	if len(p.Repos) == 0 {
+		for i, d := range p.Decisions {
+			if d.Repo != "" {
+				c.add(fmt.Sprintf("decision %d", i+1), "repo %q needs the plan to declare repos", d.Repo)
+			}
+		}
+		return c.out
+	}
+	if len(names) != len(p.Repos) {
+		c.add("repos", "%d names for %d repos", len(names), len(p.Repos))
+		return c.out
+	}
+	declared := map[string]bool{}
+	for i, r := range p.Repos {
+		w := fmt.Sprintf("repo %d", i+1)
+		if strings.TrimSpace(r.Path) == "" {
+			c.add(w, "path is empty")
+		}
+		c.short(w+" path", r.Path)
+		c.short(w+" role", r.Role)
+		c.short(w+" suite", r.Suite)
+		if declared[names[i]] {
+			c.add(w, "name %q is repeated", names[i])
+		}
+		declared[names[i]] = true
+	}
+	for i, d := range p.Decisions {
+		w := fmt.Sprintf("decision %d", i+1)
+		switch {
+		case d.Repo == "" && len(p.Repos) > 1:
+			c.add(w, "needs repo (the name of the repo it belongs to)")
+		case d.Repo != "" && !declared[d.Repo]:
+			c.add(w, "repo %q is not one of the plan's repos", d.Repo)
+		}
+	}
+	for i, b := range p.Batches {
+		w := fmt.Sprintf("batch %d", i+1)
+		seen := ""
+		for j, ch := range b.Change {
+			name, _, ok := repos.Split(ch.At, names)
+			if !ok {
+				c.add(fmt.Sprintf("%s change %d", w, j+1), "at %q must start with the repo name and a slash (%s)", ch.At, strings.Join(names, ", "))
+				continue
+			}
+			if seen != "" && seen != name {
+				c.add(w, "touches repos %s and %s; a batch touches one repo", seen, name)
+			}
+			seen = name
+		}
+	}
+	return c.out
 }
 
 // Validate returns every problem in p, in a fixed order. No problems means

@@ -24,6 +24,19 @@ func RepoKey(dir string) string {
 	return filepath.ToSlash(root)
 }
 
+// CheckoutKey identifies the checkout that contains dir: the root of its worktree (the folder itself
+// when it is not in a repo) by real location, so two worktrees of one repo have different keys.
+func CheckoutKey(dir string) string {
+	dir = NativePath(dir)
+	if abs, err := filepath.Abs(dir); err == nil {
+		dir = abs
+	}
+	if root, ok := GitRoot(dir); ok {
+		dir = root
+	}
+	return realPath(dir)
+}
+
 // findGit returns the repo root (GitRoot) and its git dir; a .git file (worktree) is followed to its gitdir.
 func findGit(dir string) (root, gitDir string) {
 	root, ok := GitRoot(dir)

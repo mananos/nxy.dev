@@ -23,16 +23,17 @@ type Session struct {
 	ReadHintAt      int64
 	EndedAt         int64
 	EndReason       string
+	FeatureID       string
 }
 
 const sessionCols = `session_id, folder, source, started_at, notes_pending, recommended_note, note_id,
-	stop_asked, last_edit_at, read_hint_at, ended_at, end_reason`
+	stop_asked, last_edit_at, read_hint_at, ended_at, end_reason, feature_id`
 
 func scanSession(r interface{ Scan(...any) error }) (Session, error) {
 	var s Session
 	var pending, asked int
 	err := r.Scan(&s.ID, &s.Folder, &s.Source, &s.StartedAt, &pending, &s.RecommendedNote, &s.NoteID,
-		&asked, &s.LastEditAt, &s.ReadHintAt, &s.EndedAt, &s.EndReason)
+		&asked, &s.LastEditAt, &s.ReadHintAt, &s.EndedAt, &s.EndReason, &s.FeatureID)
 	s.NotesPending, s.StopAsked = pending != 0, asked != 0
 	return s, err
 }
@@ -50,15 +51,33 @@ func (s *Store) StartSession(ctx context.Context, x Session) error {
 	if x.StartedAt == 0 {
 		x.StartedAt = now
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(session_id) DO UPDATE SET folder=excluded.folder, source=excluded.source,
+		feature_id=CASE WHEN excluded.feature_id<>'' THEN excluded.feature_id ELSE sessions.feature_id END,
 		started_at=excluded.started_at, notes_pending=excluded.notes_pending,
 		recommended_note=excluded.recommended_note, note_id=excluded.note_id, stop_asked=excluded.stop_asked,
 		last_edit_at=excluded.last_edit_at, read_hint_at=excluded.read_hint_at, ended_at=0, end_reason='',
 		updated_at=excluded.updated_at`,
 		x.ID, x.Folder, x.Source, x.StartedAt, b2i(x.NotesPending), x.RecommendedNote, x.NoteID,
-		b2i(x.StopAsked), x.LastEditAt, x.ReadHintAt, x.EndedAt, x.EndReason, now)
+		b2i(x.StopAsked), x.LastEditAt, x.ReadHintAt, x.EndedAt, x.EndReason, x.FeatureID, now)
 	return err
+}
+
+// LinkFeature ties the session to the feature it works on, creating the row if needed.
+func (s *Store) LinkFeature(ctx context.Context, sessionID, featureID string) error {
+	now := s.nowMs()
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (session_id, started_at, feature_id, updated_at)
+		VALUES (?,?,?,?) ON CONFLICT(session_id) DO UPDATE SET feature_id=excluded.feature_id,
+		updated_at=excluded.updated_at`, sessionID, now, featureID, now)
+	return err
+}
+
+// OtherLive is true when a session other than exceptID, not ended, is linked to the feature.
+func (s *Store) OtherLive(ctx context.Context, featureID, exceptID string) (bool, error) {
+	var n int
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM sessions WHERE feature_id=? AND session_id<>? AND ended_at=0`,
+		featureID, exceptID).Scan(&n)
+	return n > 0, err
 }
 
 // Session reads one session; ok is false when there is none.

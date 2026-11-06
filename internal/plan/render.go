@@ -31,6 +31,7 @@ func CheckpointOf(f domain.Feature) string {
 func checkpoint(p domain.Plan, withCriteria bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## %s\n\n", p.Title)
+	writeRepos(&b, p)
 	if withCriteria {
 		writeCriteria(&b, p.Criteria)
 	} else {
@@ -43,12 +44,12 @@ func checkpoint(p domain.Plan, withCriteria bool) string {
 		if len(chosen) > 0 {
 			b.WriteString("### Decisiones que eligió el planner\n\n")
 			for _, d := range chosen {
-				fmt.Fprintf(&b, "- %s %s\n", d.ID, d.Text)
+				fmt.Fprintf(&b, "- %s%s %s\n", repoTag(d.Repo), d.ID, d.Text)
 			}
 		}
 	}
 	for _, bt := range p.Batches {
-		fmt.Fprintf(&b, "\n### Lote %d — %s\n", bt.N, bt.Title)
+		fmt.Fprintf(&b, "\n### Lote %d — %s%s\n", bt.N, repoTag(bt.Repo), bt.Title)
 		fmt.Fprintf(&b, "- Cubre: %s\n", strings.Join(bt.Covers, ", "))
 		b.WriteString("- Cambiar:\n")
 		for _, c := range bt.Change {
@@ -62,6 +63,34 @@ func checkpoint(p domain.Plan, withCriteria bool) string {
 	}
 	writeSuite(&b, p)
 	return b.String()
+}
+
+// repoTag is "[repo] " for a multi-repo item, empty otherwise.
+func repoTag(name string) string {
+	if name == "" {
+		return ""
+	}
+	return "[" + name + "] "
+}
+
+// writeRepos is the repos line of a multi-repo plan: name — role — path.
+func writeRepos(b *strings.Builder, p domain.Plan) {
+	if len(p.Repos) == 0 {
+		return
+	}
+	b.WriteString("### Repos\n\n")
+	for _, r := range p.Repos {
+		name := r.Name
+		if name == "" {
+			name = r.Path
+		}
+		role := r.Role
+		if role == "" {
+			role = "sin rol"
+		}
+		fmt.Fprintf(b, "- %s — %s — %s\n", name, role, r.Path)
+	}
+	b.WriteString("\n")
 }
 
 // riskLine is the risk of a batch, with why nxy raised it when it did.
@@ -112,18 +141,22 @@ func Markdown(f domain.Feature) string {
 	for _, ln := range strings.Split(strings.ReplaceAll(f.Request, "\r\n", "\n"), "\n") {
 		b.WriteString("> " + ln + "\n")
 	}
+	if len(p.Repos) > 0 {
+		b.WriteString("\n")
+		writeRepos(&b, p)
+	}
 	if f.Mode == domain.ModeEngineer {
 		writeDesign(&b, f, p)
 	} else if len(p.Decisions) > 0 {
 		b.WriteString("\n### Decisiones\n\n")
 		for _, d := range p.Decisions {
-			fmt.Fprintf(&b, "- [%s] %s\n", d.Scope, d.Text)
+			fmt.Fprintf(&b, "- [%s] %s%s\n", d.Scope, repoTag(d.Repo), d.Text)
 		}
 	}
 	b.WriteString("\n")
 	writeCriteria(&b, p.Criteria)
 	for _, bt := range p.Batches {
-		fmt.Fprintf(&b, "\n### Lote %d — %s\n", bt.N, bt.Title)
+		fmt.Fprintf(&b, "\n### Lote %d — %s%s\n", bt.N, repoTag(bt.Repo), bt.Title)
 		fmt.Fprintf(&b, "- Cubre: %s\n", strings.Join(bt.Covers, ", "))
 		if len(bt.Depends) > 0 {
 			ds := make([]string, len(bt.Depends))
@@ -163,7 +196,7 @@ func writeDesign(b *strings.Builder, f domain.Feature, p domain.Plan) {
 	}
 	b.WriteString("\n### Diseño\n\n")
 	for _, d := range p.Decisions {
-		fmt.Fprintf(b, "- %s %s", d.ID, d.Text)
+		fmt.Fprintf(b, "- %s%s %s", repoTag(d.Repo), d.ID, d.Text)
 		if d.Why != "" {
 			fmt.Fprintf(b, " — %s", d.Why)
 		}

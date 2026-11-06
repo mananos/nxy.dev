@@ -37,7 +37,9 @@ const (
 
 // Plan is what the planner saves.
 type Plan struct {
-	Title     string      `json:"title"`
+	Title string `json:"title"`
+	// Repos are the git repos the plan touches; empty means the one repo of the session.
+	Repos     []PlanRepo  `json:"repos,omitempty"`
 	Decisions []Decision  `json:"decisions,omitempty"`
 	Criteria  []Criterion `json:"criteria"`
 	Batches   []Batch     `json:"batches"`
@@ -50,6 +52,15 @@ type Plan struct {
 	// the plan is saved so the user sees what will run; RepoRunnersWarn is set when the file is invalid.
 	RepoRunners     []RepoRunner `json:"repo_runners,omitempty"`
 	RepoRunnersWarn string       `json:"repo_runners_warn,omitempty"`
+}
+
+// PlanRepo is one repo of a multi-repo plan. Path is relative to the session folder ("." is itself).
+type PlanRepo struct {
+	Path  string `json:"path"`
+	Role  string `json:"role,omitempty"`
+	Suite string `json:"suite,omitempty"`
+	// Name is how the repo is written in paths ("api/src/X.java"); nxy sets it, not the planner.
+	Name string `json:"name,omitempty"`
 }
 
 // RepoRunner is one row of the repo's .nxy/runners.json, as shown at the checkpoint.
@@ -78,6 +89,8 @@ type Batch struct {
 	// RiskWhy is why nxy raised Risk; nxy sets it, not the planner.
 	RiskWhy string `json:"risk_why,omitempty"`
 	Depends []int  `json:"depends,omitempty"`
+	// Repo is the repo name the batch edits in a multi-repo plan; nxy deduces it from change.
+	Repo string `json:"repo,omitempty"`
 }
 
 // Change is one edit, located as path:line.
@@ -117,6 +130,8 @@ type Decision struct {
 	Dissent  string     `json:"dissent,omitempty"`
 	Fork     string     `json:"fork,omitempty"`
 	By       DecisionBy `json:"by,omitempty"`
+	// Repo is the name of the repo a repo-scope decision belongs to (multi-repo plans).
+	Repo string `json:"repo,omitempty"`
 }
 
 // Question is asked to the user before the plan is final.

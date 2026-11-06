@@ -66,6 +66,23 @@ func (f *fakeSessions) ChainNote(_ context.Context, id, note string) error {
 	f.rows[id] = s
 	return nil
 }
+func (f *fakeSessions) LinkFeature(_ context.Context, id, featureID string) error {
+	s := f.rows[id]
+	if s.ID == "" {
+		s.ID = id
+	}
+	s.FeatureID = featureID
+	f.rows[id] = s
+	return nil
+}
+func (f *fakeSessions) OtherLive(_ context.Context, featureID, except string) (bool, error) {
+	for id, s := range f.rows {
+		if id != except && s.FeatureID == featureID && s.EndedAt == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 func (f *fakeSessions) MarkEdit(_ context.Context, id, folder string, at int64) error {
 	s := f.rows[id]
 	if s.ID == "" {

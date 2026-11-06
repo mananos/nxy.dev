@@ -39,10 +39,14 @@ func runAffected(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, rec.Note)
 	}
 	for _, r := range rec.Runs {
+		tag := ""
+		if r.RepoName != "" {
+			tag = "[" + r.RepoName + "] "
+		}
 		if r.Repo {
-			fmt.Fprintf(stdout, "$ %s (fila del repo: %s)\n", r.Command, r.Row)
+			fmt.Fprintf(stdout, "%s$ %s (fila del repo: %s)\n", tag, r.Command, r.Row)
 		} else {
-			fmt.Fprintf(stdout, "$ %s\n", r.Command)
+			fmt.Fprintf(stdout, "%s$ %s\n", tag, r.Command)
 		}
 		if r.Tail != "" {
 			fmt.Fprintln(stdout, r.Tail)

@@ -15,11 +15,21 @@ func (h Hooks) latestDone(ctx context.Context, ev HookEvent) (domain.Feature, bo
 	if dir == "" {
 		dir = ev.Cwd
 	}
-	f, found, err := h.Store.LatestFeature(ctx, h.Repos.Key(dir))
+	f, found, err := h.latestIn(ctx, dir)
 	if err != nil || !found || f.State.Phase != domain.PhaseDone {
 		return domain.Feature{}, false
 	}
 	return f, true
+}
+
+// latestIn is the most recent feature started from the checkout of dir, or from its repo key for a
+// feature of before the checkouts.
+func (h Hooks) latestIn(ctx context.Context, dir string) (domain.Feature, bool, error) {
+	f, found, err := h.Store.LatestFeature(ctx, h.Repos.Checkout(dir))
+	if err != nil || found {
+		return f, found, err
+	}
+	return h.Store.LatestFeature(ctx, h.Repos.Key(dir))
 }
 
 // deliverPending adds to a main-thread response the step of a feature whose result arrived

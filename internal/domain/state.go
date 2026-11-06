@@ -12,6 +12,8 @@ const (
 	PhaseApproval           Phase = "approval"
 	PhaseChangeNote         Phase = "change_note"
 	PhasePlannerFailed      Phase = "planner_failed"
+	PhaseRepoClash          Phase = "repo_clash"
+	PhaseBranch             Phase = "branch"
 	PhaseRunningBatch       Phase = "running_batch"
 	PhaseVerifyingBatch     Phase = "verifying_batch"
 	PhaseBatchFailed        Phase = "batch_failed"
@@ -35,7 +37,7 @@ const (
 // Phases lists every internal phase (not the empty initial one).
 var Phases = []Phase{
 	PhaseDesigning, PhasePlanning, PhaseQuestions, PhaseNoTests, PhaseApproval, PhaseChangeNote,
-	PhasePlannerFailed, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
+	PhasePlannerFailed, PhaseRepoClash, PhaseBranch, PhaseRunningBatch, PhaseVerifyingBatch, PhaseBatchFailed,
 	PhaseAffected, PhaseAffectedFix, PhaseAffectedFailed, PhaseAffectedUnverified, PhaseReviewing,
 	PhaseRefuting, PhaseChoosingFindings, PhaseFixing,
 	PhaseFixVerify, PhaseFixesFailed, PhaseDocsCheck, PhaseDocs, PhaseDocumenting, PhaseRules, PhaseDone,
@@ -64,6 +66,8 @@ var phaseTable = map[Phase]phaseInfo{
 	PhaseApproval:           {NeedsYou, "Aprobación del plan"},
 	PhaseChangeNote:         {NeedsYou, "Nota de cambio"},
 	PhasePlannerFailed:      {NeedsYou, "El planner falló"},
+	PhaseRepoClash:          {NeedsYou, "Repo ocupado"},
+	PhaseBranch:             {NeedsYou, "Rama"},
 	PhaseRunningBatch:       {Working, "Ejecutando lote"},
 	PhaseVerifyingBatch:     {Verifying, "Verificando lote"},
 	PhaseBatchFailed:        {NeedsYou, "Lote fallido"},

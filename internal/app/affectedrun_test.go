@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -343,5 +344,107 @@ func TestAffectedFixPromptInjectedAndReturnMovesOn(t *testing.T) {
 	r = h.Handle(context.Background(), agentEv("PostToolUse", roleImplementer))
 	if g := st.feats[id]; g.State.Phase != domain.PhaseAffected || g.Next.Kind != domain.RunAffected {
 		t.Errorf("after return: %+v (%+v)", g.State, r)
+	}
+}
+
+// dirChanges answers Changed per checkout.
+type dirChanges struct {
+	by map[string][]string
+}
+
+func (c dirChanges) Head(string) string { return "abc" }
+func (c dirChanges) Changed(_ context.Context, dir, _ string) ([]string, error) {
+	return c.by[dir], nil
+}
+func (c dirChanges) Files(_ context.Context, dir string) ([]string, error) { return c.by[dir], nil }
+
+// dirShell records the folder each command ran in.
+type dirShell struct {
+	cwds, ran []string
+	exit      map[string]int
+}
+
+func (s *dirShell) Run(_ context.Context, cwd, command string) (ShellResult, error) {
+	s.cwds, s.ran = append(s.cwds, cwd), append(s.ran, command)
+	return ShellResult{Exit: s.exit[command], Output: "out"}, nil
+}
+
+func multiRepoAffected(t *testing.T, by map[string][]string, exit map[string]int) (Hooks, *dirShell, string) {
+	t.Helper()
+	h, st := flowHooks(false)
+	sh := &dirShell{exit: exit}
+	h.Shell = sh
+	h.Changes = dirChanges{by}
+	h.Graph = fakeGraph{GraphResult{Status: GraphMissing}}
+	h.Trees = fakeTrees{markerTree{}}
+	p := domain.Plan{
+		Repos: []domain.PlanRepo{{Path: "api", Name: "api", Suite: "api-suite"}, {Path: "web", Name: "web", Suite: "web-suite"}},
+		Batches: []domain.Batch{
+			{N: 1, Repo: "api", Change: []domain.Change{{At: "api/src/a.go:1"}}},
+			{N: 2, Repo: "web", Change: []domain.Change{{At: "web/src/b.go:1"}}},
+		},
+	}
+	id, err := st.CreateFeature(context.Background(), domain.Feature{
+		Repo: "repo:/w", ProjectDir: "/w", Plan: &p, Base: "abc",
+		Repos: []domain.FeatureRepo{
+			{Name: "api", Root: "/w/api", Checkout: "/w/api.worktrees/x", Base: "abc"},
+			{Name: "web", Root: "/w/web", Checkout: "/w/web.worktrees/x", Base: "abc"},
+		},
+		State: domain.State{Phase: domain.PhaseAffected, Batch: 2, Batches: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return h, sh, id
+}
+
+func TestAffectedRunsEachRepoSuiteInItsCheckout(t *testing.T) {
+	h, sh, id := multiRepoAffected(t, map[string][]string{
+		"/w/api.worktrees/x": {"src/a.go"}, "/w/web.worktrees/x": {"src/b.go"},
+	}, nil)
+	r, err := h.RunAffected(context.Background(), id)
+	if err != nil || r.Verdict != AffectedGreen {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	if len(sh.ran) != 2 || sh.ran[0] != "api-suite" || sh.ran[1] != "web-suite" {
+		t.Fatalf("ran %q", sh.ran)
+	}
+	if filepath.ToSlash(sh.cwds[0]) != "/w/api.worktrees/x" || filepath.ToSlash(sh.cwds[1]) != "/w/web.worktrees/x" {
+		t.Errorf("cwds %q", sh.cwds)
+	}
+	if len(r.Record.Runs) != 2 || r.Record.Runs[0].RepoName != "api" || r.Record.Runs[1].RepoName != "web" {
+		t.Errorf("runs %+v", r.Record.Runs)
+	}
+}
+
+func TestAffectedRepoWithoutChangesRunsNothing(t *testing.T) {
+	h, sh, id := multiRepoAffected(t, map[string][]string{"/w/web.worktrees/x": {"src/b.go"}}, nil)
+	r, err := h.RunAffected(context.Background(), id)
+	if err != nil || r.Verdict != AffectedGreen {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	if len(sh.ran) != 1 || sh.ran[0] != "web-suite" {
+		t.Errorf("ran %q", sh.ran)
+	}
+	if !strings.Contains(r.Record.Note, "api: sin cambios") {
+		t.Errorf("note %q", r.Record.Note)
+	}
+}
+
+func TestAffectedOneRepoRedMakesItRed(t *testing.T) {
+	h, _, id := multiRepoAffected(t, map[string][]string{
+		"/w/api.worktrees/x": {"src/a.go"}, "/w/web.worktrees/x": {"src/b.go"},
+	}, map[string]int{"web-suite": 1})
+	r, err := h.RunAffected(context.Background(), id)
+	if err != nil || r.Verdict != AffectedRed || !strings.Contains(r.Record.Failure, "[web]") {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+}
+
+func TestAffectedNoRepoWithChangesIsUnverified(t *testing.T) {
+	h, sh, id := multiRepoAffected(t, nil, nil)
+	r, err := h.RunAffected(context.Background(), id)
+	if err != nil || r.Verdict != AffectedUnverified || len(sh.ran) != 0 {
+		t.Fatalf("r = %+v err = %v ran %q", r, err, sh.ran)
 	}
 }

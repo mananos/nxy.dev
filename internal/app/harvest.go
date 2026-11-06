@@ -29,27 +29,41 @@ func (h Hooks) harvest(ctx context.Context, f domain.Feature, ev HookEvent) {
 			return
 		}
 	}
-	repo := h.Repos.Key(f.ProjectDir)
+	mrs := h.memRepos(f)
+	def := 0 // the repo of the batch the implementer works on
 	var allowed []string
 	switch f.State.Phase {
 	case domain.PhaseRunningBatch:
 		if n := f.State.Batch; f.Plan != nil && n >= 1 && n <= len(f.Plan.Batches) {
 			allowed = batchFiles(f.Plan.Batches[n-1])
+			def = max(0, memRepoIndex(mrs, f.Plan.Batches[n-1].Repo))
 		}
 	case domain.PhaseAffectedFix:
 		allowed = h.changedPaths(ctx, f)
 	case domain.PhaseFixing:
 		allowed = findingFiles(f)
 	}
+	if len(mrs) > 1 || (f.Plan != nil && len(f.Plan.Repos) > 0) {
+		// The implementer may report a path with or without the repo name.
+		for _, a := range append([]string(nil), allowed...) {
+			if i, rel := h.splitLabel(f, mrs, a); i >= 0 && rel != a {
+				allowed = append(allowed, rel)
+			}
+		}
+	}
 	for _, l := range rep.Learnings {
 		files := l.Files
 		if len(allowed) > 0 {
 			files = l.Within(allowed)
 		}
-		_, _ = h.Memory.AddLearning(ctx, memory.Learning{Repo: repo, Text: strings.TrimSpace(l.Text), Files: files, FeatureID: f.ID})
+		i, rels := h.placeFiles(f, mrs, files, def)
+		_, _ = h.Memory.AddLearning(ctx, memory.Learning{Repo: mrs[i].Key, Text: strings.TrimSpace(l.Text), Files: rels, FeatureID: f.ID})
 	}
 	if len(rep.False) > 0 {
-		_ = h.Memory.MarkObsolete(ctx, repo, rep.False, time.Now().UnixMilli())
+		now := time.Now().UnixMilli()
+		for key, ids := range resolveFalse(mrs, rep.False, f.Delivered) {
+			_ = h.Memory.MarkObsolete(ctx, key, ids, now)
+		}
 	}
 	// Mark the agent as harvested only after its learnings were saved.
 	_, _, _ = h.mutate(ctx, f.ID, func(g *domain.Feature) bool {

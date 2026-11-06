@@ -23,6 +23,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/review"
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
 	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/internal/worktree"
 )
 
 func homeDir() string {
@@ -131,6 +132,14 @@ func (l *lazyStore) LatestFeature(ctx context.Context, repo string) (domain.Feat
 		return domain.Feature{}, false, err
 	}
 	return s.LatestFeature(ctx, repo)
+}
+
+func (l *lazyStore) Features(ctx context.Context, f app.FeatureFilter) ([]domain.Feature, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.Features(ctx, sqlite.FeatureFilter(f))
 }
 
 func (l *lazyStore) RecordPicks(ctx context.Context, featureID, repo string, picks []domain.Pick) error {
@@ -316,6 +325,22 @@ func (l *lazyStore) ChainNote(ctx context.Context, id, noteID string) error {
 	return s.ChainNote(ctx, id, noteID)
 }
 
+func (l *lazyStore) LinkFeature(ctx context.Context, sessionID, featureID string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.LinkFeature(ctx, sessionID, featureID)
+}
+
+func (l *lazyStore) OtherLive(ctx context.Context, featureID, exceptID string) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.OtherLive(ctx, featureID, exceptID)
+}
+
 func (l *lazyStore) MarkEdit(ctx context.Context, id, folder string, at int64) error {
 	s, err := l.open(ctx)
 	if err != nil {
@@ -397,12 +422,52 @@ func (l *lazyStore) Transition(ctx context.Context, id string, fn func(domain.Fe
 	if err != nil {
 		return err
 	}
-	return s.Transition(ctx, id, fn)
+	err = s.Transition(ctx, id, fn)
+	if errors.Is(err, sqlite.ErrActiveFeature) {
+		return app.ErrActiveFeature
+	}
+	return err
 }
 
 type repoKeys struct{}
 
-func (repoKeys) Key(dir string) string { return platform.RepoKey(dir) }
+func (repoKeys) Key(dir string) string      { return platform.RepoKey(dir) }
+func (repoKeys) Checkout(dir string) string { return platform.CheckoutKey(dir) }
+func (repoKeys) Root(dir string) (string, bool) {
+	return platform.GitRoot(dir)
+}
+
+// gitBranches runs the branch step on the lote-7 platform functions.
+type gitBranches struct{}
+
+func (gitBranches) List(ctx context.Context, dir string) app.BranchInfo {
+	bs, def := platform.RepoBranches(ctx, dir)
+	return app.BranchInfo{Branches: bs, Default: def, Current: platform.CurrentBranch(ctx, dir)}
+}
+
+func (gitBranches) Switch(ctx context.Context, dir, branch, base string) (app.BranchChange, error) {
+	s, err := platform.SwitchBranch(ctx, dir, branch, base, currentShell())
+	if err != nil {
+		return app.BranchChange{}, err
+	}
+	return app.BranchChange{Command: s.Command, Branch: s.Branch, Created: s.Created}, nil
+}
+
+func (gitBranches) AddWorktree(ctx context.Context, repoDir, branch, base string) (app.BranchChange, error) {
+	a, err := platform.AddBranchWorktree(ctx, repoDir, branch, base, currentShell())
+	if err != nil {
+		return app.BranchChange{}, err
+	}
+	return app.BranchChange{Command: a.Command, Path: a.Path, Branch: a.Branch, Created: a.Created}, nil
+}
+
+func (gitBranches) RemoveWorktree(ctx context.Context, cwd, path string) error {
+	_, err := platform.RemoveWorktree(ctx, cwd, path, false, currentShell())
+	return err
+}
+
+func (gitBranches) OpenCommand(path string) string { return worktree.OpenCommand(path, currentShell()) }
+func (gitBranches) MissingDeps(path string) bool   { return platform.MissingDeps(path) }
 
 type legacyPlugin struct{}
 
@@ -681,7 +746,7 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
-		Memory: st, Sessions: st, Bootstrap: st,
+		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{},
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 	}, st
 }

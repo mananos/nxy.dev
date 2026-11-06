@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -91,11 +93,29 @@ func (h Hooks) reviewDiffs(ctx context.Context, f domain.Feature) []review.FileD
 	if h.Diffs == nil {
 		return nil
 	}
-	d, err := h.Diffs.Diff(ctx, f.ProjectDir, f.Base)
-	if err != nil {
-		return nil
+	multi := len(f.Repos) > 1
+	var out []review.FileDiff
+	for _, r := range f.RepoList() {
+		dir, base := repoDir(r), r.Base
+		if dir == "" {
+			dir = f.ProjectDir
+		}
+		if base == "" {
+			base = f.Base
+		}
+		d, err := h.Diffs.Diff(ctx, dir, base)
+		if err != nil {
+			return nil
+		}
+		if !multi {
+			return d
+		}
+		for _, x := range d {
+			x.Path = labelPath(r.Name, x.Path, multi)
+			out = append(out, x)
+		}
 	}
-	return d
+	return out
 }
 
 // finishReview puts the lenses together and returns the event that closes the review step.
@@ -187,6 +207,7 @@ func (h Hooks) preReviewer(ctx context.Context, ev HookEvent, f domain.Feature) 
 				for i := range g.Review.Lenses {
 					if g.Review.Lenses[i].Name == name {
 						g.Review.Lenses[i].Delivered = ks
+						g.Review.Lenses[i].Origins = pkt.Origins
 						return true
 					}
 				}
@@ -202,38 +223,73 @@ func (h Hooks) preReviewer(ctx context.Context, ev HookEvent, f domain.Feature) 
 // reviewMemory stores what a saved review gives the memory: a citation per K rule it named, the
 // learnings (their files cut to the diff) and the learnings it found false. A failing store never
 // fails the save.
-func (h Hooks) reviewMemory(ctx context.Context, f domain.Feature, sub review.Submission, allowed []string) {
+func (h Hooks) reviewMemory(ctx context.Context, f domain.Feature, lens string, sub review.Submission, allowed []string) {
 	if h.Memory == nil || h.Repos == nil || f.ProjectDir == "" {
 		return
 	}
-	repo := h.Repos.Key(f.ProjectDir)
+	mrs := h.memRepos(f)
 	now := time.Now().UnixMilli()
-	var cited []string
+	// A K<n> is cited in the repo of the file of the finding that names it (the first repo when the
+	// finding has no file of a repo).
+	citedBy := make([][]string, len(mrs))
 	seen := map[string]bool{}
 	for _, fd := range sub.Findings {
 		k := strings.ToUpper(strings.TrimSpace(fd.Rule))
-		if k != "" && !seen[k] {
-			seen[k] = true
-			cited = append(cited, k)
+		if k == "" {
+			continue
+		}
+		i, _ := h.splitLabel(f, mrs, fd.File)
+		if i < 0 {
+			i = 0
+		}
+		if len(mrs) > 1 {
+			// A rule counts for the repo it was delivered from: the one of the file when it was
+			// delivered from it, else its only origin; ambiguous ids cite nothing.
+			from := reviewOrigins(f, lens)[k]
+			switch {
+			case slices.Contains(from, mrs[i].Name):
+			case len(from) == 1 && memRepoIndex(mrs, from[0]) >= 0:
+				i = memRepoIndex(mrs, from[0])
+			default:
+				continue
+			}
+		}
+		if id := strconv.Itoa(i) + k; !seen[id] {
+			seen[id] = true
+			citedBy[i] = append(citedBy[i], k)
 		}
 	}
-	if len(cited) > 0 {
-		_, _ = h.Memory.Cite(ctx, repo, cited, now)
+	for i, cited := range citedBy {
+		if len(cited) > 0 {
+			_, _ = h.Memory.Cite(ctx, mrs[i].Key, cited, now)
+		}
 	}
 	for _, l := range sub.Learnings {
 		files := l.Files
 		if len(allowed) > 0 {
 			files = l.Within(allowed)
 		}
-		_, _ = h.Memory.AddLearning(ctx, memory.Learning{Repo: repo, Text: strings.TrimSpace(l.Text), Files: files, FeatureID: f.ID})
+		i, rels := h.placeFiles(f, mrs, files, 0)
+		_, _ = h.Memory.AddLearning(ctx, memory.Learning{Repo: mrs[i].Key, Text: strings.TrimSpace(l.Text), Files: rels, FeatureID: f.ID})
 	}
 	if len(sub.False) > 0 {
-		var fs []string
-		for _, a := range sub.False {
-			fs = append(fs, strings.ToUpper(strings.TrimSpace(a)))
+		for key, ids := range resolveFalse(mrs, sub.False, reviewOrigins(f, lens)) {
+			_ = h.Memory.MarkObsolete(ctx, key, ids, now)
 		}
-		_ = h.Memory.MarkObsolete(ctx, repo, fs, now)
 	}
+}
+
+// reviewOrigins are the repos each id delivered to the reviewer of lens came from.
+func reviewOrigins(f domain.Feature, lens string) map[string][]string {
+	if f.Review == nil {
+		return nil
+	}
+	for _, l := range f.Review.Lenses {
+		if l.Name == lens {
+			return l.Origins
+		}
+	}
+	return nil
 }
 
 // postReviewer answers PostToolUse of a reviewer: it never repeats the step (deliverPending
@@ -361,7 +417,7 @@ func (h Hooks) SaveReview(ctx context.Context, featureID, lens string, r io.Read
 		return ReviewSaveResult{}, err
 	}
 	out = nf
-	h.reviewMemory(ctx, out, sub, diffPaths)
+	h.reviewMemory(ctx, out, lens, sub, diffPaths)
 	return ReviewSaveResult{Saved: savedLenses(out.Review), Total: len(out.Review.Lenses)}, nil
 }
 

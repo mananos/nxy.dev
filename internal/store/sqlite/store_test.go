@@ -264,10 +264,7 @@ func TestMigrate3To4KeepsFeatures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Request: "keep"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	id := rawOldFeature(t, s, "r", "keep")
 	s.Close()
 	s2 := mustOpen(t, path)
 	f, err := s2.Feature(ctx, id)
@@ -299,6 +296,165 @@ func TestOneActiveFeaturePerRepo(t *testing.T) {
 	}
 	if _, err := s.CreateFeature(ctx, domain.Feature{Repo: "r1"}); err != nil {
 		t.Fatalf("after done: %v", err)
+	}
+}
+
+// rawOldFeature inserts an active feature at a schema before 0009 (no home column).
+func rawOldFeature(t *testing.T, s *Store, repo, request string) string {
+	t.Helper()
+	id := "OLD" + request
+	if _, err := s.db.Exec(`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done) VALUES (?, 1, ?, 1, 1, 'm', ?, 0)`,
+		id, `{"id":"`+id+`","repo":"`+repo+`","request":"`+request+`"}`, repo); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func setPhase(t *testing.T, s *Store, id string, fn func(*domain.Feature)) error {
+	t.Helper()
+	return s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
+		fn(&f)
+		return f, nil
+	})
+}
+
+func TestTwoActiveFeaturesSameRepoDifferentCheckouts(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	a, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Home: "h1", Holds: []string{"c1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Home: "h2", Holds: []string{"c2"}})
+	if err != nil {
+		t.Fatalf("other checkout: %v", err)
+	}
+	for c, want := range map[string]string{"c1": a, "c2": b} {
+		if f, ok, _ := s.ActiveFeature(ctx, c); !ok || f.ID != want {
+			t.Errorf("%s: %q %v", c, f.ID, ok)
+		}
+	}
+	if _, ok, _ := s.ActiveFeature(ctx, "r"); ok {
+		t.Error("a feature with Home must not hold its repo key")
+	}
+	if f, ok, _ := s.LatestFeature(ctx, "h1"); !ok || f.ID != a {
+		t.Errorf("latest by home: %q %v", f.ID, ok)
+	}
+}
+
+func TestCheckoutClash(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	if _, err := s.CreateFeature(ctx, domain.Feature{Home: "h", Holds: []string{"c1", "c2"}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateFeature(ctx, domain.Feature{Home: "h2", Holds: []string{"c3", "c2"}}); !errors.Is(err, ErrActiveFeature) {
+		t.Fatalf("clash: %v", err)
+	}
+	if _, ok, _ := s.ActiveFeature(ctx, "c3"); ok {
+		t.Error("failed create left a hold")
+	}
+	b, err := s.CreateFeature(ctx, domain.Feature{Home: "h3", Holds: []string{"c3"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := setPhase(t, s, b, func(f *domain.Feature) { f.Holds = []string{"c3", "c1"} }); !errors.Is(err, ErrActiveFeature) {
+		t.Fatalf("transition clash: %v", err)
+	}
+	if f, _ := s.Feature(ctx, b); len(f.Holds) != 1 {
+		t.Errorf("failed transition changed the feature: %v", f.Holds)
+	}
+}
+
+func TestRaceTwoCreateFeature(t *testing.T) {
+	path := dbPath(t)
+	stores := []*Store{mustOpen(t, path), mustOpen(t, path)}
+	errs := make([]error, 2)
+	var wg sync.WaitGroup
+	for i := range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, errs[i] = stores[i].CreateFeature(ctx, domain.Feature{Home: "h", Holds: []string{"c"}})
+		}()
+	}
+	wg.Wait()
+	ok := 0
+	for _, err := range errs {
+		if err == nil {
+			ok++
+		} else if !errors.Is(err, ErrActiveFeature) {
+			t.Fatalf("err %v", err)
+		}
+	}
+	if ok != 1 {
+		t.Errorf("%d creates won, want 1", ok)
+	}
+}
+
+func TestFeatureWithoutHolds(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	for range 2 {
+		if _, err := s.CreateFeature(ctx, domain.Feature{Repo: "r", Home: "h"}); err != nil {
+			t.Fatalf("no holds: %v", err)
+		}
+	}
+	if _, ok, _ := s.ActiveFeature(ctx, "r"); ok {
+		t.Error("held without Holds")
+	}
+	fs, err := s.Features(ctx, FeatureFilter{Home: "h", Active: true})
+	if err != nil || len(fs) != 2 {
+		t.Errorf("features: %d %v", len(fs), err)
+	}
+}
+
+func TestPauseReleasesCheckouts(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	a, _ := s.CreateFeature(ctx, domain.Feature{Home: "h", Holds: []string{"c"}})
+	if err := setPhase(t, s, a, func(f *domain.Feature) { f.Paused = true }); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.ActiveFeature(ctx, "c"); ok {
+		t.Error("paused feature still holds")
+	}
+	if _, err := s.CreateFeature(ctx, domain.Feature{Home: "h2", Holds: []string{"c"}}); err != nil {
+		t.Fatalf("take freed checkout: %v", err)
+	}
+	if fs, _ := s.Features(ctx, FeatureFilter{Paused: true}); len(fs) != 1 || fs[0].ID != a {
+		t.Errorf("paused list: %+v", fs)
+	}
+	if fs, _ := s.Features(ctx, FeatureFilter{Active: true}); len(fs) != 1 {
+		t.Errorf("active list: %d", len(fs))
+	}
+	// resuming while another feature holds it fails and leaves it paused
+	if err := setPhase(t, s, a, func(f *domain.Feature) { f.Paused = false }); !errors.Is(err, ErrActiveFeature) {
+		t.Fatalf("resume clash: %v", err)
+	}
+	if f, _ := s.Feature(ctx, a); !f.Paused {
+		t.Error("failed resume changed the feature")
+	}
+}
+
+func TestMigrate8To9KeepsActiveHold(t *testing.T) {
+	path := dbPath(t)
+	migs, _ := embeddedMigrations()
+	s, err := openWith(ctx, path, time.Now, migs[:8])
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := rawOldFeature(t, s, "r", "old")
+	s.Close()
+	s2 := mustOpen(t, path)
+	f, ok, err := s2.ActiveFeature(ctx, "r")
+	if err != nil || !ok || f.ID != id {
+		t.Fatalf("active after migration: %v %v %v", f.ID, ok, err)
+	}
+	if f, ok, _ := s2.LatestFeature(ctx, "r"); !ok || f.ID != id {
+		t.Error("latest by repo for a row without home")
+	}
+	if err := s2.LinkFeature(ctx, "s1", id); err != nil {
+		t.Fatal(err)
+	}
+	if x, ok, _ := s2.Session(ctx, "s1"); !ok || x.FeatureID != id {
+		t.Errorf("session link: %+v", x)
 	}
 }
 

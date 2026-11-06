@@ -73,6 +73,8 @@ type LensRun struct {
 	Dispatched bool     `json:"dispatched,omitempty"`
 	Saved      bool     `json:"saved,omitempty"`
 	Delivered  []string `json:"delivered,omitempty"` // K<n> of the repo rules its reviewer received
+	// Origins says from which repos (by name) each delivered id came.
+	Origins map[string][]string `json:"origins,omitempty"`
 }
 
 // Review is the review of a finished feature.

@@ -124,6 +124,10 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:planner`, prompt `feature %s`; nothing else, nxy writes its prompt.", f.ID, f.ID)
 	case domain.AskQuestions:
 		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, questionsInput(f), stop)
+	case domain.AskClash:
+		s = "nxy: feature " + f.ID + " — " + clashAsk(f, stop)
+	case domain.AskBranch:
+		s = "nxy: feature " + f.ID + " — " + branchAsk(f, stop)
 	case domain.AskApproval:
 		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, approvalInput(f), stop)
 	case domain.AskChangeNote:
@@ -179,6 +183,57 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 		s += "\n" + note
 	}
 	return s
+}
+
+// clashAsk words the AskClash step: which repos are held by which feature, then the question with
+// its options copied as they are. The plan is kept; the answer moves it on without another planner.
+func clashAsk(f domain.Feature, stop bool) string {
+	var b strings.Builder
+	b.WriteString("Next: the plan is ready but a repo it needs is held by another active feature:")
+	for _, c := range f.Clash {
+		fmt.Fprintf(&b, "\n- repo %s: feature %s", c.Repo, c.FeatureID)
+		if c.Phase != "" {
+			fmt.Fprintf(&b, " (%s)", c.Phase)
+		}
+	}
+	if stop {
+		b.WriteString("\nThe user already sees this above: do not repeat it; ask with AskUserQuestion, copying the question and its options as they are, with exactly this input.\nInput:\n")
+	} else {
+		b.WriteString("\nAsk the user with AskUserQuestion, copying the question and its options as they are, with exactly this input.\nThen nothing else: nxy continues with the answer. Input:\n")
+	}
+	opts := plan.ClashOptions(f)
+	ao := make([]askOption, len(opts))
+	for i, o := range opts {
+		ao[i] = askOption{o.Label, o.Description}
+	}
+	b.WriteString(askInput([]askQuestion{{Question: plan.ClashQuestion(f.ID), Header: "Repo ocupado", Options: ao}}))
+	return b.String()
+}
+
+// branchAsk words the AskBranch step: the plan is approved; the questions open are the branch and the
+// base of each repo, copied as they are. Free text in Other is a branch (or base) name.
+func branchAsk(f domain.Feature, stop bool) string {
+	var b strings.Builder
+	b.WriteString("Next: the plan is approved; before the first batch ask which branch to work in")
+	if f.BranchOffer != nil && f.BranchOffer.Error != "" {
+		b.WriteString(". The last try failed: " + f.BranchOffer.Error + ". Tell the user that in one line and ask again")
+	}
+	if stop {
+		b.WriteString(". The user already sees this above: do not repeat it; ask with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\nInput:\n")
+	} else {
+		b.WriteString(". Ask with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\nThen nothing else: nxy creates the branch and continues with the answer. Input:\n")
+	}
+	asks := plan.BranchQuestions(f)
+	qs := make([]askQuestion, 0, len(asks))
+	for _, a := range asks {
+		q := askQuestion{Question: a.Question, Header: a.Header}
+		for _, o := range a.Options {
+			q.Options = append(q.Options, askOption{o.Label, o.Description})
+		}
+		qs = append(qs, q)
+	}
+	b.WriteString(askInput(qs))
+	return b.String()
 }
 
 // docsAsk words the AskDocs step: the question about the docs that name the change, copied as is.

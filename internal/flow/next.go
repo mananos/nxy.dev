@@ -31,6 +31,8 @@ func decided(d Decision) func(state, Event) bool {
 	return func(_ state, ev Event) bool { return ev.Decision == d }
 }
 
+func blocked(_ state, ev Event) bool { return ev.Blocked }
+
 func attempt(n int) func(state, Event) bool {
 	return func(s state, _ Event) bool { return s.Attempt == n }
 }
@@ -140,10 +142,14 @@ func planSaved(s state, ev Event) (state, []action) {
 	return s, acts(domain.AskApproval, domain.Notify)
 }
 
+// approved asks for the branch (and the base of each repo) before the first batch.
 func approved(s state, _ Event) (state, []action) {
 	s.Outcome = domain.OutcomeNone
-	return startBatch(s, 1, false)
+	s.Phase = domain.PhaseBranch
+	return s, acts(domain.AskBranch, domain.Notify)
 }
+
+func branchReady(s state, _ Event) (state, []action) { return startBatch(s, 1, false) }
 
 // verifyBatch keeps the attempt on purpose: the automatic retry is counted
 // across running_batch -> verifying_batch, so a second red reaches batch_failed
@@ -213,6 +219,7 @@ var table = map[domain.Phase][]row{
 	domain.PhasePlanning: {
 		{PlanSaved, always, planSaved},
 		{GapsFound, always, to(domain.PhaseDesigning, domain.DesignDebate, domain.Notify)},
+		{PlannerReturned, blocked, to(domain.PhaseRepoClash, domain.AskClash, domain.Notify)},
 		{PlannerReturned, attempt(0), plannerAgain},
 		{PlannerReturned, attempt(1), failTo(domain.PhasePlannerFailed)},
 	},
@@ -227,9 +234,16 @@ var table = map[domain.Phase][]row{
 		{ChangeRequested, always, changeRequested},
 		{ViewFull, always, viewFull},
 	},
+	domain.PhaseBranch: {{BranchReady, always, branchReady}},
 	domain.PhasePlannerFailed: {
 		{Decided, decided(DecisionRetry), replan},
 		{Decided, decided(DecisionStop), stop},
+	},
+	// The plan waits in the feature: pausing the other feature or going to a worktree takes the
+	// same road as a saved plan, without another planner; dropping the repo re-plans.
+	domain.PhaseRepoClash: {
+		{ClashAnswered, always, planSaved},
+		{Answered, always, replan},
 	},
 	domain.PhaseRunningBatch: {
 		{BatchReturned, always, verifyBatch},

@@ -54,14 +54,19 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - risk is low, medium or high. depends lists earlier batch numbers only.
 - suite: the command that runs the whole test suite of the repo; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.
+- Several repos: only when the design touches more than one git repo. Declare repos[{path, role, suite}] ("." is the repo of the session folder; role says what it is for, e.g. contract or consumer). Then every change.at is "<name>/<path>" where name is the repo folder name (nxy tells you if it needs parent folders to tell two apart), a batch touches one repo only, and the contract goes first in its own batch. A decision you take on a delegated fork names its repo ("repo": "<name>"). With one repo, leave repos out.
 
 ## Plan format (JSON)
 
-Fields: title, decisions[{scope repo|task, text, question, fork}] (only for delegated forks), criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, no_tests. Unknown fields are rejected.
+Fields: title, repos[{path, role, suite}], decisions[{scope repo|task, text, question, fork}] (only for delegated forks), criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, no_tests. Unknown fields are rejected.
 
 Example of a valid plan (an engineer plan has no questions and, unless a fork was delegated, no decisions):
 
 {{.Example}}
+
+Example of a plan over two repos (the session folder is `api`; in an engineer plan nxy writes the decisions, so drop "decisions" from it unless you took a delegated fork):
+
+{{.MultiExample}}
 
 ## How to save
 

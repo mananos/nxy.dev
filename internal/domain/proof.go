@@ -18,6 +18,8 @@ type CommandRun struct {
 	// Row is the runner row the command came from; Repo says it is a row of .nxy/runners.json.
 	Row  string `json:"row,omitempty"`
 	Repo bool   `json:"repo,omitempty"`
+	// RepoName is the repo of the feature the command ran in (only with several repos).
+	RepoName string `json:"repo_name,omitempty"`
 }
 
 // AffectedRun is the record of the affected tests of a feature.

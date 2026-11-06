@@ -5,6 +5,19 @@ import (
 	"testing"
 )
 
+func TestPackReposNamesLinesOnlyWithSeveralGroups(t *testing.T) {
+	a := []Rule{{Meta: Meta{ID: "01A"}, Short: "K1", Text: "use tabs"}}
+	b := []Rule{{Meta: Meta{ID: "01B"}, Short: "K1", Text: "use spaces"}}
+	pkt := PackRepos([]RepoRules{{Name: "api", Rules: a}, {Name: "web", Rules: b}}, DispatchBudget)
+	if !strings.Contains(pkt.Text, "[api] K1: use tabs") || !strings.Contains(pkt.Text, "[web] K1: use spaces") {
+		t.Fatalf("text = %q", pkt.Text)
+	}
+	one := PackRepos([]RepoRules{{Name: "api", Rules: a}}, DispatchBudget)
+	if one.Text != Pack(a, nil, DispatchBudget).Text || strings.Contains(one.Text, "[") {
+		t.Fatalf("one group must equal Pack, got %q", one.Text)
+	}
+}
+
 func TestPackBudgetAndOrder(t *testing.T) {
 	rules := []Rule{
 		{Meta: Meta{ID: "r1"}, Short: "K1", Text: "area rule"},

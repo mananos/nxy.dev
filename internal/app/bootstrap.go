@@ -156,7 +156,7 @@ func (h Hooks) finishBootstrap(ctx context.Context, ev HookEvent, st BootstrapSt
 		return HookResponse{Context: text}
 	}
 	dir, _ := h.bootstrapRepo(ev)
-	r := h.createFeature(ctx, dir, request, engineer)
+	r := h.createFeature(ctx, ev, dir, request, engineer)
 	if r.Context != "" {
 		text += "\n" + r.Context
 	}

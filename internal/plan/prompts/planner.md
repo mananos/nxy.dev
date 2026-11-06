@@ -36,14 +36,19 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - Ask a question only for a real fork you cannot settle from the repo: 2 to 4 options, the recommended one first and the only one marked recommended, at most 4 questions. If you ask, you may still save a full plan.
 - suite: the command that runs the whole test suite of the repo (e.g. `npm test`); nxy runs it only when it cannot work out the affected tests; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.
+- Several repos: only when the request touches more than one git repo. Declare repos[{path, role, suite}] ("." is the repo of the session folder; role says what it is for, e.g. contract or consumer). Then every change.at is "<name>/<path>" where name is the repo folder name (nxy tells you if it needs parent folders to tell two apart), a batch touches one repo only, the contract goes first in its own batch, and every decision names its repo ("repo": "<name>"). With one repo, leave repos out.
 
 ## Plan format (JSON)
 
-Fields: title, decisions[{scope repo|task, text, question (required when scope is repo: the question the decision settles)}], criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
+Fields: title, repos[{path, role, suite}], decisions[{scope repo|task, text, repo (several repos only), question (required when scope is repo: the question the decision settles)}], criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, questions[{question, header, options[{label, description, recommended}]}], no_tests. Unknown fields are rejected.
 
 Example of a valid plan:
 
 {{.Example}}
+
+Example of a plan over two repos (the session folder is `api`; leave repos out when only one repo changes):
+
+{{.MultiExample}}
 
 ## How to save
 

@@ -2,6 +2,7 @@ package memory
 
 import (
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -11,6 +12,9 @@ type Packet struct {
 	Rules      []string // ULIDs of the rules delivered
 	Learnings  []string // ULIDs of the learnings delivered
 	Referenced []string // K<n> / A<n> of what was delivered
+	// Origins says from which repo (by group name) each referenced id came; the same id can come from
+	// two repos.
+	Origins map[string][]string
 }
 
 // RulesFor returns the rules that apply to files: those without Paths always,
@@ -43,6 +47,7 @@ func matchesAny(globs, files []string) bool {
 type packItem struct {
 	id, short, line string
 	learning        bool
+	repo            string
 }
 
 func shortOf(short, id string) string {
@@ -58,14 +63,37 @@ func shortOf(short, id string) string {
 // Pack renders rules and then learnings in full ("K3: text", "A7: text"), never
 // only the title, within budget chars. What does not fit is named in one line.
 func Pack(rules []Rule, learnings []Learning, budget int) Packet {
-	var items []packItem
-	for _, r := range rules {
-		s := shortOf(r.Short, r.ID)
-		items = append(items, packItem{r.ID, s, s + ": " + strings.TrimSpace(r.Text), false})
+	return PackRepos([]RepoRules{{Rules: rules, Learnings: learnings}}, budget)
+}
+
+// RepoRules are the rules and learnings of one repo of a feature.
+type RepoRules struct {
+	Name      string // the repo name shown in front of each line when there are several groups
+	Rules     []Rule
+	Learnings []Learning
+}
+
+// PackRepos is Pack over the rules of several repos: every rule first, then every learning, each
+// line starting with "[name] " when there is more than one group. One group is the same as Pack.
+func PackRepos(groups []RepoRules, budget int) Packet {
+	prefix := func(name string) string {
+		if len(groups) > 1 && name != "" {
+			return "[" + name + "] "
+		}
+		return ""
 	}
-	for _, l := range learnings {
-		s := shortOf(l.Short, l.ID)
-		items = append(items, packItem{l.ID, s, s + ": " + strings.TrimSpace(l.Text), true})
+	var items []packItem
+	for _, g := range groups {
+		for _, r := range g.Rules {
+			s := shortOf(r.Short, r.ID)
+			items = append(items, packItem{r.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(r.Text), false, g.Name})
+		}
+	}
+	for _, g := range groups {
+		for _, l := range g.Learnings {
+			s := shortOf(l.Short, l.ID)
+			items = append(items, packItem{l.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(l.Text), true, g.Name})
+		}
 	}
 	var kept []packItem
 	var skipped []string
@@ -102,6 +130,12 @@ func Pack(rules []Rule, learnings []Learning, budget int) Packet {
 	for _, it := range kept {
 		lines = append(lines, it.line)
 		p.Referenced = append(p.Referenced, it.short)
+		if p.Origins == nil {
+			p.Origins = map[string][]string{}
+		}
+		if !slices.Contains(p.Origins[it.short], it.repo) {
+			p.Origins[it.short] = append(p.Origins[it.short], it.repo)
+		}
 		if it.learning {
 			p.Learnings = append(p.Learnings, it.id)
 		} else {

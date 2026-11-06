@@ -255,8 +255,8 @@ Roles: `roles.<rol>.model` (haiku, sonnet, opus, fable) y `roles.<rol>.effort` (
 
 Qué ves: la lista de worktrees y, en cada acción, el comando git que corrió. `new --name <n> --base <rama> [--issue <n>]` (o `new --branch <b>`) crea el worktree con base explícita. nxy nunca commitea ni pushea.
 
-- `pause` / `resume`: la pausa es una marca en `.nxy/local/features/paused.json` (~100 B); se borra al `resume` o al `close`.
-- `close --path <wt>`: con cambios sin guardar pide `--force`; no cierra el worktree principal, el de esta sesión ni uno con una feature sin terminar.
+- `pause` / `resume`: con `--feature <id>` (o la feature del `--path`) pausan o retoman la feature y la pausa libera sus checkouts; el worktree además lleva una marca en `.nxy/local/features/paused.json` (~100 B), que se borra al `resume` o al `close`. Si al retomar otra feature tomó el checkout, nxy lo dice.
+- `close --path <wt>`: con cambios sin guardar pide `--force`; no cierra el worktree principal, el de esta sesión ni uno con una feature sin terminar. `close --feature <id>` cierra todos los worktrees de una feature terminada o pausada (ver "F4.5a: varios repos").
 - Al pausar, Claude te pregunta (opcional) «¿Algo para la próxima sesión?»; si contestás, queda como nota temporal de ese worktree (ver "F4.3: notas y para retomar"). Al cerrar el worktree se borran las notas de su carpeta.
 
 ### /nxy:mem
@@ -332,3 +332,19 @@ Qué hacer cuando frena: `/nxy:feature` para algo con forma, o el implementer pa
 `nxy stats` suma esas tres líneas del gate sólo si el repo ya tiene filas en el ledger.
 
 Costo: cada edición del hilo principal escribe una fila de ~150 B en `.nxy/local/metrics/gate.jsonl` (tope 256 KB, 90 días).
+
+## F4.5a: varios repos
+
+Qué ves: una feature puede tocar varios repos (por ejemplo `api` y `web`), abriendo la sesión dentro de uno o en una carpeta padre que no es repo. Los lotes corren en fila; el paralelo entre repos llega en F4.5b.
+
+- **Repos en el checkpoint.** El plan lleva una línea de repos (nombre, rol, ruta) y cada lote y decisión lleva `[repo]`. Los archivos se escriben `<nombre>/<ruta>`; el nombre es la carpeta del repo (si dos se llaman igual, nxy suma padres y te avisa). Un repo declarado sin git: el plan no se guarda. Un lote toca un solo repo.
+- **Repo ocupado.** Hay una sola feature activa por checkout. Si el plan toca uno que ya tiene otra feature, el plan no llega a la aprobación y Claude te pregunta: «Pausar la feature X» (recomendada), «Sacar <repo> del plan» (con 2+ repos, salvo que todos estén ocupados), «Abrir en un worktree» (con un repo) o «Parar esta feature». Elegir pausar o abrir en worktree sigue con el mismo plan, sin llamar de nuevo al planner.
+- **Rama y bases.** Al aprobar, Claude pregunta la rama (sugerencias según el prefijo más usado del repo, o escribila en Other) y la base de cada repo (la por defecto va recomendada). Una base que existe sólo en origin también se ofrece, y la rama se crea desde `origin/<base>`. Si git falla (por ejemplo cambios sin commitear que chocan con la rama), vuelve a preguntar con el mensaje de git; nxy nunca hace stash ni force.
+- **Con un repo.** La rama se crea en la carpeta de la sesión (`git switch -c <rama> <base>`, o `git switch <rama>` si existe y está libre) y seguís trabajando ahí. Con 2+ repos, o con el checkout ocupado, nxy crea un worktree por repo en `<repo>.worktrees/<slug>`.
+- **Worktrees.** nxy dice sus rutas y cómo abrirlos (otra ventana de tu editor o `cd`). Un worktree nuevo no trae dependencias (`node_modules`, build): nxy avisa cuáles faltan, no instala nada, y el primer Accept puede fallar hasta que las instales. La feature retiene sólo sus worktrees; tu sesión la sigue igual. Editar el checkout original de un repo que ya tiene worktree se rechaza («editá en <worktree>»).
+- **Pausa que libera.** Pausar una feature suelta sus checkouts para que otra los use; `nxy feature resume --feature <id>` los retoma si siguen libres.
+- **Cerrar.** `nxy feature close --feature <id>` cierra cada worktree de una feature terminada o pausada (`--force` sólo si lo pedís con cambios sin guardar), borra sus notas e imprime los comandos. Una feature que trabajó en la carpeta no tiene worktrees y lo dice. `nxy feature list` muestra las activas y pausadas con repos, rama y worktrees; también anda desde una carpeta padre que no es repo y lista sólo las features de esa carpeta o de sus repos.
+- **Sesión reabierta.** Si reabrís una sesión en una carpeta cuya feature no tiene otra sesión viva, `/nxy:feature` responde «ya hay una feature en curso» en vez de arrancar una segunda.
+- **Aprendizajes.** Con 2+ repos, un `false:` del implementer o del reviewer apunta al repo: `false: [api] A3` o `false: api:A3`. Las reglas se entregan por repo y una decisión `[repo]` se guarda en ese repo.
+
+Costo: unas pocas filas en la db (`feature_holds`); cada worktree ocupa un checkout más en disco, y codegraph arma un índice por worktree (segundos).

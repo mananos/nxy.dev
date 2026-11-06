@@ -30,7 +30,7 @@ func (v Violation) String() string {
 
 // Rules as data: paths are relative to the module.
 var (
-	pure = set("internal/domain", "internal/flow", "internal/plan", "internal/review", "internal/gate", "internal/filter", "internal/version", "internal/affected", "internal/design", "internal/pricing", "internal/jscompat", "internal/metrics", "internal/format", "internal/report", "internal/promptcache", "internal/searchscope", "internal/textdiff", "internal/repomap", "internal/setup", "internal/configedit", "internal/scout", "internal/worktree", "internal/docs", "internal/memory", "internal/host/claudecode/transcript")
+	pure = set("internal/domain", "internal/flow", "internal/plan", "internal/review", "internal/gate", "internal/filter", "internal/version", "internal/affected", "internal/design", "internal/pricing", "internal/jscompat", "internal/metrics", "internal/format", "internal/report", "internal/promptcache", "internal/searchscope", "internal/textdiff", "internal/repomap", "internal/setup", "internal/configedit", "internal/scout", "internal/worktree", "internal/repos", "internal/docs", "internal/memory", "internal/host/claudecode/transcript")
 	// agnostic packages: pure and also free of any host package.
 	agnostic = set("internal/memory")
 	adapters = set("internal/store/sqlite", "internal/host/claudecode", "internal/runner", "internal/tools", "internal/update", "internal/tui")

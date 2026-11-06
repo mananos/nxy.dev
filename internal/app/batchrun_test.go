@@ -12,12 +12,14 @@ import (
 type fakeShell struct {
 	res   ShellResult
 	calls int
+	dir   string
 	// during runs while the command "executes".
 	during func()
 }
 
-func (s *fakeShell) Run(_ context.Context, _, _ string) (ShellResult, error) {
+func (s *fakeShell) Run(_ context.Context, dir, _ string) (ShellResult, error) {
 	s.calls++
+	s.dir = dir
 	if s.during != nil {
 		s.during()
 	}
@@ -203,5 +205,24 @@ func TestRunBatchTailCut(t *testing.T) {
 	lines := strings.Split(r.Tail, "\n")
 	if len(lines) != acceptTailLines || lines[len(lines)-1] != "line 100" || lines[0] != "line 61" {
 		t.Errorf("tail has %d lines: first %q last %q", len(lines), lines[0], lines[len(lines)-1])
+	}
+}
+
+func TestRunBatchRunsInRepoCheckout(t *testing.T) {
+	h, st, sh, id := batchFeature(t, domain.BatchTestNew, "go test")
+	f := st.feats[id]
+	f.Plan.Repos = []domain.PlanRepo{{Path: "api"}, {Path: "web"}}
+	f.Plan.Batches[0].Repo = "web"
+	f.Repos = []domain.FeatureRepo{
+		{Name: "api", Root: "/w/api", Checkout: "/w/api.worktrees/x"},
+		{Name: "web", Root: "/w/web", Checkout: "/w/web.worktrees/x"},
+	}
+	st.feats[id] = f
+	sh.res = ShellResult{Exit: 1, Output: "FAIL"}
+	if _, err := h.RunBatchCheck(context.Background(), id, RunRed); err != nil {
+		t.Fatal(err)
+	}
+	if sh.dir != "/w/web.worktrees/x" {
+		t.Errorf("dir = %q", sh.dir)
 	}
 }

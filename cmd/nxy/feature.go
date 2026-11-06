@@ -46,6 +46,10 @@ func runPlan(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
+	if res.Blocked != "" {
+		fmt.Fprintln(stderr, res.Blocked)
+		return 1
+	}
 	fmt.Fprintf(stdout, "plan r%d saved; reply with exactly this line, nothing else\n", res.Rev)
 	return 0
 }
@@ -70,6 +74,12 @@ func runStatus(_ []string, _ io.Reader, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "feature: %s\nrequest: %s\nstate: %s\nstep: %s\nnext: %s\n",
 		v.FeatureID, v.Request, v.Public, v.Phase, v.Next)
+	if v.Paused {
+		fmt.Fprintln(stdout, "paused: yes")
+	}
+	for _, r := range v.Repos {
+		fmt.Fprintf(stdout, "repo: %s\n", r)
+	}
 	if v.Progress != "" {
 		fmt.Fprintf(stdout, "batch: %s\n", v.Progress)
 	}

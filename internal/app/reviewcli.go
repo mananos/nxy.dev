@@ -20,10 +20,10 @@ func (h Hooks) ReviewShow(ctx context.Context, dir string) (string, bool, error)
 	if h.Store == nil || h.Repos == nil {
 		return "", false, nil
 	}
-	repo := h.Repos.Key(dir)
-	f, ok, err := h.Store.ActiveFeature(ctx, repo)
-	if err == nil && (!ok || f.Review == nil) {
-		f, ok, err = h.Store.LatestFeature(ctx, repo)
+	f, ok := h.featureFor(ctx, HookEvent{ProjectDir: dir})
+	var err error
+	if !ok || f.Review == nil {
+		f, ok, err = h.latestIn(ctx, dir)
 	}
 	if err != nil || !ok || f.Review == nil {
 		return "", false, err

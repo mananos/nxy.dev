@@ -284,3 +284,85 @@ func TestStopFeatureDiscardFailureIsWarning(t *testing.T) {
 		t.Error("still active")
 	}
 }
+
+func multiRepoFeature(t *testing.T, root, wtAPI, wtWeb string) (Hooks, *memStore, string) {
+	t.Helper()
+	h, st := flowHooks(false)
+	p := &domain.Plan{
+		Repos: []domain.PlanRepo{{Path: "api", Name: "api"}, {Path: "web", Name: "web"}},
+		Batches: []domain.Batch{{N: 1, Repo: "api", Change: []domain.Change{{At: "api/src/a.go:3", What: "x"}}},
+			{N: 2, Repo: "web", Change: []domain.Change{{At: "web/b.go", What: "y"}}}},
+	}
+	id, err := st.CreateFeature(context.Background(), domain.Feature{
+		Repo: "repo:" + root, Home: "repo:" + root, Holds: []string{"repo:" + wtAPI, "repo:" + wtWeb}, ProjectDir: root,
+		State: runningState, Next: runningNext, Plan: p, InWorktree: true,
+		Repos: []domain.FeatureRepo{
+			{Name: "api", Root: filepath.Join(root, "api"), Checkout: wtAPI},
+			{Name: "web", Root: filepath.Join(root, "web"), Checkout: wtWeb},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return h, st, id
+}
+
+func TestPreToolEditMultiRepoWorktrees(t *testing.T) {
+	root, wtAPI, wtWeb := t.TempDir(), t.TempDir(), t.TempDir()
+	h, _, _ := multiRepoFeature(t, root, wtAPI, wtWeb)
+	ev := func(file string) HookEvent {
+		return HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: file, AgentID: "a", AgentType: roleImplementer, ProjectDir: wtAPI, Cwd: wtAPI}
+	}
+	if r := h.Handle(context.Background(), ev(filepath.Join(wtAPI, "src", "a.go"))); r.AllowReason == "" {
+		t.Errorf("worktree file named by batch 1: %+v", r)
+	}
+	if r := h.Handle(context.Background(), ev(filepath.Join(wtWeb, "src", "a.go"))); r.AllowReason != "" || r.Deny != "" {
+		t.Errorf("file of another repo's worktree is not named by batch 1: %+v", r)
+	}
+	r := h.Handle(context.Background(), ev(filepath.Join(root, "api", "src", "a.go")))
+	if r.Deny == "" || !strings.Contains(r.Deny, wtAPI) {
+		t.Errorf("original checkout: %+v", r)
+	}
+}
+
+func TestUndeclaredRepoEditAddsRepoOnce(t *testing.T) {
+	root, wtAPI, wtWeb := t.TempDir(), t.TempDir(), t.TempDir()
+	h, st, id := multiRepoFeature(t, root, wtAPI, wtWeb)
+	other := t.TempDir()
+	ev := HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: filepath.Join(other, "x.go"), AgentID: "a", AgentType: roleImplementer, ProjectDir: root, Cwd: root}
+	r := h.Handle(context.Background(), ev)
+	if !strings.Contains(r.AllowReason, "outside the plan") {
+		t.Fatalf("first edit: %+v", r)
+	}
+	f := st.feats[id]
+	if len(f.Repos) != 3 || !f.Repos[2].Undeclared || f.Repos[2].Checkout != other {
+		t.Fatalf("repos = %+v", f.Repos)
+	}
+	if r := h.Handle(context.Background(), ev); r.AllowReason != "" {
+		t.Errorf("second edit warns again: %+v", r)
+	}
+	if len(st.feats[id].Repos) != 3 {
+		t.Errorf("repo added twice")
+	}
+}
+
+func TestUndeclaredRepoDoesNotMakeWorktrees(t *testing.T) {
+	root := t.TempDir()
+	h, st := flowHooks(false)
+	id, err := st.CreateFeature(context.Background(), domain.Feature{
+		Repo: "repo:" + root, Home: "repo:" + root, Holds: []string{"repo:" + root}, ProjectDir: root,
+		State: runningState, Next: runningNext,
+		Plan: &domain.Plan{Batches: []domain.Batch{{N: 1, Change: []domain.Change{{At: "a.go", What: "x"}}}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := t.TempDir()
+	ev := HookEvent{Name: "PreToolUse", Tool: "Edit", FilePath: filepath.Join(other, "x.go"), AgentID: "a", AgentType: roleImplementer, ProjectDir: root, Cwd: root}
+	if r := h.Handle(context.Background(), ev); !strings.Contains(r.AllowReason, "outside the plan") {
+		t.Fatalf("edit: %+v", r)
+	}
+	if st.feats[id].UsesWorktrees() {
+		t.Errorf("an undeclared repo flipped UsesWorktrees: %+v", st.feats[id].Repos)
+	}
+}

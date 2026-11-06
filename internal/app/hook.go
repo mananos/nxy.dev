@@ -137,6 +137,8 @@ type Hooks struct {
 	ReviewFiles ReviewFiles
 	// Docs finds the docs a finished feature changes; nil means there are none to look for.
 	Docs Docs
+	// Branches runs the git of the branch step; nil means no branch is made (the feature works where it is).
+	Branches Branches
 	// Memory serves the repo memory inside the flow; nil means no memory: everything that uses it is skipped.
 	Memory FlowMemory
 	// Sessions keeps the per-session hook state; nil means no notes question, no chaining.

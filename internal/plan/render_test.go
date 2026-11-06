@@ -7,6 +7,28 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
+func TestImplementerPromptNamesRepoCheckout(t *testing.T) {
+	f := domain.Feature{
+		ID: "f1", Request: "r",
+		Plan: &domain.Plan{
+			Repos:   []domain.PlanRepo{{Path: "api", Name: "api"}, {Path: "web", Name: "web"}},
+			Batches: []domain.Batch{{N: 1, Title: "t", Repo: "web", Change: []domain.Change{{At: "web/x.go", What: "w"}}}},
+		},
+		Repos: []domain.FeatureRepo{{Name: "api", Checkout: "C:/wt/api"}, {Name: "web", Checkout: `C:\wt\web`}},
+		Next:  domain.Action{Batch: 1},
+	}
+	got := ImplementerPrompt(f, "nxy", "")
+	for _, want := range []string{"works in repo web, checkout `C:/wt/web`", "- api — checkout `C:/wt/api`", "`<name>/x` is `<checkout>/x`"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("prompt lacks %q:\n%s", want, got)
+		}
+	}
+	f.Plan.Repos = nil
+	if strings.Contains(ImplementerPrompt(f, "nxy", ""), "checkout") {
+		t.Error("one-repo prompt mentions a checkout")
+	}
+}
+
 func TestEngineerExampleValid(t *testing.T) {
 	p, err := Decode(strings.NewReader(engineerExample))
 	if err != nil {

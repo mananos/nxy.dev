@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -86,26 +87,61 @@ func (h Hooks) raisePlanRisk(dir string, p *domain.Plan) {
 // raised again with the real diff; low risk gets one quick base pass, medium and high the lenses
 // the changed files select (base always).
 func (h Hooks) prepareReview(ctx context.Context, f domain.Feature) domain.Review {
-	paths := planChangePaths(f)
-	for i, p := range paths {
-		paths[i] = reviewPath(p)
-	}
-	if h.Changes != nil {
-		if c, err := h.Changes.Changed(ctx, f.ProjectDir, f.Base); err == nil {
-			paths = nil
-			for _, p := range c {
-				paths = append(paths, filepath.ToSlash(p))
-			}
-		}
-	}
 	planned := domain.RiskLow
 	if f.Plan != nil {
 		for _, b := range f.Plan.Batches {
 			planned = review.Max(planned, b.Risk)
 		}
 	}
-	sel := review.Select(h.reviewLenses(f.ProjectDir), h.reviewFiles(f.ProjectDir, paths))
-	risk, why := review.Raise(planned, sel)
+	// Lenses are chosen per repo, with paths relative to it (so "**/api/**" does not catch a whole
+	// repo called api), and put together by lens with "<name>/<path>" labels; the risk is the highest.
+	multi := len(f.Repos) > 1
+	var sel []review.Selected
+	risk, why := planned, ""
+	for _, r := range f.RepoList() {
+		dir, base := repoDir(r), r.Base
+		if dir == "" {
+			dir = f.ProjectDir
+		}
+		if base == "" {
+			base = f.Base
+		}
+		paths := planPathsOf(f, r.Name)
+		for i, p := range paths {
+			paths[i] = reviewPath(p)
+		}
+		if h.Changes != nil {
+			if c, err := h.Changes.Changed(ctx, dir, base); err == nil {
+				paths = nil
+				for _, p := range c {
+					paths = append(paths, filepath.ToSlash(p))
+				}
+			}
+		}
+		rsel := review.Select(h.reviewLenses(dir), h.reviewFiles(dir, paths))
+		rrisk, rwhy := review.Raise(planned, rsel)
+		if review.Max(risk, rrisk) != risk || (why == "" && rwhy != "") {
+			risk, why = review.Max(risk, rrisk), rwhy
+		}
+		if !multi {
+			sel = rsel
+			continue
+		}
+		for _, s := range rsel {
+			for i := range s.Files {
+				s.Files[i] = labelPath(r.Name, s.Files[i], true)
+			}
+			j := slices.IndexFunc(sel, func(x review.Selected) bool { return x.Lens.Name == s.Lens.Name })
+			if j < 0 {
+				sel = append(sel, s)
+			} else {
+				sel[j].Files = append(sel[j].Files, s.Files...)
+			}
+		}
+	}
+	if !multi {
+		risk, why = review.Raise(planned, sel)
+	}
 	rv := domain.Review{Risk: risk, RiskWhy: why, Quick: risk == domain.RiskLow, Warning: h.reviewWarning(f.ProjectDir)}
 	for _, s := range sel {
 		if rv.Quick && !s.Lens.Always {
@@ -182,10 +218,29 @@ func (h Hooks) afterAdvance(ctx context.Context, f domain.Feature, acts []domain
 // changedPaths are the files the feature changed since its base (git), or the ones its plan names.
 func (h Hooks) changedPaths(ctx context.Context, f domain.Feature) []string {
 	if h.Changes != nil {
-		if c, err := h.Changes.Changed(ctx, f.ProjectDir, f.Base); err == nil {
-			out := make([]string, 0, len(c))
-			for _, p := range c {
-				out = append(out, filepath.ToSlash(p))
+		multi := len(f.Repos) > 1
+		if !multi {
+			r := f.RepoList()[0]
+			dir, base := repoDir(r), r.Base
+			if dir == "" {
+				dir = f.ProjectDir
+			}
+			if base == "" {
+				base = f.Base
+			}
+			if c, err := h.Changes.Changed(ctx, dir, base); err == nil {
+				out := make([]string, 0, len(c))
+				for _, p := range c {
+					out = append(out, filepath.ToSlash(p))
+				}
+				return out
+			}
+		} else if rels, ok := h.changedByRepo(ctx, f); ok {
+			var out []string
+			for i, r := range f.Repos {
+				for _, p := range rels[i] {
+					out = append(out, labelPath(r.Name, p, true))
+				}
 			}
 			return out
 		}
@@ -197,13 +252,72 @@ func (h Hooks) changedPaths(ctx context.Context, f domain.Feature) []string {
 	return paths
 }
 
+// changedByRepo are the files each repo of f changed since its base, relative to the repo, in the
+// order of f.Repos; ok is false when git could not answer for some repo.
+func (h Hooks) changedByRepo(ctx context.Context, f domain.Feature) ([][]string, bool) {
+	out := make([][]string, len(f.Repos))
+	for i, r := range f.Repos {
+		base := r.Base
+		if base == "" {
+			base = f.Base
+		}
+		c, err := h.Changes.Changed(ctx, repoDir(r), base)
+		if err != nil {
+			return nil, false
+		}
+		for _, p := range c {
+			out[i] = append(out[i], filepath.ToSlash(p))
+		}
+	}
+	return out, true
+}
+
+// findDocs looks for the docs that name what the feature changed. With several repos it searches
+// each one by its own relative paths and labels the docs "<name>/<path>".
+func (h Hooks) findDocs(ctx context.Context, f domain.Feature) domain.Docs {
+	if len(f.Repos) <= 1 {
+		dir := repoDir(f.RepoList()[0])
+		if dir == "" {
+			dir = f.ProjectDir
+		}
+		return h.Docs.Find(ctx, dir, h.changedPaths(ctx, f))
+	}
+	var found domain.Docs
+	rels, ok := h.changedByRepo(ctx, f)
+	for i, r := range f.Repos {
+		var changed []string
+		if ok {
+			changed = rels[i]
+		} else {
+			changed = planPathsOf(f, r.Name)
+			for j, p := range changed {
+				changed[j] = reviewPath(p)
+			}
+		}
+		d := h.Docs.Find(ctx, repoDir(r), changed)
+		for _, t := range d.Terms {
+			if !slices.Contains(found.Terms, t) {
+				found.Terms = append(found.Terms, t)
+			}
+		}
+		for _, df := range d.Docs {
+			df.Path = labelPath(r.Name, df.Path, true)
+			found.Docs = append(found.Docs, df)
+		}
+		if found.WikiDir == "" && d.WikiDir != "" {
+			found.WikiDir = labelPath(r.Name, d.WikiDir, true)
+		}
+	}
+	return found
+}
+
 // checkDocs is the CheckDocs step, done by nxy itself outside any transition: it looks for the
 // docs that name what the feature changed, stores them and applies DocsChecked (no docs closes
 // the feature, docs ask the user). ok is false when the transition did not happen.
 func (h Hooks) checkDocs(ctx context.Context, f domain.Feature) (domain.Feature, []domain.Action, bool) {
 	var found domain.Docs
 	if h.Docs != nil && f.ProjectDir != "" {
-		found = h.Docs.Find(ctx, f.ProjectDir, h.changedPaths(ctx, f))
+		found = h.findDocs(ctx, f)
 	}
 	nf, acts, err := h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
 		if g.State.Phase != domain.PhaseDocsCheck {

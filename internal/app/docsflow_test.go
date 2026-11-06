@@ -293,6 +293,51 @@ func TestDocsPacketOfAFeature(t *testing.T) {
 	}
 }
 
+// perDirDocs answers Find by the folder it searches.
+type perDirDocs struct {
+	by    map[string]domain.Docs
+	calls map[string][]string
+}
+
+func (d perDirDocs) Find(_ context.Context, dir string, changed []string) domain.Docs {
+	d.calls[dir] = changed
+	return d.by[dir]
+}
+
+func TestDocsOfSeveralReposAreSearchedPerRepoAndLabeled(t *testing.T) {
+	h, _ := flowHooks(false)
+	pd := perDirDocs{
+		by: map[string]domain.Docs{
+			"/w/api.wt": {Terms: []string{"a"}, Docs: []domain.DocFile{{Path: "docs/api.md"}}, WikiDir: "wiki"},
+			"/w/web.wt": {Terms: []string{"a", "b"}},
+		},
+		calls: map[string][]string{},
+	}
+	h.Docs = pd
+	h.Changes = dirChanges{map[string][]string{"/w/api.wt": {"src/a.go"}, "/w/web.wt": {"src/b.go"}}}
+	f := domain.Feature{
+		ProjectDir: "/w", Base: "abc",
+		Repos: []domain.FeatureRepo{
+			{Name: "api", Root: "/w/api", Checkout: "/w/api.wt", Base: "abc"},
+			{Name: "web", Root: "/w/web", Checkout: "/w/web.wt", Base: "abc"},
+		},
+	}
+	got := h.findDocs(context.Background(), f)
+	if len(got.Docs) != 1 || got.Docs[0].Path != "api/docs/api.md" || got.WikiDir != "api/wiki" || len(got.Terms) != 2 {
+		t.Fatalf("docs = %+v", got)
+	}
+	if strings.Join(pd.calls["/w/api.wt"], ",") != "src/a.go" || strings.Join(pd.calls["/w/web.wt"], ",") != "src/b.go" {
+		t.Errorf("calls %v", pd.calls)
+	}
+	f.Docs = &got
+	if want := normPath("/w/api.wt/docs/api.md", ""); h.docsAbs(f, "api/docs/api.md") != want {
+		t.Errorf("docsAbs = %q want %q", h.docsAbs(f, "api/docs/api.md"), want)
+	}
+	if af := h.docsAbsolute(f); af.Docs.Docs[0].Path != normPath("/w/api.wt/docs/api.md", "") || f.Docs.Docs[0].Path != "api/docs/api.md" {
+		t.Errorf("absolute = %+v", af.Docs.Docs)
+	}
+}
+
 type fakeDiffs []review.FileDiff
 
 func (d fakeDiffs) Diff(context.Context, string, string) ([]review.FileDiff, error) { return d, nil }

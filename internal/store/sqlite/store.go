@@ -28,7 +28,10 @@ var (
 )
 
 // sqliteConstraintUnique is the extended result code SQLITE_CONSTRAINT_UNIQUE.
-const sqliteConstraintUnique = 2067
+const (
+	sqliteConstraintUnique     = 2067
+	sqliteConstraintPrimaryKey = 1555
+)
 
 // Store is the SQLite-backed feature store.
 type Store struct {
@@ -119,17 +122,50 @@ func (s *Store) CreateFeature(ctx context.Context, f domain.Feature) (string, er
 		return "", err
 	}
 	ms := t.UTC().UnixMilli()
-	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done) VALUES (?, 1, ?, ?, ?, ?, ?, ?)`,
-		f.ID, string(b), ms, ms, s.machineID, f.Repo, isDone(f))
-	var coded interface{ Code() int }
-	if errors.As(err, &coded) && coded.Code() == sqliteConstraintUnique {
-		return "", ErrActiveFeature
-	}
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx,
+		`INSERT INTO features (id, version, state, created_at, updated_at, machine_id, repo, done, home) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)`,
+		f.ID, string(b), ms, ms, s.machineID, f.Repo, isDone(f), f.Home); err != nil {
+		return "", mapUnique(err)
+	}
+	if err := syncHolds(ctx, tx, f); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(); err != nil {
+		return "", err
+	}
 	return f.ID, nil
+}
+
+// mapUnique turns a UNIQUE violation into ErrActiveFeature.
+func mapUnique(err error) error {
+	var coded interface{ Code() int }
+	if errors.As(err, &coded) && (coded.Code() == sqliteConstraintUnique || coded.Code() == sqliteConstraintPrimaryKey) {
+		return ErrActiveFeature
+	}
+	return err
+}
+
+// syncHolds rewrites the checkouts the feature holds to f.Held().
+func syncHolds(ctx context.Context, tx *sql.Tx, f domain.Feature) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM feature_holds WHERE feature_id=?`, f.ID); err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, c := range f.Held() {
+		if seen[c] {
+			continue
+		}
+		seen[c] = true
+		if _, err := tx.ExecContext(ctx, `INSERT INTO feature_holds (checkout, feature_id) VALUES (?, ?)`, c, f.ID); err != nil {
+			return mapUnique(err)
+		}
+	}
+	return nil
 }
 
 func isDone(f domain.Feature) int {
@@ -144,10 +180,10 @@ func (s *Store) Feature(ctx context.Context, id string) (domain.Feature, error) 
 	return s.readOne(ctx, `SELECT state FROM features WHERE id=?`, id)
 }
 
-// ActiveFeature is the most recently updated feature of repo that is not done.
-func (s *Store) ActiveFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+// ActiveFeature is the feature that holds the checkout (one per checkout).
+func (s *Store) ActiveFeature(ctx context.Context, checkout string) (domain.Feature, bool, error) {
 	f, err := s.readOne(ctx,
-		`SELECT state FROM features WHERE repo=? AND done=0 ORDER BY updated_at DESC, id DESC LIMIT 1`, repo)
+		`SELECT f.state FROM features f JOIN feature_holds h ON h.feature_id=f.id WHERE h.checkout=?`, checkout)
 	if errors.Is(err, ErrNotFound) {
 		return domain.Feature{}, false, nil
 	}
@@ -157,10 +193,11 @@ func (s *Store) ActiveFeature(ctx context.Context, repo string) (domain.Feature,
 	return f, true, nil
 }
 
-// LatestFeature is the most recently updated feature of repo, done or not.
-func (s *Store) LatestFeature(ctx context.Context, repo string) (domain.Feature, bool, error) {
+// LatestFeature is the most recently updated feature started from the folder key (Home), or, for
+// rows from before the migration (no home), of that repo key; done or not.
+func (s *Store) LatestFeature(ctx context.Context, key string) (domain.Feature, bool, error) {
 	f, err := s.readOne(ctx,
-		`SELECT state FROM features WHERE repo=? ORDER BY updated_at DESC, id DESC LIMIT 1`, repo)
+		`SELECT state FROM features WHERE home=? OR (home='' AND repo=?) ORDER BY updated_at DESC, id DESC LIMIT 1`, key, key)
 	if errors.Is(err, ErrNotFound) {
 		return domain.Feature{}, false, nil
 	}
@@ -168,6 +205,52 @@ func (s *Store) LatestFeature(ctx context.Context, repo string) (domain.Feature,
 		return domain.Feature{}, false, err
 	}
 	return f, true, nil
+}
+
+// FeatureFilter narrows Features. With neither Active nor Paused every feature matches; Active is
+// not done and not paused; Paused is not done and paused.
+type FeatureFilter struct {
+	Home   string // folder key; empty matches any
+	Active bool
+	Paused bool
+}
+
+// Features lists features, newest first.
+func (s *Store) Features(ctx context.Context, flt FeatureFilter) ([]domain.Feature, error) {
+	q := `SELECT state FROM features`
+	var args []any
+	var where []string
+	if flt.Home != "" {
+		where = append(where, `(home=? OR (home='' AND repo=?))`)
+		args = append(args, flt.Home, flt.Home)
+	}
+	if flt.Active || flt.Paused {
+		where = append(where, `done=0`)
+	}
+	if len(where) > 0 {
+		q += ` WHERE ` + strings.Join(where, ` AND `)
+	}
+	rows, err := s.db.QueryContext(ctx, q+` ORDER BY updated_at DESC, id DESC`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []domain.Feature
+	for rows.Next() {
+		var state string
+		if err := rows.Scan(&state); err != nil {
+			return nil, err
+		}
+		var f domain.Feature
+		if err := json.Unmarshal([]byte(state), &f); err != nil {
+			return nil, fmt.Errorf("sqlite: decode feature: %w", err)
+		}
+		if (flt.Active || flt.Paused) && f.Paused != flt.Paused {
+			continue
+		}
+		out = append(out, f)
+	}
+	return out, rows.Err()
 }
 
 // RecordPicks stores which review findings were offered and which were chosen, in one transaction.
@@ -245,19 +328,36 @@ func (s *Store) Transition(ctx context.Context, id string, fn func(domain.Featur
 		if err != nil {
 			return err
 		}
-		res, err := s.db.ExecContext(ctx,
-			`UPDATE features SET state=?, version=version+1, updated_at=?, repo=?, done=? WHERE id=? AND version=?`,
-			string(b), s.now().UTC().UnixMilli(), nf.Repo, isDone(nf), id, version)
+		done, err := s.commitTransition(ctx, nf, string(b), version)
 		if err != nil {
 			return err
 		}
-		n, err := res.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if n == 1 {
+		if done {
 			return nil
 		}
 	}
 	return ErrConflict
+}
+
+// commitTransition writes nf and its holds in one transaction; false means the version moved.
+func (s *Store) commitTransition(ctx context.Context, nf domain.Feature, state string, version int) (bool, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx,
+		`UPDATE features SET state=?, version=version+1, updated_at=?, repo=?, done=?, home=? WHERE id=? AND version=?`,
+		state, s.now().UTC().UnixMilli(), nf.Repo, isDone(nf), nf.Home, nf.ID, version)
+	if err != nil {
+		return false, mapUnique(err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil || n != 1 {
+		return false, err
+	}
+	if err := syncHolds(ctx, tx, nf); err != nil {
+		return false, err
+	}
+	return true, tx.Commit()
 }

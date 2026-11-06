@@ -54,6 +54,9 @@ func RuleGroups(offer []domain.RuleCandidate) []RuleGroup {
 		g := RuleGroup{Header: fmt.Sprintf("Reglas %d/%d", i+1, n)}
 		for _, c := range shown[i*RuleMaxOptions : end] {
 			desc := "Resuelve: " + c.Question
+			if c.Repo != "" {
+				desc += " (repo " + c.Repo + ")"
+			}
 			if c.Supersedes != "" {
 				desc += " · reemplaza a " + c.Supersedes
 				if c.SupersedesText != "" {

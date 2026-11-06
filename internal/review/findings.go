@@ -67,6 +67,9 @@ func ValidateMemory(sub Submission, delivered []string) []plan.Problem {
 	}
 	for i, a := range sub.False {
 		u := strings.ToUpper(strings.TrimSpace(a))
+		if _, id, ok := memory.SplitFalse(strings.TrimSpace(a)); ok {
+			u = id // "[api] A3" and "api:A3" name the repo of A3
+		}
 		if !shortRe.MatchString(u) || !strings.HasPrefix(u, "A") {
 			add(fmt.Sprintf("false[%d]", i), "%q is not an A<n> learning", a)
 		} else if !got[u] {

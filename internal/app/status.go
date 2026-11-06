@@ -18,6 +18,29 @@ type StatusView struct {
 	Progress  string   // "lote N de M" while batches run
 	Failure   string   // what failed last, empty when nothing did
 	Decisions []string // decisions of the plan and the design
+	Repos     []string // "name → branch (checkout)" once the repos have a branch
+	Paused    bool
+}
+
+// RepoLines is one line per repo of the feature that already has a branch: "name → branch (checkout)".
+// A feature without repos or branches gives none.
+func RepoLines(f domain.Feature) []string {
+	var out []string
+	for _, r := range f.Repos {
+		if r.Branch == "" {
+			continue
+		}
+		dir := r.Checkout
+		if dir == "" {
+			dir = r.Root
+		}
+		name := r.Name
+		if name == "" {
+			name = "repo"
+		}
+		out = append(out, name+" → "+r.Branch+" ("+dir+")")
+	}
+	return out
 }
 
 // Status describes the active feature of the repo dir belongs to.
@@ -37,6 +60,8 @@ func (h Hooks) Status(ctx context.Context, dir string) (StatusView, error) {
 		Progress:  batchProgress(f),
 		Failure:   lastFailure(f),
 		Decisions: featureDecisions(f),
+		Repos:     RepoLines(f),
+		Paused:    f.Paused,
 	}, nil
 }
 
@@ -57,5 +82,6 @@ func (h Hooks) activeIn(ctx context.Context, dir string) (domain.Feature, bool, 
 	if h.Store == nil || h.Repos == nil {
 		return domain.Feature{}, false, nil
 	}
-	return h.Store.ActiveFeature(ctx, h.Repos.Key(dir))
+	f, ok := h.featureFor(ctx, HookEvent{ProjectDir: dir})
+	return f, ok, nil
 }

@@ -27,6 +27,11 @@ func (h Hooks) DocsPacket(ctx context.Context, id string) (string, error) {
 		text = plan.Markdown(f)
 	}
 	in := docs.PacketIn{ID: f.ID, Plan: text, Docs: f.Docs.Docs, WikiDir: f.Docs.WikiDir}
+	if len(f.Repos) > 1 {
+		// The documenter edits in the checkouts: it reads absolute paths, not "<name>/<path>".
+		af := h.docsAbsolute(f)
+		in.Docs, in.WikiDir = af.Docs.Docs, af.Docs.WikiDir
+	}
 	for _, d := range h.reviewDiffs(ctx, f) {
 		added, removed := countChanged(d.Text)
 		in.Files = append(in.Files, docs.File{Path: d.Path, Status: d.Status, Added: added, Removed: removed, Diff: d.Text})

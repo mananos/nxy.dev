@@ -69,7 +69,7 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	}
 	edits := pr.Edits
 
-	res, err := h.Shell.Run(ctx, f.ProjectDir, command)
+	res, err := h.Shell.Run(ctx, batchDir(f, n), command)
 	if err != nil {
 		return BatchRun{}, fmt.Errorf("run Accept: %w", err)
 	}
@@ -112,6 +112,24 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	}
 	out.Recorded = true
 	return out, nil
+}
+
+// batchRepo is the repo batch n works in: the one its changes name, or the first.
+func batchRepo(f domain.Feature, n int) domain.FeatureRepo {
+	if f.Plan != nil && n >= 1 && n <= len(f.Plan.Batches) {
+		if r, ok := f.RepoByName(f.Plan.Batches[n-1].Repo); ok {
+			return r
+		}
+	}
+	return f.RepoList()[0]
+}
+
+// batchDir is the folder the Accept of batch n runs in.
+func batchDir(f domain.Feature, n int) string {
+	if d := repoDir(batchRepo(f, n)); d != "" {
+		return d
+	}
+	return f.ProjectDir
 }
 
 // tailLines keeps the last n lines of s, without the trailing newline.

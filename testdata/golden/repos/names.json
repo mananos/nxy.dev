@@ -1,0 +1,10 @@
+[
+{"name":"names:000","input":{"roots":["/work/api"]},"output":{"names":{"/work/api":"api"}}},
+{"name":"names:001","input":{"roots":["/work/api","/work/web"]},"output":{"names":{"/work/api":"api","/work/web":"web"}}},
+{"name":"names:002","input":{"roots":["/work/api","/work/api"]},"output":{"names":{"/work/api":"api"}}},
+{"name":"names:003","input":{"roots":["/clientX/api","/clientY/api","/work/web"]},"output":{"names":{"/clientX/api":"clientX/api","/clientY/api":"clientY/api","/work/web":"web"}}},
+{"name":"names:004","input":{"roots":["/a/b/api","/c/d/api"]},"output":{"names":{"/a/b/api":"b/api","/c/d/api":"d/api"}}},
+{"name":"names:005","input":{"roots":["/a/x/api","/b/y/api","/c/z/api","/c/z/web"]},"output":{"names":{"/a/x/api":"x/api","/b/y/api":"y/api","/c/z/api":"z/api","/c/z/web":"web"}}},
+{"name":"names:006","input":{"roots":["/work/Mi App","/work/web-2"]},"output":{"names":{"/work/Mi App":"Mi App","/work/web-2":"web-2"}}},
+{"name":"names:007","input":{"roots":["/home/dev/proyectos/api","/home/dev/otros/api"]},"output":{"names":{"/home/dev/proyectos/api":"proyectos/api","/home/dev/otros/api":"otros/api"}}}
+]
