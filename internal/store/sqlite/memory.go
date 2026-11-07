@@ -865,7 +865,15 @@ func (s *Store) DeleteNotesUnder(ctx context.Context, folder string, foldCase bo
 	return count, tx.Commit()
 }
 
+// filterSessionTTL is how long the filter summary of a session is kept. It is longer than the 30
+// days after which Claude Code deletes the transcripts, where trend gets its sessions from: a
+// session without transcript no longer shows in trend or stats. Fixed, not configurable.
+const filterSessionTTL = 90 * 24 * time.Hour
+
 // SweepNotes turns the notes not updated for memory.NoteTTL into tombstones and returns how many.
+// In the same pass it deletes the filter summary of the sessions whose last row is older than
+// filterSessionTTL (the whole session, never single rows). legacy_filter_cursor is left alone, so
+// what was swept is not imported again.
 func (s *Store) SweepNotes(ctx context.Context, now time.Time) (int, error) {
 	cutoff := now.Add(-memory.NoteTTL).UTC().UnixMilli()
 	stamp := s.nowMs()
@@ -875,7 +883,16 @@ func (s *Store) SweepNotes(ctx context.Context, now time.Time) (int, error) {
 		return 0, err
 	}
 	n, err := res.RowsAffected()
-	return int(n), err
+	if err != nil {
+		return 0, err
+	}
+	if _, err := s.db.ExecContext(ctx,
+		`DELETE FROM filter_sessions WHERE (checkout, session_id) IN
+		   (SELECT checkout, session_id FROM filter_sessions GROUP BY checkout, session_id HAVING MAX(updated_at) < ?)`,
+		now.Add(-filterSessionTTL).UTC().UnixMilli()); err != nil {
+		return int(n), err
+	}
+	return int(n), nil
 }
 
 // ---- export / import ----

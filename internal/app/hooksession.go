@@ -10,6 +10,15 @@ import (
 
 const legacyNotice = "nxy 1.x is still enabled: disable it while testing the v2 (both answer the same hooks)"
 
+// shortError is the first line of err, cut to 80 runes.
+func shortError(err error) string {
+	s, _, _ := strings.Cut(strings.TrimSpace(err.Error()), "\n")
+	if r := []rune(s); len(r) > 80 {
+		s = string(r[:80]) + "…"
+	}
+	return s
+}
+
 // carryLink hands the feature of the session that just ended in a /clear to the new session of the
 // same folder, so the feature follows it even when it holds no checkout of that folder.
 func (h Hooks) carryLink(ctx context.Context, ev HookEvent) {
@@ -35,6 +44,22 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 		dir = ev.Cwd
 	}
 	var r HookResponse
+	// First thing, so the notes it brings already count for the "¿con cuál seguimos?" question.
+	imported := ""
+	c, first, ierr := h.ImportLegacy(ctx, dir)
+	if first {
+		// A repo the 1.x knew nothing about has nothing to announce.
+		if text := c.Render(); text != "" {
+			imported = "nxy: datos de la 1.x importados — " + text
+		}
+	}
+	if ierr != nil {
+		msg := "nxy: la importación de la 1.x falló (" + shortError(ierr) + "); probá `nxy legacy import`"
+		if imported != "" {
+			imported += "\n"
+		}
+		imported += msg
+	}
 	featureActive := false
 	defer func() { h.startNotesSession(ctx, ev, featureActive) }()
 	if h.Store != nil && h.Repos != nil {
@@ -126,6 +151,12 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 				}
 			}
 		}
+	}
+	if imported != "" {
+		if r.Notice != "" {
+			r.Notice += "\n"
+		}
+		r.Notice += imported
 	}
 	if h.Legacy != nil && h.Legacy.Active(dir) {
 		if r.Notice != "" {

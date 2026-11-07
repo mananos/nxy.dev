@@ -15,8 +15,8 @@ import (
 type Usage struct {
 	Transcripts Transcripts
 	Ledger      Ledger
-	// FilterRows are the rows of the project's filter.jsonl (decoded, unfiltered) for a directory.
-	FilterRows func(dir string) []any
+	// FilterGroups is the filter summary of a session of the project at dir (empty when none).
+	FilterGroups func(dir, sessionID string) []report.FilterGroup
 	// Config is the merged config for a directory.
 	Config func(dir string) map[string]any
 	// BroadSearches are the main-thread broad searches of a transcript at or above threshold.
@@ -83,13 +83,7 @@ func (u Usage) Stats(args []string) report.Output {
 	if jscompat.Truthy(s.Cwd) {
 		dir = jscompat.String(s.Cwd)
 	}
-	var rows []any
-	for _, r := range u.FilterRows(dir) {
-		if jscompat.Get(r, "session_id") == any(s.SessionID) {
-			rows = append(rows, r)
-		}
-	}
-	d := report.StatsData{Session: s, Settings: settings, JSON: asJSON, Loc: u.Loc, Filter: report.SummarizeFilter(rows)}
+	d := report.StatsData{Session: s, Settings: settings, JSON: asJSON, Loc: u.Loc, Filter: report.SummarizeFilterGroups(u.FilterGroups(dir, s.SessionID))}
 
 	// rtk's ledger: what the raw commands printed vs what the model read. Only rtk knows the raw side.
 	if d.Filter.ByEngine.Get("rtk") != 0 {

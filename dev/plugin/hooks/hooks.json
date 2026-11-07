@@ -1,5 +1,5 @@
 {
-  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; the binary runs the F2.5 flow (/nxy:feature or /nxy:engineer with design debate, planner, plan save, approval, batch-by-batch implementer with nxy batch red|green, affected tests via nxy affected, risk-proportional review with reviewers per lens, refuter, findings checkpoint and verified fixes) the Bash filter, and the F4.3 temporary notes (question at session start, SessionEnd to pair /clear)",
+  "description": "nxy 2.0 dev: every hook event goes through the Go binary via the polyglot shim; the binary runs the F2.5 flow (/nxy:feature or /nxy:engineer with design debate, planner, plan save, approval, batch-by-batch implementer with nxy batch red|green, affected tests via nxy affected, risk-proportional review with reviewers per lens, refuter, findings checkpoint and verified fixes) the Bash filter, and the F4.3 temporary notes (question at session start, SessionEnd to pair /clear), the F4.4 import of 1.x data at SessionStart (once per repo, filter summary incremental) and the per-session filter summary written at PostToolUse Bash",
   "hooks": {
     "SessionStart": [
       {

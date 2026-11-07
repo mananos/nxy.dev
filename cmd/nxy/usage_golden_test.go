@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -335,7 +336,23 @@ func materializeUsage(t *testing.T, c *usageCase, texts map[string]string) *usag
 		t.Setenv(k, v) // platform.UserDir reads NXY_HOME from the process
 	}
 	w.getenv = func(k string) string { return env[k] }
+	if c.Input.FilterRows != nil && !skipFilterImport {
+		w.importFilter(t)
+	}
 	return w
+}
+
+// skipFilterImport lets a test build the same world without importing the filter into nxy.db.
+var skipFilterImport bool
+
+// importFilter runs the 1.x import for the world's project: the filter.jsonl lands in nxy.db.
+func (w *usageWorld) importFilter(t *testing.T) {
+	t.Helper()
+	h, st := newHooksStore()
+	defer st.Close()
+	if _, _, err := h.ImportLegacy(context.Background(), w.proj); err != nil {
+		t.Fatalf("import filter: %v", err)
+	}
 }
 
 func writeLedger(t *testing.T, dbPath string, garbage, noTable bool, rowsJSON string) {
@@ -428,7 +445,8 @@ func TestGoldenStats(t *testing.T) {
 		c := &cases[i]
 		t.Run(c.Name, func(t *testing.T) {
 			w := materializeUsage(t, c, texts)
-			u := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+			u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+			t.Cleanup(done)
 			out := u.Stats(w.expandArgs(c.Input.Args))
 			checkUsageOutput(t, c, w, out.Stdout, out.Stderr, out.Code)
 		})
@@ -446,7 +464,8 @@ func TestGoldenTrend(t *testing.T) {
 		c := &cases[i]
 		t.Run(c.Name, func(t *testing.T) {
 			w := materializeUsage(t, c, texts)
-			u := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+			u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+			t.Cleanup(done)
 			out := u.Trend(w.expandArgs(c.Input.Args))
 			checkUsageOutput(t, c, w, out.Stdout, out.Stderr, out.Code)
 		})

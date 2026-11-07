@@ -17,7 +17,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -38,7 +39,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -59,7 +61,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -80,7 +83,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -101,7 +105,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -122,7 +127,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -143,7 +149,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -166,7 +173,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -187,7 +195,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -208,7 +217,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -229,7 +239,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -250,7 +261,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -271,7 +283,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -292,7 +305,8 @@
       "firstTokens": [
         "mvn​test"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "mvn​test"
     }
   },
   {
@@ -309,7 +323,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -326,7 +341,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -347,7 +363,8 @@
       "firstTokens": [
         "gitstatus"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "gitstatus"
     }
   },
   {
@@ -368,7 +385,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -389,7 +407,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -410,7 +429,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -431,7 +451,8 @@
       "firstTokens": [
         "grep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "grep"
     }
   },
   {
@@ -452,7 +473,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -473,7 +495,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -494,7 +517,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -515,7 +539,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -538,7 +563,8 @@
         "mvn",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -559,7 +585,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -580,7 +607,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -601,7 +629,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -622,7 +651,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -643,7 +673,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -664,7 +695,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -685,7 +717,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -708,7 +741,8 @@
         "ls",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -729,7 +763,8 @@
       "firstTokens": [
         "(ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "(ls"
     }
   },
   {
@@ -752,7 +787,8 @@
         "ls",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -773,7 +809,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -794,7 +831,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -815,7 +853,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -836,7 +875,8 @@
       "firstTokens": [
         "diff"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "diff"
     }
   },
   {
@@ -859,7 +899,8 @@
         "$env:NXY_RAW=\"1\"",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -880,7 +921,8 @@
       "firstTokens": [
         "$env:NXY_RAW"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
     }
   },
   {
@@ -903,7 +945,8 @@
       ],
       "leadingAssignments": {
         "NXY_RAW": "0"
-      }
+      },
+      "commandKind": "maven-test"
     }
   },
   {
@@ -926,7 +969,8 @@
       ],
       "leadingAssignments": {
         "NXY_RAW": "1"
-      }
+      },
+      "commandKind": "unknown"
     }
   },
   {
@@ -950,7 +994,8 @@
       "leadingAssignments": {
         "FOO": "1",
         "NXY_RAW": "1"
-      }
+      },
+      "commandKind": "grep"
     }
   },
   {
@@ -971,7 +1016,8 @@
       "firstTokens": [
         "#"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "#"
     }
   },
   {
@@ -992,7 +1038,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -1013,7 +1060,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -1034,7 +1082,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -1055,7 +1104,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -1076,7 +1126,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -1099,7 +1150,8 @@
         "ls",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1122,7 +1174,8 @@
         "ls",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1145,7 +1198,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1168,7 +1222,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1191,7 +1246,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1214,7 +1270,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1237,7 +1294,8 @@
         "ls",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1260,7 +1318,8 @@
         "ls",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1283,7 +1342,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1306,7 +1366,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1329,7 +1390,8 @@
         "ls",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1352,7 +1414,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1375,7 +1438,8 @@
         "ls",
         "headx"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1398,7 +1462,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1421,7 +1486,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1446,7 +1512,8 @@
         "head",
         "wc"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1469,7 +1536,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1504,7 +1572,8 @@
         "echo",
         "true"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1525,7 +1594,8 @@
       "firstTokens": [
         "gradlew"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
     }
   },
   {
@@ -1546,7 +1616,8 @@
       "firstTokens": [
         "gradlew"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "gradle-test"
     }
   },
   {
@@ -1567,7 +1638,8 @@
       "firstTokens": [
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-clean"
     }
   },
   {
@@ -1588,7 +1660,8 @@
       "firstTokens": [
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven"
     }
   },
   {
@@ -1609,7 +1682,8 @@
       "firstTokens": [
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -1630,7 +1704,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-test"
     }
   },
   {
@@ -1651,7 +1726,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-lint"
     }
   },
   {
@@ -1672,7 +1748,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-t"
     }
   },
   {
@@ -1693,7 +1770,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-t"
     }
   },
   {
@@ -1714,7 +1792,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test:unit"
     }
   },
   {
@@ -1735,7 +1814,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-builder"
     }
   },
   {
@@ -1758,7 +1838,8 @@
       ],
       "leadingAssignments": {
         "FOO": "\"a"
-      }
+      },
+      "commandKind": "b\""
     }
   },
   {
@@ -1782,7 +1863,8 @@
       "leadingAssignments": {
         "A": "1",
         "B": "'x"
-      }
+      },
+      "commandKind": "y'"
     }
   },
   {
@@ -1807,7 +1889,8 @@
         "npm",
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -1830,7 +1913,8 @@
         "ls",
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -1851,7 +1935,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -1884,7 +1969,8 @@
         "pnpm",
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-build"
     }
   },
   {
@@ -1905,7 +1991,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-run"
     }
   },
   {
@@ -1926,7 +2013,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
     }
   },
   {
@@ -1947,7 +2035,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
     }
   },
   {
@@ -1968,7 +2057,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
     }
   },
   {
@@ -1989,7 +2079,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -2010,7 +2101,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -2031,7 +2123,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-stash"
     }
   },
   {
@@ -2052,7 +2145,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-add"
     }
   },
   {
@@ -2073,7 +2167,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-add"
     }
   },
   {
@@ -2094,7 +2189,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-add"
     }
   },
   {
@@ -2115,7 +2211,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git"
     }
   },
   {
@@ -2136,7 +2233,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git"
     }
   },
   {
@@ -2157,7 +2255,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-tag"
     }
   },
   {
@@ -2178,7 +2277,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-switch"
     }
   },
   {
@@ -2199,7 +2299,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-reset"
     }
   },
   {
@@ -2220,7 +2321,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-cherry-pick"
     }
   },
   {
@@ -2241,7 +2343,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -2262,7 +2365,8 @@
       "firstTokens": [
         "-n"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "-n"
     }
   },
   {
@@ -2283,7 +2387,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -2304,7 +2409,8 @@
       "firstTokens": [
         "bash"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "bash"
     }
   },
   {
@@ -2327,7 +2433,8 @@
       ],
       "leadingAssignments": {
         "FOO": "1"
-      }
+      },
+      "commandKind": "vim"
     }
   },
   {
@@ -2348,7 +2455,8 @@
       "firstTokens": [
         "node_modules/.bin/jest"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node_modules/.bin/jest"
     }
   },
   {
@@ -2369,7 +2477,8 @@
       "firstTokens": [
         "script"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "script"
     }
   },
   {
@@ -2390,7 +2499,8 @@
       "firstTokens": [
         "C:\\tools\\x"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "C:\\tools\\x"
     }
   },
   {
@@ -2411,7 +2521,8 @@
       "firstTokens": [
         "a.sh"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a.sh"
     }
   },
   {
@@ -2432,7 +2543,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -2453,7 +2565,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2474,7 +2587,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2495,7 +2609,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -2516,7 +2631,8 @@
       "firstTokens": [
         "a"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a"
     }
   },
   {
@@ -2537,7 +2653,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2558,7 +2675,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2579,7 +2697,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2600,7 +2719,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2621,7 +2741,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2642,7 +2763,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2663,7 +2785,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -2684,7 +2807,8 @@
       "firstTokens": [
         "sleep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "sleep"
     }
   },
   {
@@ -2707,7 +2831,8 @@
         "a",
         "b"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a"
     }
   },
   {
@@ -2728,7 +2853,8 @@
       "firstTokens": [
         "a"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a"
     }
   },
   {
@@ -2749,7 +2875,8 @@
       "firstTokens": [
         "a"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a"
     }
   },
   {
@@ -2770,7 +2897,8 @@
       "firstTokens": [
         "a"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "a"
     }
   },
   {
@@ -2793,7 +2921,8 @@
         "cd",
         "cd"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cd"
     }
   },
   {
@@ -2814,7 +2943,8 @@
       "firstTokens": [
         "cd"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cd"
     }
   },
   {
@@ -2835,7 +2965,8 @@
       "firstTokens": [
         "set"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "set"
     }
   },
   {
@@ -2856,7 +2987,8 @@
       "firstTokens": [
         "source"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "source"
     }
   },
   {
@@ -2877,7 +3009,8 @@
       "firstTokens": [
         "unset"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unset"
     }
   },
   {
@@ -2900,7 +3033,8 @@
       ],
       "leadingAssignments": {
         "FOO": "1"
-      }
+      },
+      "commandKind": "node"
     }
   },
   {
@@ -2921,7 +3055,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -2942,7 +3077,8 @@
       "firstTokens": [
         "python"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -2963,7 +3099,8 @@
       "firstTokens": [
         "python"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -2986,7 +3123,8 @@
       ],
       "leadingAssignments": {
         "A": "1"
-      }
+      },
+      "commandKind": "python"
     }
   },
   {
@@ -3009,7 +3147,8 @@
         "node",
         "python3"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -3030,7 +3169,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3051,7 +3191,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -3072,7 +3213,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3093,7 +3235,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -3114,7 +3257,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3137,7 +3281,8 @@
         "echo",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3158,7 +3303,8 @@
       "firstTokens": [
         "grep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "grep"
     }
   },
   {
@@ -3179,7 +3325,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3200,7 +3347,8 @@
       "firstTokens": [
         "\"/opt/rtk/rtk\""
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3223,7 +3371,8 @@
       ],
       "leadingAssignments": {
         "A": "1"
-      }
+      },
+      "commandKind": "git-status"
     }
   },
   {
@@ -3244,7 +3393,8 @@
       "firstTokens": [
         "\"D:\\tools\\rtk.exe\""
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3265,7 +3415,8 @@
       "firstTokens": [
         "RTK"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3286,7 +3437,8 @@
       "firstTokens": [
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "rtk"
     }
   },
   {
@@ -3307,7 +3459,8 @@
       "firstTokens": [
         "rtkx"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "rtkx"
     }
   },
   {
@@ -3328,7 +3481,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3351,7 +3505,8 @@
         "ls",
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3374,7 +3529,8 @@
         "cd",
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -3399,7 +3555,8 @@
         "rtk",
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3420,7 +3577,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3445,7 +3603,8 @@
         "git",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3466,7 +3625,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3487,7 +3647,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3510,7 +3671,8 @@
         "curl",
         "sh"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "curl"
     }
   },
   {
@@ -3531,7 +3693,8 @@
       "firstTokens": [
         "rm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "rm"
     }
   },
   {
@@ -3554,7 +3717,8 @@
         "git",
         "rm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3575,7 +3739,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -3596,7 +3761,8 @@
       "firstTokens": [
         "grep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "grep"
     }
   },
   {
@@ -3619,7 +3785,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3640,7 +3807,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status-x"
     }
   },
   {
@@ -3661,7 +3829,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-run"
     }
   },
   {
@@ -3682,7 +3851,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -3703,7 +3873,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3726,7 +3897,8 @@
         "git",
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3747,7 +3919,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3770,7 +3943,8 @@
         "ls",
         "&"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -3787,7 +3961,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -3804,7 +3979,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -3825,7 +4001,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3852,7 +4029,8 @@
         "cd",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -3875,7 +4053,8 @@
         "sudo",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "sudo"
     }
   },
   {
@@ -3898,7 +4077,8 @@
         "Set-Location",
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -3919,7 +4099,8 @@
       "firstTokens": [
         "Set-Location"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -3940,7 +4121,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -3963,7 +4145,8 @@
         "cd",
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -3988,7 +4171,8 @@
         "Get-ChildItem",
         "ForEach-Object"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
     }
   },
   {
@@ -4009,7 +4193,8 @@
       "firstTokens": [
         "Set-Location"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "Set-Location"
     }
   },
   {
@@ -4030,7 +4215,8 @@
       "firstTokens": [
         "$env:JAVA_HOME"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
     }
   },
   {
@@ -4053,7 +4239,8 @@
         "Get-Content",
         "Select-Object"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "Get-Content"
     }
   },
   {
@@ -4076,7 +4263,8 @@
         "Set-Location",
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4099,7 +4287,8 @@
         "$env:NXY_RAW",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4124,7 +4313,8 @@
         "$env:NXY_RAW",
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4145,7 +4335,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4168,7 +4359,8 @@
         "Set-Location",
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -4189,7 +4381,8 @@
       "firstTokens": [
         "Set-Location"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
     }
   },
   {
@@ -4210,7 +4403,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4231,7 +4425,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -4254,7 +4449,8 @@
         "$a",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
     }
   },
   {
@@ -4275,7 +4471,8 @@
       "firstTokens": [
         "if"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "if"
     }
   },
   {
@@ -4296,7 +4493,8 @@
       "firstTokens": [
         "try"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "try"
     }
   },
   {
@@ -4317,7 +4515,8 @@
       "firstTokens": [
         "function"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "function"
     }
   },
   {
@@ -4338,7 +4537,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -4359,7 +4559,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -4380,7 +4581,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-"
     }
   },
   {
@@ -4403,7 +4605,8 @@
         "Set-Location",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4426,7 +4629,8 @@
         "mvn",
         "Set-Location"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4447,7 +4651,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -4468,7 +4673,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -4489,7 +4695,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -4510,7 +4717,8 @@
       "firstTokens": [
         "$env:NXY_RAW=\"1\""
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
     }
   },
   {
@@ -4533,7 +4741,8 @@
         "$env:nxy_raw",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -4556,7 +4765,8 @@
         "SET-LOCATION",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4577,7 +4787,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -4598,7 +4809,8 @@
       "firstTokens": [
         "python3"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -4619,7 +4831,8 @@
       "firstTokens": [
         "pushd"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4642,7 +4855,8 @@
         "Push-Location",
         "Get-ChildItem"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "Get-ChildItem"
     }
   },
   {
@@ -4663,7 +4877,8 @@
       "firstTokens": [
         "rm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "rm"
     }
   },
   {
@@ -4684,7 +4899,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4705,7 +4921,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4728,7 +4945,8 @@
         "Set-Location",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4749,7 +4967,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-run"
     }
   },
   {
@@ -4770,7 +4989,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -4791,7 +5011,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -4812,7 +5033,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4835,7 +5057,8 @@
       ],
       "leadingAssignments": {
         "FOO": "1"
-      }
+      },
+      "commandKind": "npm-test"
     }
   },
   {
@@ -4858,7 +5081,8 @@
         "cd",
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -4881,7 +5105,8 @@
         "npm",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -4904,7 +5129,8 @@
         "mvn",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4929,7 +5155,8 @@
         "grep",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -4956,7 +5183,8 @@
         "mvnw",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -4979,7 +5207,8 @@
         "git",
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-add"
     }
   },
   {
@@ -5000,7 +5229,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -5021,7 +5251,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -5044,7 +5275,8 @@
         "where",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "where"
     }
   },
   {
@@ -5067,7 +5299,8 @@
         "node",
         "grep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -5092,7 +5325,8 @@
         "python3",
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -5113,7 +5347,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -5134,7 +5369,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5155,7 +5391,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-ps"
     }
   },
   {
@@ -5176,7 +5413,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-diff"
     }
   },
   {
@@ -5197,7 +5435,8 @@
       "firstTokens": [
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5218,7 +5457,8 @@
       "firstTokens": [
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5241,7 +5481,8 @@
         "cd",
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5262,7 +5503,8 @@
       "firstTokens": [
         "gradlew"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
     }
   },
   {
@@ -5283,7 +5525,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -5304,7 +5547,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-test"
     }
   },
   {
@@ -5325,7 +5569,8 @@
       "firstTokens": [
         "pnpm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "pnpm-build"
     }
   },
   {
@@ -5346,7 +5591,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-run"
     }
   },
   {
@@ -5371,7 +5617,8 @@
         "export",
         "mvnw"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5394,7 +5641,8 @@
         "source",
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5411,7 +5659,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -5428,7 +5677,8 @@
       "isBackgrounded": false,
       "firstToken": "",
       "firstTokens": [],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "unknown"
     }
   },
   {
@@ -5449,7 +5699,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -5472,7 +5723,8 @@
       ],
       "leadingAssignments": {
         "NXY_RAW": "1"
-      }
+      },
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5495,7 +5747,8 @@
         "cd",
         "grep"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "grep"
     }
   },
   {
@@ -5516,7 +5769,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5537,7 +5791,8 @@
       "firstTokens": [
         "mvn"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
     }
   },
   {
@@ -5558,7 +5813,8 @@
       "firstTokens": [
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -5579,7 +5835,8 @@
       "firstTokens": [
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -5602,7 +5859,8 @@
         "cd",
         "rtk"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -5623,7 +5881,8 @@
       "firstTokens": [
         "curl"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "curl"
     }
   },
   {
@@ -5646,7 +5905,8 @@
         "npm",
         "curl"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -5667,7 +5927,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -5688,7 +5949,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -5709,7 +5971,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -5730,7 +5993,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -5751,7 +6015,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -5772,7 +6037,8 @@
       "firstTokens": [
         "echo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "echo"
     }
   },
   {
@@ -5793,7 +6059,8 @@
       "firstTokens": [
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -5814,7 +6081,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -5835,7 +6103,8 @@
       "firstTokens": [
         "sort"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "sort"
     }
   },
   {
@@ -5856,7 +6125,8 @@
       "firstTokens": [
         "npm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-start"
     }
   },
   {
@@ -5879,7 +6149,8 @@
         "grep",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "grep"
     }
   },
   {
@@ -5902,7 +6173,8 @@
         "npm",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
     }
   },
   {
@@ -5925,7 +6197,8 @@
         "ls",
         "tail"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -5948,7 +6221,8 @@
         "git",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-log"
     }
   },
   {
@@ -5969,7 +6243,8 @@
       "firstTokens": [
         "cd"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cd"
     }
   },
   {
@@ -5990,7 +6265,8 @@
       "firstTokens": [
         "export"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "export"
     }
   },
   {
@@ -6013,7 +6289,8 @@
         "cd",
         "export"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cd"
     }
   },
   {
@@ -6034,7 +6311,8 @@
       "firstTokens": [
         "sudo"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "sudo"
     }
   },
   {
@@ -6055,7 +6333,8 @@
       "firstTokens": [
         "vim"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "vim"
     }
   },
   {
@@ -6076,7 +6355,8 @@
       "firstTokens": [
         "ssh"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ssh"
     }
   },
   {
@@ -6097,7 +6377,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -6118,7 +6399,8 @@
       "firstTokens": [
         "python3"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -6141,7 +6423,8 @@
         "cd",
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -6162,7 +6445,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -6185,7 +6469,8 @@
         "cd",
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -6206,7 +6491,8 @@
       "firstTokens": [
         "python3"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "python"
     }
   },
   {
@@ -6227,7 +6513,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-commit"
     }
   },
   {
@@ -6248,7 +6535,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-commit"
     }
   },
   {
@@ -6269,7 +6557,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-push"
     }
   },
   {
@@ -6290,7 +6579,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-rebase"
     }
   },
   {
@@ -6311,7 +6601,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-add"
     }
   },
   {
@@ -6332,7 +6623,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-checkout"
     }
   },
   {
@@ -6353,7 +6645,8 @@
       "firstTokens": [
         "docker"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
     }
   },
   {
@@ -6376,7 +6669,8 @@
         "ls",
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -6397,7 +6691,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -6418,7 +6713,8 @@
       "firstTokens": [
         "cat"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "cat"
     }
   },
   {
@@ -6439,7 +6735,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -6460,7 +6757,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -6481,7 +6779,8 @@
       "firstTokens": [
         "weird-cmd"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "weird-cmd"
     }
   },
   {
@@ -6502,7 +6801,8 @@
       "firstTokens": [
         "rm"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "rm"
     }
   },
   {
@@ -6523,7 +6823,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -6544,7 +6845,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   },
   {
@@ -6565,7 +6867,8 @@
       "firstTokens": [
         "git"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-status"
     }
   }
 ]

@@ -52,25 +52,20 @@ func (u Usage) Trend(args []string) report.Output {
 		return report.Output{Stdout: "nxy trend: no sessions since " + format.FmtDate(tsOrNaN(since), u.Loc, true) + " for " + where + ". Try a longer --since.\n"}
 	}
 
-	// filter.jsonl rows are per project cwd; cache them per cwd.
-	filterCache := map[string][]any{}
-	filterRowsFor := func(sessionCwd any, sessionID string) []any {
+	// The filter summary is per project cwd and session; cache it per pair.
+	filterCache := map[[2]string][]report.FilterGroup{}
+	filterGroupsFor := func(sessionCwd any, sessionID string) []report.FilterGroup {
 		dir := cwd
 		if jscompat.Truthy(sessionCwd) {
 			dir = jscompat.String(sessionCwd)
 		}
-		all, ok := filterCache[dir]
+		key := [2]string{dir, sessionID}
+		gs, ok := filterCache[key]
 		if !ok {
-			all = u.FilterRows(dir)
-			filterCache[dir] = all
+			gs = u.FilterGroups(dir, sessionID)
+			filterCache[key] = gs
 		}
-		var out []any
-		for _, r := range all {
-			if jscompat.Get(r, "session_id") == any(sessionID) {
-				out = append(out, r)
-			}
-		}
-		return out
+		return gs
 	}
 
 	// rtk's ledger for the whole range, attributed to sessions by time window + cwd.
@@ -98,19 +93,14 @@ func (u Usage) Trend(args []string) report.Output {
 			d.AgentSessions++
 			continue
 		}
-		rows := filterRowsFor(s.Cwd, s.SessionID)
-		nxy := len(rows) > 0
+		groups := filterGroupsFor(s.Cwd, s.SessionID)
+		nxy := report.FilterGroupsRows(groups) > 0
 		for _, k := range s.BySkill.Keys {
 			if strings.HasPrefix(k, "nxy:") {
 				nxy = true
 			}
 		}
-		rtkCalls := 0
-		for _, r := range rows {
-			if jscompat.Get(r, "engine") == any("rtk") {
-				rtkCalls++
-			}
-		}
+		rtkCalls := report.FilterGroupsRTK(groups)
 		ts := ref.MtimeMs
 		if s.FirstTs != nil {
 			ts = float64(*s.FirstTs)

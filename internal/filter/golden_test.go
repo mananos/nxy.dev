@@ -108,6 +108,7 @@ func TestGoldenShell(t *testing.T) {
 				"firstToken":         FirstToken(cmd),
 				"firstTokens":        tokens,
 				"leadingAssignments": LeadingAssignments(cmd),
+				"commandKind":        CommandKind(cmd),
 			})
 		})
 	}

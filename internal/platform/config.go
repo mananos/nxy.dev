@@ -133,6 +133,7 @@ func LoadFilterSettings(projectDir string, getenv func(string) string) filter.Se
 	engine, _ := f["engine"].(string)
 	return filter.Settings{
 		Enabled:         truthy(modules["filter"]),
+		Metrics:         truthy(modules["metrics"]),
 		Engine:          engine,
 		ExcludeCommands: stringList(f["excludeCommands"]),
 		OnlyCommands:    stringList(f["onlyCommands"]),

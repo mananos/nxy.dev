@@ -1,0 +1,14 @@
+[
+{"name":"remote:000","input":{"text":"https://github.com/mananos/nxy.dev.git"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:001","input":{"text":"https://github.com/mananos/nxy.dev"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:002","input":{"text":"https://GitHub.com/Mananos/NXY.dev.GIT"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:003","input":{"text":"git@github.com:mananos/nxy.dev.git"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:004","input":{"text":"git@github.com:mananos/nxy.dev"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:005","input":{"text":"ssh://git@github.com/mananos/nxy.dev"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:006","input":{"text":"ssh://git@host.example:2222/team/app.git"},"output":{"normalized":"host.example/team/app"}},
+{"name":"remote:007","input":{"text":"https://user:token@gitlab.com/group/sub/app.git"},"output":{"normalized":"gitlab.com/group/sub/app"}},
+{"name":"remote:008","input":{"text":"https://github.com/mananos/nxy.dev/"},"output":{"normalized":"github.com/mananos/nxy.dev"}},
+{"name":"remote:009","input":{"text":"host.example:team/app"},"output":{"normalized":"host.example/team/app"}},
+{"name":"remote:010","input":{"text":"  https://github.com/a/b.git  "},"output":{"normalized":"github.com/a/b"}},
+{"name":"remote:011","input":{"text":""},"output":{"normalized":null}}
+]

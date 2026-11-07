@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/jscompat"
 	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/internal/store/sqlite"
 	"github.com/mananos/nxy.dev/internal/tools"
 )
 
@@ -50,14 +52,40 @@ func (l rtkLedger) Rows(since, until *int64) ([]report.LedgerRow, bool) {
 func (l rtkLedger) Unavailable() string { return tools.LedgerUnavailable(l.path) }
 func (l rtkLedger) DBPath() string      { return l.path }
 
-// newUsage wires the usage reports. It never opens nxy.db.
-func newUsage(getenv func(string) string, getwd func() string, clock func() time.Time, loc *time.Location) app.Usage {
+// newUsage wires the usage reports. It opens nxy.db read-only (lazily, never creating it); the
+// returned func closes it.
+func newUsage(getenv func(string) string, getwd func() string, clock func() time.Time, loc *time.Location) (app.Usage, func()) {
+	var reader *sqlite.Reader
+	tried := false
+	closeDB := func() {
+		if reader != nil {
+			reader.Close()
+			reader = nil
+		}
+	}
+	filterGroups := func(dir, session string) []report.FilterGroup {
+		if !tried {
+			tried = true
+			if userDir, err := platform.UserDirEnv(getenv); err == nil {
+				if r, ok, err := sqlite.OpenReadOnly(context.Background(), filepath.Join(userDir, "nxy.db")); err == nil && ok {
+					reader = r
+				}
+			}
+		}
+		if reader == nil {
+			return nil
+		}
+		gs, err := reader.FilterGroups(context.Background(), platform.FilterCheckout(dir), session)
+		if err != nil {
+			return nil
+		}
+		// the db keeps 1 and "1" apart; the report folds them by their JS string, as the 1.x did
+		return report.MergeFilterGroups(nil, gs)
+	}
 	return app.Usage{
-		Transcripts: claudeTranscripts{},
-		Ledger:      rtkLedger{path: tools.RtkHistoryDBPath(runtime.GOOS, getenv)},
-		FilterRows: func(dir string) []any {
-			return platform.ReadJSONL(filepath.Join(platform.RuntimeDir(dir), "metrics", "filter.jsonl"))
-		},
+		Transcripts:   claudeTranscripts{},
+		Ledger:        rtkLedger{path: tools.RtkHistoryDBPath(runtime.GOOS, getenv)},
+		FilterGroups:  filterGroups,
 		Config:        func(dir string) map[string]any { return platform.LoadConfig(dir, getenv) },
 		BroadSearches: claudecode.BroadSearchesInTranscript,
 		Gain: func(here bool, cwd string) (any, bool) {
@@ -78,7 +106,7 @@ func newUsage(getenv func(string) string, getwd func() string, clock func() time
 		Clock:   clock,
 		Loc:     loc,
 		GOOS:    runtime.GOOS,
-	}
+	}, closeDB
 }
 
 func osGetwd() string {
@@ -89,7 +117,7 @@ func osGetwd() string {
 	return d
 }
 
-func realUsage() app.Usage { return newUsage(os.Getenv, osGetwd, time.Now, time.Local) }
+func realUsage() (app.Usage, func()) { return newUsage(os.Getenv, osGetwd, time.Now, time.Local) }
 
 func printOutput(o report.Output, stdout, stderr io.Writer) int {
 	io.WriteString(stdout, o.Stdout)
@@ -218,9 +246,13 @@ func runStatusline(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 }
 
 func runStats(args []string, _ io.Reader, stdout, stderr io.Writer) int {
-	return printOutput(realUsage().Stats(args), stdout, stderr)
+	u, done := realUsage()
+	defer done()
+	return printOutput(u.Stats(args), stdout, stderr)
 }
 
 func runTrend(args []string, _ io.Reader, stdout, stderr io.Writer) int {
-	return printOutput(realUsage().Trend(args), stdout, stderr)
+	u, done := realUsage()
+	defer done()
+	return printOutput(u.Trend(args), stdout, stderr)
 }

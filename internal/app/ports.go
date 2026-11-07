@@ -10,6 +10,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/gate"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/internal/legacy"
 	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/repomap"
 	"github.com/mananos/nxy.dev/internal/report"
@@ -280,6 +281,46 @@ type Branches interface {
 // Legacy tells whether the 1.x plugin is still enabled for a project.
 type Legacy interface {
 	Active(projectDir string) bool
+}
+
+// LegacyData reads what the 1.x left on disk. Every read is on a copy or read-only: the 1.x files
+// are never written.
+type LegacyData interface {
+	// ProjectKey is the key the 1.x memory.db files the repo of dir under (platform.LegacyProjectKey).
+	ProjectKey(dir string) string
+	// RepoKey is the v2 key of the repo of dir.
+	RepoKey(dir string) string
+	// Checkout names the checkout of dir in the filter tables.
+	Checkout(dir string) string
+	// Folder is the folder the imported notes belong to: the repo root, or dir itself.
+	Folder(dir string) string
+	// HasMemory tells whether the 1.x memory.db exists.
+	HasMemory() bool
+	// Memory reads the memories of the project and their edges.
+	Memory(ctx context.Context, project string) ([]legacy.Memory, []legacy.Edge, error)
+	// HasReview tells whether review.jsonl of dir's checkout exists.
+	HasReview(dir string) bool
+	// Review reads the rows of review.jsonl of dir's checkout.
+	Review(dir string) []any
+	// FilterSize is the size of filter.jsonl of dir's checkout (false without the file).
+	FilterSize(dir string) (int64, bool)
+	// FilterHead hashes the start of filter.jsonl up to upTo bytes (cursor head).
+	FilterHead(dir string, upTo int64) string
+	// FilterFrom reads the complete lines of filter.jsonl from offset.
+	FilterFrom(dir string, offset int64) ([]any, legacy.Cursor, error)
+}
+
+// LegacyStore keeps what LegacyData read; each import is atomic and marks itself, so a repeat writes nothing.
+type LegacyStore interface {
+	// ImportLegacyMemory returns the counts of what was really stored (real A<n> range, repeated left out).
+	ImportLegacyMemory(ctx context.Context, repo string, imp legacy.Import) (legacy.Counts, bool, error)
+	ImportLegacyReviews(ctx context.Context, checkout string, picks []legacy.Pick, counts legacy.Counts) (bool, error)
+	ImportLegacyFilter(ctx context.Context, checkout string, from, to legacy.Cursor, groups map[string][]report.FilterGroup, reset bool) (legacy.FilterResult, error)
+	LegacyImports(ctx context.Context) ([]legacy.Mark, []legacy.StoredCursor, error)
+	// SetLegacyError keeps the last memory import failure of repo (empty msg clears it).
+	SetLegacyError(ctx context.Context, repo string, at int64, msg string) error
+	// AddFilterGroup adds what the v2's PostToolUse hook saw to the session's summary (source "v2").
+	AddFilterGroup(ctx context.Context, checkout, session string, g report.FilterGroup) error
 }
 
 // Viewer shows the full plan to the user and cleans it up afterwards.

@@ -49,6 +49,8 @@ type HookEvent struct {
 	AsyncAgentID string
 	// Reason is SessionEnd's reason (clear, logout, other...).
 	Reason string
+	// ToolResponse is the raw tool_response of PostToolUse Bash/PowerShell: {stdout, stderr} or an old string.
+	ToolResponse json.RawMessage
 }
 
 // AskOption is one option of a question nxy asks the user.
@@ -152,6 +154,10 @@ type Hooks struct {
 	Context ContextMeter
 	// Clock gives the time for notes and sessions; nil means the system clock.
 	Clock Clock
+	// LegacyData and LegacyStore import what the 1.x knows of the repo at SessionStart; either nil
+	// means no import.
+	LegacyData  LegacyData
+	LegacyStore LegacyStore
 }
 
 // Handle answers a hook event, one use case per event/tool.
@@ -167,6 +173,9 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 	switch {
 	case ev.Name == "PreToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
 		return h.preToolBash(ctx, ev)
+	case ev.Name == "PostToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
+		h.postToolBash(ctx, ev)
+		return HookResponse{}
 	case ev.Name == "PreToolUse" && (ev.Tool == "Grep" || ev.Tool == "Glob"):
 		return h.preToolSearch(ctx, ev)
 	case ev.Name == "PreToolUse" && isAgentTool(ev.Tool):

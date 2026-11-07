@@ -42,6 +42,46 @@ func TestSummarizeFilter(t *testing.T) {
 	}
 }
 
+func TestSummarizeFilterGroups(t *testing.T) {
+	sets := [][]any{
+		decode(t, `[
+			{"engine":"rtk","command_kind":"git","filtered_chars":100,"est_tokens":25},
+			{"engine":"skip","reason":"short","command_kind":"ls","filtered_chars":10,"est_tokens":3},
+			{"engine":"skip","reason":"short","command_kind":"ls","filtered_chars":0},
+			{"engine":"skip","reason":"tiny","command_kind":"git","filtered_chars":0},
+			{"engine":"skip","reason":"tiny","command_kind":"cat","filtered_chars":500},
+			{"engine":"skip","reason":"tiny","command_kind":null},
+			{"command_kind":"cat","filtered_chars":null,"est_tokens":5},
+			{}
+		]`).([]any),
+		// kinds tied in chars, non-string engine, kind 1 vs "1" collapse
+		decode(t, `[
+			{"engine":"rtk","command_kind":"b","filtered_chars":7},
+			{"engine":"rtk","command_kind":"a","filtered_chars":7},
+			{"engine":5,"command_kind":1,"filtered_chars":3},
+			{"engine":"skip","reason":4,"command_kind":"1","filtered_chars":3},
+			{"engine":"off","reason":"x","command_kind":"a"},
+			{"engine":"skip","command_kind":"a","est_tokens":2}
+		]`).([]any),
+	}
+	for n, rows := range sets {
+		want, _ := json.Marshal(SummarizeFilter(rows))
+		for cut := 0; cut <= len(rows); cut++ {
+			gs := MergeFilterGroups(GroupFilterRows(rows[:cut]), GroupFilterRows(rows[cut:]))
+			got, _ := json.Marshal(SummarizeFilterGroups(gs))
+			if string(got) != string(want) {
+				t.Errorf("set %d cut %d:\ngot  %s\nwant %s", n, cut, got, want)
+			}
+			if FilterGroupsRows(gs) != len(rows) {
+				t.Errorf("set %d cut %d: rows %d", n, cut, FilterGroupsRows(gs))
+			}
+		}
+	}
+	if got := FilterGroupsRTK(GroupFilterRows(sets[0])); got != 1 {
+		t.Errorf("rtk = %d", got)
+	}
+}
+
 func TestSummarizeFilterEmpty(t *testing.T) {
 	got, _ := json.Marshal(SummarizeFilter(nil))
 	want := `{"rows":0,"byEngine":{},"skipReasons":[],"filteredChars":0,"estTokens":0,"byKind":[]}`

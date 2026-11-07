@@ -364,3 +364,27 @@ Con código en 2+ repos, la review suma la lente `contract`: busca que lo que un
 Costo: N implementers a la vez son N veces el contexto de un implementer (dos lotes en paralelo ≈ el doble de tokens por minuto, el mismo total que en fila pero más rápido); la lente suma un reviewer más (una llamada con el diff de los dos repos). No se guarda nada nuevo en disco salvo unos pocos campos de la feature (pasos, pruebas por lote, lanes), unos cientos de bytes.
 
 Costo de los worktrees: unas pocas filas en la db (`feature_holds`); cada worktree ocupa un checkout más en disco, y codegraph arma un índice por worktree (segundos).
+
+## Datos de la 1.x
+
+Qué ves: la primera vez que abrís un repo con la v2, un aviso único: `nxy: datos de la 1.x importados — 12 convenciones → aprendizajes A1..A12 · 3 handoffs vivos → notas · 41 archivados → features cerradas · 30 sesiones del filtro · 26 reviews, 88 elegidos`. Es una copia: la 1.x queda intacta y volver a ella funciona.
+
+Qué significa cada conteo:
+- **Convenciones (y decisiones, bugs, preferencias) → aprendizajes `A<n>`**, con los archivos a los que estaban atadas. No son reglas todavía.
+- **Handoffs vivos → notas.** Entra el objetivo y el `## Next` primero, después lo demás hasta 2 KB; sin el plan. Si se cortó dice «(cortado al importar; completo en la 1.x)». Los que llevan más de 30 días sin escribirse no entran (se cuentan como vencidos).
+- **Archivados → features cerradas**, con sus archivos, para que el planner las encuentre por archivo.
+- **Sesiones del filtro:** el resumen por sesión que leen `nxy stats` y `nxy trend`. **Reviews y elegidos:** base de «elegidos vs ignorados por lente».
+- Lo que no entra se cuenta: memorias globales, reemplazadas por otra, relaciones entre memorias que no son de archivo, «N privadas sin importar» (las memorias `private` nunca se importan) y «N repetidos sin importar» (aprendizajes que ya estaban). El rango `A<n>` del aviso es el real, el de los aprendizajes que entraron.
+- Si el repo no tiene datos de la 1.x, no sale ningún aviso.
+- Si la importación falla, sale una línea con «probá `nxy legacy import`». La copia de `memory.db` se reintenta como mucho una vez por día; `nxy legacy status` muestra el último error.
+
+Lo que la 1.x siga escribiendo en el filtro entra solo en el próximo arranque de la v2 (leyendo sólo lo nuevo); memorias y reviews se importan una sola vez por repo. Una sesión que ya escribió la v2 no se pisa con filas de la 1.x.
+
+Qué hacer:
+- `nxy legacy status`: marcas por repo y, por carpeta, cuántos bytes del filtro se leyeron de cuántos. `nxy legacy import [--dir <d>]` lo corre a mano; lo ya importado dice «ya importado el <fecha>».
+- `nxy mem promote A<n> --question "<qué resuelve>"` vuelve regla una convención que sigue valiendo.
+- `nxy note list` muestra los handoffs importados como notas; `nxy note done <id>` borra los que ya no sirven.
+
+`nxy stats` y `nxy trend` abren `nxy.db` en sólo lectura: sin db o sin datos del filtro salen sin esas filas, y nunca la crean. La v2 también escribe su propio resumen del filtro (PostToolUse de Bash, sin el comando crudo); si la base está ocupada, el hook descarta la fila después de esperar 200 ms como mucho.
+
+Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.

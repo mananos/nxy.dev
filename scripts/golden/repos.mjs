@@ -27,7 +27,7 @@ const NAMES = [
   ['/a/b/api', '/c/d/api'],
   ['/a/x/api', '/b/y/api', '/c/z/api', '/c/z/web'],
   ['/work/Mi App', '/work/web-2'],
-  ['/home/dev/proyectos/api', '/home/dev/otros/api'],
+  ['/srv/dev/proyectos/api', '/srv/dev/otros/api'],
 ];
 
 const LABELS = [

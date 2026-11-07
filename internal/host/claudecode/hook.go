@@ -94,6 +94,9 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 			ev.Answers = transcriptAnswers(in.TranscriptPath, in.ToolUseID)
 		}
 	}
+	if ev.Name == "PostToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell") {
+		ev.ToolResponse = in.ToolResponse
+	}
 	if ev.Name == "PostToolUse" && (ev.Tool == "Agent" || ev.Tool == "Task") {
 		ev.AgentAsync = asyncLaunch(in.ToolResponse)
 		if ev.AgentAsync {

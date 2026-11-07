@@ -62,14 +62,25 @@ func (f filterEngine) Rewrite(info filter.EngineInfo, cmd string) (filter.Rewrit
 	return f.e.Rewrite(info, cmd)
 }
 
-// lazyStore opens the database on the first call that needs it, so hooks that never
-// touch features (the Bash filter) do not pay for it.
+// lazyStore opens nxy.db on the first call that needs it, so hooks that touch nothing in it
+// (PreToolUse Bash filter, gate) do not pay for it. open creates and migrates the database and
+// waits for locks; openQuick (only AddFilterGroup, the PostToolUse Bash summary, which runs on
+// every command) opens an up-to-date db with a 200 ms busy timeout and no migration, and its
+// failed writes are dropped by the caller.
 type lazyStore struct {
 	mu sync.Mutex
 	s  *sqlite.Store
 }
 
 func (l *lazyStore) open(ctx context.Context) (*sqlite.Store, error) {
+	return l.openWith(ctx, sqlite.Open)
+}
+
+func (l *lazyStore) openQuick(ctx context.Context) (*sqlite.Store, error) {
+	return l.openWith(ctx, sqlite.OpenQuick)
+}
+
+func (l *lazyStore) openWith(ctx context.Context, open func(context.Context, string, func() time.Time) (*sqlite.Store, error)) (*sqlite.Store, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.s != nil {
@@ -79,7 +90,7 @@ func (l *lazyStore) open(ctx context.Context) (*sqlite.Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, err := sqlite.Open(ctx, path, nil)
+	s, err := open(ctx, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -748,5 +759,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
 		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{},
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
+		LegacyData: legacyFiles{}, LegacyStore: st,
 	}, st
 }

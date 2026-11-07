@@ -27,7 +27,8 @@
         "wc",
         "ls"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "ls"
     }
   },
   {
@@ -48,7 +49,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -77,7 +79,8 @@
       ],
       "leadingAssignments": {
         "E": "\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\";"
-      }
+      },
+      "commandKind": "unknown"
     }
   },
   {
@@ -100,7 +103,8 @@
         "codegraph",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "codegraph"
     }
   },
   {
@@ -133,7 +137,8 @@
         "grep",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -160,7 +165,8 @@
       ],
       "leadingAssignments": {
         "E": "\"~/.claude/plugins/cache/nxy-dev/nxy/1.1.8/hosts/claude-code/entries/mem.mjs\";"
-      }
+      },
+      "commandKind": "unknown"
     }
   },
   {
@@ -181,7 +187,8 @@
       "firstTokens": [
         "node"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "node"
     }
   },
   {
@@ -206,7 +213,8 @@
         "wc",
         "sed"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "wc"
     }
   },
   {
@@ -235,7 +243,8 @@
         "git",
         "wc"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "git-ls-files"
     }
   },
   {
@@ -262,7 +271,8 @@
         "grep",
         "head"
       ],
-      "leadingAssignments": {}
+      "leadingAssignments": {},
+      "commandKind": "wc"
     }
   }
 ]

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { writeTargets } from '../../core/shellwrites.mjs';
 import { decide } from '../../core/filter/decide.mjs';
 import { detectRtkHook, findRtk } from '../../core/filter/engine.mjs';
+import { commandKind } from '../../core/filter/kind.mjs';
 import { isRtkInvocation, normalizeForRtk, pinRtkPath, usesRtk } from '../../core/filter/rtk.mjs';
 import {
   firstToken, hasHeredoc, hasRedirect, hasSubstitution, isBackgrounded, leadingAssignments, splitTopLevel, stripTrailingLimit,
@@ -49,6 +50,7 @@ function shellArea(cases) {
       firstToken: firstToken(c.command),
       firstTokens: splitTopLevel(c.command).map(firstToken),
       leadingAssignments: leadingAssignments(c.command),
+      commandKind: commandKind(c.command),
     },
   }));
 }

@@ -122,7 +122,8 @@ func TestStatsGateLines(t *testing.T) {
 			continue
 		}
 		w := materializeUsage(t, c, texts)
-		u := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+		u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+		t.Cleanup(done)
 		before := u.Stats(w.expandArgs(c.Input.Args))
 		if strings.Contains(before.Stdout, "decisions:") {
 			t.Fatalf("gate lines without a ledger:\n%s", before.Stdout)

@@ -2,7 +2,9 @@ package filter
 
 // Settings is the filter configuration the use case needs (modules.filter and filter.*).
 type Settings struct {
-	Enabled         bool
+	Enabled bool
+	// Metrics is modules.metrics: the PostToolUse hook writes the filter summary only when it is on.
+	Metrics         bool
 	Engine          string
 	ExcludeCommands []string
 	OnlyCommands    []string

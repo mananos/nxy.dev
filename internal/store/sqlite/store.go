@@ -50,6 +50,35 @@ func Open(ctx context.Context, path string, now func() time.Time) (*Store, error
 	return openWith(ctx, path, now, migs)
 }
 
+// quickBusyMs is how long OpenQuick waits for a lock held by someone else.
+const quickBusyMs = 200
+
+// OpenQuick is Open for hot hooks that must not wait: when the file exists and is already at the
+// latest schema it opens with a short busy timeout, no busy retry, no migration and no machine id
+// lookup (a write then fails fast with SQLITE_BUSY and the caller drops it). A missing or older
+// database goes through Open, which migrates as usual (once).
+func OpenQuick(ctx context.Context, path string, now func() time.Time) (*Store, error) {
+	migs, err := embeddedMigrations()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(path); err == nil && len(migs) > 0 {
+		if now == nil {
+			now = time.Now
+		}
+		db, err := sql.Open("sqlite", fmt.Sprintf("%s?_pragma=busy_timeout(%d)&_pragma=foreign_keys(1)&_txlock=immediate", path, quickBusyMs))
+		if err != nil {
+			return nil, err
+		}
+		cur, err := currentVersion(ctx, db)
+		if err == nil && cur == migs[len(migs)-1].version {
+			return &Store{db: db, now: now, maxAttempts: 40}, nil
+		}
+		db.Close()
+	}
+	return Open(ctx, path, now)
+}
+
 func openWith(ctx context.Context, path string, now func() time.Time, migs []migration) (*Store, error) {
 	if now == nil {
 		now = time.Now
