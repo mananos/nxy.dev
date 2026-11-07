@@ -230,10 +230,14 @@ type implementerData struct {
 // ImplementerPrompt builds the full prompt of the implementer for the batch
 // the feature is on (f.Next.Batch). mem is the memory packet (empty prints no section).
 func ImplementerPrompt(f domain.Feature, exe, mem string) string {
-	if f.Plan == nil || f.Next.Batch < 1 || f.Next.Batch > len(f.Plan.Batches) {
+	return ImplementerPromptFor(f, f.Next.Batch, exe, mem)
+}
+
+// ImplementerPromptFor builds the implementer prompt of batch n.
+func ImplementerPromptFor(f domain.Feature, n int, exe, mem string) string {
+	if f.Plan == nil || n < 1 || n > len(f.Plan.Batches) {
 		return "nxy: could not build the implementer prompt: no batch to implement"
 	}
-	n := f.Next.Batch
 	p := *f.Plan
 	d := implementerData{
 		Feature:   f,
@@ -259,9 +263,9 @@ func ImplementerPrompt(f domain.Feature, exe, mem string) string {
 			}
 		}
 	}
-	if f.Proof != nil && f.Proof.Batch == n {
-		d.Failure = f.Proof.Failure
-		d.RedDone = f.Proof.Red != nil && f.Proof.Red.Exit != 0
+	if pr := f.ProofOf(n); pr.Failure != "" || pr.Red != nil {
+		d.Failure = pr.Failure
+		d.RedDone = pr.Red != nil && pr.Red.Exit != 0
 	}
 	var b strings.Builder
 	if err := implementerTmpl.Execute(&b, d); err != nil {

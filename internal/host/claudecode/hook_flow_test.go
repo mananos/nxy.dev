@@ -37,6 +37,20 @@ func TestDecodeNewFields(t *testing.T) {
 	}
 }
 
+func TestDecodeAsyncAgentID(t *testing.T) {
+	for resp, want := range map[string]string{
+		`{"isAsync":true,"status":"async_launched","agentId":"x1"}`:                "x1",
+		`"Async agent launched successfully. agentId: ab12cd"`:                     "ab12cd",
+		`{"content":[{"type":"text","text":"Async agent launched. agentId: q9"}]}`: "q9",
+		`{"status":"async_launched"}`:                                              "",
+	} {
+		ev, err := Decode(strings.NewReader(`{"hook_event_name":"PostToolUse","tool_name":"Agent","tool_response":` + resp + `}`))
+		if err != nil || ev.AsyncAgentID != want {
+			t.Errorf("%s: id %q err %v, want %q", resp, ev.AsyncAgentID, err, want)
+		}
+	}
+}
+
 func TestDecodeAgentAsync(t *testing.T) {
 	post := func(tool, event, resp string) bool {
 		ev, err := Decode(strings.NewReader(`{"hook_event_name":"` + event + `","tool_name":"` + tool + `","tool_response":` + resp + `}`))
@@ -257,6 +271,14 @@ func TestInstructionPerAction(t *testing.T) {
 	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 2, Retry: true}
 	if s := Instruction(f, ""); !strings.Contains(s, "batch 2 failed verification") || !strings.Contains(s, "retries once") {
 		t.Errorf("retry: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 2, Batches: []int{2, 3}}
+	if s := Instruction(f, ""); !strings.Contains(s, "ONE message") || !strings.Contains(s, "`feature f1 batch 2`") || !strings.Contains(s, "`feature f1 batch 3`") {
+		t.Errorf("parallel dispatch: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.AwaitBatches, Batch: 2, Batches: []int{2, 3}}
+	if s := Instruction(f, ""); !strings.Contains(s, "batch 2, 3 running") || !strings.Contains(s, "wait") {
+		t.Errorf("await: %s", s)
 	}
 	f.Next = domain.Action{Kind: domain.AskDecision}
 	f.State = domain.State{Phase: domain.PhaseBatchFailed, Batch: 2}

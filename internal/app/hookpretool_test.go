@@ -120,19 +120,20 @@ func TestPreToolBashShellWrites(t *testing.T) {
 		if r := h.Handle(context.Background(), bash("echo x > f", "a1", roleImplementer)); r.Deny != "" {
 			t.Fatalf("deny = %q", r.Deny)
 		}
-		if p := st.feats[id].Proof; p == nil || p.Edits != 1 {
-			t.Errorf("proof = %+v", p)
+		if g := st.feats[id]; g.ProofOf(g.State.Batch).Edits != 1 {
+			t.Errorf("proof = %+v", g.Proofs)
 		}
 		h.Handle(context.Background(), bash("ls", "a1", roleImplementer))
-		if p := st.feats[id].Proof; p.Edits != 1 {
+		if g := st.feats[id]; g.ProofOf(g.State.Batch).Edits != 1 {
+			p := g.Proofs
 			t.Errorf("plain command counted: %+v", p)
 		}
 	})
 	t.Run("other subagent is not counted", func(t *testing.T) {
 		h, st, id := withFeature()
 		h.Handle(context.Background(), bash("echo x > f", "a1", "nxy:planner"))
-		if st.feats[id].Proof != nil {
-			t.Errorf("proof = %+v", st.feats[id].Proof)
+		if g := st.feats[id]; g.Proof != nil || len(g.Proofs) > 0 {
+			t.Errorf("proof = %+v %+v", g.Proof, g.Proofs)
 		}
 	})
 	t.Run("plain commands do not touch the store", func(t *testing.T) {

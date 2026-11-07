@@ -14,7 +14,7 @@ func resumeFeature() domain.Feature {
 		ID:      "f1",
 		Request: "migrar el login\nsegunda línea",
 		State:   domain.State{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 4},
-		Proof:   &domain.Proof{Failure: "FAIL TestLogin"},
+		Proof:   &domain.Proof{Batch: 2, Failure: "FAIL TestLogin"},
 		Plan: &domain.Plan{
 			Batches:   make([]domain.Batch, 4),
 			Decisions: []domain.Decision{{Text: "usar JWT"}, {Text: "usar JWT"}},
@@ -74,7 +74,7 @@ func TestStatusShowsProgressAndFailure(t *testing.T) {
 	h.Handle(context.Background(), prompt("/nxy:feature algo"))
 	for id, f := range st.feats {
 		f.State = domain.State{Phase: domain.PhaseBatchFailed, Batch: 1, Batches: 3}
-		f.Proof = &domain.Proof{Failure: "boom"}
+		f.Proof = &domain.Proof{Batch: 1, Failure: "boom"}
 		f.Plan = &domain.Plan{Decisions: []domain.Decision{{Text: "D uno"}}}
 		st.feats[id] = f
 	}

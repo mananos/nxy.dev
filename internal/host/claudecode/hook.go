@@ -96,11 +96,18 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 	}
 	if ev.Name == "PostToolUse" && (ev.Tool == "Agent" || ev.Tool == "Task") {
 		ev.AgentAsync = asyncLaunch(in.ToolResponse)
+		if ev.AgentAsync {
+			ev.AsyncAgentID = asyncAgentID(in.ToolResponse)
+		}
 	}
 	if ev.Name == "SubagentStop" {
 		ev.AgentResult = in.LastAssistantMessage
 		if ev.AgentResult == "" {
 			ev.AgentResult = lastAssistantText(in.AgentTranscriptPath)
+		}
+		if ev.AgentPrompt == "" {
+			// SubagentStop has no tool_input: the first message of the subagent says which batch it is.
+			ev.AgentPrompt = firstUserText(in.AgentTranscriptPath)
 		}
 	}
 	dir := os.Getenv("CLAUDE_PROJECT_DIR")
@@ -213,6 +220,44 @@ func asyncLaunch(raw json.RawMessage) bool {
 		return false
 	}
 	return asyncValue(v)
+}
+
+var agentIDText = regexp.MustCompile(`(?i)agent_?id["']?\s*[:=]\s*["']?([A-Za-z0-9_-]+)`)
+
+// asyncAgentID is the agentId an async launch response carries (a field, or "agentId: x" in its text).
+func asyncAgentID(raw json.RawMessage) string {
+	var v any
+	if json.Unmarshal(raw, &v) != nil {
+		return ""
+	}
+	return agentIDValue(v)
+}
+
+func agentIDValue(v any) string {
+	switch r := v.(type) {
+	case string:
+		if m := agentIDText.FindStringSubmatch(r); m != nil {
+			return m[1]
+		}
+	case []any:
+		for _, b := range r {
+			if id := agentIDValue(b); id != "" {
+				return id
+			}
+		}
+	case map[string]any:
+		for _, k := range []string{"agentId", "agent_id"} {
+			if s, _ := r[k].(string); s != "" {
+				return s
+			}
+		}
+		for _, k := range []string{"text", "content"} {
+			if id := agentIDValue(r[k]); id != "" {
+				return id
+			}
+		}
+	}
+	return ""
 }
 
 func asyncValue(v any) bool {
@@ -371,6 +416,57 @@ func lastAssistantText(path string) string {
 			} `json:"message"`
 		}
 		if json.Unmarshal(lines[i], &e) != nil || e.Type != "assistant" {
+			continue
+		}
+		var s string
+		if json.Unmarshal(e.Message.Content, &s) == nil && s != "" {
+			return s
+		}
+		var blocks []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}
+		if json.Unmarshal(e.Message.Content, &blocks) == nil {
+			var parts []string
+			for _, b := range blocks {
+				if b.Type == "text" && b.Text != "" {
+					parts = append(parts, b.Text)
+				}
+			}
+			if len(parts) > 0 {
+				return strings.Join(parts, "\n")
+			}
+		}
+	}
+	return ""
+}
+
+// transcriptHeadBytes is how much of the start of a subagent transcript is read for its first message.
+const transcriptHeadBytes = 64 << 10
+
+// firstUserText is the text of the first user message of a transcript (the prompt a subagent was
+// given), read from its head. Errors give "".
+func firstUserText(path string) string {
+	if path == "" {
+		return ""
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	head, err := io.ReadAll(io.LimitReader(f, transcriptHeadBytes))
+	if err != nil {
+		return ""
+	}
+	for _, line := range bytes.Split(head, []byte{'\n'}) {
+		var e struct {
+			Type    string `json:"type"`
+			Message struct {
+				Content json.RawMessage `json:"content"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(line, &e) != nil || e.Type != "user" {
 			continue
 		}
 		var s string

@@ -2,6 +2,8 @@ package claudecode
 
 import (
 	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
@@ -133,11 +135,39 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 	case domain.AskChangeNote:
 		s = "nxy: feature " + f.ID + " — Next: tell the user to write what to change in the plan in their next message; do nothing else until they do."
 	case domain.DispatchImplementer:
-		if a.Retry {
-			s = fmt.Sprintf("nxy: feature %s — batch %d failed verification; nxy retries once — dispatch it again the same way: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, a.Batch, f.ID, a.Batch)
-		} else {
-			s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, f.ID, a.Batch)
+		others := ""
+		if running := f.State.Running(); len(running) > 0 {
+			var up []string
+			for _, n := range running {
+				if !slices.Contains(f.State.Unlaunched(), n) {
+					up = append(up, strconv.Itoa(n))
+				}
+			}
+			if len(up) > 0 {
+				others = " Batch " + strings.Join(up, ", ") + " is already running: do not dispatch it again."
+			}
 		}
+		if len(a.Batches) > 1 {
+			var prompts []string
+			for _, n := range a.Batches {
+				prompts = append(prompts, fmt.Sprintf("`feature %s batch %d`", f.ID, n))
+			}
+			s = fmt.Sprintf("nxy: feature %s — Next: in ONE message, %d Agent tool calls, one per batch, so they run in parallel (each works in its own repo): subagent_type `nxy:implementer`, prompts %s; nothing else, nxy writes their prompts; they may run in the background.%s", f.ID, len(a.Batches), strings.Join(prompts, ", "), others)
+		} else if a.Retry {
+			s = fmt.Sprintf("nxy: feature %s — batch %d failed verification; nxy retries once — dispatch it again the same way: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.%s", f.ID, a.Batch, f.ID, a.Batch, others)
+		} else {
+			s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s batch %d`; nothing else, nxy writes its prompt; it may run in the background.%s", f.ID, f.ID, a.Batch, others)
+		}
+	case domain.AwaitBatches:
+		ns := a.Batches
+		if len(ns) == 0 {
+			ns = []int{a.Batch}
+		}
+		var names []string
+		for _, n := range ns {
+			names = append(names, strconv.Itoa(n))
+		}
+		s = fmt.Sprintf("nxy: feature %s — batch %s running; wait for it, do nothing else and do not dispatch it again: nxy brings each result when it ends.", f.ID, strings.Join(names, ", "))
 	case domain.AskDecision:
 		s = "nxy: feature " + f.ID + " — " + decisionAndAsk(f, stop)
 	case domain.RunAffected:
@@ -317,9 +347,7 @@ func decisionAndAsk(f domain.Feature, stop bool) string {
 			b.WriteString("Next: show this failure to the user verbatim, without summarizing or reformatting.\n")
 		}
 		fmt.Fprintf(&b, "--- Lote %d fallido ---\n", f.State.Batch)
-		if f.Proof != nil {
-			b.WriteString(f.Proof.Failure)
-		}
+		b.WriteString(f.ProofOf(f.State.Batch).Failure)
 		b.WriteString("\n--- fin ---\n")
 		input = decisionInput(plan.DecisionQuestion(f.ID, f.State.Batch), "Batch", []askOption{
 			{plan.Retry, "Run the batch again"},

@@ -20,7 +20,8 @@ Also answer every decision below, once each, in "decisions": the file and line o
 ## Lens: {{.Lens.Title}}
 
 {{.Lens.Body}}
-
+{{if gt .Lens.Repos 1}}
+{{.Feature.RepoTable}}{{end}}
 {{if .Mem}}## Repo rules (nxy memory)
 
 K<n> are rules of this repo, A<n> learnings about these files. If the change breaks a K rule, report it as a finding and put its id in "rule" (for example "K3"); only ids listed here are accepted. If you check an A learning and it is false, list it in "false" (for example "A7"; if the line starts with `[repo]`, write "[repo] A7"). Also report in "learnings" what you found true and not obvious about these files that cost you to discover.

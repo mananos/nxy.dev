@@ -153,9 +153,10 @@ func (h Hooks) featureEdit(ctx context.Context, ev HookEvent, f domain.Feature) 
 				docsWikiHint(f) + "; this file is not one of them"}
 		}
 		if f.State.Phase == domain.PhaseRunningBatch {
-			h.noteWrite(ctx, f.ID)
-			if ev.AgentType == roleImplementer && h.batchNamesFile(f, ev) {
-				return HookResponse{AllowReason: "nxy: batch " + strconv.Itoa(f.State.Batch) + " of feature " + f.ID + " names this file"}
+			n, named := h.editBatch(f, ev, target)
+			h.noteWrite(ctx, f.ID, n)
+			if ev.AgentType == roleImplementer && named {
+				return HookResponse{AllowReason: "nxy: batch " + strconv.Itoa(n) + " of feature " + f.ID + " names this file"}
 			}
 		}
 		if f.State.Phase == domain.PhaseFixing && ev.AgentType == roleImplementer && h.fixNamesFile(f, ev) {
@@ -166,10 +167,32 @@ func (h Hooks) featureEdit(ctx context.Context, ev HookEvent, f domain.Feature) 
 	return HookResponse{Deny: mainThreadWriteDeny(f)}
 }
 
-// batchNamesFile reports whether the edited file is one the current batch's change list
+// editBatch is the running batch an edit of target counts in: the one whose change list names the
+// file; if none does, the running one whose repo holds it; else the batch in focus.
+func (h Hooks) editBatch(f domain.Feature, ev HookEvent, target string) (int, bool) {
+	running := f.State.Running()
+	if len(running) == 0 {
+		return f.State.Batch, h.batchNamesFile(f, ev, f.State.Batch)
+	}
+	for _, n := range running {
+		if h.batchNamesFile(f, ev, n) {
+			return n, true
+		}
+	}
+	if len(running) > 1 {
+		for _, n := range running {
+			if d := batchDir(f, n); d != "" && within(normPath(d, ""), target) {
+				return n, false
+			}
+		}
+	}
+	return f.State.Batch, false
+}
+
+// batchNamesFile reports whether the edited file is one the change list of batch n
 // names (path part of path:line, relative to the project dir) and stays inside it.
-func (h Hooks) batchNamesFile(f domain.Feature, ev HookEvent) bool {
-	if f.Plan == nil || f.State.Batch < 1 || f.State.Batch > len(f.Plan.Batches) {
+func (h Hooks) batchNamesFile(f domain.Feature, ev HookEvent, n int) bool {
+	if f.Plan == nil || n < 1 || n > len(f.Plan.Batches) {
 		return false
 	}
 	target := normPath(ev.FilePath, ev.Cwd)
@@ -182,8 +205,8 @@ func (h Hooks) batchNamesFile(f domain.Feature, ev HookEvent) bool {
 			names = append(names, r.Name)
 		}
 	}
-	dir := batchDir(f, f.State.Batch)
-	for _, c := range f.Plan.Batches[f.State.Batch-1].Change {
+	dir := batchDir(f, n)
+	for _, c := range f.Plan.Batches[n-1].Change {
 		p := changePath(c.At)
 		if p == "" {
 			continue

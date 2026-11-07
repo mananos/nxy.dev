@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/flow"
 )
 
 const legacyNotice = "nxy 1.x is still enabled: disable it while testing the v2 (both answer the same hooks)"
@@ -55,6 +56,19 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 					f.Background = ""
 				}
 			}
+			if fresh && f.State.Phase == domain.PhaseRunningBatch && (len(f.Lanes) > 0 || len(launchedBatches(f)) > 0) {
+				// The implementers of the old process are gone: the batches go out again.
+				nf, _, err := h.advanceSteps(ctx, f.ID, func(g *domain.Feature) ([]flow.Event, error) {
+					g.Lanes = nil
+					if g.State.Phase != domain.PhaseRunningBatch || len(launchedBatches(*g)) == 0 {
+						return nil, errSkipEvent
+					}
+					return []flow.Event{{Kind: flow.Relaunch}}, nil
+				})
+				if err == nil {
+					f = nf
+				}
+			}
 			f = h.ensureReview(ctx, f)
 			if fresh && f.State.Phase == domain.PhaseReviewing && f.Review != nil {
 				// The reviewers of the old process are gone: the lenses go out again.
@@ -77,9 +91,14 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 			role, known := roles[f.Background]
 			_, inPhase := role[f.State.Phase]
 			reviewing := reviewInFlight(f)
-			running := (known && inPhase) || reviewing
+			// Batches launched by this very process are still running (a /clear or a resume).
+			waiting := launchedBatches(f)
+			batchesRunning := f.State.Phase == domain.PhaseRunningBatch && len(waiting) > 0 && len(unlaunchedBatches(f)) == 0
+			running := (known && inPhase) || reviewing || batchesRunning
 			if reviewing {
 				r.Context = reviewWait(f)
+			} else if batchesRunning {
+				r.Context = batchesWait(f.ID, waiting)
 			} else if running {
 				r.Context = backgroundWait(f.ID, f.Background)
 			} else {
@@ -94,6 +113,12 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 			if fresh || ev.Source == "clear" {
 				if reviewing {
 					r.Notice = "nxy: feature " + f.ID + " — the reviewers are still running; their result arrives when they end"
+				} else if batchesRunning {
+					w := "el lote " + domain.JoinInts(waiting, "y") + " sigue"
+					if len(waiting) > 1 {
+						w = "los lotes " + domain.JoinInts(waiting, "y") + " siguen"
+					}
+					r.Notice = "nxy: feature " + f.ID + " — " + w + " corriendo; su resultado llega cuando terminan"
 				} else if running {
 					r.Notice = "nxy: feature " + f.ID + " — the " + strings.TrimPrefix(f.Background, "nxy:") + " is still running; its result arrives when it ends"
 				} else {

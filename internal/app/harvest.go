@@ -34,7 +34,11 @@ func (h Hooks) harvest(ctx context.Context, f domain.Feature, ev HookEvent) {
 	var allowed []string
 	switch f.State.Phase {
 	case domain.PhaseRunningBatch:
-		if n := f.State.Batch; f.Plan != nil && n >= 1 && n <= len(f.Plan.Batches) {
+		n := batchOfPrompt(ev.AgentPrompt)
+		if n == 0 {
+			n = f.State.Batch
+		}
+		if f.Plan != nil && n >= 1 && n <= len(f.Plan.Batches) {
 			allowed = batchFiles(f.Plan.Batches[n-1])
 			def = max(0, memRepoIndex(mrs, f.Plan.Batches[n-1].Repo))
 		}

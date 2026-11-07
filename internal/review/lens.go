@@ -5,6 +5,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +21,9 @@ type Lens struct {
 	Always  bool
 	Enabled bool
 	Body    string
+	// Repos is the least number of repos with code in the diff for a cross-repo lens (0 or 1: a
+	// normal lens, chosen per repo by Select).
+	Repos int
 }
 
 // File is one changed file; Content is what it holds now (empty when Deleted).
@@ -112,6 +116,9 @@ func ParseLens(text, fallback string) (Lens, bool) {
 		Enabled: meta["enabled"] != "false",
 		Body:    strings.TrimSpace(m[2]),
 	}
+	if n, err := strconv.Atoi(meta["repos"]); err == nil && n > 0 {
+		l.Repos = n
+	}
 	for _, g := range list(meta["paths"]) {
 		l.Paths = append(l.Paths, GlobToRegExp(g))
 	}
@@ -179,6 +186,9 @@ func Select(lenses []Lens, files []File) []Selected {
 	}
 	var out []Selected
 	for _, l := range lenses {
+		if l.Repos > 1 {
+			continue
+		}
 		var hit []string
 		if !l.Always {
 			for _, f := range code {
@@ -191,6 +201,36 @@ func Select(lenses []Lens, files []File) []Selected {
 			}
 		}
 		out = append(out, Selected{Lens: l, Files: hit})
+	}
+	return out
+}
+
+// SelectCross returns the cross-repo lenses (Repos > 1) that apply: the ones whose number of repos
+// with code (not docs) in the diff is reached. perRepo has the files of each repo, already labelled
+// "<repo>/<path>"; Files lists the code files of all of them.
+func SelectCross(lenses []Lens, perRepo [][]File) []Selected {
+	var out []Selected
+	for _, l := range lenses {
+		if l.Repos <= 1 {
+			continue
+		}
+		repos := 0
+		var hit []string
+		for _, files := range perRepo {
+			n := 0
+			for _, f := range files {
+				if !IsDocPath(f.Path) {
+					hit = append(hit, f.Path)
+					n++
+				}
+			}
+			if n > 0 {
+				repos++
+			}
+		}
+		if repos >= l.Repos {
+			out = append(out, Selected{Lens: l, Files: hit})
+		}
 	}
 	return out
 }

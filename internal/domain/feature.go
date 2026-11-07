@@ -16,8 +16,12 @@ type Feature struct {
 	Answers    []Answer `json:"answers,omitempty"`
 	// ChangeNotes are the user's literal notes asking to change the plan.
 	ChangeNotes []string `json:"change_notes,omitempty"`
-	// Proof is the evidence of the batch being implemented.
+	// Proof is the legacy single proof (before parallel batches); ProofOf reads it, SetProof clears it.
 	Proof *Proof `json:"proof,omitempty"`
+	// Proofs is the evidence of each batch that has any.
+	Proofs []Proof `json:"proofs,omitempty"`
+	// Lanes tie each launched implementer to its batch.
+	Lanes []BatchLane `json:"lanes,omitempty"`
 	// Base is the HEAD sha at approval; the changed files are counted from it.
 	Base string `json:"base,omitempty"`
 	// Affected is the last run of the affected tests.
@@ -61,6 +65,61 @@ type Feature struct {
 	PendingPlan *Plan `json:"pending_plan,omitempty"`
 	// BranchOffer is what the branch question of the approved plan offers and has collected so far.
 	BranchOffer *BranchOffer `json:"branch_offer,omitempty"`
+}
+
+// ProofOf is the proof of batch n; the zero Proof (with Batch n) when it has none.
+func (f Feature) ProofOf(n int) Proof {
+	for _, p := range f.Proofs {
+		if p.Batch == n {
+			return p
+		}
+	}
+	if f.Proof != nil && f.Proof.Batch == n {
+		return *f.Proof
+	}
+	return Proof{Batch: n}
+}
+
+// SetProof stores the proof of p.Batch and clears the legacy field.
+func (f *Feature) SetProof(p Proof) {
+	f.Proof = nil
+	for i := range f.Proofs {
+		if f.Proofs[i].Batch == p.Batch {
+			f.Proofs[i] = p
+			return
+		}
+	}
+	f.Proofs = append(f.Proofs, p)
+}
+
+// BatchLane ties an implementer launch (by tool_use id) to its batch. Background is "" while it
+// runs in the foreground, "running" once it went to the background, "ended" when its stop came first.
+type BatchLane struct {
+	Batch      int    `json:"batch"`
+	ToolUse    string `json:"tool_use,omitempty"`
+	AgentID    string `json:"agent_id,omitempty"`
+	Background string `json:"background,omitempty"`
+}
+
+// LaneOf is the lane of batch n.
+func (f Feature) LaneOf(n int) (BatchLane, bool) {
+	for _, l := range f.Lanes {
+		if l.Batch == n {
+			return l, true
+		}
+	}
+	return BatchLane{}, false
+}
+
+// SetLane stores l, replacing the lane of the same batch.
+func (f *Feature) SetLane(l BatchLane) {
+	for i := range f.Lanes {
+		if f.Lanes[i].Batch == l.Batch {
+			f.Lanes[i] = l
+			return
+		}
+	}
+	f.Lanes = append(f.Lanes, l)
 }
 
 // BranchOffer is the branch question of a feature: the names suggested, the bases per repo and the

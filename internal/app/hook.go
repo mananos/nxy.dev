@@ -45,6 +45,8 @@ type HookEvent struct {
 	Answers map[string]string
 	// AgentAsync is true on PostToolUse Agent/Task when the agent was launched in the background.
 	AgentAsync bool
+	// AsyncAgentID is the agentId of the background agent in that tool_response, when it carries one.
+	AsyncAgentID string
 	// Reason is SessionEnd's reason (clear, logout, other...).
 	Reason string
 }

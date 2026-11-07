@@ -52,9 +52,30 @@ func TestParseLens(t *testing.T) {
 
 func TestBuiltin(t *testing.T) {
 	got := names(Builtin())
-	want := []string{"api", "base", "database", "frontend", "persistence", "security"}
+	want := []string{"api", "base", "contract", "database", "frontend", "persistence", "security"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+func TestSelectCross(t *testing.T) {
+	api := []File{{Path: "api/src/x.go"}}
+	web := []File{{Path: "web/src/y.js"}}
+	if sel := Select(Builtin(), []File{{Path: "internal/foo/x.go", Content: "x"}}); len(sel) != 1 || sel[0].Lens.Name != "base" {
+		t.Fatalf("Select must skip the contract lens: %+v", sel)
+	}
+	if sel := SelectCross(Builtin(), [][]File{api}); len(sel) != 0 {
+		t.Fatalf("one repo: %+v", sel)
+	}
+	if sel := SelectCross(Builtin(), [][]File{api, {{Path: "web/README.md"}}}); len(sel) != 0 {
+		t.Fatalf("docs in the second repo: %+v", sel)
+	}
+	sel := SelectCross(Builtin(), [][]File{api, web})
+	if len(sel) != 1 || sel[0].Lens.Name != "contract" || len(sel[0].Files) != 2 {
+		t.Fatalf("two repos: %+v", sel)
+	}
+	if r, _ := Raise(domain.RiskLow, sel); r != domain.RiskMedium {
+		t.Fatalf("contract must raise to medium, got %s", r)
 	}
 }
 

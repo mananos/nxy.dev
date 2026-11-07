@@ -51,7 +51,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - test.accept is the smallest command that proves the batch, not the whole suite.
 - "read" lists exact ranges, path:a-b. "change" entries are "path:line" plus a short "what" (path (new) for new files).
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
-- risk is low, medium or high. depends lists earlier batch numbers only.
+- risk is low, medium or high. depends lists earlier batch numbers only. With 2+ repos, a batch whose depends are done runs in parallel with the batches of other repos (a repo always goes one batch at a time); a batch without depends waits for the previous one. Put the contract batch first and give each repo's batch depends: [1].
 - suite: the command that runs the whole test suite of the repo; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.
 - Several repos: only when the design touches more than one git repo. Declare repos[{path, role, suite}] ("." is the repo of the session folder; role says what it is for, e.g. contract or consumer). Then every change.at is "<name>/<path>" where name is the repo folder name (nxy tells you if it needs parent folders to tell two apart), a batch touches one repo only, and the contract goes first in its own batch. A decision you take on a delegated fork names its repo ("repo": "<name>"). With one repo, leave repos out.

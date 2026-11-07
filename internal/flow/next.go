@@ -87,29 +87,194 @@ func docsAnswered(s state, ev Event) (state, []action) {
 }
 
 // retryAs moves to phase p with the retry attempt used.
-func retryAs(p domain.Phase, kind domain.ActionKind, batch bool) func(state, Event) (state, []action) {
+func retryAs(p domain.Phase, kind domain.ActionKind) func(state, Event) (state, []action) {
 	return func(s state, _ Event) (state, []action) {
 		s.Phase, s.Attempt = p, 1
-		a := action{Kind: kind, Retry: true}
-		if batch {
-			a.Batch = s.Batch
+		return s, []action{{Kind: kind, Retry: true}}
+	}
+}
+
+// batchOf is the batch an event is about: the one it names, or the one in focus.
+func batchOf(s state, ev Event) int {
+	if ev.Batch > 0 {
+		return ev.Batch
+	}
+	return s.Batch
+}
+
+func findStep(ss []domain.Step, n int) *domain.Step {
+	for i := range ss {
+		if ss[i].N == n {
+			return &ss[i]
+		}
+	}
+	return nil
+}
+
+// steps is the schedule of the state, as a copy that can be changed. A state saved before parallel
+// batches has none: it is rebuilt as one batch after the other around the batch in focus.
+func steps(s state) []domain.Step {
+	if len(s.Steps) > 0 {
+		return append([]domain.Step(nil), s.Steps...)
+	}
+	out := make([]domain.Step, s.Batches)
+	for i := range out {
+		n := i + 1
+		out[i].N = n
+		if n > 1 {
+			out[i].After = []int{n - 1}
+		}
+		switch {
+		case n < s.Batch:
+			out[i].Status = domain.StepGreen
+		case n == s.Batch:
+			switch s.Phase {
+			case domain.PhaseRunningBatch:
+				out[i].Status, out[i].Attempt = domain.StepRunning, s.Attempt
+			case domain.PhaseVerifyingBatch:
+				out[i].Status, out[i].Attempt = domain.StepVerifying, s.Attempt
+			case domain.PhaseBatchFailed:
+				out[i].Status, out[i].Attempt = domain.StepFailed, s.Attempt
+			default:
+				out[i].Status = domain.StepGreen
+			}
+		}
+	}
+	return out
+}
+
+// hasStep guards on the status of the batch of the event.
+func hasStep(status domain.StepStatus) func(state, Event) bool {
+	return func(s state, ev Event) bool {
+		st := findStep(steps(s), batchOf(s, ev))
+		return st != nil && st.Status == status
+	}
+}
+
+func and(gs ...func(state, Event) bool) func(state, Event) bool {
+	return func(s state, ev Event) bool {
+		for _, g := range gs {
+			if !g(s, ev) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func ready(ss []domain.Step, st domain.Step) bool {
+	for _, n := range st.After {
+		d := findStep(ss, n)
+		if d != nil && d.Status != domain.StepGreen && d.Status != domain.StepAccepted {
+			return false
+		}
+	}
+	return true
+}
+
+// schedule starts every batch whose dependencies are done and says what to do: dispatch the ones
+// not launched yet, wait for the launched ones, ask about a failed batch once nothing runs or
+// starts, or go to the affected tests when every batch is done.
+func schedule(s state, ss []domain.Step) (state, []action) {
+	for i := range ss {
+		if ss[i].Status == domain.StepPending && ready(ss, ss[i]) {
+			ss[i].Status, ss[i].Launched, ss[i].Attempt = domain.StepRunning, false, 0
+		}
+	}
+	var unlaunched, running []int
+	verifying, failed := false, 0
+	for _, st := range ss {
+		switch st.Status {
+		case domain.StepRunning:
+			running = append(running, st.N)
+			if !st.Launched {
+				unlaunched = append(unlaunched, st.N)
+			}
+		case domain.StepVerifying:
+			verifying = true
+		case domain.StepFailed:
+			if failed == 0 {
+				failed = st.N
+			}
+		}
+	}
+	s.Steps, s.Attempt = ss, 0
+	switch {
+	case len(unlaunched) > 0:
+		s.Phase, s.Batch = domain.PhaseRunningBatch, unlaunched[0]
+		// Retry is only set for a single batch; with 2+ at once it stays false (each prompt names its batch).
+		a := action{Kind: domain.DispatchImplementer, Batch: unlaunched[0]}
+		if len(unlaunched) > 1 {
+			a.Batches = unlaunched
+		} else {
+			a.Retry = findStep(ss, unlaunched[0]).Attempt > 0
 		}
 		return s, []action{a}
+	case len(running) > 0:
+		s.Phase, s.Batch = domain.PhaseRunningBatch, running[0]
+		a := action{Kind: domain.AwaitBatches, Batch: running[0]}
+		if len(running) > 1 {
+			a.Batches = running
+		}
+		return s, []action{a}
+	case verifying:
+		s.Phase = domain.PhaseRunningBatch
+		return s, nil
+	case failed > 0:
+		s.Phase, s.Batch = domain.PhaseBatchFailed, failed
+		return s, acts(domain.AskDecision, domain.Notify)
 	}
-}
-
-func startBatch(s state, n int, retry bool) (state, []action) {
-	s.Phase, s.Batch, s.Attempt = domain.PhaseRunningBatch, n, 0
-	return s, []action{{Kind: domain.DispatchImplementer, Batch: n, Retry: retry}}
-}
-
-// nextBatch goes to the following batch, or to the affected tests after the last.
-func nextBatch(s state, _ Event) (state, []action) {
-	if s.Batch < s.Batches {
-		return startBatch(s, s.Batch+1, false)
-	}
-	s.Phase, s.Attempt = domain.PhaseAffected, 0
+	s.Phase = domain.PhaseAffected
 	return s, acts(domain.RunAffected)
+}
+
+// mark changes the batch of the event and schedules what follows.
+func mark(f func(*domain.Step)) func(state, Event) (state, []action) {
+	return func(s state, ev Event) (state, []action) {
+		ss := steps(s)
+		if st := findStep(ss, batchOf(s, ev)); st != nil {
+			f(st)
+		}
+		return schedule(s, ss)
+	}
+}
+
+var (
+	// launched: the implementer of the batch is up; what is still not launched is asked again.
+	launched = mark(func(st *domain.Step) { st.Launched = true })
+	// batchGreen: the proof is green.
+	batchGreen = mark(func(st *domain.Step) { st.Status = domain.StepGreen })
+	// batchRed: the first red retries the batch; a second one (counted per batch) fails it.
+	batchRed = mark(func(st *domain.Step) {
+		if st.Attempt == 0 {
+			st.Status, st.Attempt, st.Launched = domain.StepRunning, 1, false
+			return
+		}
+		st.Status = domain.StepFailed
+	})
+	retryBatch  = mark(func(st *domain.Step) { st.Status, st.Attempt, st.Launched = domain.StepRunning, 0, false })
+	acceptBatch = mark(func(st *domain.Step) { st.Status = domain.StepAccepted })
+)
+
+// batchReturned sends the batch to its proof.
+func batchReturned(s state, ev Event) (state, []action) {
+	ss := steps(s)
+	n := batchOf(s, ev)
+	findStep(ss, n).Status = domain.StepVerifying
+	s.Steps, s.Attempt = ss, 0
+	s.Phase = domain.PhaseRunningBatch
+	return s, []action{{Kind: domain.VerifyBatch, Batch: n}}
+}
+
+// relaunch: the implementers that were launched are gone with the old process.
+func relaunch(s state, _ Event) (state, []action) {
+	ss := steps(s)
+	for i := range ss {
+		if ss[i].Status == domain.StepRunning {
+			ss[i].Launched = false
+		}
+	}
+	return schedule(s, ss)
 }
 
 // reverify runs the affected tests again after a fix, keeping the attempt: a
@@ -126,10 +291,13 @@ func verifyFixes(s state, _ Event) (state, []action) {
 	return s, acts(domain.RunAffected)
 }
 
-func retryBatch(s state, _ Event) (state, []action) { return startBatch(s, s.Batch, false) }
-
 func planSaved(s state, ev Event) (state, []action) {
 	s.Batches, s.Attempt = ev.Batches, 0
+	// Without steps the schedule is one batch after the other (see steps).
+	s.Steps = append([]domain.Step(nil), ev.Steps...)
+	if len(s.Steps) == 0 {
+		s.Steps = nil
+	}
 	switch {
 	case ev.Questions:
 		s.Phase = domain.PhaseQuestions
@@ -149,14 +317,9 @@ func approved(s state, _ Event) (state, []action) {
 	return s, acts(domain.AskBranch, domain.Notify)
 }
 
-func branchReady(s state, _ Event) (state, []action) { return startBatch(s, 1, false) }
-
-// verifyBatch keeps the attempt on purpose: the automatic retry is counted
-// across running_batch -> verifying_batch, so a second red reaches batch_failed
-// instead of retrying forever.
-func verifyBatch(s state, _ Event) (state, []action) {
-	s.Phase = domain.PhaseVerifyingBatch
-	return s, []action{{Kind: domain.VerifyBatch, Batch: s.Batch}}
+func branchReady(s state, _ Event) (state, []action) {
+	s.Batch = 0
+	return schedule(s, steps(s))
 }
 
 func reviewed(s state, ev Event) (state, []action) {
@@ -245,22 +408,28 @@ var table = map[domain.Phase][]row{
 		{ClashAnswered, always, planSaved},
 		{Answered, always, replan},
 	},
+	// The batches run in parallel when their dependencies are done: the phase stays here while
+	// any is running or being verified, each with its own status and retry in State.Steps.
 	domain.PhaseRunningBatch: {
-		{BatchReturned, always, verifyBatch},
+		{Launched, hasStep(domain.StepRunning), launched},
+		{Relaunch, always, relaunch},
+		{BatchReturned, hasStep(domain.StepRunning), batchReturned},
+		{Green, hasStep(domain.StepVerifying), batchGreen},
+		{Red, hasStep(domain.StepVerifying), batchRed},
 	},
+	// Only a state saved by an older binary is here; it goes on as running_batch.
 	domain.PhaseVerifyingBatch: {
-		{Green, always, nextBatch},
-		{Red, attempt(0), retryAs(domain.PhaseRunningBatch, domain.DispatchImplementer, true)},
-		{Red, attempt(1), failTo(domain.PhaseBatchFailed)},
+		{Green, hasStep(domain.StepVerifying), batchGreen},
+		{Red, hasStep(domain.StepVerifying), batchRed},
 	},
 	domain.PhaseBatchFailed: {
-		{Decided, decided(DecisionRetry), retryBatch},
-		{Decided, decided(DecisionContinue), nextBatch},
+		{Decided, and(decided(DecisionRetry), hasStep(domain.StepFailed)), retryBatch},
+		{Decided, and(decided(DecisionContinue), hasStep(domain.StepFailed)), acceptBatch},
 		{Decided, decided(DecisionStop), stop},
 	},
 	domain.PhaseAffected: {
 		{Green, always, review},
-		{Red, attempt(0), retryAs(domain.PhaseAffectedFix, domain.DispatchAffectedFix, false)},
+		{Red, attempt(0), retryAs(domain.PhaseAffectedFix, domain.DispatchAffectedFix)},
 		{Red, attempt(1), failTo(domain.PhaseAffectedFailed)},
 		{Unverified, always, failTo(domain.PhaseAffectedUnverified)},
 	},
@@ -291,7 +460,7 @@ var table = map[domain.Phase][]row{
 	},
 	domain.PhaseFixVerify: {
 		{Green, always, closeOK},
-		{Red, attempt(0), retryAs(domain.PhaseFixing, domain.DispatchFixer, false)},
+		{Red, attempt(0), retryAs(domain.PhaseFixing, domain.DispatchFixer)},
 		{Red, attempt(1), failTo(domain.PhaseFixesFailed)},
 		{Unverified, always, failTo(domain.PhaseFixesFailed)},
 	},

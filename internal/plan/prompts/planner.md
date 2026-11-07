@@ -32,7 +32,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - test.accept is the smallest command that proves the batch, not the whole suite.
 - "read" lists exact ranges, path:a-b. "change" entries are "path:line" plus a short "what" (path (new) for new files).
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
-- risk is low, medium or high. depends lists earlier batch numbers only.
+- risk is low, medium or high. depends lists earlier batch numbers only. With 2+ repos, a batch whose depends are done runs in parallel with the batches of other repos (a repo always goes one batch at a time); a batch without depends waits for the previous one. Put the contract batch first and give each repo's batch depends: [1].
 - Ask a question only for a real fork you cannot settle from the repo: 2 to 4 options, the recommended one first and the only one marked recommended, at most 4 questions. If you ask, you may still save a full plan.
 - suite: the command that runs the whole test suite of the repo (e.g. `npm test`); nxy runs it only when it cannot work out the affected tests; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.

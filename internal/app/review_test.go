@@ -56,6 +56,36 @@ func TestPrepareReviewDepth(t *testing.T) {
 	}
 }
 
+func TestPrepareReviewContractLensNeedsTwoRepos(t *testing.T) {
+	lensOf := func(rv domain.Review, name string) *domain.LensRun {
+		for i := range rv.Lenses {
+			if rv.Lenses[i].Name == name {
+				return &rv.Lenses[i]
+			}
+		}
+		return nil
+	}
+	plan := &domain.Plan{Batches: []domain.Batch{{Risk: domain.RiskLow}}}
+	h, _ := flowHooks(false)
+	h.Changes = dirChanges{map[string][]string{"/w/api": {"src/a.go"}, "/w/web": {"src/b.go"}}}
+	two := domain.Feature{ProjectDir: "/w", Plan: plan, Repos: []domain.FeatureRepo{
+		{Name: "api", Root: "/w/api", Checkout: "/w/api"},
+		{Name: "web", Root: "/w/web", Checkout: "/w/web"},
+	}}
+	rv := h.prepareReview(context.Background(), two)
+	c := lensOf(rv, "contract")
+	if c == nil || rv.Quick || rv.Risk != domain.RiskMedium {
+		t.Fatalf("two repos = %+v", rv)
+	}
+	if strings.Join(c.Files, ",") != "api/src/a.go,web/src/b.go" {
+		t.Errorf("contract files = %v", c.Files)
+	}
+	one := domain.Feature{ProjectDir: "/w", Plan: plan, Repos: []domain.FeatureRepo{{Name: "api", Root: "/w/api", Checkout: "/w/api"}}}
+	if rv := h.prepareReview(context.Background(), one); lensOf(rv, "contract") != nil || !rv.Quick {
+		t.Errorf("one repo = %+v", rv)
+	}
+}
+
 func TestReviewingWithoutReviewIsPreparedLazily(t *testing.T) {
 	for _, name := range []string{"SessionStart", "Stop"} {
 		h, st := flowHooks(false)

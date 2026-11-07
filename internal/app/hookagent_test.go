@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -84,7 +85,7 @@ func TestForegroundSubagentStopIgnored(t *testing.T) {
 	if r := h.Handle(ctx, plannerStop()); r != (HookResponse{}) {
 		t.Fatalf("response = %+v", r)
 	}
-	if st.feats[f.ID].State != before.State || st.feats[f.ID].Undelivered {
+	if !reflect.DeepEqual(st.feats[f.ID].State, before.State) || st.feats[f.ID].Undelivered {
 		t.Errorf("store changed: %+v", st.feats[f.ID])
 	}
 	if _, err := h.SavePlan(ctx, f.ID, planReader(t, validPlan())); err != nil {

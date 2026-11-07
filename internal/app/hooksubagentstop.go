@@ -25,6 +25,10 @@ func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	if ev.AgentType == roleImplementer {
 		h.harvest(ctx, f, ev)
+		if f.State.Phase == domain.PhaseRunningBatch {
+			h.implementerStop(ctx, ev, f)
+			return HookResponse{}
+		}
 	}
 	if _, in := role[f.State.Phase]; f.Background == "" && in {
 		// It ended before its launch hook ran (or it is a foreground one, whose

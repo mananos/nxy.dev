@@ -1,6 +1,9 @@
 package domain
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 // ActionKind is what has to happen next.
 type ActionKind string
@@ -17,6 +20,7 @@ const (
 	OpenPlan            ActionKind = "open_plan"
 	DispatchImplementer ActionKind = "dispatch_implementer"
 	VerifyBatch         ActionKind = "verify_batch"
+	AwaitBatches        ActionKind = "await_batches"
 	RunAffected         ActionKind = "run_affected"
 	DispatchAffectedFix ActionKind = "dispatch_affected_fix"
 	AskDecision         ActionKind = "ask_decision"
@@ -36,7 +40,10 @@ const (
 type Action struct {
 	Kind  ActionKind `json:"kind"`
 	Batch int        `json:"batch,omitempty"`
-	Retry bool       `json:"retry,omitempty"`
+	// Batches are the batches to dispatch (or wait for) at once; only set with 2+, Batch is the first.
+	Batches []int `json:"batches,omitempty"`
+	// Retry is only set when a single batch is dispatched; with Batches (2+) it stays false.
+	Retry bool `json:"retry,omitempty"`
 }
 
 type actionInfo struct {
@@ -56,6 +63,7 @@ var actionTable = map[ActionKind]actionInfo{
 	OpenPlan:            {false, "Abrir plan"},
 	DispatchImplementer: {true, "Lote"},
 	VerifyBatch:         {false, "Verificar lote"},
+	AwaitBatches:        {true, "Esperar lotes"},
 	RunAffected:         {true, "Correr afectados"},
 	DispatchAffectedFix: {true, "Arreglar afectados"},
 	AskDecision:         {true, "Decidir"},
@@ -78,8 +86,35 @@ func (a Action) MainThread() bool { return actionTable[a.Kind].mainThread }
 // Label is a neutral Spanish name for the action, e.g. "Lote 1".
 func (a Action) Label() string {
 	l := actionTable[a.Kind].label
-	if a.Kind == DispatchImplementer && a.Batch > 0 {
-		return l + " " + strconv.Itoa(a.Batch)
+	switch a.Kind {
+	case DispatchImplementer:
+		if len(a.Batches) > 1 {
+			return "Lotes " + joinBatches(a.Batches)
+		}
+		if a.Batch > 0 {
+			return l + " " + strconv.Itoa(a.Batch)
+		}
+	case AwaitBatches:
+		if len(a.Batches) > 1 {
+			return l + " " + joinBatches(a.Batches)
+		}
+		if a.Batch > 0 {
+			return "Esperar lote " + strconv.Itoa(a.Batch)
+		}
 	}
 	return l
+}
+
+func joinBatches(ns []int) string { return JoinInts(ns, "y") }
+
+// JoinInts writes "2 and 3" or "2, 3 and 4" with the language's conjunction ("and", "y").
+func JoinInts(ns []int, and string) string {
+	s := make([]string, len(ns))
+	for i, n := range ns {
+		s[i] = strconv.Itoa(n)
+	}
+	if len(s) < 2 {
+		return strings.Join(s, "")
+	}
+	return strings.Join(s[:len(s)-1], ", ") + " " + and + " " + s[len(s)-1]
 }

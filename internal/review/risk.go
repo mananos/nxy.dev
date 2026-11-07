@@ -33,7 +33,7 @@ func lensRisk(name string) domain.Risk {
 	switch name {
 	case "security", "database":
 		return domain.RiskHigh
-	case "api":
+	case "api", "contract":
 		return domain.RiskMedium
 	}
 	return domain.RiskLow

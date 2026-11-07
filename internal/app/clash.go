@@ -126,7 +126,7 @@ func (h Hooks) applyPendingPlan(ctx context.Context, f domain.Feature, worktree 
 			g.Holds = slices.DeleteFunc(g.Holds, func(co string) bool { return busy[co] })
 		}
 		g.PendingPlan, g.Clash = nil, nil
-		return []flow.Event{{Kind: flow.ClashAnswered, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches)}}, nil
+		return []flow.Event{{Kind: flow.ClashAnswered, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches), Steps: plan.Steps(p)}}, nil
 	})
 	if err != nil {
 		return domain.Feature{}, err

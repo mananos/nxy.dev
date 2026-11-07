@@ -333,9 +333,9 @@ Qué hacer cuando frena: `/nxy:feature` para algo con forma, o el implementer pa
 
 Costo: cada edición del hilo principal escribe una fila de ~150 B en `.nxy/local/metrics/gate.jsonl` (tope 256 KB, 90 días).
 
-## F4.5a: varios repos
+## F4.5: varios repos
 
-Qué ves: una feature puede tocar varios repos (por ejemplo `api` y `web`), abriendo la sesión dentro de uno o en una carpeta padre que no es repo. Los lotes corren en fila; el paralelo entre repos llega en F4.5b.
+Qué ves: una feature puede tocar varios repos (por ejemplo `api` y `web`), abriendo la sesión dentro de uno o en una carpeta padre que no es repo. Los lotes de repos distintos corren en paralelo cuando sus `depends` se cumplen (ver "Lotes en paralelo").
 
 - **Repos en el checkpoint.** El plan lleva una línea de repos (nombre, rol, ruta) y cada lote y decisión lleva `[repo]`. Los archivos se escriben `<nombre>/<ruta>`; el nombre es la carpeta del repo (si dos se llaman igual, nxy suma padres y te avisa). Un repo declarado sin git: el plan no se guarda. Un lote toca un solo repo.
 - **Repo ocupado.** Hay una sola feature activa por checkout. Si el plan toca uno que ya tiene otra feature, el plan no llega a la aprobación y Claude te pregunta: «Pausar la feature X» (recomendada), «Sacar <repo> del plan» (con 2+ repos, salvo que todos estén ocupados), «Abrir en un worktree» (con un repo) o «Parar esta feature». Elegir pausar o abrir en worktree sigue con el mismo plan, sin llamar de nuevo al planner.
@@ -347,4 +347,20 @@ Qué ves: una feature puede tocar varios repos (por ejemplo `api` y `web`), abri
 - **Sesión reabierta.** Si reabrís una sesión en una carpeta cuya feature no tiene otra sesión viva, `/nxy:feature` responde «ya hay una feature en curso» en vez de arrancar una segunda.
 - **Aprendizajes.** Con 2+ repos, un `false:` del implementer o del reviewer apunta al repo: `false: [api] A3` o `false: api:A3`. Las reglas se entregan por repo y una decisión `[repo]` se guarda en ese repo.
 
-Costo: unas pocas filas en la db (`feature_holds`); cada worktree ocupa un checkout más en disco, y codegraph arma un índice por worktree (segundos).
+### Lotes en paralelo
+
+- **Qué ves.** Cuando varios lotes están listos a la vez, Claude lanza varios implementers en un solo mensaje, uno por lote y cada uno en su repo («feature X batch 2», «feature X batch 3»). Mientras corren, nxy te avisa que hay que esperar; cada resultado llega cuando termina su implementer, en cualquier orden.
+- **Qué decide cuándo.** Un lote espera a los lotes de su `depends`; sin `depends`, espera al lote anterior (así un plan viejo sigue en fila). Dentro de un mismo repo los lotes siempre van de a uno. Para tener paralelo, el plan pone primero el lote de contrato y luego cada repo con `depends: [1]`.
+- **Qué hacer.** Nada: el implementer prueba su lote con `nxy batch red|green --feature <id> --batch <n>`. Si lo corrés a mano con 2+ lotes en curso, el `--batch` es obligatorio y nxy te lo pide.
+
+### Si falla uno
+
+Un lote que sigue rojo después del reintento queda como fallido. Los lotes de los otros repos siguen, y los que dependen del fallido esperan. Recién cuando no queda nada corriendo ni por arrancar, Claude te muestra «Lote N fallido» con Reintentar, Seguir o Parar. Reintentar vuelve a correr ese lote; Seguir lo acepta como está y libera a los que dependían de él; Parar termina la feature. Con 2+ lotes fallidos se pregunta de a uno.
+
+### Lente «contrato entre repos»
+
+Con código en 2+ repos, la review suma la lente `contract`: busca que lo que un repo expone (rutas, campos y tipos, códigos, eventos, schemas, claves de config) coincida con lo que el otro consume, y cita ambos lados (`api/...:línea` y `web/...:línea`). Un lado cambiado sin el otro es un hallazgo. La lente sube el riesgo de la review a media: con dos repos la review deja de ser rápida y corre la lente base más `contract` (más las que correspondan). Para apagarla, poné `enabled: false` en la lente `contract` de tu capa de usuario o de la carpeta de la sesión (`<carpeta>/.nxy/...`); si abrís la sesión en una carpeta padre, la capa de cada repo no se lee para esta lente, sólo la de usuario y la de esa carpeta.
+
+Costo: N implementers a la vez son N veces el contexto de un implementer (dos lotes en paralelo ≈ el doble de tokens por minuto, el mismo total que en fila pero más rápido); la lente suma un reviewer más (una llamada con el diff de los dos repos). No se guarda nada nuevo en disco salvo unos pocos campos de la feature (pasos, pruebas por lote, lanes), unos cientos de bytes.
+
+Costo de los worktrees: unas pocas filas en la db (`feature_holds`); cada worktree ocupa un checkout más en disco, y codegraph arma un índice por worktree (segundos).

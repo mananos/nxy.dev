@@ -12,13 +12,14 @@ import (
 // runBatch is `nxy batch red|green --feature <id>`: nxy runs the Accept of the current batch.
 func runBatch(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 || (args[0] != "red" && args[0] != "green") {
-		fmt.Fprintln(stderr, "usage: nxy batch red|green --feature <id>")
+		fmt.Fprintln(stderr, "usage: nxy batch red|green --feature <id> [--batch <n>]")
 		return 1
 	}
 	kind := app.RunKind(args[0])
 	fs := flag.NewFlagSet("batch "+args[0], flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	id := fs.String("feature", "", "feature id")
+	batch := fs.Int("batch", 0, "batch number (needed when several batches run at once)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return 1
 	}
@@ -28,7 +29,7 @@ func runBatch(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	}
 	h, st := newHooksStore()
 	defer st.Close()
-	res, err := h.RunBatchCheck(context.Background(), *id, kind)
+	res, err := h.RunBatchCheck(context.Background(), *id, kind, *batch)
 	if err != nil {
 		fmt.Fprintf(stderr, "nxy batch %s: %v\n", kind, err)
 		return 1

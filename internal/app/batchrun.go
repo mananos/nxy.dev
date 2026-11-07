@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -31,7 +32,7 @@ type BatchRun struct {
 
 // RunBatchCheck runs the Accept command of the current batch and records it as the red or
 // green proof. The command runs outside any transaction.
-func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind) (BatchRun, error) {
+func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind, batch int) (BatchRun, error) {
 	if h.Store == nil {
 		return BatchRun{}, fmt.Errorf("no store")
 	}
@@ -48,7 +49,20 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	if f.State.Phase != domain.PhaseRunningBatch || f.Plan == nil {
 		return BatchRun{}, fmt.Errorf("feature %s is not running a batch (state %s); next step %s", f.ID, f.State.Phase, f.Next.Label())
 	}
-	n := f.State.Batch
+	n := batch
+	running := f.State.Running()
+	if n == 0 {
+		switch len(running) {
+		case 0:
+			n = f.State.Batch
+		case 1:
+			n = running[0]
+		default:
+			return BatchRun{}, fmt.Errorf("several batches are running (%s): pass --batch", domain.JoinInts(running, "and"))
+		}
+	} else if len(running) > 0 && !slices.Contains(running, n) {
+		return BatchRun{}, fmt.Errorf("batch %d is not running (running: %s)", n, domain.JoinInts(running, "and"))
+	}
 	if n < 1 || n > len(f.Plan.Batches) {
 		return BatchRun{}, fmt.Errorf("feature %s: batch %d is not in the plan", f.ID, n)
 	}
@@ -60,10 +74,8 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	if kind == RunRed && !need.Red {
 		return BatchRun{Refused: fmt.Sprintf("batch %d is not TDD: run green", n)}, nil
 	}
-	pr := f.Proof
-	if pr == nil || pr.Batch != n {
-		pr = &domain.Proof{Batch: n}
-	}
+	pv := f.ProofOf(n)
+	pr := &pv
 	if kind == RunGreen && need.Red && (pr.Red == nil || pr.Red.Exit == 0) {
 		return BatchRun{Refused: fmt.Sprintf("batch %d is TDD: run red first, with the test failing before the code", n)}, nil
 	}
@@ -90,17 +102,23 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 
 	run := &domain.Run{Exit: res.Exit, Tail: out.Tail, Edits: edits}
 	_, applied, err := h.mutate(ctx, featureID, func(f *domain.Feature) bool {
-		if f.State.Phase != domain.PhaseRunningBatch || f.State.Batch != n {
+		if f.State.Phase != domain.PhaseRunningBatch {
 			return false
 		}
-		if f.Proof == nil || f.Proof.Batch != n {
-			f.Proof = &domain.Proof{Batch: n}
+		if r := f.State.Running(); len(r) > 0 {
+			if !slices.Contains(r, n) {
+				return false
+			}
+		} else if f.State.Batch != n {
+			return false
 		}
+		p := f.ProofOf(n)
 		if kind == RunRed {
-			f.Proof.Red = run
+			p.Red = run
 		} else {
-			f.Proof.Green = run
+			p.Green = run
 		}
+		f.SetProof(p)
 		return true
 	})
 	if err != nil {

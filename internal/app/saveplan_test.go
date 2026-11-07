@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -155,7 +156,7 @@ func TestSavePlanInvalidLeavesStoreUntouched(t *testing.T) {
 	if err != nil || len(res.Problems) == 0 {
 		t.Fatalf("res = %+v err = %v", res, err)
 	}
-	if got := st.feats[f.ID]; got.State != before.State || got.Plan != nil || got.PlanRev != 0 || st.version[f.ID] != 1 {
+	if got := st.feats[f.ID]; !reflect.DeepEqual(got.State, before.State) || got.Plan != nil || got.PlanRev != 0 || st.version[f.ID] != 1 {
 		t.Errorf("store changed: %+v", got)
 	}
 }

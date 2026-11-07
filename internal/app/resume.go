@@ -35,6 +35,13 @@ func batchProgress(f domain.Feature) string {
 	if f.State.Batch == 0 || total == 0 {
 		return ""
 	}
+	if r := f.State.Running(); len(r) > 1 {
+		parts := make([]string, len(r))
+		for i, n := range r {
+			parts[i] = fmt.Sprint(n)
+		}
+		return fmt.Sprintf("lotes %s y %s de %d", strings.Join(parts[:len(parts)-1], ", "), parts[len(parts)-1], total)
+	}
 	return fmt.Sprintf("lote %d de %d", f.State.Batch, total)
 }
 
@@ -43,9 +50,7 @@ func lastFailure(f domain.Feature) string {
 	var s string
 	switch f.State.Phase {
 	case domain.PhaseBatchFailed:
-		if f.Proof != nil {
-			s = f.Proof.Failure
-		}
+		s = f.ProofOf(f.State.Batch).Failure
 	case domain.PhaseAffectedFailed, domain.PhaseFixesFailed:
 		if f.Affected != nil {
 			s = f.Affected.Failure

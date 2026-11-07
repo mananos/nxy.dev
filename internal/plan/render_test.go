@@ -210,7 +210,7 @@ func TestImplementerPrompt(t *testing.T) {
 		"Accept: `go test ./internal/greet/`",
 		"nxy runs it, do not run it yourself",
 		`"C:/tools/nxy.exe" batch red --feature f1`,
-		`"C:/tools/nxy.exe" batch green --feature f1`,
+		`"C:/tools/nxy.exe" batch green --feature f1 --batch 1`,
 		"timeout 600000",
 		"R1: greet(name)",
 		"internal/greet/greet.go:12",

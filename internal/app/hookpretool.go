@@ -87,7 +87,8 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 				return HookResponse{Deny: mainThreadWriteDeny(f)}
 			}
 			if f.State.Phase == domain.PhaseRunningBatch {
-				h.noteWrite(ctx, f.ID)
+				n, _ := h.editBatch(f, ev, writes[0])
+				h.noteWrite(ctx, f.ID, n)
 			}
 		} else if ev.AgentID == "" {
 			if r := h.shellCodeGate(ctx, ev, writes); r.Deny != "" {

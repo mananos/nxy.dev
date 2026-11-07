@@ -18,6 +18,31 @@ func acs(kinds ...domain.ActionKind) []domain.Action {
 	return out
 }
 
+const (
+	pend     = domain.StepPending
+	run      = domain.StepRunning
+	verif    = domain.StepVerifying
+	green    = domain.StepGreen
+	failed   = domain.StepFailed
+	accepted = domain.StepAccepted
+)
+
+// sp is a step in a plan with one batch after the other.
+func sp(n int, status domain.StepStatus, attempt int) domain.Step {
+	s := domain.Step{N: n, Status: status, Attempt: attempt}
+	if n > 1 {
+		s.After = []int{n - 1}
+	}
+	return s
+}
+
+func sps(ss ...domain.Step) []domain.Step { return ss }
+
+// spd is a step with explicit dependencies.
+func spd(n int, repo string, after ...int) domain.Step {
+	return domain.Step{N: n, Repo: repo, After: after}
+}
+
 func one(a domain.Action) []domain.Action { return []domain.Action{a} }
 
 type tcase struct {
@@ -72,7 +97,7 @@ func TestNextTable(t *testing.T) {
 		{"approved", st{Phase: domain.PhaseApproval, Batches: 3}, Event{Kind: Approved},
 			st{Phase: domain.PhaseBranch, Batches: 3}, acs(domain.AskBranch, domain.Notify)},
 		{"branch ready", st{Phase: domain.PhaseBranch, Batches: 3}, Event{Kind: BranchReady},
-			st{Phase: domain.PhaseRunningBatch, Batch: 1, Batches: 3}, impl(1, false)},
+			st{Phase: domain.PhaseRunningBatch, Batch: 1, Batches: 3, Steps: sps(sp(1, run, 0), sp(2, pend, 0), sp(3, pend, 0))}, impl(1, false)},
 		{"change with note", st{Phase: domain.PhaseApproval, Batches: 3}, Event{Kind: ChangeRequested, HasNote: true},
 			st{Phase: domain.PhasePlanning, Batches: 3}, acs(domain.DispatchPlanner)},
 		{"change without note", st{Phase: domain.PhaseApproval, Batches: 3}, Event{Kind: ChangeRequested},
@@ -84,22 +109,22 @@ func TestNextTable(t *testing.T) {
 		{"planner failed stop", st{Phase: domain.PhasePlannerFailed}, Event{Kind: Decided, Decision: DecisionStop},
 			st{Phase: domain.PhaseDone, Outcome: domain.OutcomeStopped}, acs(domain.Close)},
 		{"batch returned", st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Attempt: 1}, Event{Kind: BatchReturned},
-			st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 3, Attempt: 1},
+			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, verif, 1), sp(3, pend, 0))},
 			one(domain.Action{Kind: domain.VerifyBatch, Batch: 2})},
 		{"green next batch", st{Phase: domain.PhaseVerifyingBatch, Batch: 1, Batches: 2}, Event{Kind: Green},
-			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 2}, impl(2, false)},
+			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 2, Steps: sps(sp(1, green, 0), sp(2, run, 0))}, impl(2, false)},
 		{"green last batch", st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 2}, Event{Kind: Green},
-			st{Phase: domain.PhaseAffected, Batch: 2, Batches: 2}, acs(domain.RunAffected)},
+			st{Phase: domain.PhaseAffected, Batch: 2, Batches: 2, Steps: sps(sp(1, green, 0), sp(2, green, 0))}, acs(domain.RunAffected)},
 		{"red first", st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 3}, Event{Kind: Red},
-			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Attempt: 1}, impl(2, true)},
+			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, run, 1), sp(3, pend, 0))}, impl(2, true)},
 		{"red second", st{Phase: domain.PhaseVerifyingBatch, Batch: 2, Batches: 3, Attempt: 1}, Event{Kind: Red},
-			st{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 3}, acs(domain.AskDecision, domain.Notify)},
+			st{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, failed, 1), sp(3, pend, 0))}, acs(domain.AskDecision, domain.Notify)},
 		{"batch failed retry", st{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 3}, Event{Kind: Decided, Decision: DecisionRetry},
-			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3}, impl(2, false)},
+			st{Phase: domain.PhaseRunningBatch, Batch: 2, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, run, 0), sp(3, pend, 0))}, impl(2, false)},
 		{"batch failed continue next", st{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 3}, Event{Kind: Decided, Decision: DecisionContinue},
-			st{Phase: domain.PhaseRunningBatch, Batch: 3, Batches: 3}, impl(3, false)},
+			st{Phase: domain.PhaseRunningBatch, Batch: 3, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, accepted, 0), sp(3, run, 0))}, impl(3, false)},
 		{"batch failed continue last", st{Phase: domain.PhaseBatchFailed, Batch: 3, Batches: 3}, Event{Kind: Decided, Decision: DecisionContinue},
-			st{Phase: domain.PhaseAffected, Batch: 3, Batches: 3}, acs(domain.RunAffected)},
+			st{Phase: domain.PhaseAffected, Batch: 3, Batches: 3, Steps: sps(sp(1, green, 0), sp(2, green, 0), sp(3, accepted, 0))}, acs(domain.RunAffected)},
 		{"batch failed stop", st{Phase: domain.PhaseBatchFailed, Batch: 2, Batches: 3}, Event{Kind: Decided, Decision: DecisionStop},
 			st{Phase: domain.PhaseDone, Batch: 2, Batches: 3, Outcome: domain.OutcomeStopped}, acs(domain.Close)},
 		{"affected green", st{Phase: domain.PhaseAffected, Batches: 2}, Event{Kind: Green},
@@ -181,7 +206,7 @@ func TestNextTable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("err = %v", err)
 			}
-			if got != c.to {
+			if !reflect.DeepEqual(got, c.to) {
 				t.Errorf("state = %+v, want %+v", got, c.to)
 			}
 			if !reflect.DeepEqual(acts, c.want) {
@@ -225,7 +250,7 @@ func TestRetryAttemptCarriesOver(t *testing.T) {
 func TestDecisionContinueNotAllowedAfterPlannerFailed(t *testing.T) {
 	s := st{Phase: domain.PhasePlannerFailed}
 	got, _, err := Next(s, Event{Kind: Decided, Decision: DecisionContinue})
-	if !errors.Is(err, ErrOutOfOrder) || got != s {
+	if !errors.Is(err, ErrOutOfOrder) || !reflect.DeepEqual(got, s) {
 		t.Fatalf("got %+v, %v", got, err)
 	}
 }
@@ -264,7 +289,7 @@ func TestOutOfOrderIsExhaustive(t *testing.T) {
 		domain.PhasePlannerFailed:      {Decided},
 		domain.PhaseRepoClash:          {ClashAnswered, Answered},
 		domain.PhaseBranch:             {BranchReady},
-		domain.PhaseRunningBatch:       {BatchReturned},
+		domain.PhaseRunningBatch:       {BatchReturned, Launched, Relaunch, Green, Red},
 		domain.PhaseVerifyingBatch:     {Green, Red},
 		domain.PhaseBatchFailed:        {Decided},
 		domain.PhaseAffected:           {Green, Red, Unverified},
@@ -300,7 +325,7 @@ func TestOutOfOrderIsExhaustive(t *testing.T) {
 			if !errors.Is(err, ErrOutOfOrder) {
 				t.Errorf("%q + %s: err = %v", p, k, err)
 			}
-			if got != s || acts != nil {
+			if !reflect.DeepEqual(got, s) || acts != nil {
 				t.Errorf("%q + %s: state/actions changed: %+v %+v", p, k, got, acts)
 			}
 		}
@@ -311,7 +336,7 @@ func TestDoneAcceptsNothing(t *testing.T) {
 	for _, o := range []domain.Outcome{domain.OutcomeSuccess, domain.OutcomeStopped} {
 		s := st{Phase: domain.PhaseDone, Outcome: o}
 		for _, k := range Kinds {
-			if got, _, err := Next(s, Event{Kind: k, Decision: DecisionRetry}); !errors.Is(err, ErrOutOfOrder) || got != s {
+			if got, _, err := Next(s, Event{Kind: k, Decision: DecisionRetry}); !errors.Is(err, ErrOutOfOrder) || !reflect.DeepEqual(got, s) {
 				t.Errorf("done/%s + %s: %+v, %v", o, k, got, err)
 			}
 		}

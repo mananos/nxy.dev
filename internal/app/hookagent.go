@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/docs"
@@ -42,7 +44,6 @@ var roles = map[string]roleInfo{
 		return []flow.Event{{Kind: flow.PlannerReturned, Blocked: len(f.Clash) > 0 && f.PendingPlan != nil}}
 	}},
 	roleImplementer: {
-		domain.PhaseRunningBatch: batchReturned,
 		domain.PhaseAffectedFix: func(*domain.Feature) []flow.Event {
 			return []flow.Event{{Kind: flow.FixesReturned}}
 		},
@@ -56,46 +57,50 @@ var roles = map[string]roleInfo{
 	}},
 }
 
-// batchReturned judges the batch from the proof the binary recorded: BatchReturned, then Green
+// batchReturnedN judges batch n from the proof the binary recorded: BatchReturned, then Green
 // or Red. The reason of a red stays in Proof.Failure for the retry prompt and the question.
-func batchReturned(f *domain.Feature) []flow.Event {
-	n := f.State.Batch
-	p := proofOf(f, n)
+func batchReturnedN(f *domain.Feature, n int) []flow.Event {
+	p := f.ProofOf(n)
 	ok, why := false, "the feature has no plan"
 	if f.Plan != nil {
-		ok, why = plan.Verdict(plan.NeedOf(*f.Plan, n), f.Proof, n)
+		pr := p
+		ok, why = plan.Verdict(plan.NeedOf(*f.Plan, n), &pr, n)
 	}
 	if ok {
 		p.Failure = ""
 	} else {
 		p.Failure = why
 	}
-	f.Proof = &p
+	f.SetProof(p)
 	kind := flow.Red
 	if ok {
 		kind = flow.Green
 	}
-	return []flow.Event{{Kind: flow.BatchReturned}, {Kind: kind}}
+	return []flow.Event{{Kind: flow.BatchReturned, Batch: n}, {Kind: kind, Batch: n}}
 }
 
-// proofOf is a copy of the proof of batch n (empty if the feature holds another one).
-func proofOf(f *domain.Feature, n int) domain.Proof {
-	if f.Proof != nil && f.Proof.Batch == n {
-		return *f.Proof
+// batchOfPrompt is the batch number an implementer prompt names ("feature X batch 2"); 0 if none.
+func batchOfPrompt(prompt string) int {
+	m := batchPromptRe.FindStringSubmatch(prompt)
+	if m == nil {
+		return 0
 	}
-	return domain.Proof{Batch: n}
+	n, _ := strconv.Atoi(m[1])
+	return n
 }
 
-// noteWrite counts a subagent write in the repo during the running batch: a green recorded
+var batchPromptRe = regexp.MustCompile(`(?i)\bbatch (\d+)`)
+
+// noteWrite counts a subagent write in the repo during running batch n: a green recorded
 // before it no longer vouches for the code.
-func (h Hooks) noteWrite(ctx context.Context, id string) {
+func (h Hooks) noteWrite(ctx context.Context, id string, n int) {
 	_, _, _ = h.mutate(ctx, id, func(g *domain.Feature) bool {
 		if g.State.Phase != domain.PhaseRunningBatch {
 			return false
 		}
-		p := proofOf(g, g.State.Batch)
+		p := g.ProofOf(n)
 		p.Edits++
-		g.Proof = &p
+		g.SetProof(p)
 		return true
 	})
 }
@@ -242,6 +247,9 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 	if isReviewerRole(ev.Subagent) {
 		return h.preReviewer(ctx, ev, f)
 	}
+	if ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseRunningBatch {
+		return h.preImplementer(ctx, ev, f)
+	}
 	switch {
 	case f.Background == ev.Subagent:
 		return HookResponse{Deny: backgroundWait(f.ID, ev.Subagent)}
@@ -253,24 +261,8 @@ func (h Hooks) preToolAgentFlow(ctx context.Context, ev HookEvent) HookResponse 
 		return HookResponse{Prompt: docs.DocumenterPrompt(h.docsAbsolute(f), h.Exe)}
 	case ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseFixing:
 		return HookResponse{Prompt: review.FixPrompt(f, h.Exe, h.implementerMemory(ctx, f, findingFiles(f)))}
-	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseRunningBatch && f.State.Phase != domain.PhaseAffectedFix:
+	case ev.Subagent == roleImplementer && f.State.Phase != domain.PhaseAffectedFix:
 		return HookResponse{Deny: "plan not approved; next step " + f.Next.Label()}
-	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchImplementer:
-		// A new attempt starts on a clean green; the red and the failure stay for the retry.
-		nf, _, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool {
-			p := proofOf(g, g.State.Batch)
-			p.Green = nil
-			g.Proof = &p
-			return true
-		})
-		if err != nil {
-			return HookResponse{}
-		}
-		var files []string
-		if n := nf.Next.Batch; nf.Plan != nil && n >= 1 && n <= len(nf.Plan.Batches) {
-			files = batchFiles(nf.Plan.Batches[n-1])
-		}
-		return HookResponse{Prompt: plan.ImplementerPrompt(nf, h.Exe, h.implementerMemory(ctx, nf, files))}
 	case ev.Subagent == roleImplementer && f.Next.Kind == domain.DispatchAffectedFix:
 		return HookResponse{Prompt: plan.AffectedFixPrompt(f, h.Exe, h.implementerMemory(ctx, f, h.changedPaths(ctx, f)))}
 	case ev.Subagent != roleFor[f.Next.Kind]:
@@ -293,6 +285,9 @@ func (h Hooks) postToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	f, ok := h.activeFeature(ctx, ev)
 	if !ok {
 		return HookResponse{}
+	}
+	if ev.Subagent == roleImplementer && f.State.Phase == domain.PhaseRunningBatch {
+		return h.postImplementer(ctx, ev, f)
 	}
 	ended := f.Background == backgroundEnded
 	returned, inPhase := role[f.State.Phase]

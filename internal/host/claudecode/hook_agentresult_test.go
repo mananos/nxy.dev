@@ -29,6 +29,21 @@ func TestDecodeSubagentStopFallsBackToTranscript(t *testing.T) {
 	}
 }
 
+func TestDecodeSubagentStopPromptFromTranscript(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "agent.jsonl")
+	lines := `{"type":"system","message":{}}` + "\n" +
+		`{"type":"user","message":{"content":[{"type":"text","text":"You are the nxy implementer for feature F, batch 3 of 4: x."}]}}` + "\n" +
+		`{"type":"assistant","message":{"content":"done"}}` + "\n"
+	if err := os.WriteFile(p, []byte(lines), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	payload := `{"hook_event_name":"SubagentStop","agent_transcript_path":` + string(mustJSON(t, p)) + `}`
+	ev, err := Decode(strings.NewReader(payload))
+	if err != nil || !strings.Contains(ev.AgentPrompt, "batch 3 of 4") {
+		t.Fatalf("prompt = %q, err = %v", ev.AgentPrompt, err)
+	}
+}
+
 func TestDecodeAgentResultOnlyInSubagentStop(t *testing.T) {
 	ev, _ := Decode(strings.NewReader(`{"hook_event_name":"Stop","last_assistant_message":"x"}`))
 	if ev.AgentResult != "" {

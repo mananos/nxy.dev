@@ -125,7 +125,7 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 	if cs := h.planClashes(ctx, f, cnames, checkouts); len(cs) > 0 {
 		return block(cs)
 	}
-	ev := flow.Event{Kind: flow.PlanSaved, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches)}
+	ev := flow.Event{Kind: flow.PlanSaved, Questions: len(p.Questions) > 0, NoTests: p.NoTests, Batches: len(p.Batches), Steps: plan.Steps(p)}
 	nf, _, err := h.advanceWith(ctx, featureID, ev, func(f *domain.Feature) error {
 		if f.State.Phase != domain.PhasePlanning {
 			return notPlanning(*f)

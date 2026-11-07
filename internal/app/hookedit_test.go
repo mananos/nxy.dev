@@ -121,10 +121,7 @@ func TestPreToolEditImplementerAllow(t *testing.T) {
 	}
 	edits := func(h Hooks, st *memStore) int {
 		f, _, _ := st.ActiveFeature(context.Background(), h.Repos.Key(root))
-		if f.Proof == nil {
-			return 0
-		}
-		return f.Proof.Edits
+		return f.ProofOf(f.State.Batch).Edits
 	}
 	cases := []struct {
 		name  string

@@ -114,8 +114,53 @@ func (o Outcome) Label() string { return outcomeLabels[o] }
 // State is where a feature is in the flow.
 type State struct {
 	Phase   Phase   `json:"phase"`
-	Batch   int     `json:"batch,omitempty"`   // current batch, 1-based
+	Batch   int     `json:"batch,omitempty"`   // batch in focus: the current one in a row, the asked one in batch_failed
 	Batches int     `json:"batches,omitempty"` // total batches in the approved plan
 	Attempt int     `json:"attempt,omitempty"` // retries used in the current step
 	Outcome Outcome `json:"outcome,omitempty"`
+	Steps   []Step  `json:"steps,omitempty"` // one per batch; empty in a state saved before parallel batches
+}
+
+// StepStatus is where one batch is.
+type StepStatus string
+
+const (
+	StepPending   StepStatus = ""
+	StepRunning   StepStatus = "running"
+	StepVerifying StepStatus = "verifying"
+	StepGreen     StepStatus = "green"
+	StepFailed    StepStatus = "failed"
+	StepAccepted  StepStatus = "accepted"
+)
+
+// Step is one batch in the schedule: it starts when every batch in After is green or accepted.
+type Step struct {
+	N        int        `json:"n"`
+	Repo     string     `json:"repo,omitempty"`
+	After    []int      `json:"after,omitempty"`
+	Status   StepStatus `json:"status,omitempty"`
+	Attempt  int        `json:"attempt,omitempty"`  // retries used
+	Launched bool       `json:"launched,omitempty"` // the main thread launched its implementer
+}
+
+// Running lists the batches that are running (not yet returned), in order.
+func (s State) Running() []int {
+	var out []int
+	for _, st := range s.Steps {
+		if st.Status == StepRunning {
+			out = append(out, st.N)
+		}
+	}
+	return out
+}
+
+// Unlaunched lists the running batches whose implementer was not launched yet, in order.
+func (s State) Unlaunched() []int {
+	var out []int
+	for _, st := range s.Steps {
+		if st.Status == StepRunning && !st.Launched {
+			out = append(out, st.N)
+		}
+	}
+	return out
 }

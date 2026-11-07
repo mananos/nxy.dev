@@ -75,6 +75,19 @@ func mrBatch(n int, repoAt, accept string) string {
 		`"test":{"kind":"new","name":"TestX","accept":` + strconvQuote(accept) + `},"risk":"low"}`
 }
 
+// mrBatchDep is mrBatch with the batches it depends on.
+func mrBatchDep(n int, repoAt, accept string, deps ...int) string {
+	b := mrBatch(n, repoAt, accept)
+	if len(deps) == 0 {
+		return b
+	}
+	var ds []string
+	for _, d := range deps {
+		ds = append(ds, string(rune('0'+d)))
+	}
+	return strings.Replace(b, `"risk":"low"}`, `"risk":"low","depends":[`+strings.Join(ds, ",")+`]}`, 1)
+}
+
 const mrCriteria = `"criteria":[{"id":"R1","text":"works","test":"tdd"}]`
 
 // mrStart starts a feature from cwd, saves the plan and shows the checkpoint; returns the feature id.
@@ -322,17 +335,24 @@ func TestMultiRepoParentFolderWorktreesEndToEnd(t *testing.T) {
 	}
 
 	code, o, errb := runCmd(t, "", "affected", "--feature", id)
-	if code != 0 || !strings.Contains(o, "nxy:reviewer-quick") {
+	if code != 0 || !strings.Contains(o, "nxy:reviewer") || strings.Contains(o, "nxy:reviewer-quick") || !strings.Contains(o, "review contract") {
 		t.Fatalf("affected: code %d, out %q, err %q", code, o, errb)
 	}
-	rev := mrAgentPre(t, "s1", parent, "nxy:reviewer-quick", "feature "+id+" review base")
+	rev := mrAgentPre(t, "s1", parent, "nxy:reviewer", "feature "+id+" review base")
 	if !strings.Contains(rev, "api/src/x.go") || !strings.Contains(rev, "web/src/y.js") {
 		t.Fatalf("reviewer prompt without the files of both repos: %s", rev)
 	}
 	if code, o, errb := runCmd(t, baseClean, "review", "save", "--feature", id, "--lens", "base"); code != 0 {
 		t.Fatalf("review save: code %d, out %q, err %q", code, o, errb)
 	}
-	if o := mrAgentPost(t, "s1", parent, "nxy:reviewer-quick"); !strings.Contains(o, "Listo") {
+	crev := mrAgentPre(t, "s1", parent, "nxy:reviewer", "feature "+id+" review contract")
+	if !strings.Contains(crev, "Contract between repos") || !strings.Contains(crev, "api/src/x.go") || !strings.Contains(crev, "web/src/y.js") {
+		t.Fatalf("contract prompt: %s", crev)
+	}
+	if code, o, errb := runCmd(t, `{"lens":"contract","findings":[]}`, "review", "save", "--feature", id, "--lens", "contract"); code != 0 {
+		t.Fatalf("review save contract: code %d, out %q, err %q", code, o, errb)
+	}
+	if o := mrAgentPost(t, "s1", parent, "nxy:reviewer"); !strings.Contains(o, "Listo") {
 		t.Fatalf("no Listo: %s", o)
 	}
 
@@ -452,5 +472,145 @@ func TestMultiRepoBusyCheckoutOpensAWorktree(t *testing.T) {
 	_, list, _ := runCmd(t, "", "feature", "list")
 	if !strings.Contains(list, id+" (activa)") || !strings.Contains(list, "feature/other") || !strings.Contains(list, ".worktrees") {
 		t.Fatalf("list: %q", list)
+	}
+}
+
+// mrApprove takes a plan over api and web through planning and approval (worktrees for both);
+// returns the feature id and the two worktrees.
+func mrApprove(t *testing.T, parent, planJSON string) (id, wtAPI, wtWeb string) {
+	t.Helper()
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "session_id": "s1", "cwd": parent, "prompt": "/nxy:feature add a thing"})
+	id = featureID(t)
+	mrAgentPre(t, "s1", parent, "nxy:planner", "feature "+id)
+	if code, out, errb := runCmd(t, planJSON, "plan", "save", "--feature", id); code != 0 {
+		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
+	}
+	mrAgentPost(t, "s1", parent, "nxy:planner")
+	mrAnswersAs(t, "s1", parent, map[string]any{"Approve nxy plan " + id + " r1?": "Approve"})
+	mrAnswersAs(t, "s1", parent, map[string]any{
+		plan.BranchQuestion(id): "feature/par", plan.BaseQuestion(id, "api"): "main", plan.BaseQuestion(id, "web"): "main"})
+	return id, mrWorktree(t, filepath.Join(parent, "api")), mrWorktree(t, filepath.Join(parent, "web"))
+}
+
+// mrLaunch dispatches an implementer for batch n with its own tool_use_id.
+func mrLaunch(t *testing.T, parent, id string, n int, toolUse string) string {
+	t.Helper()
+	return mrHook(t, "s1", map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Agent", "cwd": parent, "tool_use_id": toolUse,
+		"tool_input": map[string]any{"subagent_type": "nxy:implementer", "prompt": "feature " + id + " batch " + string(rune('0'+n))}})
+}
+
+// mrReturn is the PostToolUse of the Agent call toolUse (async when resp is not nil).
+func mrReturn(t *testing.T, parent, toolUse string, resp map[string]any) string {
+	t.Helper()
+	p := map[string]any{"hook_event_name": "PostToolUse", "tool_name": "Agent", "cwd": parent, "tool_use_id": toolUse,
+		"tool_input": map[string]any{"subagent_type": "nxy:implementer", "prompt": "x"}}
+	if resp != nil {
+		p["tool_response"] = resp
+	}
+	return mrHook(t, "s1", p)
+}
+
+// mrProve runs the red, the work and the green of batch n in the worktree wt.
+func mrProve(t *testing.T, id string, n int, wt, proofFile, srcFile string) {
+	t.Helper()
+	b := string(rune('0' + n))
+	if code, o, errb := runCmd(t, "", "batch", "red", "--feature", id, "--batch", b); code != 0 {
+		t.Fatalf("red %s: code %d, out %q, err %q", b, code, o, errb)
+	}
+	mrWrite(t, filepath.Join(wt, proofFile), "x")
+	mrWrite(t, filepath.Join(wt, srcFile), "x\n")
+	if code, o, errb := runCmd(t, "", "batch", "green", "--feature", id, "--batch", b); code != 0 {
+		t.Fatalf("green %s: code %d, out %q, err %q", b, code, o, errb)
+	}
+}
+
+func TestMultiRepoParallelBatches(t *testing.T) {
+	needSh(t)
+	parent := mrParent(t, "api", "web")
+	planJSON := `{"title":"Contract","repos":[{"path":"api","role":"backend","suite":"test -f done.txt"},` +
+		`{"path":"web","role":"front","suite":"test -f done.txt"}],` + mrCriteria + `,"batches":[` +
+		mrBatch(1, "api/src/x.go", "test -f done.txt") + `,` +
+		mrBatchDep(2, "web/src/y.js", "test -f done.txt", 1) + `,` +
+		mrBatchDep(3, "api/src/z.go", "test -f done3.txt", 1) + `]}`
+	id, wtAPI, wtWeb := mrApprove(t, parent, planJSON)
+
+	mrLaunch(t, parent, id, 1, "t1")
+	mrProve(t, id, 1, wtAPI, "done.txt", "src/x.go")
+	out := mrReturn(t, parent, "t1", nil)
+	if !strings.Contains(out, "batch 2") || !strings.Contains(out, "batch 3") {
+		t.Fatalf("batches 2 and 3 not dispatched together: %s", out)
+	}
+	if o := mrLaunch(t, parent, id, 2, "t2"); strings.Contains(o, "deny") {
+		t.Fatalf("batch 2 refused: %s", o)
+	}
+	if o := mrLaunch(t, parent, id, 3, "t3"); strings.Contains(o, "deny") {
+		t.Fatalf("batch 3 refused: %s", o)
+	}
+	if o := mrLaunch(t, parent, id, 3, "t3b"); !strings.Contains(o, "deny") {
+		t.Fatalf("batch 3 launched twice: %s", o)
+	}
+	code, o, errb := runCmd(t, "", "batch", "red", "--feature", id)
+	if code == 0 || !strings.Contains(o+errb, "pass --batch") {
+		t.Fatalf("red without --batch with two running: code %d, out %q, err %q", code, o, errb)
+	}
+	mrProve(t, id, 3, wtAPI, "done3.txt", "src/z.go")
+	mrProve(t, id, 2, wtWeb, "done.txt", "src/y.js")
+
+	// Batch 3 comes back first: batch 2 keeps running, nothing to review yet.
+	if o := mrReturn(t, parent, "t3", nil); strings.Contains(o, "affected --feature") {
+		t.Fatalf("affected before batch 2 returned: %s", o)
+	}
+	// Batch 2 goes to the background and comes back by SubagentStop; the prompt comes from its transcript.
+	if o := mrReturn(t, parent, "t2", map[string]any{"isAsync": true, "status": "async_launched", "agentId": "a2"}); !strings.Contains(o, "background") {
+		t.Fatalf("background launch does not say wait: %s", o)
+	}
+	tr := filepath.Join(t.TempDir(), "agent.jsonl")
+	mrWrite(t, tr, `{"type":"user","message":{"role":"user","content":"feature `+id+` batch 2"}}`+"\n")
+	if o := mrHook(t, "s1", map[string]any{"hook_event_name": "SubagentStop", "cwd": parent, "agent_id": "a2",
+		"agent_type": "nxy:implementer", "agent_transcript_path": tr, "last_assistant_message": "done"}); o != "" {
+		t.Fatalf("SubagentStop should print nothing: %q", o)
+	}
+	if o := mrHook(t, "s1", map[string]any{"hook_event_name": "Stop", "cwd": parent}); !strings.Contains(o, "all batches are green") {
+		t.Fatalf("Stop did not deliver the affected step: %q", o)
+	}
+}
+
+func TestMultiRepoParallelFailureStopsOnlyDependents(t *testing.T) {
+	needSh(t)
+	parent := mrParent(t, "api", "web")
+	planJSON := `{"title":"Contract","repos":[{"path":"api","role":"backend","suite":"test -f done.txt"},` +
+		`{"path":"web","role":"front","suite":"test -f done.txt"}],` + mrCriteria + `,"batches":[` +
+		mrBatch(1, "api/src/x.go", "test -f done.txt") + `,` +
+		mrBatchDep(2, "web/src/y.js", "test -f done.txt", 1) + `,` +
+		mrBatchDep(3, "api/src/z.go", "test -f done3.txt", 1) + `,` +
+		mrBatchDep(4, "web/src/w.js", "test -f done4.txt", 2) + `]}`
+	id, wtAPI, _ := mrApprove(t, parent, planJSON)
+
+	mrLaunch(t, parent, id, 1, "t1")
+	mrProve(t, id, 1, wtAPI, "done.txt", "src/x.go")
+	mrReturn(t, parent, "t1", nil)
+	mrLaunch(t, parent, id, 2, "t2")
+	mrLaunch(t, parent, id, 3, "t3")
+
+	// Batch 2 returns without proving anything, twice, while batch 3 runs.
+	if o := mrReturn(t, parent, "t2", nil); !strings.Contains(o, "failed verification") {
+		t.Fatalf("no retry of batch 2: %s", o)
+	}
+	mrLaunch(t, parent, id, 2, "t2b")
+	o := mrReturn(t, parent, "t2b", nil)
+	if strings.Contains(o, "Lote 2 fallido") || strings.Contains(o, "batch 4") {
+		t.Fatalf("question or dispatch of 4 while batch 3 runs: %s", o)
+	}
+	mrProve(t, id, 3, wtAPI, "done3.txt", "src/z.go")
+	o = mrReturn(t, parent, "t3", nil)
+	if !strings.Contains(o, "Lote 2 fallido") {
+		t.Fatalf("no question once nothing runs: %s", o)
+	}
+	if strings.Contains(o, "feature "+id+" batch 4") {
+		t.Fatalf("batch 4 dispatched on a failed dependency: %s", o)
+	}
+	out := mrAnswersAs(t, "s1", parent, map[string]any{plan.DecisionQuestion(id, 2): plan.Continue})
+	if !strings.Contains(out, "batch 4") {
+		t.Fatalf("Seguir did not release batch 4: %s", out)
 	}
 }

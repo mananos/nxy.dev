@@ -97,6 +97,7 @@ func (h Hooks) prepareReview(ctx context.Context, f domain.Feature) domain.Revie
 	// repo called api), and put together by lens with "<name>/<path>" labels; the risk is the highest.
 	multi := len(f.Repos) > 1
 	var sel []review.Selected
+	var cross [][]review.File
 	risk, why := planned, ""
 	for _, r := range f.RepoList() {
 		dir, base := repoDir(r), r.Base
@@ -118,7 +119,16 @@ func (h Hooks) prepareReview(ctx context.Context, f domain.Feature) domain.Revie
 				}
 			}
 		}
-		rsel := review.Select(h.reviewLenses(dir), h.reviewFiles(dir, paths))
+		rfiles := h.reviewFiles(dir, paths)
+		if multi {
+			lf := make([]review.File, len(rfiles))
+			for i, rf := range rfiles {
+				rf.Path = labelPath(r.Name, rf.Path, true)
+				lf[i] = rf
+			}
+			cross = append(cross, lf)
+		}
+		rsel := review.Select(h.reviewLenses(dir), rfiles)
 		rrisk, rwhy := review.Raise(planned, rsel)
 		if review.Max(risk, rrisk) != risk || (why == "" && rwhy != "") {
 			risk, why = review.Max(risk, rrisk), rwhy
@@ -141,6 +151,12 @@ func (h Hooks) prepareReview(ctx context.Context, f domain.Feature) domain.Revie
 	}
 	if !multi {
 		risk, why = review.Raise(planned, sel)
+	} else if csel := review.SelectCross(h.reviewLenses(f.ProjectDir), cross); len(csel) > 0 {
+		sel = append(sel, csel...)
+		crisk, cwhy := review.Raise(planned, csel)
+		if review.Max(risk, crisk) != risk || (why == "" && cwhy != "") {
+			risk, why = review.Max(risk, crisk), cwhy
+		}
 	}
 	rv := domain.Review{Risk: risk, RiskWhy: why, Quick: risk == domain.RiskLow, Warning: h.reviewWarning(f.ProjectDir)}
 	for _, s := range sel {
