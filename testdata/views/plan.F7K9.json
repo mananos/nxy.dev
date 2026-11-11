@@ -1,0 +1,71 @@
+{
+  "feature": {
+    "id": "F7K9",
+    "title": "Reintentos de pagos con backoff",
+    "status": "needs_you",
+    "phase": "Plan",
+    "stage": "plan",
+    "stage_detail": "",
+    "closed_at": "",
+    "repos": [
+      { "name": "pagos-worker", "path": "/srv/dev/pagos-worker", "role": "worker (Play/Scala)", "branch": "feat/backoff-cobros", "worktree": false }
+    ],
+    "batch": 0,
+    "batches": 4,
+    "elapsed_ms": 660000,
+    "cost_usd": 1.02,
+    "cost_estimated": false
+  },
+  "state": "approval",
+  "approved_at": "",
+  "goal": "Reintentar cobros fallidos con backoff sin bloquear el consumer.",
+  "repos": [
+    { "name": "pagos-worker", "path": "/srv/dev/pagos-worker", "role": "worker (Play/Scala)", "branch": "feat/backoff-cobros", "worktree": false }
+  ],
+  "criteria": [
+    { "id": "R1", "text": "un cobro nunca se hace dos veces", "test": "CobroWorkerSpec.idempotente" },
+    { "id": "R2", "text": "tras 5 intentos el pago va a revisión", "test": "RetrySchedulerSpec" },
+    { "id": "R3", "text": "un reinicio no pierde reintentos", "test": "PagoRetryRepoSpec" }
+  ],
+  "decisions": [
+    { "scope": "repo", "repo": "pagos-worker", "text": "backoff en RetryScheduler", "question": "¿Dónde vive el backoff?", "from_design": true },
+    { "scope": "task", "repo": "", "text": "hasta 5 intentos, 2^n minutos", "question": "", "from_design": true }
+  ],
+  "batches": [
+    { "n": 1, "title": "Tabla pagos_retry y su repositorio", "repo": "pagos-worker", "status": "pending", "depends": [], "risk": "low", "risk_why": "migración nueva", "attempt": 0, "attempts": 2, "accept": "sbt \"testOnly *PagoRetryRepo*\"", "changes": [] },
+    { "n": 2, "title": "Scheduler con backoff", "repo": "pagos-worker", "status": "pending", "depends": [1], "risk": "high", "risk_why": "dinero: un error duplica cobros", "attempt": 0, "attempts": 2, "accept": "sbt \"testOnly *RetrySchedulerSpec\"", "changes": [] },
+    { "n": 3, "title": "Consumer que reintenta", "repo": "pagos-worker", "status": "pending", "depends": [2], "risk": "medium", "risk_why": "toca el consumer en producción", "attempt": 0, "attempts": 2, "accept": "sbt \"testOnly *CobroWorkerSpec\"", "changes": [] },
+    { "n": 4, "title": "Job y tests", "repo": "pagos-worker", "status": "pending", "depends": [3], "risk": "low", "risk_why": "", "attempt": 0, "attempts": 2, "accept": "sbt test", "changes": [] }
+  ],
+  "risks": ["Si el proveedor de pagos no respeta la clave de idempotencia, el lote 2 no alcanza"],
+  "impact": {
+    "source": "codegraph",
+    "files": [
+      { "path": "conf/evolutions/default/V12__pagos_retry.sql", "repo": "pagos-worker", "batch": 1, "kind": "new",
+        "lines": [], "imported_by": [], "tests": [], "contract": null },
+      { "path": "app/pagos/PagoRetryRepo.scala", "repo": "pagos-worker", "batch": 1, "kind": "new",
+        "lines": [], "imported_by": ["RetryScheduler.scala"], "tests": [], "contract": null },
+      { "path": "app/modules/PagosModule.scala", "repo": "pagos-worker", "batch": 1, "kind": "edit",
+        "lines": [ { "line": 31, "what": "registra el repo" } ],
+        "imported_by": ["Application.scala"],
+        "tests": [ { "path": "test/modules/PagosModuleSpec.scala", "status": "none" } ],
+        "contract": null },
+      { "path": "test/pagos/PagoRetryRepoSpec.scala", "repo": "pagos-worker", "batch": 1, "kind": "new",
+        "lines": [], "imported_by": [], "tests": [], "contract": null },
+      { "path": "app/pagos/RetryScheduler.scala", "repo": "pagos-worker", "batch": 2, "kind": "new",
+        "lines": [], "imported_by": ["CobroWorker.scala"],
+        "tests": [ { "path": "test/pagos/RetrySchedulerSpec.scala", "status": "none" } ], "contract": null },
+      { "path": "app/pagos/CobroWorker.scala", "repo": "pagos-worker", "batch": 3, "kind": "edit",
+        "lines": [ { "line": 64, "what": "reencola con el delay del scheduler" } ],
+        "imported_by": ["WorkerModule.scala"],
+        "tests": [ { "path": "test/pagos/CobroWorkerSpec.scala", "status": "none" } ], "contract": null },
+      { "path": "app/jobs/RetryJob.scala", "repo": "pagos-worker", "batch": 4, "kind": "new",
+        "lines": [], "imported_by": [], "tests": [], "contract": null }
+    ]
+  },
+  "actions": [
+    { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true },
+    { "id": "change", "label": "Cambiar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true },
+    { "id": "stop", "label": "Parar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+  ]
+}

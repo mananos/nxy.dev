@@ -1,0 +1,104 @@
+{
+  "layers": [
+    { "name": "user", "path": "~/.nxy/config.json", "exists": true },
+    { "name": "repo", "path": "/srv/dev/facturacion-api/.nxy/config.json", "exists": false }
+  ],
+  "roles": [
+    {
+      "role": "planner", "stage": "Planificar", "does": "arma el plan por lotes", "model": "opus", "effort": "high", "source": "default",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.planner.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.planner.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.planner.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.planner.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "scout", "stage": "Planificar", "does": "busca dónde vive algo", "model": "haiku", "effort": "low", "source": "default",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.scout.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.scout.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.scout.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.scout.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "implementer", "stage": "Implementar", "does": "escribe cada lote", "model": "sonnet", "effort": "high", "source": "user",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.implementer.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.implementer.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.implementer.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.implementer.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "reviewer", "stage": "Revisar", "does": "la review completa", "model": "opus", "effort": "medium", "source": "user",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.reviewer.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.reviewer.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.reviewer.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.reviewer.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "reviewer-quick", "stage": "Revisar", "does": "review rápida, criterio por criterio", "model": "sonnet", "effort": "low", "source": "default",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.reviewer-quick.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.reviewer-quick.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.reviewer-quick.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.reviewer-quick.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "refuter", "stage": "Revisar", "does": "intenta refutar los hallazgos altos", "model": "opus", "effort": "medium", "source": "default",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.refuter.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.refuter.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.refuter.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.refuter.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "role": "documenter", "stage": "Documentar", "does": "actualiza las docs", "model": "sonnet", "effort": "low", "source": "default",
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "actions": [
+        { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.documenter.model", "{value}"], "confirm": "", "planned": false },
+        { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.documenter.effort", "{value}"], "confirm": "", "planned": false },
+        { "id": "model_repo", "label": "Cambiar el modelo en el repo", "argv": ["nxy", "config", "set", "roles.documenter.model", "{value}", "--repo"], "confirm": "", "planned": false },
+        { "id": "effort_repo", "label": "Cambiar el effort en el repo", "argv": ["nxy", "config", "set", "roles.documenter.effort", "{value}", "--repo"], "confirm": "", "planned": false }
+      ]
+    }
+  ],
+  "settings": [
+    { "id": "filter.enabled", "label": "Filtro de salida", "value": true, "source": "default", "options": [true, false], "actions": [] },
+    { "id": "filter.engine", "label": "Motor del filtro", "value": "rtk", "source": "user", "options": ["rtk", "nxy"], "actions": [] },
+    { "id": "metrics.enabled", "label": "Métricas", "value": true, "source": "default", "options": [true, false], "actions": [] },
+    { "id": "gate.enabled", "label": "Gate de escritura y lectura", "value": true, "source": "default", "options": [true, false], "actions": [] },
+    { "id": "gate.reads", "label": "Búsquedas amplias", "value": "on", "source": "default", "options": ["on", "off"], "actions": [] }
+  ],
+  "statusline": {
+    "installed": false,
+    "settings_path": "~/.claude/settings.json",
+    "install": { "id": "install", "label": "Instalar la statusline", "argv": ["nxy", "statusline", "setup", "install"], "confirm": "Escribe statusLine en ~/.claude/settings.json", "planned": false },
+    "remove": { "id": "remove", "label": "Quitar la statusline", "argv": ["nxy", "statusline", "setup", "remove"], "confirm": "Quita statusLine de ~/.claude/settings.json", "planned": false }
+  },
+  "tools": [
+    { "name": "rtk", "found": true, "version": "0.9.4", "path": "/usr/local/bin/rtk", "install": null },
+    { "name": "rg", "found": true, "version": "14.1.1", "path": "/usr/bin/rg", "install": null },
+    { "name": "codegraph", "found": false, "version": "", "path": "", "install": { "id": "install", "label": "Instalar codegraph", "argv": ["nxy", "tools", "install", "codegraph"], "confirm": "Instala codegraph en ~/.nxy/bin", "planned": true } },
+    { "name": "d2", "found": true, "version": "0.7.1", "path": "/usr/local/bin/d2", "install": null }
+  ],
+  "binary": {
+    "installed": "2.0.0-dev.3",
+    "wanted": "2.0.0-dev.4",
+    "path": "~/.nxy/bin/nxy",
+    "download": "failed",
+    "manual_command": "curl -L -o ~/.nxy/bin/nxy https://github.com/mananos/nxy.dev/releases/download/v2.0.0-dev.4/nxy-linux-amd64 && chmod +x ~/.nxy/bin/nxy"
+  }
+}

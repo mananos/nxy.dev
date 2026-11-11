@@ -1,0 +1,108 @@
+{
+  "feature": {
+    "id": "F7K9",
+    "title": "Reintentos de pagos con backoff",
+    "status": "needs_you",
+    "phase": "Diseño",
+    "stage": "design",
+    "stage_detail": "2/4",
+    "closed_at": "",
+    "repos": [
+      { "name": "pagos-worker", "path": "/srv/dev/pagos-worker", "role": "worker (Play/Scala)", "branch": "feat/backoff-cobros", "worktree": false }
+    ],
+    "batch": 0,
+    "batches": 3,
+    "elapsed_ms": 540000,
+    "cost_usd": 0.84,
+    "cost_estimated": false
+  },
+  "agenda": [
+    { "id": "who", "title": "Quién reintenta", "status": "decided", "choice": "el consumer" },
+    { "id": "backoff", "title": "Dónde vive el backoff", "status": "current", "choice": "" },
+    { "id": "idempotency", "title": "Idempotencia", "status": "pending", "choice": "" },
+    { "id": "last", "title": "Último intento", "status": "pending", "choice": "" }
+  ],
+  "current": "backoff",
+  "question": "¿Dónde vive el backoff de los reintentos de pago?",
+  "options": [
+    {
+      "key": "A",
+      "label": "En PagosClient, con sleep",
+      "summary": "un lugar · bloquea el consumer",
+      "pros": ["un solo lugar y nada nuevo que operar"],
+      "cons": ["el sleep bloquea el consumer mientras espera"],
+      "touches": "PagosClient",
+      "diagram": {
+        "source": "PagoConsumer -> PagosClient\nPagosClient -> Gateway: sleep",
+        "lines": [
+          "┌──────────────┐   ┌─────────────┐",
+          "│ PagoConsumer │──→│ PagosClient │",
+          "└──────────────┘   └──────┬──────┘",
+          "                          │ sleep",
+          "                   ┌──────↓──────┐",
+          "                   │   Gateway   │",
+          "                   └─────────────┘"
+        ],
+        "renderer": "demo"
+      },
+      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true }
+    },
+    {
+      "key": "B",
+      "label": "Reencolar con delay",
+      "summary": "no bloquea · tabla y job nuevos",
+      "pros": ["no bloquea y sobrevive a un reinicio"],
+      "cons": ["una tabla pagos_retry y un job más"],
+      "touches": "PagoConsumer y RetryScheduler (nuevo)",
+      "diagram": {
+        "source": "PagoConsumer -> RetryScheduler\nRetryScheduler -> pagos.retry: delay\npagos.retry -> PagoConsumer",
+        "lines": [
+          "┌──────────────┐   ┌────────────────┐",
+          "│ PagoConsumer │──→│ RetryScheduler │",
+          "└──────↑───────┘   └───────┬────────┘",
+          "       │                   │ delay",
+          "       │           ┌───────↓────────┐",
+          "       └───────────│  pagos.retry   │",
+          "                   └────────────────┘"
+        ],
+        "renderer": "demo"
+      },
+      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true }
+    },
+    {
+      "key": "C",
+      "label": "Cola con TTL del broker",
+      "summary": "sin tabla · depende de RabbitMQ",
+      "pros": ["sin tabla ni job: lo hace el broker"],
+      "cons": ["queda atado a RabbitMQ y a su configuración"],
+      "touches": "PagoConsumer y la declaración de colas",
+      "diagram": {
+        "source": "PagoConsumer -> pagos.retry.ttl\npagos.retry.ttl -> PagoConsumer: ttl",
+        "lines": [
+          "┌──────────────┐   ┌─────────────────┐",
+          "│ PagoConsumer │──→│ pagos.retry.ttl │",
+          "└──────↑───────┘   └────────┬────────┘",
+          "       │                    │",
+          "       └────────────────────┘ ttl"
+        ],
+        "renderer": "demo"
+      },
+      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+    }
+  ],
+  "opinion": "elegiría B, salvo que fallen menos de 10 pagos por minuto.",
+  "today": {
+    "source": "PagoConsumer -> PagosClient\nPagosClient -> Gateway\nPagoConsumer -> PagoRepo",
+    "lines": [
+      "┌──────────────┐   ┌─────────────┐   ┌─────────┐",
+      "│ PagoConsumer │──→│ PagosClient │──→│ Gateway │",
+      "└──────┬───────┘   └─────────────┘   └─────────┘",
+      "       │",
+      "┌──────↓───────┐",
+      "│   PagoRepo   │",
+      "└──────────────┘"
+    ],
+    "renderer": "demo"
+  },
+  "other": "Otra: escribila en Claude Code"
+}

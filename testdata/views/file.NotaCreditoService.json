@@ -1,0 +1,38 @@
+{
+  "path": "src/main/java/ar/dev/facturacion/nota/NotaCreditoService.java",
+  "repo": "facturacion-api",
+  "source": "codegraph",
+  "language": "java",
+  "edited_by": "lo editó el lote 2",
+  "diff_label": "diff del lote 2",
+  "hunks": [
+    { "old_start": 48, "new_start": 48, "lines": [
+      { "kind": "context", "old": 48, "new": 48, "text": "    public NotaCredito emitir(NotaCreditoDto dto) {" },
+      { "kind": "context", "old": 49, "new": 49, "text": "        Factura factura = facturas.porId(dto.facturaId());" },
+      { "kind": "del", "old": 50, "new": 0, "text": "        if (dto.importe().compareTo(factura.total()) > 0) {" },
+      { "kind": "add", "old": 0, "new": 50, "text": "        BigDecimal saldo = factura.total().subtract(notas.sumaDe(factura));" },
+      { "kind": "add", "old": 0, "new": 51, "text": "        if (dto.importe().compareTo(saldo) > 0) {" },
+      { "kind": "context", "old": 51, "new": 52, "text": "            throw new ImporteMayorAlSaldo(factura.id());" },
+      { "kind": "context", "old": 52, "new": 53, "text": "        }" }
+    ] }
+  ],
+  "content": [],
+  "notes": [],
+  "imported_by": [
+    { "path": "src/main/java/ar/dev/facturacion/nota/NotaCreditoController.java", "line": 12 }
+  ],
+  "tests": [
+    { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoServiceTest.java", "status": "pass" },
+    { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoControllerIT.java", "status": "pass" }
+  ],
+  "rules": [
+    { "id": "K3", "kind": "rule", "text": "Los DTO de la API se versionan en /v2 y no se rompen", "cited": true }
+  ],
+  "learnings": [
+    { "id": "A2", "kind": "learning", "text": "Las pruebas de integración levantan Postgres con Testcontainers", "cited": false }
+  ],
+  "features": [
+    { "id": "F7K2", "title": "Notas de crédito parciales", "batch": 2, "state": "running", "closed_at": "" },
+    { "id": "F6A1", "title": "Versionar los DTO de facturas en /v2", "batch": 0, "state": "closed", "closed_at": "2026-10-21T15:50:00Z" }
+  ]
+}

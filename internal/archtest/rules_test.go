@@ -29,6 +29,9 @@ func TestCheck(t *testing.T) {
 		{"host imports runner", Pkg{ImportPath: m("internal/host/claudecode"), Imports: []string{m("internal/runner")}}, true},
 		{"host imports app and platform", Pkg{ImportPath: m("internal/host/claudecode"), Imports: []string{m("internal/app"), m("internal/platform")}}, false},
 		{"platform imports tui", Pkg{ImportPath: m("internal/platform"), Imports: []string{m("internal/tui")}}, true},
+		{"tui imports platform", Pkg{ImportPath: m("internal/tui"), Imports: []string{m("internal/platform")}}, true},
+		{"tui imports host/claudecode/transcript", Pkg{ImportPath: m("internal/tui"), Imports: []string{m("internal/host/claudecode/transcript")}}, true},
+		{"tui imports views and format", Pkg{ImportPath: m("internal/tui"), Imports: []string{m("internal/views"), m("internal/format"), "strings"}}, false},
 		{"cmd/nxy imports everything", Pkg{ImportPath: m("cmd/nxy"), Imports: []string{
 			m("internal/store/sqlite"), m("internal/host/claudecode"), m("internal/runner"),
 			m("internal/tools"), m("internal/update"), m("internal/tui"), m("internal/app"), m("internal/platform"),

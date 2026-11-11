@@ -1,0 +1,90 @@
+{
+  "feature": {
+    "id": "F7K2",
+    "title": "Notas de crédito parciales",
+    "status": "needs_you",
+    "phase": "Implementando",
+    "stage": "batches",
+    "stage_detail": "3/4",
+    "closed_at": "",
+    "repos": [
+      { "name": "facturacion-api", "path": "/srv/dev/facturacion-api.worktrees/notas-credito", "role": "api (Spring)", "branch": "feat/notas-credito", "worktree": true },
+      { "name": "facturacion-web", "path": "/srv/dev/facturacion-web.worktrees/notas-credito", "role": "web (Angular)", "branch": "feat/notas-credito", "worktree": true }
+    ],
+    "batch": 3,
+    "batches": 4,
+    "elapsed_ms": 1385000,
+    "cost_usd": 4.62,
+    "cost_estimated": false
+  },
+  "state": "running",
+  "approved_at": "2026-11-08T14:11:10Z",
+  "goal": "Emitir notas de crédito por una parte de la factura, en la API y en el front.",
+  "repos": [
+    { "name": "facturacion-api", "path": "/srv/dev/facturacion-api", "role": "api (Spring)", "branch": "feat/notas-credito", "worktree": true },
+    { "name": "facturacion-web", "path": "/srv/dev/facturacion-web", "role": "web (Angular)", "branch": "feat/notas-credito", "worktree": true }
+  ],
+  "criteria": [
+    { "id": "R1", "text": "el saldo nunca queda negativo", "test": "NotaCreditoServiceTest.rechazaImporteMayorAlSaldo" },
+    { "id": "R2", "text": "la nota parcial cita su factura", "test": "NotaCreditoControllerIT.v2Parcial" },
+    { "id": "R3", "text": "el front no recalcula importes", "test": "nota-credito.component.spec.ts" }
+  ],
+  "decisions": [
+    { "scope": "repo", "repo": "facturacion-api", "text": "el DTO se versiona en /v2", "question": "¿Cómo viajan los importes entre servicios?", "from_design": true },
+    { "scope": "task", "repo": "", "text": "sin migrar notas viejas", "question": "", "from_design": false }
+  ],
+  "batches": [
+    { "n": 1, "title": "Contrato NotaCreditoDto", "repo": "facturacion-api", "status": "green", "depends": [], "risk": "medium", "risk_why": "toca el contrato público", "attempt": 1, "attempts": 2, "accept": "./gradlew test --tests '*NotaCredito*'", "changes": [] },
+    { "n": 2, "title": "Servicio de notas parciales", "repo": "facturacion-api", "status": "green", "depends": [1], "risk": "high", "risk_why": "dinero: valida el saldo de la factura", "attempt": 1, "attempts": 2, "accept": "./gradlew test integrationTest", "changes": [] },
+    { "n": 3, "title": "Componente de nota parcial", "repo": "facturacion-web", "status": "failed", "depends": [1], "risk": "medium", "risk_why": "cliente generado desde el contrato", "attempt": 2, "attempts": 2, "accept": "npm test -- notas-credito", "changes": [] },
+    { "n": 4, "title": "Integración y e2e", "repo": "facturacion-web", "status": "pending", "depends": [2, 3], "risk": "low", "risk_why": "", "attempt": 0, "attempts": 2, "accept": "npm run e2e -- --spec nota-credito", "changes": [
+      { "at": "2026-11-08T14:05:00Z", "what": "Se sumó la espera a los lotes 2 y 3 porque el e2e necesita ambos" }
+    ] }
+  ],
+  "risks": [
+    "El contrato /v2 lo consume también el portal de clientes (fuera de esta feature)",
+    "El saldo se calcula con notas anteriores: ojo con la concurrencia"
+  ],
+  "impact": {
+    "source": "codegraph",
+    "files": [
+      { "path": "src/main/java/ar/dev/facturacion/nota/NotaCreditoDto.java", "repo": "facturacion-api", "batch": 1, "kind": "edit",
+        "lines": [ { "line": 18, "what": "suma importeParcial" } ],
+        "imported_by": ["NotaCreditoController.java", "NotaCreditoMapper.java"],
+        "tests": [ { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoMapperTest.java", "status": "pass" } ],
+        "contract": null },
+      { "path": "src/main/java/ar/dev/facturacion/nota/NotaCreditoService.java", "repo": "facturacion-api", "batch": 2, "kind": "edit",
+        "lines": [ { "line": 52, "what": "valida contra el saldo restante" } ],
+        "imported_by": ["NotaCreditoController.java"],
+        "tests": [
+          { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoServiceTest.java", "status": "pass" },
+          { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoControllerIT.java", "status": "pass" }
+        ],
+        "contract": null },
+      { "path": "src/main/java/ar/dev/facturacion/nota/NotaCreditoController.java", "repo": "facturacion-api", "batch": 2, "kind": "edit",
+        "lines": [ { "line": 27, "what": "POST /v2/notas-credito/parcial" } ],
+        "imported_by": [],
+        "tests": [ { "path": "src/test/java/ar/dev/facturacion/nota/NotaCreditoControllerIT.java", "status": "pass" } ],
+        "contract": null },
+      { "path": "src/app/notas/nota-credito.component.ts", "repo": "facturacion-web", "batch": 3, "kind": "edit",
+        "lines": [ { "line": 39, "what": "nota pasa a NotaParcial" } ],
+        "imported_by": ["notas.module.ts", "factura-detalle.component.ts"],
+        "tests": [ { "path": "src/app/notas/nota-credito.component.spec.ts", "status": "fail" } ],
+        "contract": null },
+      { "path": "src/app/notas/nota-parcial.model.ts", "repo": "facturacion-web", "batch": 3, "kind": "new",
+        "lines": [],
+        "imported_by": ["nota-credito.component.ts"],
+        "tests": [],
+        "contract": { "name": "NotaCreditoDto", "repo": "facturacion-api", "batch": 1, "status": "green" } },
+      { "path": "e2e/nota-credito.cy.ts", "repo": "facturacion-web", "batch": 4, "kind": "new",
+        "lines": [],
+        "imported_by": [],
+        "tests": [ { "path": "e2e/nota-credito.cy.ts", "status": "none" } ],
+        "contract": null }
+    ]
+  },
+  "actions": [
+    { "id": "pause", "label": "Pausar", "argv": ["nxy", "feature", "pause", "--feature", "F7K2"], "confirm": "", "planned": false },
+    { "id": "stop", "label": "Parar", "argv": ["nxy", "feature", "close", "--feature", "F7K2"], "confirm": "Cierra la feature sin entregar", "planned": false }
+  ]
+}

@@ -36,6 +36,8 @@ var (
 	adapters = set("internal/store/sqlite", "internal/host/claudecode", "internal/runner", "internal/tools", "internal/update", "internal/tui")
 	// support packages: may not import adapters, may only be imported by adapters and cmd.
 	support = set("internal/platform", "internal/views")
+	// viewsOnly: inside the module these may import internal/views and pure non-host packages only.
+	viewsOnly = set("internal/tui")
 	// forbidden for pure packages and app, anywhere in their dependency tree.
 	forbiddenStd = []string{"os/exec", "net", "net/http", "database/sql"}
 )
@@ -92,6 +94,24 @@ func Check(pkgs []Pkg) []Violation {
 			out = append(out, checkApp(p)...)
 		case adapters[r] || support[r]:
 			out = append(out, checkAdapter(p, r)...)
+		}
+		if viewsOnly[r] {
+			out = append(out, checkViewsOnly(p)...)
+		}
+	}
+	return out
+}
+
+// checkViewsOnly looks at direct imports: views, or a pure package that is not a host one.
+func checkViewsOnly(p Pkg) []Violation {
+	var out []Violation
+	for _, d := range p.Imports {
+		dr, in := rel(d)
+		if !in || dr == "internal/views" {
+			continue
+		}
+		if !pure[dr] || strings.HasPrefix(dr, "internal/host/") {
+			out = append(out, Violation{p.ImportPath, d, "tui may only import views and pure non-host packages"})
 		}
 	}
 	return out

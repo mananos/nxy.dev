@@ -1,0 +1,34 @@
+{
+  "id": "D-F7K9-2",
+  "feature_id": "F7K9",
+  "repo": "pagos-worker",
+  "kind": "fork",
+  "header": "Elegí una bifurcación",
+  "question": "¿Dónde vive el backoff de los reintentos de pago?",
+  "context": [
+    "tres caminos, ninguno elegido todavía"
+  ],
+  "multi_select": false,
+  "asked_at": "2026-11-08T14:38:10Z",
+  "fork": { "n": 2, "of": 4, "title": "Dónde vive el backoff" },
+  "options": [
+    {
+      "label": "En PagosClient, con sleep",
+      "description": "un lugar · bloquea el consumer",
+      "recommended": false,
+      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true }
+    },
+    {
+      "label": "Reencolar con delay",
+      "description": "no bloquea · tabla y job nuevos",
+      "recommended": false,
+      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true }
+    },
+    {
+      "label": "Cola con TTL del broker",
+      "description": "sin tabla · depende de RabbitMQ",
+      "recommended": false,
+      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+    }
+  ]
+}

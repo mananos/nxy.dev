@@ -1,0 +1,35 @@
+{
+  "scope": "/srv/dev/facturacion-api",
+  "range": { "since": "2026-11-02", "until": "2026-11-08" },
+  "totals": { "sessions": 41, "turns": 372, "tokens": 118400000, "usd": 212.42 },
+  "days": [
+    { "label": "lun 02", "sessions": 6, "turns": 52, "tokens": 16200000, "usd": 31.20, "cache_hit_pct": 92 },
+    { "label": "mar 03", "sessions": 8, "turns": 71, "tokens": 22800000, "usd": 44.10, "cache_hit_pct": 90 },
+    { "label": "mié 04", "sessions": 5, "turns": 44, "tokens": 14900000, "usd": 28.75, "cache_hit_pct": 91 },
+    { "label": "jue 05", "sessions": 9, "turns": 83, "tokens": 26500000, "usd": 52.30, "cache_hit_pct": 89 },
+    { "label": "vie 06", "sessions": 7, "turns": 66, "tokens": 20400000, "usd": 39.80, "cache_hit_pct": 93 },
+    { "label": "sáb 07", "sessions": 2, "turns": 18, "tokens": 3700000, "usd": 6.40, "cache_hit_pct": 94 },
+    { "label": "dom 08", "sessions": 4, "turns": 38, "tokens": 13900000, "usd": 9.87, "cache_hit_pct": 91 }
+  ],
+  "weeks": [
+    { "label": "14 sep", "sessions": 33, "turns": 301, "tokens": 96100000, "usd": 171.60, "cache_hit_pct": 88 },
+    { "label": "21 sep", "sessions": 37, "turns": 340, "tokens": 108200000, "usd": 198.30, "cache_hit_pct": 89 },
+    { "label": "28 sep", "sessions": 29, "turns": 255, "tokens": 81700000, "usd": 149.90, "cache_hit_pct": 90 },
+    { "label": "05 oct", "sessions": 40, "turns": 366, "tokens": 115900000, "usd": 224.10, "cache_hit_pct": 90 },
+    { "label": "12 oct", "sessions": 36, "turns": 322, "tokens": 101300000, "usd": 187.50, "cache_hit_pct": 91 },
+    { "label": "19 oct", "sessions": 44, "turns": 401, "tokens": 127600000, "usd": 243.80, "cache_hit_pct": 90 },
+    { "label": "26 oct", "sessions": 38, "turns": 349, "tokens": 110400000, "usd": 205.20, "cache_hit_pct": 91 },
+    { "label": "02 nov", "sessions": 41, "turns": 372, "tokens": 118400000, "usd": 212.42, "cache_hit_pct": 91 }
+  ],
+  "models": [
+    { "model": "claude-sonnet-4-6", "calls": 780, "usage": { "input": 2100000, "cacheWrite5m": 130000, "cacheWrite1h": 0, "cacheRead": 9400000, "output": 190000, "thinking": 0, "speed": "standard" }, "usd": 118.40, "cache_hit_pct": 90, "estimated": false },
+    { "model": "claude-opus-5-5", "calls": 310, "usage": { "input": 820000, "cacheWrite5m": 110000, "cacheWrite1h": 0, "cacheRead": 4600000, "output": 118000, "thinking": 52000, "speed": "standard" }, "usd": 89.50, "cache_hit_pct": 93, "estimated": false },
+    { "model": "claude-haiku-4-5", "calls": 140, "usage": { "input": 230000, "cacheWrite5m": 9000, "cacheWrite1h": 0, "cacheRead": 760000, "output": 14000, "thinking": 0, "speed": "standard" }, "usd": 4.52, "cache_hit_pct": 88, "estimated": false }
+  ],
+  "agents": [
+    { "role": "implementer", "runs": 41, "avg_ms": 252000, "usd": 118.30 },
+    { "role": "planner", "runs": 14, "avg_ms": 160000, "usd": 31.60 },
+    { "role": "reviewer", "runs": 12, "avg_ms": 185000, "usd": 24.10 },
+    { "role": "scout", "runs": 63, "avg_ms": 21000, "usd": 1.90 }
+  ]
+}

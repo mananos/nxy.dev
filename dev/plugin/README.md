@@ -388,3 +388,43 @@ Qué hacer:
 `nxy stats` y `nxy trend` abren `nxy.db` en sólo lectura: sin db o sin datos del filtro salen sin esas filas, y nunca la crean. La v2 también escribe su propio resumen del filtro (PostToolUse de Bash, sin el comando crudo); si la base está ocupada, el hook descarta la fila después de esperar 200 ms como mucho.
 
 Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.
+
+## Prototipo de la TUI (F5.1)
+
+### Qué ves
+
+`nxy tui --demo` abre un prototipo navegable con las 11 pantallas (Inicio, Worktrees, Feature, Agentes, Decisión, Ingeniero, Plan, Archivo, Memoria, Gasto con Tendencia y Config) y datos de ejemplo embebidos en el binario. No lee tu db ni toca tu repo, y anda desde cualquier carpeta.
+
+Arriba hay 4 secciones fijas: Inicio, Memoria, Gasto y Config. Lo demás se abre con `enter` y se vuelve con `esc`; el camino aparece debajo de la barra, por ejemplo `Inicio › F7K2 › Plan › nota-credito.component.ts`. El contenido usa todo el ancho de la terminal: en las pantallas de dos paneles la columna de la izquierda no crece más allá de lo que mide a 120 columnas y el panel de la derecha toma el resto. Colorear el código del visor de archivos suma unos 4,5 MB al binario (medido en Windows).
+
+### Qué significa cada señal
+
+- Etiqueta de estado de cada feature: Te necesita, Trabajando, Verificando o Listo.
+- Etapa: Diseño, Plan, Lotes, Review y Cierre, con ✓ en las que ya pasaron.
+- Bloque rojo en una feature: el lote que falló, con el test, el error y qué reglas recibió.
+- `● N decisiones` arriba a la derecha: preguntas esperando tu respuesta. Aparecen en una ventana encima de la pantalla; si hay varias, `tab` pasa de una a otra y `esc` la deja para después.
+- Memoria: sólo se marcan las cosas raras (sin citar, obsoleto, visto N veces). Lo demás se ve al abrir el detalle.
+- Impacto de un lote: ✓ test que pasa, ✗ test que falla, ○ sin correr, ↔ contrato con otro repo.
+
+### Qué hacer en cada pantalla
+
+Las teclas disponibles siempre están en la barra de abajo; `?` muestra todas y `q` sale.
+
+- Inicio: `↑↓` mueve, `enter` abre la feature, `d` abre la decisión, `w` los worktrees.
+- Feature: `a` agentes, `p` plan, `d` decidir, `enter` sobre un lote va a su agente.
+- Plan: `←→` cambia de lote, `↑↓` de archivo, `enter` abre el archivo. Si está por aprobar: `a` aprobar, `c` cambiar, `x` parar.
+- Archivo: `n` / `N` saltan entre cambios, `v` alterna diff y archivo entero, `o` muestra el comando del editor.
+- Ingeniero: `↑↓` opción, `enter` elige, `h` cómo es hoy, `c` qué elegiría Claude (no se muestra hasta que lo pedís, para no condicionarte).
+- Memoria: `[ ]` cambia de repo o global, `/` busca (`tab` alterna este repo y todos), `e` edita, `x` borra (`y` confirma, `u` deshace durante 5 segundos), `+` crea una regla, `y` / `n` aceptan o descartan propuestas.
+- Gasto: `tab` pasa a Tendencia, `s` elige otra sesión.
+- Config: `↑↓` recorre, `e` / `f` ciclan modelo y effort del rol, `r` lo guarda en el repo, `i` instala, `c` copia el comando.
+
+Las acciones no hacen nada: sólo muestran abajo el comando que correrían. Las que dicen "todavía no existe" (decidir desde la TUI, editar y borrar memoria, reglas globales) llegan con otros planes.
+
+Cosas del demo: en Inicio F7K9 está en diseño y en su Plan aparece por aprobar (son dos momentos de la misma feature). `ctrl+n` simula que llega una decisión nueva, `ctrl+t` alterna tema claro/oscuro y `ctrl+g` los íconos. Una bifurcación del ingeniero que aparece en la ventana de decisión se lee ahí, pero se contesta en Ingeniero (`enter` te lleva).
+
+Si ves cuadrados en lugar de íconos, forzá el set con `--icons unicode` o con la variable `NXY_ICONS=unicode` (`nerd` si tu fuente es una Nerd Font y no la detectó).
+
+### Ver una pantalla sin abrir la TUI
+
+`nxy tui --demo --dump <destino> --width 80 --plain` imprime la pantalla y sale; probá `--width 80`, `120` y `200`. `--feature <clave>` elige la feature, el repo de memoria o el archivo, y `--theme light` el tema. Destinos: `inicio`, `worktrees`, `feature`, `agentes`, `decision`, `ingeniero` (`ingeniero.hoy`, `ingeniero.claude`), `plan`, `archivo` (`archivo.entero`), `memoria` (`memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`), `gasto`, `tendencia` (`tendencia.semana`) y `config`. Con un destino desconocido, el comando lista los válidos.

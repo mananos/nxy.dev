@@ -52,7 +52,6 @@ func (g gateFiles) Consume(dir string, kind app.GateEscape) bool {
 	return platform.ConsumeGateEscape(dir, g.Settings(dir).EscapeMinutes, gateKind(kind))
 }
 
-
 func (gateFiles) Record(dir string, r app.GateRecord) {
 	platform.RecordGate(dir, platform.GateRow{
 		Ts: r.Ts, Tool: r.Tool, Allow: r.Allow, Reason: r.Reason,
