@@ -109,7 +109,44 @@ func RenderSearch(hits []Hit) string {
 		if ref == "" {
 			ref = h.ID
 		}
+		if h.Repo == GlobalRepo && h.Kind != "feature" {
+			fmt.Fprintf(&b, "%s · %s · global · %s\n", h.Kind, ref, oneLine(h.Text))
+			continue
+		}
 		fmt.Fprintf(&b, "%s · %s · %s\n", h.Kind, ref, oneLine(h.Text))
+	}
+	return b.String()
+}
+
+// RenderGlobal lists the global rules and learnings; "" when there are none.
+func RenderGlobal(rules []Rule, learnings []Learning, now time.Time) string {
+	if len(rules) == 0 && len(learnings) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	if len(rules) > 0 {
+		fmt.Fprintf(&b, "Global rules (%d)\n", len(rules))
+		for _, r := range rules {
+			roles := "all"
+			if len(r.Roles) > 0 {
+				roles = strings.Join(r.Roles, ", ")
+			}
+			fmt.Fprintf(&b, "%s · %s\n", r.Short, oneLine(r.Text))
+			fmt.Fprintf(&b, "   settles: %s · roles: %s · delivered %d · cited %d", oneLine(r.Question), roles, r.Deliveries, r.Citations)
+			if NeedsReview(r, now) {
+				b.WriteString(" · to review")
+			}
+			b.WriteString("\n")
+		}
+	}
+	if len(learnings) > 0 {
+		if len(rules) > 0 {
+			b.WriteString("\n")
+		}
+		fmt.Fprintf(&b, "Global learnings (%d)\n", len(learnings))
+		for _, l := range learnings {
+			fmt.Fprintf(&b, "%s · %s · promote: nxy mem promote %s --question \"...\"\n", l.Short, oneLine(l.Text), l.Short)
+		}
 	}
 	return b.String()
 }

@@ -132,7 +132,9 @@ func TestMigrate5To6KeepsMemory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AddRule(ctx, rule("r", "regla vieja", "q")); err != nil {
+	// the schema of this version has no roles column: write the row as the old build did
+	if _, err := s.db.ExecContext(ctx, `INSERT INTO mem_rules (id, short, repo, text, question, origin, created_at, updated_at)
+		VALUES ('01OLD', 'K1', 'r', 'regla vieja', 'q', 'manual', 1, 1)`); err != nil {
 		t.Fatal(err)
 	}
 	s.Close()

@@ -67,12 +67,12 @@ func DecodeBundle(data []byte) (Bundle, error) {
 		if r.ID == "" {
 			return Bundle{}, fmt.Errorf("rule without id")
 		}
-		b.Rules[i].Short = cleanShort(r.Short, 'K')
+		if r.Repo != "" && strings.TrimSpace(r.Repo) == "" {
+			return Bundle{}, fmt.Errorf("rule %s: blank repo", r.ID)
+		}
+		b.Rules[i].Short = cleanShort(r.Short, RuleLetter(r.Repo))
 		if r.Deleted() {
 			continue
-		}
-		if strings.TrimSpace(r.Repo) == "" {
-			return Bundle{}, fmt.Errorf("rule %s: a rule needs a repo", r.ID)
 		}
 		if err := ValidateRule(r); err != nil {
 			return Bundle{}, fmt.Errorf("rule %s: %v", r.ID, err)
@@ -90,12 +90,12 @@ func DecodeBundle(data []byte) (Bundle, error) {
 		if l.ID == "" {
 			return Bundle{}, fmt.Errorf("learning without id")
 		}
+		if l.Repo != "" && strings.TrimSpace(l.Repo) == "" {
+			return Bundle{}, fmt.Errorf("learning %s: blank repo", l.ID)
+		}
 		b.Learnings[i].Short = cleanShort(l.Short, 'A')
 		if l.Deleted() {
 			continue
-		}
-		if strings.TrimSpace(l.Repo) == "" {
-			return Bundle{}, fmt.Errorf("learning %s: a learning needs a repo", l.ID)
 		}
 		if strings.TrimSpace(l.Text) == "" {
 			return Bundle{}, fmt.Errorf("learning %s: a learning needs a text", l.ID)

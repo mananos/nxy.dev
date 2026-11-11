@@ -64,6 +64,7 @@ CREATE TABLE edges (src TEXT NOT NULL, dst TEXT NOT NULL, kind TEXT NOT NULL, we
 		{"project-handoff-bbbbb", "project", "github.com/o/r", "handoff", "handoff: arreglar login", "Goal: arreglar login\n## Next\n- probar"},
 		{"project-handoff-done-ccccc", "project", "github.com/o/r", "handoff", "feature: cerrada", "listo"},
 		{"project-otro-ddddd", "project", "github.com/o/otro", "convention", "de otro repo", "x"},
+		{"zglobal-pref-eeeee", "global", "", "preference", "sin emojis", "x"},
 	} {
 		if _, err := db.Exec(`INSERT INTO memories (id, scope, project, type, title, body, created, updated) VALUES (?,?,?,?,?,?,?,?)`,
 			m[0], m[1], m[2], m[3], m[4], m[5], now-1000, now); err != nil {
@@ -92,7 +93,7 @@ func TestLegacyImportCommand(t *testing.T) {
 	first := legacyRun(t, "legacy", "import", "--dir", repo)
 	for _, want := range []string{
 		"memoria: importado ahora", "1 convención → aprendizajes A1", "1 handoff vivo → notas", "1 archivado → features cerradas",
-		"review: importado ahora", "1 review, 1 elegido", "filtro: 3 filas nuevas de 2 sesiones",
+		"memoria global: importado ahora", "1 global → aprendizaje global A2", "review: importado ahora", "1 review, 1 elegido", "filtro: 3 filas nuevas de 2 sesiones",
 	} {
 		if !strings.Contains(first, want) {
 			t.Errorf("first import lacks %q:\n%s", want, first)
@@ -100,7 +101,7 @@ func TestLegacyImportCommand(t *testing.T) {
 	}
 
 	second := legacyRun(t, "legacy", "import", "--dir", repo)
-	if strings.Count(second, "ya importado el") != 2 || strings.Contains(second, "importado ahora") || !strings.Contains(second, "filtro: sin filas nuevas") {
+	if strings.Count(second, "ya importado el") != 3 || strings.Contains(second, "importado ahora") || !strings.Contains(second, "filtro: sin filas nuevas") {
 		t.Errorf("second import:\n%s", second)
 	}
 
@@ -134,7 +135,7 @@ func TestLegacyImportCommand(t *testing.T) {
 	}
 
 	status := legacyRun(t, "legacy", "status")
-	for _, want := range []string{"memoria de github.com/o/r", "review de ", "filtro de ", "leídos", "de "} {
+	for _, want := range []string{"memoria de github.com/o/r", "memoria global — importado el", "review de ", "filtro de ", "leídos", "de "} {
 		if !strings.Contains(status, want) {
 			t.Errorf("status lacks %q:\n%s", want, status)
 		}

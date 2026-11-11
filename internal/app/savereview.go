@@ -242,7 +242,10 @@ func (h Hooks) reviewMemory(ctx context.Context, f domain.Feature, lens string, 
 		if i < 0 {
 			i = 0
 		}
-		if len(mrs) > 1 {
+		if strings.HasPrefix(k, "G") {
+			// A global rule is cited once; Cite matches it in any repo.
+			i = 0
+		} else if len(mrs) > 1 {
 			// A rule counts for the repo it was delivered from: the one of the file when it was
 			// delivered from it, else its only origin; ambiguous ids cite nothing.
 			from := reviewOrigins(f, lens)[k]

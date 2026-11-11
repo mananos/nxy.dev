@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/memory"
 )
 
@@ -30,6 +31,21 @@ func TestEngineerMemoryNoteHasRulesAndCountsDelivery(t *testing.T) {
 	}
 	if len(mem.delivered) != 2 {
 		t.Errorf("delivered = %v, want 2 rules", mem.delivered)
+	}
+}
+
+func TestEngineerMemoryNoteHasMainGlobalNotPlanner(t *testing.T) {
+	h, _ := flowHooks(false)
+	mem := memRules()
+	mem.globals = []memory.Rule{globalRule("G3", "G3", "main only", []string{memory.RoleMain})}
+	h.Memory = mem
+	r := h.Handle(context.Background(), prompt("/nxy:engineer add a cache"))
+	if r.Next == nil || !strings.Contains(r.Next.Note, "G3: main only") {
+		t.Fatalf("note = %+v", r.Next)
+	}
+	pl := h.memoryFor(context.Background(), domain.Feature{ProjectDir: t.TempDir()}, rolePlanner, nil).Text
+	if strings.Contains(pl, "G3") {
+		t.Errorf("planner prompt has a main-only rule: %q", pl)
 	}
 }
 

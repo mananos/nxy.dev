@@ -48,6 +48,56 @@ func (m Memory) AddRule(ctx context.Context, cwd, text, question, origin string,
 	})
 }
 
+// AddGlobalRule stores a global rule (G<n>); no roles means every role. supersedes may be G2 or a ULID.
+func (m Memory) AddGlobalRule(ctx context.Context, text, question, origin string, paths, roles []string, supersedes string) (memory.Rule, error) {
+	if origin == "" {
+		origin = memory.OriginManual
+	}
+	return m.Store.AddGlobalRule(ctx, memory.Rule{
+		Repo: memory.GlobalRepo, Text: strings.TrimSpace(text), Question: strings.TrimSpace(question), Origin: origin,
+		Paths: paths, Roles: roles, Supersedes: supersedes,
+	})
+}
+
+// EditRule changes a rule (K3 or G2) in place: same number, same counters.
+func (m Memory) EditRule(ctx context.Context, ref string, e memory.RuleEdit) (memory.Rule, error) {
+	return m.Store.EditRule(ctx, ref, e)
+}
+
+// IsLearning reports whether a live reference (alias, ULID or prefix) is a learning rather than a rule.
+func (m Memory) IsLearning(ctx context.Context, ref string) (bool, error) {
+	kind, err := m.Store.MemoryKind(ctx, ref)
+	return kind == "learning", err
+}
+
+// EditLearning changes a learning (A7) in place.
+func (m Memory) EditLearning(ctx context.Context, ref string, e memory.LearningEdit) (memory.Learning, error) {
+	return m.Store.EditLearning(ctx, ref, e)
+}
+
+// Remove soft-deletes a rule or a learning and returns its short; Restore brings it back.
+func (m Memory) Remove(ctx context.Context, ref string) (string, error) {
+	return m.Store.DeleteMemory(ctx, ref)
+}
+
+// Restore undoes Remove.
+func (m Memory) Restore(ctx context.Context, ref string) (string, error) {
+	return m.Store.RestoreMemory(ctx, ref)
+}
+
+// ShowGlobal returns the global rules and the global learnings.
+func (m Memory) ShowGlobal(ctx context.Context) ([]memory.Rule, []memory.Learning, error) {
+	rules, err := m.Store.GlobalRules(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	learnings, err := m.Store.Learnings(ctx, memory.GlobalRepo)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rules, learnings, nil
+}
+
 // AddLearning records a learning of the repo; the same one again counts as seen once more.
 func (m Memory) AddLearning(ctx context.Context, cwd, text string, files []string) (memory.Learning, error) {
 	return m.Store.AddLearning(ctx, memory.Learning{Repo: m.repo(cwd), Text: strings.TrimSpace(text), Files: files})

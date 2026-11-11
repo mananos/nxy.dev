@@ -11,7 +11,7 @@ import (
 // repo rule (up to the dispatch budget) and the order to look for related memory. Empty without
 // memory or without rules. It counts the delivery of the rules it carries.
 func (h Hooks) engineerMemoryNote(ctx context.Context, f domain.Feature) string {
-	pkt := h.memoryFor(ctx, f, rolePlanner, nil)
+	pkt := h.memoryFor(ctx, f, roleMain, nil)
 	if len(pkt.Rules) == 0 {
 		return ""
 	}

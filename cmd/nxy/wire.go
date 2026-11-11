@@ -171,6 +171,14 @@ func (l *lazyStore) Rules(ctx context.Context, repo string) ([]memory.Rule, erro
 	return s.Rules(ctx, repo)
 }
 
+func (l *lazyStore) GlobalRules(ctx context.Context) ([]memory.Rule, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.GlobalRules(ctx)
+}
+
 func (l *lazyStore) Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error) {
 	s, err := l.open(ctx)
 	if err != nil {

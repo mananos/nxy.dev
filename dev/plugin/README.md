@@ -267,10 +267,15 @@ Qué ves: la memoria del repo, guardada en la db global (`~/.nxy/nxy.db`). Qué 
 - `rule "<texto>" --question "<la pregunta que resuelve>" [--paths g1,g2]`: guarda una regla. Sin `--question` falla.
 - `note "<texto>" --files a,b`: guarda un aprendizaje; repetirlo suma `seen`, no crea otro.
 - `promote <A7> --question "<q>"`: lo convierte en regla y sale de la lista de aprendizajes.
+- `rule "<texto>" --question "<q>" --global [--roles planner,reviewer]`: guarda una **regla global** (`G2`), tuya y de todos los repos. Sin `--roles` la reciben todos los roles; los roles son `planner`, `implementer`, `reviewer` y `main` (el hilo principal en modo ingeniero). `--roles` sin `--global` falla. `show` las lista debajo de las del repo, con `roles:`, `delivered` y `cited`.
+- `edit <K3|G2|A7> [--text …] [--question …] [--paths …] [--roles …] [--files …]`: cambia lo que pasás y deja todo lo demás: el mismo número, las entregas y las citas. `--paths ""` o `--roles ""` los vacían. Una regla toma `--text`, `--question`, `--paths` (y `--roles` si es global); un aprendizaje, `--text` y `--files`. Sin ningún flag falla con «nothing to change».
+- `rm <ref>` borra una regla o un aprendizaje (desaparece de `show`, de la búsqueda y de lo que reciben los agentes); `restore <ref>` lo trae de vuelta con el mismo número, que nunca se reutiliza. El borrado, la edición y la restauración viajan en el export/import como cualquier otro cambio: el más nuevo gana.
 - `search <texto> [--all]` busca en la memoria del repo (con `--all`, en todos); `related <archivos…>` lista features cerradas y aprendizajes que tocaron esos archivos.
 - `export [--out archivo] [--notes]` escribe un JSON versionado; `import <archivo>` sin `--apply` sólo muestra qué cambiaría (nuevo, cambiado, borrado, repetido) y no escribe; con `--apply` lo aplica en una sola transacción. El más nuevo gana y los borrados viajan. Las notas temporales no viajan por defecto: duran 30 días y su carpeta es de esta máquina; `--notes` las incluye.
 
-Costo: una regla ~0,5 KB, un aprendizaje ~0,3 KB; 100 reglas y 500 aprendizajes caben en ~1 MB de la db. El export se escribe sólo a pedido y no se borra solo.
+**Reglas globales (`G2`).** Qué ves: en `nxy mem show`, una sección «Global rules» y otra «Global learnings». Qué significa: una `G` vale en todos tus repos; las `K` son de un repo. Llegan al planner, al implementer, al reviewer y al hilo principal del modo ingeniero (según `--roles`), después de las `K` y dentro del mismo tope de 3.000 caracteres; si algo no entra, se cortan primero las `G` (nunca una `K` por una `G`). Si hay alguna, el agente lee la línea «If a G rule contradicts a K rule, the K rule wins.». Nunca llegan al scout, al delegate, al refuter ni al documenter. Un reviewer puede citar una `G` (`"rule": "G2"`) como una `K`. Qué hacer: `nxy mem rule "<texto>" --question "<q>" --global`. Un aprendizaje global (de la 1.x) se vuelve `G` con `nxy mem promote A<n> --question "<q>"`.
+
+Costo: una regla ~0,5 KB, un aprendizaje ~0,3 KB; la columna de roles suma ~10 bytes por regla; 100 reglas y 500 aprendizajes caben en ~1 MB de la db. El export se escribe sólo a pedido y no se borra solo.
 
 **Notas temporales.** `nxy note save "<título>"` (cuerpo por stdin, hasta 2 KB), `nxy note list [--all]` y `nxy note done <id>`. Se ven desde la carpeta donde las guardaste y vencen a los 30 días. La pregunta al arrancar la sesión está en "F4.3: notas y para retomar".
 
@@ -290,7 +295,7 @@ Costo de la búsqueda: con rg, milisegundos; sin rg, un recorrido con tope de 50
 
 Qué ves: las reglas del repo (`K3`) llegan solas a cada agente, sin que hagas nada. Los **criterios** del plan siguen llamándose R1…Rn (lo que tiene que cumplir esta feature); las **reglas** K son de todo el repo y viven entre features.
 
-- **Qué recibe cada agente.** El planner recibe todas las reglas; el implementer, las del área que toca el lote (las que tienen `--paths` que coinciden, más las que no tienen) y los aprendizajes de esos archivos; el reviewer, las reglas del diff. Siempre con el texto completo y con un tope de 3.000 caracteres (~750 tokens): lo que no entra queda en una línea "not shown (budget)" y lo ves con `nxy mem show`. En modo ingeniero, el hilo principal recibe las reglas al empezar el diseño. El planner y el modo ingeniero también corren `nxy mem related <archivos>` para ver features cerradas y aprendizajes de esos archivos.
+- **Qué recibe cada agente.** El planner recibe todas las reglas (las `K` y después tus `G` globales, ver `/nxy:mem`); el implementer, las del área que toca el lote (las que tienen `--paths` que coinciden, más las que no tienen) y los aprendizajes de esos archivos; el reviewer, las reglas del diff. Siempre con el texto completo y con un tope de 3.000 caracteres (~750 tokens): lo que no entra queda en una línea "not shown (budget)" y lo ves con `nxy mem show`. En modo ingeniero, el hilo principal recibe las reglas al empezar el diseño. El planner y el modo ingeniero también corren `nxy mem related <archivos>` para ver features cerradas y aprendizajes de esos archivos.
 - **`delivered / cited / to review`** en `nxy mem show`: cuántas veces se entregó la regla a un agente, cuántas veces un reviewer la citó al encontrar que el cambio la rompía (un hallazgo que cita una regla sube a medium como mínimo) y si lleva 90 días sin citarse. Contar no cambia la fecha de la regla ni viaja distinto en el export.
 - **Aprendizajes.** El implementer puede cerrar su respuesta con líneas `learned: <texto> | files: a, b` (hasta 5) y `false: A7` si comprobó que un aprendizaje ya no es cierto. El reviewer lo manda en el JSON de `review save` (`learnings` y `false`). Un aprendizaje repetido suma `seen`; uno falso, o cuyos archivos ya no existen, queda obsoleto (se marca, no se borra).
 - **Pregunta del cierre.** Al terminar con éxito, si hay candidatas (las decisiones `repo` del plan o del diseño, lo que levantaste con `nxy feature rule` y los escapes), te pregunta qué guardar como regla del repo, de a 4 opciones por pregunta. Si una se parece a una regla existente, dice "reemplaza a K3": al elegirla la anterior queda reemplazada. Elegir "Ninguna" o parar la feature no guarda nada. La feature cerrada queda en la memoria con su título, decisiones, archivos y hallazgos.
@@ -374,7 +379,8 @@ Qué significa cada conteo:
 - **Handoffs vivos → notas.** Entra el objetivo y el `## Next` primero, después lo demás hasta 2 KB; sin el plan. Si se cortó dice «(cortado al importar; completo en la 1.x)». Los que llevan más de 30 días sin escribirse no entran (se cuentan como vencidos).
 - **Archivados → features cerradas**, con sus archivos, para que el planner las encuentre por archivo.
 - **Sesiones del filtro:** el resumen por sesión que leen `nxy stats` y `nxy trend`. **Reviews y elegidos:** base de «elegidos vs ignorados por lente».
-- Lo que no entra se cuenta: memorias globales, reemplazadas por otra, relaciones entre memorias que no son de archivo, «N privadas sin importar» (las memorias `private` nunca se importan) y «N repetidos sin importar» (aprendizajes que ya estaban). El rango `A<n>` del aviso es el real, el de los aprendizajes que entraron.
+- **Memorias globales → aprendizajes globales.** Entran una sola vez por máquina (no por repo) y el aviso dice `3 globales → aprendizajes globales A13..A15`. No se entregan a ningún agente: `nxy mem promote A<n> --question "<q>"` vuelve `G` los que sigan valiendo. En una máquina cuyos repos ya se habían importado, la próxima apertura los trae igual (una vez).
+- Lo que no entra se cuenta: reemplazadas por otra, relaciones entre memorias que no son de archivo, «N privadas sin importar» (las memorias `private` nunca se importan) y «N repetidos sin importar» (aprendizajes que ya estaban). El rango `A<n>` del aviso es el real, el de los aprendizajes que entraron.
 - Si el repo no tiene datos de la 1.x, no sale ningún aviso.
 - Si la importación falla, sale una línea con «probá `nxy legacy import`». La copia de `memory.db` se reintenta como mucho una vez por día; `nxy legacy status` muestra el último error.
 
@@ -387,7 +393,7 @@ Qué hacer:
 
 `nxy stats` y `nxy trend` abren `nxy.db` en sólo lectura: sin db o sin datos del filtro salen sin esas filas, y nunca la crean. La v2 también escribe su propio resumen del filtro (PostToolUse de Bash, sin el comando crudo); si la base está ocupada, el hook descarta la fila después de esperar 200 ms como mucho.
 
-Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.
+Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; en una máquina con repos ya importados, una copia más, una sola vez, para las globales; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.
 
 ## Prototipo de la TUI (F5.1)
 
@@ -419,7 +425,7 @@ Las teclas disponibles siempre están en la barra de abajo; `?` muestra todas y 
 - Gasto: `tab` pasa a Tendencia, `s` elige otra sesión.
 - Config: `↑↓` recorre, `e` / `f` ciclan modelo y effort del rol, `r` lo guarda en el repo, `i` instala, `c` copia el comando.
 
-Las acciones no hacen nada: sólo muestran abajo el comando que correrían. Las que dicen "todavía no existe" (decidir desde la TUI, editar y borrar memoria, reglas globales) llegan con otros planes.
+Las acciones no hacen nada: sólo muestran abajo el comando que correrían. Las que dicen "todavía no existe" (decidir desde la TUI) llegan con otros planes. Editar, borrar y restaurar memoria y las reglas globales ya existen en la línea de comandos (`nxy mem edit|rm|restore`, `--global`); la TUI todavía no los llama.
 
 Cosas del demo: en Inicio F7K9 está en diseño y en su Plan aparece por aprobar (son dos momentos de la misma feature). `ctrl+n` simula que llega una decisión nueva, `ctrl+t` alterna tema claro/oscuro y `ctrl+g` los íconos. Una bifurcación del ingeniero que aparece en la ventana de decisión se lee ahí, pero se contesta en Ingeniero (`enter` te lleva).
 

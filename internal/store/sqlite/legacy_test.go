@@ -122,14 +122,34 @@ func TestLegacyMemoryImport(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("first import: %v %v", ok, err)
 	}
-	if got.Learnings != 1 || got.LearningFirst != 1 || got.LearningLast != 1 || got.Repeated != 0 {
+	if got.Learnings != 1 || got.LearningFirst != 2 || got.LearningLast != 2 || got.Repeated != 0 ||
+		got.Globals != 1 || got.GlobalFirst != 1 || got.GlobalLast != 1 {
 		t.Fatalf("counts %+v", got)
+	}
+	gl, _ := s.Learnings(ctx, memory.GlobalRepo)
+	if len(gl) != 1 || gl[0].Short != "A1" || gl[0].Text != "global" {
+		t.Fatalf("global learnings %+v", gl)
+	}
+	// a second repo of the same machine does not bring the globals again
+	var onlyGlobals legacy.Import
+	for _, src := range imp.Sources {
+		if src.Kind == legacy.SourceGlobalLearning {
+			onlyGlobals.Sources = append(onlyGlobals.Sources, legacy.Source{Kind: src.Kind, Index: 0, LegacyID: src.LegacyID})
+			onlyGlobals.Learnings = append(onlyGlobals.Learnings, imp.Learnings[src.Index])
+		}
+	}
+	c4, ok4, err := s.ImportLegacyMemory(ctx, "github.com/o/other", onlyGlobals)
+	if err != nil || !ok4 || c4.Globals != 0 {
+		t.Fatalf("second repo: %+v %v %v", c4, ok4, err)
+	}
+	if gl, _ = s.Learnings(ctx, memory.GlobalRepo); len(gl) != 1 {
+		t.Fatalf("globals twice: %+v", gl)
 	}
 	if _, ok, err := s.ImportLegacyMemory(ctx, "github.com/o/r", imp); err != nil || ok {
 		t.Fatalf("second import: %v %v", ok, err)
 	}
 	ls, _ := s.Learnings(ctx, "github.com/o/r")
-	if len(ls) != 1 || ls[0].Short != "A1" || len(ls[0].Files) != 1 {
+	if len(ls) != 1 || ls[0].Short != "A2" || len(ls[0].Files) != 1 {
 		t.Fatalf("learnings %+v", ls)
 	}
 	notes, err := s.Notes(ctx, "/work/r", false, *clock)
@@ -167,11 +187,59 @@ func TestLegacyMemoryImport(t *testing.T) {
 		t.Errorf("ids differ: %s %s", ls2[0].ID, ls[0].ID)
 	}
 	marks, _, err := s.LegacyImports(ctx)
-	if err != nil || len(marks) != 1 || marks[0].Counts.Notes != 1 {
+	notesMark := 0
+	for _, m := range marks {
+		if m.Scope == LegacyScopeMemory && m.Key == "github.com/o/r" {
+			notesMark = m.Counts.Notes
+		}
+	}
+	if err != nil || len(marks) != 3 || notesMark != 1 {
 		t.Fatalf("marks %+v %v", marks, err)
 	}
 	if mems, _, err := ReadLegacyMemory(ctx, filepath.Join(t.TempDir(), "none.db"), "x"); err != nil || mems != nil {
 		t.Errorf("missing memory.db: %v %v", mems, err)
+	}
+}
+
+func TestLegacyGlobalLeftoversOnlyInGlobalMark(t *testing.T) {
+	s, clock := newMem(t)
+	mems := []legacy.Memory{
+		{ID: "g1", Scope: "global", Type: "convention", Title: "Secreta", Private: true, Created: 1, Updated: 1},
+		{ID: "g2", Scope: "global", Type: "convention", Title: "Vieja", Created: 2, Updated: 2},
+		{ID: "g3", Scope: "global", Type: "convention", Title: "Nueva", Created: 3, Updated: 3},
+		{ID: "g4", Scope: "global", Type: "handoff", Title: "otro", Created: 4, Updated: 4},
+		{ID: "p1", Scope: "project", Type: "convention", Title: "Privada", Private: true, Created: 5, Updated: 5},
+	}
+	edges := []legacy.Edge{{Src: "g3", Dst: "g2", Kind: "supersedes"}}
+	ms := clock.UnixMilli()
+	for _, repo := range []string{"/srv/dev/a", "/srv/dev/b"} {
+		imp := legacy.ConvertMemory(mems, edges, repo, repo, ms)
+		if _, ok, err := s.ImportLegacyMemory(ctx, repo, imp); err != nil || !ok {
+			t.Fatalf("import %s: %v %v", repo, ok, err)
+		}
+	}
+	marks, _, err := s.LegacyImports(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := 0
+	for _, m := range marks {
+		c := m.Counts
+		switch {
+		case m.Scope == LegacyScopeGlobal:
+			seen++
+			if c.Private != 1 || c.Superseded != 1 || c.Other != 1 || c.Globals != 1 {
+				t.Errorf("global mark %+v", c)
+			}
+		case m.Scope == LegacyScopeMemory:
+			seen++
+			if c.Private != 1 || c.Superseded != 0 || c.Other != 0 || c.Globals != 0 {
+				t.Errorf("repo mark %s %+v", m.Key, c)
+			}
+		}
+	}
+	if seen != 3 {
+		t.Fatalf("marks %+v", marks)
 	}
 }
 

@@ -30,10 +30,10 @@ type Submission struct {
 	False     []string                `json:"false,omitempty"` // A<n> the reviewer checked and found false
 }
 
-var shortRe = regexp.MustCompile(`^[KA]\d+$`)
+var shortRe = regexp.MustCompile(`^[KAG]\d+$`)
 
 // ValidateMemory lists what is wrong with the memory parts of a submission: a finding's rule must
-// be a K<n> delivered to this reviewer, learnings stay within the report limits and false only
+// be a K<n> or G<n> delivered to this reviewer, learnings stay within the report limits and false only
 // names A<n>.
 func ValidateMemory(sub Submission, delivered []string) []plan.Problem {
 	var out []plan.Problem
@@ -49,7 +49,7 @@ func ValidateMemory(sub Submission, delivered []string) []plan.Problem {
 			continue
 		}
 		r := strings.ToUpper(strings.TrimSpace(f.Rule))
-		if !strings.HasPrefix(r, "K") || !got[r] {
+		if !(strings.HasPrefix(r, "K") || strings.HasPrefix(r, "G")) || !got[r] {
 			add(fmt.Sprintf("findings[%d].rule", i), "%q is not a rule delivered to you", f.Rule)
 		}
 	}

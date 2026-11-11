@@ -1,0 +1,1 @@
+ALTER TABLE mem_rules ADD COLUMN roles TEXT NOT NULL DEFAULT '[]';

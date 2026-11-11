@@ -12,6 +12,7 @@ import (
 
 type memFake struct {
 	repos        []string
+	deleted      []string
 	learnings    []memory.Learning
 	exportNotes  []bool
 	applied      []memory.Diff
@@ -30,6 +31,32 @@ func (f *memFake) Rules(_ context.Context, repo string) ([]memory.Rule, error) {
 	f.repos = append(f.repos, repo)
 	return nil, nil
 }
+func (f *memFake) AddGlobalRule(_ context.Context, r memory.Rule) (memory.Rule, error) {
+	f.repos = append(f.repos, r.Repo)
+	r.Repo = memory.GlobalRepo
+	if err := memory.ValidateRule(r); err != nil {
+		return memory.Rule{}, err
+	}
+	return r, nil
+}
+func (f *memFake) GlobalRules(context.Context) ([]memory.Rule, error) { return nil, nil }
+func (f *memFake) EditRule(_ context.Context, ref string, _ memory.RuleEdit) (memory.Rule, error) {
+	return memory.Rule{Short: ref}, nil
+}
+func (f *memFake) EditLearning(_ context.Context, ref string, _ memory.LearningEdit) (memory.Learning, error) {
+	return memory.Learning{Short: ref}, nil
+}
+func (f *memFake) DeleteMemory(_ context.Context, ref string) (string, error) {
+	f.deleted = append(f.deleted, ref)
+	return ref, nil
+}
+func (f *memFake) MemoryKind(_ context.Context, ref string) (string, error) {
+	if strings.HasPrefix(strings.ToUpper(ref), "A") {
+		return "learning", nil
+	}
+	return "rule", nil
+}
+func (f *memFake) RestoreMemory(_ context.Context, ref string) (string, error) { return ref, nil }
 func (f *memFake) AddLearning(_ context.Context, l memory.Learning) (memory.Learning, error) {
 	f.repos = append(f.repos, l.Repo)
 	l.Hash = memory.LearningHash(l.Text, l.Files)

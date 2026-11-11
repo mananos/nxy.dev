@@ -30,6 +30,25 @@ func TestRenderShowRulesAndLearnings(t *testing.T) {
 	}
 }
 
+func TestRenderGlobal(t *testing.T) {
+	if RenderGlobal(nil, nil, renderNow) != "" {
+		t.Error("empty must render nothing")
+	}
+	rules := []Rule{
+		{Meta: Meta{ID: "g1", CreatedAt: daysAgo(1)}, Short: "G1", Text: "answer short", Question: "how long?", Roles: []string{"planner", "reviewer"}, Deliveries: 3, Citations: 1},
+		{Meta: Meta{ID: "g2", CreatedAt: daysAgo(1)}, Short: "G2", Text: "no emojis", Question: "emojis?"},
+	}
+	out := RenderGlobal(rules, []Learning{{Meta: Meta{ID: "l1"}, Short: "A9", Text: "prefer tabs"}}, renderNow)
+	for _, want := range []string{"Global rules (2)", "G1 · answer short", "settles: how long? · roles: planner, reviewer · delivered 3 · cited 1", "roles: all", "Global learnings (1)", `promote: nxy mem promote A9 --question "..."`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if got := RenderSearch([]Hit{{Kind: "rule", Short: "G1", Text: "x"}}); !strings.Contains(got, "global") {
+		t.Errorf("search: %q", got)
+	}
+}
+
 func TestRenderShowEmptyAndBudget(t *testing.T) {
 	if got := RenderShow(nil, nil, renderNow); got != "no rules for this repo yet\n" {
 		t.Fatalf("empty: %q", got)
@@ -60,7 +79,7 @@ func TestRenderRelatedSearchNotes(t *testing.T) {
 	if got := RenderSearch(nil); got != "no results\n" {
 		t.Fatalf("search empty: %q", got)
 	}
-	got = RenderSearch([]Hit{{Kind: "rule", Short: "K1", Text: "a  b"}, {Kind: "feature", ID: "F9", Text: "t"}})
+	got = RenderSearch([]Hit{{Kind: "rule", Short: "K1", Repo: "r", Text: "a  b"}, {Kind: "feature", ID: "F9", Text: "t"}})
 	if got != "rule · K1 · a b\nfeature · F9 · t\n" {
 		t.Fatalf("search: %q", got)
 	}

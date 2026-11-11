@@ -83,13 +83,22 @@ func (s *fakeLegacyStore) mark(scope, key string, c legacy.Counts) bool {
 }
 
 func (s *fakeLegacyStore) ImportLegacyMemory(_ context.Context, repo string, imp legacy.Import) (legacy.Counts, bool, error) {
-	if !s.mark("memory", repo, imp.Counts) {
+	repoNew := s.mark("memory", repo, imp.Counts)
+	globalNew := s.mark(legacy.ScopeMemoryGlobal, "", legacy.Counts{Globals: imp.Counts.Globals})
+	if !repoNew && !globalNew {
 		return legacy.Counts{}, false, nil
+	}
+	c := imp.Counts
+	if !globalNew {
+		c.Globals = 0
+	}
+	if !repoNew {
+		return legacy.Counts{Globals: c.Globals}, true, nil
 	}
 	if s.notes != nil {
 		s.notes.notes = append(s.notes.notes, imp.Notes...)
 	}
-	return imp.Counts, true, nil
+	return c, true, nil
 }
 
 func (s *fakeLegacyStore) ImportLegacyReviews(_ context.Context, checkout string, _ []legacy.Pick, c legacy.Counts) (bool, error) {
@@ -187,6 +196,30 @@ func TestSessionStartImportsLegacyOnceAndAsksAboutTheImportedNote(t *testing.T) 
 	}
 	if d.memReads != 1 || len(s.calls) != 1 || len(d.filterRead) != 1 {
 		t.Errorf("memReads=%d calls=%d reads=%v: nothing should repeat", d.memReads, len(s.calls), d.filterRead)
+	}
+}
+
+func TestSessionStartGlobalsComeOncePerMachineEvenForAMarkedRepo(t *testing.T) {
+	h, d, s, _ := legacyHooks(t)
+	now := time.Now().UnixMilli()
+	d.hasMem = true
+	d.mem = []legacy.Memory{
+		{ID: "g1", Scope: "global", Type: "preference", Title: "sin emojis", Created: now, Updated: now},
+		{ID: "g2", Scope: "global", Type: "decision", Title: "ingles en commits", Created: now, Updated: now},
+	}
+	// the repo was imported by a build that knew no globals
+	s.marks["memory/"+d.RepoKey("/srv/dev/proj")] = legacy.Mark{Scope: "memory", Key: d.RepoKey("/srv/dev/proj")}
+
+	r := h.Handle(context.Background(), startEv("startup", "s1"))
+	if !strings.Contains(r.Notice, "2 globales → aprendizajes globales") {
+		t.Fatalf("notice = %q", r.Notice)
+	}
+	if d.memReads != 1 {
+		t.Fatalf("memReads = %d", d.memReads)
+	}
+	h.Handle(context.Background(), startEv("startup", "s2"))
+	if d.memReads != 1 {
+		t.Errorf("memReads = %d: the globals must not be read again", d.memReads)
 	}
 }
 
@@ -338,7 +371,7 @@ func TestImportLegacyMemoryImportedLaterWhenTheFileAppears(t *testing.T) {
 	d.hasMem = true
 	d.mem = []legacy.Memory{{ID: "c1", Scope: "project", Type: "convention", Title: "x", Created: 1, Updated: 1}}
 	_, first, _ := h.ImportLegacy(context.Background(), "/p")
-	if !first || len(s.marks) != 1 {
+	if !first || len(s.marks) != 2 { // the repo and the machine's global mark
 		t.Errorf("first=%v marks=%v", first, s.marks)
 	}
 }

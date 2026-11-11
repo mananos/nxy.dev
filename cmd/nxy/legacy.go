@@ -185,9 +185,10 @@ func legacyImport(ctx context.Context, dir string, stdout, stderr io.Writer) int
 		return memFail(stderr, err)
 	}
 	repo, checkout := d.RepoKey(dir), d.Checkout(dir)
-	labels := map[string]string{sqlite.LegacyScopeMemory: "memoria", sqlite.LegacyScopeReview: "review"}
+	labels := map[string]string{sqlite.LegacyScopeMemory: "memoria", sqlite.LegacyScopeReview: "review", sqlite.LegacyScopeGlobal: "memoria global"}
 	for _, m := range after {
-		if !(m.Scope == sqlite.LegacyScopeMemory && m.Key == repo) && !(m.Scope == sqlite.LegacyScopeReview && m.Key == checkout) {
+		if !(m.Scope == sqlite.LegacyScopeMemory && m.Key == repo) && !(m.Scope == sqlite.LegacyScopeReview && m.Key == checkout) &&
+			m.Scope != sqlite.LegacyScopeGlobal {
 			continue
 		}
 		if was[m.Scope+"\x00"+m.Key] {
@@ -244,6 +245,10 @@ func legacyStatus(ctx context.Context, stdout, stderr io.Writer) int {
 	for _, m := range marks {
 		if m.Scope == legacy.ScopeMemoryError {
 			fmt.Fprintf(stdout, "memoria de %s — último error el %s: %s (`nxy legacy import` lo reintenta)\n", m.Key, legacyDate(m.ImportedAt), m.Error)
+			continue
+		}
+		if m.Scope == sqlite.LegacyScopeGlobal {
+			fmt.Fprintf(stdout, "memoria global — importado el %s — %s\n", legacyDate(m.ImportedAt), orNothing(m.Counts.Render()))
 			continue
 		}
 		kind := "memoria de "

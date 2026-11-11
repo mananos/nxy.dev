@@ -59,7 +59,7 @@ func TestConvertMemory(t *testing.T) {
 	if c.Notes != 1 || c.NotesExpired != 1 || c.Features != 1 {
 		t.Errorf("note/feature counts = %+v", c)
 	}
-	if len(imp.Learnings) != 3 || imp.Learnings[0].Text != "Usar tabs" || imp.Learnings[1].Text != "Falla el parser (área api)" {
+	if len(imp.Learnings) != 4 || imp.Learnings[0].Text != "Usar tabs" || imp.Learnings[1].Text != "Falla el parser (área api)" {
 		t.Fatalf("learnings = %+v", imp.Learnings)
 	}
 	l := imp.Learnings[0]
@@ -81,8 +81,43 @@ func TestConvertMemory(t *testing.T) {
 	for _, s := range imp.Sources {
 		ids[s.Kind+":"+s.LegacyID] = s.Kind
 	}
-	if len(imp.Sources) != 5 || ids["note:handoff-a-1"] == "" || ids["feature:handoff-c-3-done-zz"] == "" {
+	if g := imp.Learnings[3]; g.Repo != memory.GlobalRepo || g.Text != "Global" || g.Hash != memory.LearningHash("Global", nil) {
+		t.Errorf("global learning = %+v", g)
+	}
+	if len(imp.Sources) != 6 || ids["global-learning:g1"] == "" || ids["note:handoff-a-1"] == "" || ids["feature:handoff-c-3-done-zz"] == "" {
 		t.Errorf("sources = %+v", imp.Sources)
+	}
+}
+
+func TestConvertMemoryGlobals(t *testing.T) {
+	mems := []Memory{
+		{ID: "g1", Scope: "global", Type: "preference", Title: "Sin emojis", Created: 1, Updated: 1},
+		{ID: "g2", Scope: "global", Type: "convention", Title: "Privada", Private: true, Created: 2, Updated: 2},
+		{ID: "g3", Scope: "global", Type: "decision", Title: "Vieja", Created: 3, Updated: 3},
+		{ID: "g4", Scope: "global", Type: "decision", Title: "Nueva", Created: 4, Updated: 4},
+		{ID: "g5", Scope: "global", Type: "lore", Title: "Otra", Created: 5, Updated: 5},
+		{ID: "g6", Scope: "global", Type: "bug", Title: "Con archivo", Created: 6, Updated: 6},
+	}
+	edges := []Edge{{Src: "g4", Dst: "g3", Kind: "supersedes"}, {Src: "g6", Dst: "file:/srv/dev/a.go", Kind: "file"}}
+	imp := ConvertMemory(mems, edges, "r", "/f", 10)
+	c := imp.Counts
+	if c.Globals != 3 || c.Private != 1 || c.Superseded != 1 || c.Other != 1 || c.Learnings != 0 || c.Preferences != 0 {
+		t.Errorf("counts = %+v", c)
+	}
+	if len(imp.Learnings) != 3 || len(imp.Sources) != 3 || imp.Learnings[2].Files[0] != "/srv/dev/a.go" {
+		t.Fatalf("imp = %+v", imp)
+	}
+	for _, l := range imp.Learnings {
+		if l.Repo != memory.GlobalRepo {
+			t.Errorf("repo = %q", l.Repo)
+		}
+	}
+	got := Counts{Globals: 3, GlobalFirst: 13, GlobalLast: 15}.Render()
+	if got != "3 globales → aprendizajes globales A13..A15" {
+		t.Errorf("render = %q", got)
+	}
+	if got := (Counts{Globals: 1, GlobalFirst: 13, GlobalLast: 13}).Render(); got != "1 global → aprendizaje global A13" {
+		t.Errorf("render = %q", got)
 	}
 }
 

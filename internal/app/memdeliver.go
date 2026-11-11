@@ -24,7 +24,14 @@ func (h Hooks) memoryFor(ctx context.Context, f domain.Feature, role string, fil
 		return memory.Packet{}
 	}
 	mrs := h.memRepos(f)
-	if role == rolePlanner {
+	// An error loading the global rules only drops them.
+	var globals []memory.Rule
+	if mr := memRole(role); mr != "" {
+		if gl, err := h.Memory.GlobalRules(ctx); err == nil {
+			globals = gl
+		}
+	}
+	if role == rolePlanner || role == roleMain {
 		// The planner runs before the plan names its repos: it gets the rules of the session repo (or
 		// of every repo of the feature once it has them).
 		var groups []memory.RepoRules
@@ -35,7 +42,7 @@ func (h Hooks) memoryFor(ctx context.Context, f domain.Feature, role string, fil
 			}
 			groups = append(groups, memory.RepoRules{Name: r.Name, Rules: rules})
 		}
-		pkt := memory.PackRepos(groups, memory.DispatchBudget)
+		pkt := memory.PackWith(groups, memory.GlobalFor(globals, memRole(role), nil, true), memory.DispatchBudget)
 		if pkt.Text == "" {
 			pkt.Text = noRulesYet
 		}
@@ -82,7 +89,11 @@ func (h Hooks) memoryFor(ctx context.Context, f domain.Feature, role string, fil
 		}
 		groups = append(groups, g)
 	}
-	pkt := memory.PackRepos(groups, memory.DispatchBudget)
+	var allRels []string
+	for _, r := range rels {
+		allRels = append(allRels, r...)
+	}
+	pkt := memory.PackWith(groups, memory.GlobalFor(globals, memRole(role), allRels, false), memory.DispatchBudget)
 	h.countDeliveries(ctx, pkt)
 	return pkt
 }

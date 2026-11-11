@@ -30,6 +30,9 @@ type Mark struct {
 // ScopeMemoryError is the scope of the mark that keeps the last memory import failure per repo.
 const ScopeMemoryError = "memory-error"
 
+// ScopeMemoryGlobal is the scope of the mark (empty key) of the global memories, imported once per machine.
+const ScopeMemoryGlobal = "memory-global"
+
 // StoredCursor is a stored read position of a checkout's filter.jsonl.
 type StoredCursor struct {
 	Checkout  string

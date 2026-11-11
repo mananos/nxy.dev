@@ -13,6 +13,7 @@ import (
 const (
 	legacyScopeMemory = "memory"
 	legacyScopeReview = "review"
+	legacyScopeGlobal = legacy.ScopeMemoryGlobal // key "": the global memories, once per machine
 )
 
 // ImportLegacy copies what the 1.x knows of the repo of dir into the v2 without touching a 1.x
@@ -68,7 +69,7 @@ func (h Hooks) importLegacy(ctx context.Context, dir string, force bool) (legacy
 			failedRecently = h.now().UnixMilli()-m.ImportedAt < legacyRetryAfter.Milliseconds()
 		}
 	}
-	if hasMem && !marked(legacyScopeMemory, repo) && (force || !failedRecently) {
+	if hasMem && (!marked(legacyScopeMemory, repo) || !marked(legacyScopeGlobal, "")) && (force || !failedRecently) {
 		mems, edges, err := d.Memory(ctx, d.ProjectKey(dir))
 		if err == nil {
 			imp := legacy.ConvertMemory(mems, edges, repo, d.Folder(dir), h.now().UnixMilli())

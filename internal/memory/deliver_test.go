@@ -49,6 +49,67 @@ func TestPackBudgetAndOrder(t *testing.T) {
 	}
 }
 
+func TestGlobalFor(t *testing.T) {
+	rules := []Rule{
+		{Meta: Meta{ID: "g1"}, Short: "G1"},
+		{Meta: Meta{ID: "g2"}, Short: "G2", Roles: []string{RoleReviewer}},
+		{Meta: Meta{ID: "g3"}, Short: "G3", Paths: []string{"*.go"}},
+		{Meta: Meta{ID: "g4"}, Short: "G4", Roles: []string{RolePlanner, RoleMain}, Paths: []string{"*.go"}},
+	}
+	shorts := func(rs []Rule) string {
+		var s []string
+		for _, r := range rs {
+			s = append(s, r.Short)
+		}
+		return strings.Join(s, ",")
+	}
+	if got := shorts(GlobalFor(rules, RoleReviewer, []string{"a.md"}, false)); got != "G1,G2" {
+		t.Errorf("reviewer md = %s", got)
+	}
+	if got := shorts(GlobalFor(rules, RoleImplementer, []string{"a.go"}, false)); got != "G3,G1" {
+		t.Errorf("implementer go = %s", got)
+	}
+	if got := shorts(GlobalFor(rules, RolePlanner, nil, true)); got != "G1,G3,G4" {
+		t.Errorf("planner all = %s", got)
+	}
+}
+
+func TestPackWithGlobals(t *testing.T) {
+	ks := []Rule{{Meta: Meta{ID: "r1"}, Short: "K1", Text: "k rule"}}
+	gs := []Rule{{Meta: Meta{ID: "g1"}, Short: "G1", Text: "g rule"}}
+	ls := []Learning{{Meta: Meta{ID: "l1"}, Short: "A1", Text: "learnt"}}
+	p := PackWith([]RepoRules{{Name: "a", Rules: ks, Learnings: ls}, {Name: "b"}}, gs, DispatchBudget)
+	if want := "[a] K1: k rule\nG1: g rule\n[a] A1: learnt\n" + GlobalPrecedence; p.Text != want {
+		t.Fatalf("text: %q", p.Text)
+	}
+	if len(p.Rules) != 2 || p.Origins["G1"][0] != GlobalRepo {
+		t.Fatalf("packet: %+v", p)
+	}
+	if no := PackWith([]RepoRules{{Rules: ks}}, nil, DispatchBudget); no.Text != "K1: k rule" {
+		t.Fatalf("no globals: %q", no.Text)
+	}
+	// a budget that cuts a K drops every G first
+	big := []Rule{
+		{Meta: Meta{ID: "r1"}, Short: "K1", Text: strings.Repeat("a", 1400)},
+		{Meta: Meta{ID: "r2"}, Short: "K2", Text: strings.Repeat("b", 1400)},
+		{Meta: Meta{ID: "r3"}, Short: "K3", Text: strings.Repeat("c", 1400)},
+	}
+	tiny := []Rule{{Meta: Meta{ID: "g1"}, Short: "G1", Text: "tiny"}}
+	cut := PackWith([]RepoRules{{Rules: big}}, tiny, DispatchBudget)
+	if len(cut.Text) > DispatchBudget || strings.Contains(cut.Text, "G1: tiny") || strings.Contains(cut.Text, GlobalPrecedence) {
+		t.Fatalf("G survived a K cut: %q", cut.Text)
+	}
+	if !strings.Contains(cut.Text, "K1: a") || !strings.Contains(cut.Text, "K2: b") || !strings.Contains(cut.Text, "not shown (budget): K3, G1") {
+		t.Fatalf("cut text tail: %q", cut.Text[len(cut.Text)-60:])
+	}
+	// the precedence line counts toward the budget
+	for b := len("K1: k rule"); b < len("K1: k rule\nG1: g rule\n"+GlobalPrecedence)+2; b++ {
+		if g := PackWith([]RepoRules{{Rules: ks}}, gs, b); len(g.Text) > b {
+			t.Fatalf("budget %d: %d chars", b, len(g.Text))
+		}
+	}
+}
+
 func TestRulesFor(t *testing.T) {
 	rs := []Rule{
 		{Meta: Meta{ID: "a"}, Text: "all"},

@@ -48,6 +48,7 @@ type packItem struct {
 	id, short, line string
 	learning        bool
 	repo            string
+	global          bool
 }
 
 func shortOf(short, id string) string {
@@ -75,7 +76,30 @@ type RepoRules struct {
 
 // PackRepos is Pack over the rules of several repos: every rule first, then every learning, each
 // line starting with "[name] " when there is more than one group. One group is the same as Pack.
-func PackRepos(groups []RepoRules, budget int) Packet {
+func PackRepos(groups []RepoRules, budget int) Packet { return PackWith(groups, nil, budget) }
+
+// GlobalPrecedence is the line that says which rule wins when a G and a K contradict.
+const GlobalPrecedence = "If a G rule contradicts a K rule, the K rule wins."
+
+// GlobalFor returns the global rules a role receives: those whose Roles is empty or has the role.
+// With all set (planner, main) every one of them; otherwise only those that apply to files.
+func GlobalFor(rules []Rule, role string, files []string, all bool) []Rule {
+	var mine []Rule
+	for _, r := range rules {
+		if len(r.Roles) == 0 || slices.Contains(r.Roles, role) {
+			mine = append(mine, r)
+		}
+	}
+	if all {
+		return mine
+	}
+	return RulesFor(mine, files)
+}
+
+// PackWith is PackRepos plus the global rules: every K rule, then the G rules (no repo prefix), then
+// the learnings. Once a K rule is skipped for budget every G is skipped too, so a G is always cut
+// before a K. When a G is kept, GlobalPrecedence closes the list.
+func PackWith(groups []RepoRules, global []Rule, budget int) Packet {
 	prefix := func(name string) string {
 		if len(groups) > 1 && name != "" {
 			return "[" + name + "] "
@@ -86,49 +110,66 @@ func PackRepos(groups []RepoRules, budget int) Packet {
 	for _, g := range groups {
 		for _, r := range g.Rules {
 			s := shortOf(r.Short, r.ID)
-			items = append(items, packItem{r.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(r.Text), false, g.Name})
+			items = append(items, packItem{r.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(r.Text), false, g.Name, false})
 		}
 	}
+	nK := len(items)
+	for _, r := range global {
+		s := shortOf(r.Short, r.ID)
+		items = append(items, packItem{r.ID, s, s + ": " + strings.TrimSpace(r.Text), false, GlobalRepo, true})
+	}
+	nG := len(items) - nK
 	for _, g := range groups {
 		for _, l := range g.Learnings {
 			s := shortOf(l.Short, l.ID)
-			items = append(items, packItem{l.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(l.Text), true, g.Name})
+			items = append(items, packItem{l.ID, s, prefix(g.Name) + s + ": " + strings.TrimSpace(l.Text), true, g.Name, false})
 		}
 	}
 	var kept []packItem
 	var skipped []string
 	used := 0
-	for _, it := range items {
+	kSkipped := false
+	for i, it := range items {
+		isG := i >= nK && i < nK+nG
 		n := len(it.line)
 		if len(kept) > 0 {
 			n++ // newline
 		}
-		if used+n > budget {
+		if (isG && kSkipped) || used+n > budget {
 			skipped = append(skipped, it.short)
+			if i < nK {
+				kSkipped = true
+			}
 			continue
 		}
 		used += n
 		kept = append(kept, it)
 	}
-	notShown := func() string {
-		return "not shown (budget): " + strings.Join(skipped, ", ") + " - run nxy mem show"
-	}
-	if len(skipped) > 0 {
-		// make room for the line, dropping from the end
-		for len(kept) > 0 && used+1+len(notShown()) > budget {
-			last := kept[len(kept)-1]
-			kept = kept[:len(kept)-1]
-			used -= len(last.line)
-			if len(kept) > 0 {
-				used--
+	render := func() []string {
+		lines := make([]string, 0, len(kept)+2)
+		hasG := false
+		for _, it := range kept {
+			lines = append(lines, it.line)
+			if it.global {
+				hasG = true
 			}
-			skipped = append([]string{last.short}, skipped...)
 		}
+		if hasG {
+			lines = append(lines, GlobalPrecedence)
+		}
+		if len(skipped) > 0 {
+			lines = append(lines, "not shown (budget): "+strings.Join(skipped, ", ")+" - run nxy mem show")
+		}
+		return lines
+	}
+	// make room for the precedence and "not shown" lines, dropping from the end
+	for len(kept) > 0 && len(strings.Join(render(), "\n")) > budget {
+		last := kept[len(kept)-1]
+		kept = kept[:len(kept)-1]
+		skipped = append([]string{last.short}, skipped...)
 	}
 	var p Packet
-	lines := make([]string, 0, len(kept)+1)
 	for _, it := range kept {
-		lines = append(lines, it.line)
 		p.Referenced = append(p.Referenced, it.short)
 		if p.Origins == nil {
 			p.Origins = map[string][]string{}
@@ -142,10 +183,7 @@ func PackRepos(groups []RepoRules, budget int) Packet {
 			p.Rules = append(p.Rules, it.id)
 		}
 	}
-	if len(skipped) > 0 {
-		lines = append(lines, notShown())
-	}
-	p.Text = strings.Join(lines, "\n")
+	p.Text = strings.Join(render(), "\n")
 	if len(p.Text) > budget {
 		p.Text = p.Text[:budget]
 	}

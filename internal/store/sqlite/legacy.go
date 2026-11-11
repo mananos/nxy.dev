@@ -18,13 +18,15 @@ import (
 
 	"github.com/mananos/nxy.dev/internal/jscompat"
 	"github.com/mananos/nxy.dev/internal/legacy"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/report"
 )
 
 // Marks of what was imported once.
 const (
-	LegacyScopeMemory = "memory" // key = repo
-	LegacyScopeReview = "review" // key = checkout
+	LegacyScopeMemory = "memory"                 // key = repo
+	LegacyScopeReview = "review"                 // key = checkout
+	LegacyScopeGlobal = legacy.ScopeMemoryGlobal // key = "" (once per machine)
 )
 
 // Sources of the rows of filter_sessions.
@@ -154,55 +156,110 @@ func (s *Store) ImportLegacyMemory(ctx context.Context, repo string, imp legacy.
 }
 
 func (s *Store) importLegacyMemory(ctx context.Context, repo string, imp legacy.Import) (legacy.Counts, bool, error) {
+	// c: the repo part (no globals); g: the global part. Both are what went in this time.
 	c := imp.Counts
 	c.Learnings, c.Repeated, c.LearningFirst, c.LearningLast = 0, 0, 0, 0
+	c.Globals, c.GlobalFirst, c.GlobalLast = 0, 0, 0
+	c.Private -= imp.GlobalLeft.Private
+	c.Other -= imp.GlobalLeft.Other
+	c.Superseded -= imp.GlobalLeft.Superseded
+	repoCounts := imp.Counts
+	repoCounts.Globals, repoCounts.GlobalFirst, repoCounts.GlobalLast = 0, 0, 0
+	repoCounts.Private -= imp.GlobalLeft.Private
+	repoCounts.Other -= imp.GlobalLeft.Other
+	repoCounts.Superseded -= imp.GlobalLeft.Superseded
+	var g legacy.Counts
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return c, false, err
 	}
 	defer tx.Rollback()
 	now := s.nowMs()
-	first, err := putMark(ctx, tx, LegacyScopeMemory, repo, now, imp.Counts)
-	if err != nil || !first {
+	repoNew, err := putMark(ctx, tx, LegacyScopeMemory, repo, now, repoCounts)
+	if err != nil {
 		return c, false, err
+	}
+	globalNew, err := putMark(ctx, tx, LegacyScopeGlobal, "", now, legacy.Counts{})
+	if err != nil {
+		return c, false, err
+	}
+	if !repoNew && !globalNew {
+		return legacy.Counts{}, false, nil
+	}
+	if globalNew {
+		// the global leftovers belong to the global mark only
+		g.Private, g.Other, g.Superseded = imp.GlobalLeft.Private, imp.GlobalLeft.Other, imp.GlobalLeft.Superseded
+	}
+	// insertLearning stores l unless the same learning is already live; it returns the short
+	// number stored (0 when it was already there).
+	insertLearning := func(l memory.Learning, legacyID string) (int, error) {
+		var one int
+		err := tx.QueryRowContext(ctx, `SELECT 1 FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0`, l.Repo, l.Hash).Scan(&one)
+		if err == nil {
+			return 0, nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return 0, err
+		}
+		l.ID = legacyULID(l.CreatedAt, legacyID)
+		l.Machine = s.machineID
+		l.Seen = 1
+		if l.LastSeenAt == 0 {
+			l.LastSeenAt = l.UpdatedAt
+		}
+		if l.Short, err = nextShort(ctx, tx, KindLearning, "A"); err != nil {
+			return 0, err
+		}
+		if err := upsertLearning(ctx, tx, l); err != nil {
+			return 0, err
+		}
+		var short string
+		if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE id=?`, l.ID).Scan(&short); err != nil {
+			return 0, err
+		}
+		n, _ := strconv.Atoi(strings.TrimPrefix(short, "A"))
+		return n, nil
 	}
 	for _, src := range imp.Sources {
 		switch src.Kind {
+		case legacy.SourceGlobalLearning:
+			if !globalNew {
+				continue
+			}
+			n, err := insertLearning(imp.Learnings[src.Index], src.LegacyID)
+			if err != nil {
+				return c, false, err
+			}
+			if n == 0 {
+				g.Repeated++
+				continue
+			}
+			g.Globals++
+			if g.GlobalFirst == 0 || n < g.GlobalFirst {
+				g.GlobalFirst = n
+			}
+			g.GlobalLast = max(g.GlobalLast, n)
 		case legacy.SourceLearning:
-			l := imp.Learnings[src.Index]
-			var one int
-			err := tx.QueryRowContext(ctx, `SELECT 1 FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0`, l.Repo, l.Hash).Scan(&one)
-			if err == nil {
+			if !repoNew {
+				continue
+			}
+			n, err := insertLearning(imp.Learnings[src.Index], src.LegacyID)
+			if err != nil {
+				return c, false, err
+			}
+			if n == 0 {
 				c.Repeated++
 				continue
 			}
-			if !errors.Is(err, sql.ErrNoRows) {
-				return c, false, err
-			}
-			l.ID = legacyULID(l.CreatedAt, src.LegacyID)
-			l.Machine = s.machineID
-			l.Seen = 1
-			if l.LastSeenAt == 0 {
-				l.LastSeenAt = l.UpdatedAt
-			}
-			if l.Short, err = nextShort(ctx, tx, KindLearning); err != nil {
-				return c, false, err
-			}
-			if err := upsertLearning(ctx, tx, l); err != nil {
-				return c, false, err
-			}
-			var short string
-			if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE id=?`, l.ID).Scan(&short); err != nil {
-				return c, false, err
-			}
 			c.Learnings++
-			if n, err := strconv.Atoi(strings.TrimPrefix(short, "A")); err == nil {
-				if c.LearningFirst == 0 || n < c.LearningFirst {
-					c.LearningFirst = n
-				}
-				c.LearningLast = max(c.LearningLast, n)
+			if c.LearningFirst == 0 || n < c.LearningFirst {
+				c.LearningFirst = n
 			}
+			c.LearningLast = max(c.LearningLast, n)
 		case legacy.SourceFeature:
+			if !repoNew {
+				continue
+			}
 			f := imp.Features[src.Index]
 			f.ID = legacyULID(f.CreatedAt, src.LegacyID)
 			f.Machine = s.machineID
@@ -210,10 +267,13 @@ func (s *Store) importLegacyMemory(ctx context.Context, repo string, imp legacy.
 				return c, false, err
 			}
 		case legacy.SourceNote:
+			if !repoNew {
+				continue
+			}
 			n := imp.Notes[src.Index]
 			n.ID = legacyULID(n.CreatedAt, src.LegacyID)
 			n.Machine = s.machineID
-			if n.Short, err = nextShort(ctx, tx, KindNote); err != nil {
+			if n.Short, err = nextShort(ctx, tx, KindNote, "N"); err != nil {
 				return c, false, err
 			}
 			if err := upsertNote(ctx, tx, n); err != nil {
@@ -221,14 +281,27 @@ func (s *Store) importLegacyMemory(ctx context.Context, repo string, imp legacy.
 			}
 		}
 	}
-	b, err := json.Marshal(c)
-	if err != nil {
-		return c, false, err
+	store := func(scope, key string, cc legacy.Counts) error {
+		b, err := json.Marshal(cc)
+		if err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `UPDATE legacy_imports SET counts=? WHERE scope=? AND key=?`, string(b), scope, key)
+		return err
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE legacy_imports SET counts=? WHERE scope=? AND key=?`, string(b), LegacyScopeMemory, repo); err != nil {
-		return c, false, err
+	out := g
+	if repoNew {
+		if err := store(LegacyScopeMemory, repo, c); err != nil {
+			return c, false, err
+		}
+		out = c.Add(g)
 	}
-	return c, true, tx.Commit()
+	if globalNew {
+		if err := store(LegacyScopeGlobal, "", g); err != nil {
+			return c, false, err
+		}
+	}
+	return out, true, tx.Commit()
 }
 
 // ImportLegacyReviews stores the findings the 1.x offered, once per checkout (false: already

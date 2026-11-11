@@ -103,6 +103,13 @@ type Store interface {
 type MemoryStore interface {
 	AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error)
 	Rules(ctx context.Context, repo string) ([]memory.Rule, error)
+	AddGlobalRule(ctx context.Context, r memory.Rule) (memory.Rule, error)
+	GlobalRules(ctx context.Context) ([]memory.Rule, error)
+	EditRule(ctx context.Context, ref string, e memory.RuleEdit) (memory.Rule, error)
+	EditLearning(ctx context.Context, ref string, e memory.LearningEdit) (memory.Learning, error)
+	MemoryKind(ctx context.Context, ref string) (string, error)
+	DeleteMemory(ctx context.Context, ref string) (string, error)
+	RestoreMemory(ctx context.Context, ref string) (string, error)
 	AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error)
 	Learnings(ctx context.Context, repo string) ([]memory.Learning, error)
 	Promote(ctx context.Context, ref, question string, paths []string) (memory.Rule, error)
@@ -119,6 +126,8 @@ type MemoryStore interface {
 // FlowMemory is what the feature flow needs from the memory; a nil one in Hooks skips it all.
 type FlowMemory interface {
 	Rules(ctx context.Context, repo string) ([]memory.Rule, error)
+	// GlobalRules are the user's global rules (G<n>).
+	GlobalRules(ctx context.Context) ([]memory.Rule, error)
 	Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error)
 	AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error)
 	AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error)

@@ -64,6 +64,32 @@ func TestMemDeliverMultiRepoImplementerGetsOnlyTheBatchRepo(t *testing.T) {
 	}
 }
 
+type citeSpy struct {
+	*keyedMemory
+	cites [][]string
+}
+
+func (m *citeSpy) Cite(_ context.Context, _ string, shorts []string, _ int64) ([]string, error) {
+	m.cites = append(m.cites, shorts)
+	return shorts, nil
+}
+
+func TestReviewMemoryGlobalRuleCitedOnceInTwoRepos(t *testing.T) {
+	km := &keyedMemory{deliverMemory: &deliverMemory{}, byKey: map[string][]memory.Rule{}}
+	mem := &citeSpy{keyedMemory: km}
+	h, _, _ := deliverSetup(t, km.deliverMemory)
+	h.Memory = mem
+	f := twoRepoFeature(t)
+	sub := review.Submission{Findings: []domain.Finding{
+		{Rule: "G2", File: "api/x.go"},
+		{Rule: "G2", File: "web/y.go"},
+	}}
+	h.reviewMemory(context.Background(), f, "", sub, nil)
+	if len(mem.cites) != 1 || len(mem.cites[0]) != 1 || mem.cites[0][0] != "G2" {
+		t.Errorf("cites = %v, want one citation of G2", mem.cites)
+	}
+}
+
 func TestReviewDiffsMultiRepoLabeled(t *testing.T) {
 	h, _, _ := deliverSetup(t, nil)
 	f := twoRepoFeature(t)

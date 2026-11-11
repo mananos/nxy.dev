@@ -143,10 +143,6 @@ func TestDecodeBundle(t *testing.T) {
 }
 
 func TestDecodeBundleValidatesLikeTheCLI(t *testing.T) {
-	noRepo := `{"version":1,"rules":[{"id":"R1","text":"t","question":"q","origin":"manual"}]}`
-	if _, err := DecodeBundle([]byte(noRepo)); err == nil {
-		t.Error("rule without repo accepted")
-	}
 	noText := `{"version":1,"learnings":[{"id":"L1","repo":"r"}]}`
 	if _, err := DecodeBundle([]byte(noText)); err == nil {
 		t.Error("learning without text accepted")
@@ -170,6 +166,61 @@ func TestDecodeBundleValidatesLikeTheCLI(t *testing.T) {
 	}
 	if want := LearningHash("use tabs", []string{"a.go"}); b.Learnings[0].Hash != want {
 		t.Errorf("hash = %q, want %q", b.Learnings[0].Hash, want)
+	}
+}
+
+func TestValidateRuleRoles(t *testing.T) {
+	g := goodRule()
+	g.Repo, g.Short, g.Roles = GlobalRepo, "G1", []string{RolePlanner, RoleReviewer}
+	if err := ValidateRule(g); err != nil {
+		t.Errorf("global rule with roles: %v", err)
+	}
+	g.Roles = []string{"scout"}
+	if err := ValidateRule(g); err == nil {
+		t.Error("unknown role accepted")
+	}
+	k := goodRule()
+	k.Roles = []string{RolePlanner}
+	if err := ValidateRule(k); err == nil || !strings.Contains(err.Error(), "only applies to global rules") {
+		t.Errorf("roles on a K: %v", err)
+	}
+	got := CleanRoles([]string{" Reviewer", "planner", "reviewer", ""})
+	if len(got) != 2 || got[0] != "planner" || got[1] != "reviewer" {
+		t.Errorf("CleanRoles = %v", got)
+	}
+}
+
+func TestDecodeBundleGlobals(t *testing.T) {
+	in := `{"version":1,"rules":[` +
+		`{"id":"R1","short":"G2","text":"t","question":"q","origin":"manual","roles":["planner"]},` +
+		`{"id":"R2","short":"K3","text":"t","question":"q","origin":"manual"},` +
+		`{"id":"R3","short":"K4","repo":"r","text":"t","question":"q","origin":"manual"},` +
+		`{"id":"R4","short":"G5","repo":"r","text":"t","question":"q","origin":"manual"}],` +
+		`"learnings":[{"id":"L1","short":"A1","text":"global one"}]}`
+	b, err := DecodeBundle([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Rules[0].Short != "G2" || b.Rules[1].Short != "" || b.Rules[2].Short != "K4" || b.Rules[3].Short != "" {
+		t.Errorf("shorts: %q %q %q %q", b.Rules[0].Short, b.Rules[1].Short, b.Rules[2].Short, b.Rules[3].Short)
+	}
+	if b.Learnings[0].Repo != GlobalRepo || b.Learnings[0].Hash == "" {
+		t.Errorf("global learning: %+v", b.Learnings[0])
+	}
+	bad := `{"version":1,"rules":[{"id":"R1","repo":"r","text":"t","question":"q","origin":"manual","roles":["planner"]}]}`
+	if _, err := DecodeBundle([]byte(bad)); err == nil {
+		t.Error("roles on a repo rule accepted")
+	}
+}
+
+func TestDecodeBundleBlankRepo(t *testing.T) {
+	rule := `{"version":1,"rules":[{"id":"R1","repo":"  ","text":"t","question":"q","origin":"manual"}]}`
+	if _, err := DecodeBundle([]byte(rule)); err == nil {
+		t.Error("rule with a blank repo accepted")
+	}
+	learning := `{"version":1,"learnings":[{"id":"L1","repo":"  ","text":"t"}]}`
+	if _, err := DecodeBundle([]byte(learning)); err == nil {
+		t.Error("learning with a blank repo accepted")
 	}
 }
 

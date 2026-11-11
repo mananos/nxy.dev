@@ -295,6 +295,16 @@ func TestValidateMemory(t *testing.T) {
 	}
 }
 
+func TestValidateMemoryGlobalRule(t *testing.T) {
+	sub := Submission{Findings: []domain.Finding{{Rule: "g2"}}}
+	if p := ValidateMemory(sub, []string{"G2"}); len(p) != 0 {
+		t.Errorf("delivered G refused: %v", p)
+	}
+	if p := ValidateMemory(sub, []string{"K1"}); len(p) != 1 {
+		t.Errorf("undelivered G accepted: %v", p)
+	}
+}
+
 func TestAssembleRuleRaisesLowToMedium(t *testing.T) {
 	rv := domain.Review{Findings: []domain.Finding{
 		{Severity: domain.SeverityLow, Rule: "K1", File: "a.go", Line: 1, Scenario: "x -> y", Cause: domain.CauseChange},

@@ -40,7 +40,7 @@ func (s *Store) Cite(ctx context.Context, repo string, shorts []string, at int64
 	for _, sh := range shorts {
 		sh = strings.ToUpper(strings.TrimSpace(sh))
 		res, err := tx.ExecContext(ctx,
-			`UPDATE mem_rules SET citations=citations+1, last_cited_at=MAX(last_cited_at, ?) WHERE repo=? AND short=? AND deleted_at=0`,
+			`UPDATE mem_rules SET citations=citations+1, last_cited_at=MAX(last_cited_at, ?) WHERE (repo=? OR (repo='' AND short LIKE 'G%')) AND short=? AND deleted_at=0`,
 			at, repo, sh)
 		if err != nil {
 			return nil, err

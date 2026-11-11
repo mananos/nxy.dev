@@ -20,7 +20,7 @@ import (
 // app cannot import adapters: the store meets the port here.
 var _ app.MemoryStore = (*sqlite.Store)(nil)
 
-const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
+const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] [--global [--roles planner,implementer,reviewer,main]] | edit <K3|G2|A7> [--text "<t>"] [--question "<q>"] [--paths g1,g2] [--roles a,b] [--files a,b] | rm <ref> | restore <ref> | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
 
 const noteUsage = `usage: nxy note <save "<title>" [--id N2] [--feature id] [--session id: folder and chain of that session] (body on stdin) | list [--all] | done <id>>`
 
@@ -119,11 +119,11 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		return 1
 	}
 	sub := args[0]
-	opts, pos, flags := memArgs(args[1:], "all", "notes", "apply")
+	opts, pos, flags := memArgs(args[1:], "all", "notes", "apply", "global")
 	cwd := memCwd(opts)
 	ctx := context.Background()
 	switch sub {
-	case "rule", "show", "search", "promote", "related", "export", "import", "note", "bootstrap":
+	case "rule", "show", "search", "promote", "related", "export", "import", "note", "bootstrap", "edit", "rm", "restore":
 	default:
 		fmt.Fprintln(stderr, memUsage)
 		return 1
@@ -142,18 +142,63 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			fmt.Fprintln(stderr, memUsage)
 			return 1
 		}
+		if flags["global"] {
+			r, err := m.AddGlobalRule(ctx, strings.Join(pos, " "), optVal(opts, "question"), optVal(opts, "origin"),
+				splitList(optVal(opts, "paths")), splitList(optVal(opts, "roles")), optVal(opts, "supersedes"))
+			if err != nil {
+				return memFail(stderr, err)
+			}
+			fmt.Fprintf(stdout, "saved global rule %s\n", r.Short)
+			return 0
+		}
+		if _, ok := opts["roles"]; ok {
+			return memFail(stderr, errors.New("--roles only applies to global rules (G<n>): add --global"))
+		}
 		r, err := m.AddRule(ctx, cwd, strings.Join(pos, " "), optVal(opts, "question"), optVal(opts, "origin"),
 			splitList(optVal(opts, "paths")), optVal(opts, "feature"), optVal(opts, "supersedes"))
 		if err != nil {
 			return memFail(stderr, err)
 		}
 		fmt.Fprintf(stdout, "saved rule %s\n", r.Short)
+	case "edit":
+		if len(pos) != 1 {
+			fmt.Fprintln(stderr, memUsage)
+			return 1
+		}
+		short, err := runMemEdit(ctx, m, cwd, pos[0], opts)
+		if err != nil {
+			return memFail(stderr, err)
+		}
+		fmt.Fprintf(stdout, "edited %s\n", short)
+	case "rm", "restore":
+		if len(pos) != 1 {
+			fmt.Fprintln(stderr, memUsage)
+			return 1
+		}
+		if sub == "rm" {
+			short, err := m.Remove(ctx, pos[0])
+			if err != nil {
+				return memFail(stderr, err)
+			}
+			fmt.Fprintf(stdout, "deleted %s (nxy mem restore %s brings it back)\n", short, short)
+		} else {
+			short, err := m.Restore(ctx, pos[0])
+			if err != nil {
+				return memFail(stderr, err)
+			}
+			fmt.Fprintf(stdout, "restored %s\n", short)
+		}
 	case "show":
 		rules, learnings, err := m.Show(ctx, cwd)
 		if err != nil {
 			return memFail(stderr, err)
 		}
 		fmt.Fprint(stdout, memory.RenderShow(rules, learnings, time.Now()))
+		grules, glearnings, err := m.ShowGlobal(ctx)
+		if err != nil {
+			return memFail(stderr, err)
+		}
+		fmt.Fprint(stdout, memory.RenderGlobal(grules, glearnings, time.Now()))
 	case "search":
 		hits, err := m.Search(ctx, cwd, strings.Join(pos, " "), flags["all"])
 		if err != nil {
@@ -235,6 +280,94 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		fmt.Fprintf(stdout, "saved learning %s (seen %d)\n", l.Short, l.Seen)
 	}
 	return 0
+}
+
+// runMemEdit builds the edit from the flags present and applies it to a rule (K3, G2) or a learning (A7).
+func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[string]string) (string, error) {
+	// a flag given with no value is an error; an empty value of --paths, --roles or --files clears them
+	val := func(k string) (string, bool, error) {
+		v, ok := opts[k]
+		if ok && v == "true" {
+			return "", true, fmt.Errorf("--%s needs a value", k)
+		}
+		return v, ok, nil
+	}
+	list := func(k string) (*[]string, error) {
+		v, ok, err := val(k)
+		if !ok || err != nil {
+			return nil, err
+		}
+		l := splitList(v)
+		if l == nil {
+			l = []string{}
+		}
+		return &l, nil
+	}
+	str := func(k string) (*string, error) {
+		v, ok, err := val(k)
+		if !ok || err != nil {
+			return nil, err
+		}
+		return &v, nil
+	}
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return "", errors.New("edit needs a reference (K3, G2 or A7)")
+	}
+	learning, err := m.IsLearning(ctx, ref)
+	if err != nil {
+		return "", err
+	}
+	if learning {
+		for _, k := range []string{"question", "paths", "roles"} {
+			if _, ok := opts[k]; ok {
+				return "", fmt.Errorf("--%s does not apply to a learning (A<n>): use --text or --files", k)
+			}
+		}
+		text, err := str("text")
+		if err != nil {
+			return "", err
+		}
+		files, err := list("files")
+		if err != nil {
+			return "", err
+		}
+		if files != nil {
+			rel := repoRelative(cwd, *files)
+			files = &rel
+		}
+		e := memory.LearningEdit{Text: text, Files: files}
+		if e.Empty() {
+			return "", errors.New("nothing to change: give --text or --files")
+		}
+		l, err := m.EditLearning(ctx, ref, e)
+		return l.Short, err
+	}
+	if _, ok := opts["files"]; ok {
+		return "", errors.New("--files only applies to a learning (A<n>): a rule takes --paths")
+	}
+	text, err := str("text")
+	if err != nil {
+		return "", err
+	}
+	question, err := str("question")
+	if err != nil {
+		return "", err
+	}
+	paths, err := list("paths")
+	if err != nil {
+		return "", err
+	}
+	roles, err := list("roles")
+	if err != nil {
+		return "", err
+	}
+	e := memory.RuleEdit{Text: text, Question: question, Paths: paths, Roles: roles}
+	if e.Empty() {
+		return "", errors.New("nothing to change: give --text, --question, --paths or --roles")
+	}
+	r, err := m.EditRule(ctx, ref, e)
+	return r.Short, err
 }
 
 // runMemBootstrap is `nxy mem bootstrap [save]`: the bare form starts the scouting and prints what

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -43,7 +44,28 @@ func ValidateRule(r Rule) error {
 			return fmt.Errorf("bad path glob %q: %v", g, err)
 		}
 	}
+	if len(r.Roles) > 0 && r.Repo != GlobalRepo {
+		return errors.New("--roles only applies to global rules (G<n>)")
+	}
+	for _, role := range r.Roles {
+		if !slices.Contains(RuleRoles, role) {
+			return fmt.Errorf("unknown role %q (one of %s)", role, strings.Join(RuleRoles, ", "))
+		}
+	}
 	return nil
+}
+
+// CleanRoles trims, lowercases, dedupes and sorts roles.
+func CleanRoles(in []string) []string {
+	var out []string
+	for _, r := range in {
+		r = strings.ToLower(strings.TrimSpace(r))
+		if r != "" && !slices.Contains(out, r) {
+			out = append(out, r)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // ValidateNote checks a note; an oversized body is rejected, not truncated.

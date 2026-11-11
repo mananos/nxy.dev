@@ -22,7 +22,7 @@ const (
 )
 
 var kindInfo = map[string]struct{ table, letter string }{
-	KindRule:     {"mem_rules", "K"},
+	KindRule:     {"mem_rules", "KG"},
 	KindLearning: {"mem_learnings", "A"},
 	KindNote:     {"mem_notes", "N"},
 }
@@ -70,17 +70,27 @@ func cleanPaths(in []string) []string {
 
 // nextShort returns the next free alias ("K4") of a table; it runs inside the write
 // transaction (_txlock=immediate), so no other writer can take it first.
-func nextShort(ctx context.Context, q queryer, kind string) (string, error) {
+func nextShort(ctx context.Context, q queryer, kind, letter string) (string, error) {
 	k := kindInfo[kind]
 	var n int
 	err := q.QueryRowContext(ctx,
-		`SELECT COALESCE(MAX(CAST(SUBSTR(short, 2) AS INTEGER)), 0) + 1 FROM `+k.table).Scan(&n)
-	return fmt.Sprintf("%s%d", k.letter, n), err
+		`SELECT COALESCE(MAX(CAST(SUBSTR(short, 2) AS INTEGER)), 0) + 1 FROM `+k.table+` WHERE SUBSTR(short, 1, 1)=?`,
+		letter).Scan(&n)
+	return fmt.Sprintf("%s%d", letter, n), err
 }
 
-// shortFor keeps the incoming alias unless it is empty, flagged or already taken.
-func shortFor(ctx context.Context, q queryer, kind, want string, reassign bool) (string, error) {
-	if want != "" && !reassign {
+// shortLetter is the alias letter a row gets: rules K (repo) or G (global), learnings A, notes N.
+func shortLetter(kind, repo string) string {
+	if kind == KindRule {
+		return string(memory.RuleLetter(repo))
+	}
+	return kindInfo[kind].letter
+}
+
+// shortFor keeps the incoming alias unless it is empty, flagged, of another letter or already taken.
+func shortFor(ctx context.Context, q queryer, kind, repo, want string, reassign bool) (string, error) {
+	letter := shortLetter(kind, repo)
+	if want != "" && !reassign && strings.HasPrefix(want, letter) {
 		var one int
 		err := q.QueryRowContext(ctx, `SELECT 1 FROM `+kindInfo[kind].table+` WHERE short=?`, want).Scan(&one)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -90,11 +100,11 @@ func shortFor(ctx context.Context, q queryer, kind, want string, reassign bool) 
 			return "", err
 		}
 	}
-	return nextShort(ctx, q, kind)
+	return nextShort(ctx, q, kind, letter)
 }
 
 func isShortRef(ref string) bool {
-	if len(ref) < 2 || !strings.ContainsRune("KAN", rune(ref[0])) {
+	if len(ref) < 2 || !strings.ContainsRune("KANG", rune(ref[0])) {
 		return false
 	}
 	for _, c := range ref[1:] {
@@ -112,6 +122,19 @@ func (s *Store) Resolve(ctx context.Context, kind, ref string) (string, error) {
 }
 
 func resolveRef(ctx context.Context, q queryer, kind, ref string) (string, error) {
+	return resolveRefState(ctx, q, kind, ref, false)
+}
+
+// resolveRefDeleted is resolveRef over the deleted rows only (for restore).
+func resolveRefDeleted(ctx context.Context, q queryer, kind, ref string) (string, error) {
+	return resolveRefState(ctx, q, kind, ref, true)
+}
+
+func resolveRefState(ctx context.Context, q queryer, kind, ref string, deleted bool) (string, error) {
+	state := "deleted_at=0"
+	if deleted {
+		state = "deleted_at<>0"
+	}
 	k, ok := kindInfo[kind]
 	if !ok {
 		return "", fmt.Errorf("sqlite: unknown memory kind %q", kind)
@@ -124,17 +147,17 @@ func resolveRef(ctx context.Context, q queryer, kind, ref string) (string, error
 	var rows *sql.Rows
 	var err error
 	if isShortRef(ref) {
-		if ref[:1] != k.letter {
+		if !strings.Contains(k.letter, ref[:1]) {
 			return "", notFound
 		}
-		rows, err = q.QueryContext(ctx, `SELECT id FROM `+k.table+` WHERE short=? AND deleted_at=0`, ref)
+		rows, err = q.QueryContext(ctx, `SELECT id FROM `+k.table+` WHERE short=? AND `+state, ref)
 	} else {
 		for _, c := range ref {
 			if !(c >= '0' && c <= '9' || c >= 'A' && c <= 'Z') {
 				return "", notFound
 			}
 		}
-		rows, err = q.QueryContext(ctx, `SELECT id FROM `+k.table+` WHERE id LIKE ? AND deleted_at=0 LIMIT 2`, ref+"%")
+		rows, err = q.QueryContext(ctx, `SELECT id FROM `+k.table+` WHERE id LIKE ? AND `+state+` LIMIT 2`, ref+"%")
 	}
 	if err != nil {
 		return "", err
@@ -162,14 +185,15 @@ func resolveRef(ctx context.Context, q queryer, kind, ref string) (string, error
 
 // ---- rules ----
 
-const ruleCols = `id, short, repo, text, question, origin, feature_id, paths, supersedes, deliveries, citations, last_cited_at, created_at, updated_at, deleted_at, machine_id`
+const ruleCols = `id, short, repo, text, question, origin, feature_id, paths, supersedes, deliveries, citations, last_cited_at, created_at, updated_at, deleted_at, machine_id, roles`
 
 func scanRule(sc scanner) (memory.Rule, error) {
 	var r memory.Rule
-	var paths string
+	var paths, roles string
 	err := sc.Scan(&r.ID, &r.Short, &r.Repo, &r.Text, &r.Question, &r.Origin, &r.FeatureID, &paths, &r.Supersedes,
-		&r.Deliveries, &r.Citations, &r.LastCitedAt, &r.CreatedAt, &r.UpdatedAt, &r.DeletedAt, &r.Machine)
+		&r.Deliveries, &r.Citations, &r.LastCitedAt, &r.CreatedAt, &r.UpdatedAt, &r.DeletedAt, &r.Machine, &roles)
 	r.Paths = decodeStrings(paths)
+	r.Roles = decodeStrings(roles)
 	return r, err
 }
 
@@ -210,23 +234,34 @@ func upsertRule(ctx context.Context, q queryer, r memory.Rule) error {
 	if strings.TrimSpace(question) == "" && r.Deleted() {
 		question = "(deleted)" // a tombstone may come without it; the table still requires one
 	}
-	_, err := q.ExecContext(ctx, `INSERT INTO mem_rules (`+ruleCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-		ON CONFLICT(id) DO UPDATE SET repo=excluded.repo, text=excluded.text, question=excluded.question,
+	_, err := q.ExecContext(ctx, `INSERT INTO mem_rules (`+ruleCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT(id) DO UPDATE SET repo=excluded.repo, text=excluded.text, question=excluded.question, roles=excluded.roles,
 		origin=excluded.origin, feature_id=excluded.feature_id, paths=excluded.paths, supersedes=excluded.supersedes,
 		deliveries=MAX(mem_rules.deliveries, excluded.deliveries), citations=MAX(mem_rules.citations, excluded.citations),
 		last_cited_at=MAX(mem_rules.last_cited_at, excluded.last_cited_at),
 		created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
 		machine_id=excluded.machine_id`,
 		r.ID, r.Short, r.Repo, r.Text, question, r.Origin, r.FeatureID, encodeStrings(r.Paths), r.Supersedes,
-		r.Deliveries, r.Citations, r.LastCitedAt, r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.Machine)
+		r.Deliveries, r.Citations, r.LastCitedAt, r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.Machine, encodeStrings(r.Roles))
 	return err
 }
 
-// AddRule stores a new rule. Supersedes may be a reference (K3) or a ULID.
+// AddRule stores a new rule of a repo. Supersedes may be a reference (K3) or a ULID.
 func (s *Store) AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error) {
 	if strings.TrimSpace(r.Repo) == "" {
 		return memory.Rule{}, errors.New("a rule needs a repo")
 	}
+	return s.addRule(ctx, r, "K")
+}
+
+// AddGlobalRule stores a new global rule (G<n>, empty repo). Supersedes must be another G.
+func (s *Store) AddGlobalRule(ctx context.Context, r memory.Rule) (memory.Rule, error) {
+	r.Repo = memory.GlobalRepo
+	r.Roles = memory.CleanRoles(r.Roles)
+	return s.addRule(ctx, r, "G")
+}
+
+func (s *Store) addRule(ctx context.Context, r memory.Rule, letter string) (memory.Rule, error) {
 	if err := memory.ValidateRule(r); err != nil {
 		return memory.Rule{}, err
 	}
@@ -239,18 +274,31 @@ func (s *Store) AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error)
 		if r.Supersedes, err = resolveRef(ctx, tx, KindRule, r.Supersedes); err != nil {
 			return memory.Rule{}, err
 		}
+		old, err := queryRules(ctx, tx, `WHERE id=?`, r.Supersedes)
+		if err != nil || len(old) == 0 {
+			return memory.Rule{}, errors.Join(err, memory.ErrNotFound)
+		}
+		if !strings.HasPrefix(old[0].Short, letter) {
+			return memory.Rule{}, fmt.Errorf("%s cannot replace %s: a %s rule only replaces a %s rule",
+				letter, old[0].Short, letter, letter)
+		}
 	}
 	t := s.now()
 	r.ID = newULID(t, rand.Reader)
 	r.Machine = s.machineID
 	r.CreatedAt, r.UpdatedAt, r.DeletedAt = t.UTC().UnixMilli(), t.UTC().UnixMilli(), 0
-	if r.Short, err = nextShort(ctx, tx, KindRule); err != nil {
+	if r.Short, err = nextShort(ctx, tx, KindRule, letter); err != nil {
 		return memory.Rule{}, err
 	}
 	if err := upsertRule(ctx, tx, r); err != nil {
 		return memory.Rule{}, err
 	}
 	return r, tx.Commit()
+}
+
+// GlobalRules lists the live global rules.
+func (s *Store) GlobalRules(ctx context.Context) ([]memory.Rule, error) {
+	return s.Rules(ctx, memory.GlobalRepo)
 }
 
 // Rules lists the live rules of a repo that no live rule supersedes.
@@ -368,7 +416,7 @@ func (s *Store) AddLearning(ctx context.Context, l memory.Learning) (memory.Lear
 	l.ID = newULID(s.now(), rand.Reader)
 	l.Machine = s.machineID
 	l.CreatedAt, l.UpdatedAt, l.LastSeenAt, l.Seen, l.DeletedAt = now, now, now, 1, 0
-	if l.Short, err = nextShort(ctx, tx, KindLearning); err != nil {
+	if l.Short, err = nextShort(ctx, tx, KindLearning, "A"); err != nil {
 		return memory.Learning{}, err
 	}
 	if err := upsertLearning(ctx, tx, l); err != nil {
@@ -401,6 +449,7 @@ func (s *Store) Promote(ctx context.Context, ref, question string, paths []strin
 		return memory.Rule{}, errors.Join(err, memory.ErrNotFound)
 	}
 	l := ls[0]
+	// a global learning (empty repo) becomes a G rule, a repo learning a K rule
 	if l.PromotedTo != "" {
 		return memory.Rule{}, fmt.Errorf("%s is already a rule", l.Short)
 	}
@@ -414,7 +463,7 @@ func (s *Store) Promote(ctx context.Context, ref, question string, paths []strin
 	if err := memory.ValidateRule(r); err != nil {
 		return memory.Rule{}, err
 	}
-	if r.Short, err = nextShort(ctx, tx, KindRule); err != nil {
+	if r.Short, err = nextShort(ctx, tx, KindRule, string(memory.RuleLetter(r.Repo))); err != nil {
 		return memory.Rule{}, err
 	}
 	if err := upsertRule(ctx, tx, r); err != nil {
@@ -425,6 +474,239 @@ func (s *Store) Promote(ctx context.Context, ref, question string, paths []strin
 		return memory.Rule{}, err
 	}
 	return r, tx.Commit()
+}
+
+// EditRule changes the text, question, paths or roles of a live rule. The row keeps its ID, alias
+// and counters; updated_at moves so the edit travels in export/import.
+func (s *Store) EditRule(ctx context.Context, ref string, e memory.RuleEdit) (memory.Rule, error) {
+	if e.Empty() {
+		return memory.Rule{}, errors.New("nothing to change: give --text, --question, --paths or --roles")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return memory.Rule{}, err
+	}
+	defer tx.Rollback()
+	id, err := resolveRef(ctx, tx, KindRule, ref)
+	if err != nil {
+		return memory.Rule{}, err
+	}
+	rs, err := queryRules(ctx, tx, `WHERE id=?`, id)
+	if err != nil || len(rs) == 0 {
+		return memory.Rule{}, errors.Join(err, memory.ErrNotFound)
+	}
+	r := rs[0]
+	if e.Roles != nil && r.Repo != memory.GlobalRepo {
+		return memory.Rule{}, errors.New("--roles only applies to global rules (G<n>)")
+	}
+	if e.Text != nil {
+		r.Text = *e.Text
+	}
+	if e.Question != nil {
+		r.Question = *e.Question
+	}
+	if e.Paths != nil {
+		r.Paths = cleanPaths(*e.Paths)
+	}
+	if e.Roles != nil {
+		r.Roles = memory.CleanRoles(*e.Roles)
+	}
+	if err := memory.ValidateRule(r); err != nil {
+		return memory.Rule{}, err
+	}
+	r.UpdatedAt = s.nowMs()
+	r.Machine = s.machineID
+	if err := upsertRule(ctx, tx, r); err != nil {
+		return memory.Rule{}, err
+	}
+	return r, tx.Commit()
+}
+
+// EditLearning changes the text or files of a live, unpromoted learning; its hash is recomputed
+// and must not clash with another live learning of the repo.
+func (s *Store) EditLearning(ctx context.Context, ref string, e memory.LearningEdit) (memory.Learning, error) {
+	if e.Empty() {
+		return memory.Learning{}, errors.New("nothing to change: give --text or --files")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return memory.Learning{}, err
+	}
+	defer tx.Rollback()
+	id, err := resolveRef(ctx, tx, KindLearning, ref)
+	if err != nil {
+		return memory.Learning{}, err
+	}
+	ls, err := queryLearnings(ctx, tx, `WHERE id=?`, id)
+	if err != nil || len(ls) == 0 {
+		return memory.Learning{}, errors.Join(err, memory.ErrNotFound)
+	}
+	l := ls[0]
+	if l.PromotedTo != "" {
+		var short string
+		if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_rules WHERE id=?`, l.PromotedTo).Scan(&short); err != nil {
+			short = l.PromotedTo
+		}
+		return memory.Learning{}, fmt.Errorf("%s is already rule %s: edit the rule", l.Short, short)
+	}
+	if e.Text != nil {
+		l.Text = *e.Text
+	}
+	if e.Files != nil {
+		l.Files = *e.Files
+	}
+	l.Files = cleanPaths(l.Files)
+	if strings.TrimSpace(l.Text) == "" {
+		return memory.Learning{}, errors.New("a learning needs a text")
+	}
+	l.Hash = memory.LearningHash(l.Text, l.Files)
+	var other string
+	err = tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0 AND id<>?`,
+		l.Repo, l.Hash, l.ID).Scan(&other)
+	if err == nil {
+		return memory.Learning{}, fmt.Errorf("same text and files as %s", other)
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return memory.Learning{}, err
+	}
+	l.UpdatedAt = s.nowMs()
+	l.Machine = s.machineID
+	if err := upsertLearning(ctx, tx, l); err != nil {
+		return memory.Learning{}, err
+	}
+	return l, tx.Commit()
+}
+
+// memoryKindOf finds which table a reference belongs to: the letter decides (K/G rule, A learning);
+// a ULID or prefix is looked up in rules, then learnings.
+func memoryKindOf(ctx context.Context, q queryer, ref string, deleted bool) (kind, id string, err error) {
+	find := resolveRef
+	if deleted {
+		find = resolveRefDeleted
+	}
+	up := strings.ToUpper(strings.TrimSpace(ref))
+	if isShortRef(up) {
+		switch up[0] {
+		case 'K', 'G':
+			kind = KindRule
+		case 'A':
+			kind = KindLearning
+		default:
+			return "", "", errors.New("notes: nxy note done")
+		}
+		id, err = find(ctx, q, kind, up)
+		return kind, id, err
+	}
+	rid, rerr := find(ctx, q, KindRule, up)
+	lid, lerr := find(ctx, q, KindLearning, up)
+	switch {
+	case rerr == nil && lerr == nil:
+		return "", "", fmt.Errorf("%w: %s", memory.ErrAmbiguous, up)
+	case rerr == nil:
+		return KindRule, rid, nil
+	case lerr == nil:
+		return KindLearning, lid, nil
+	case errors.Is(rerr, memory.ErrAmbiguous):
+		return "", "", rerr
+	case errors.Is(lerr, memory.ErrAmbiguous):
+		return "", "", lerr
+	}
+	return "", "", rerr
+}
+
+// MemoryKind tells whether a live reference (alias, ULID or prefix) is a "rule" or a "learning".
+func (s *Store) MemoryKind(ctx context.Context, ref string) (string, error) {
+	kind, _, err := memoryKindOf(ctx, s.db, ref, false)
+	return kind, err
+}
+
+// DeleteMemory soft-deletes a live rule or learning and returns its alias. The alias is never
+// reused and the deletion travels in export/import.
+func (s *Store) DeleteMemory(ctx context.Context, ref string) (string, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	kind, id, err := memoryKindOf(ctx, tx, ref, false)
+	if err != nil {
+		return "", err
+	}
+	now := s.nowMs()
+	var short string
+	if kind == KindRule {
+		if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_rules WHERE id=?`, id).Scan(&short); err != nil {
+			return "", err
+		}
+		_, err = tx.ExecContext(ctx, `UPDATE mem_rules SET deleted_at=?, updated_at=?, machine_id=? WHERE id=? AND deleted_at=0`,
+			now, now, s.machineID, id)
+	} else {
+		if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE id=?`, id).Scan(&short); err != nil {
+			return "", err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE mem_learnings SET deleted_at=?, updated_at=?, machine_id=? WHERE id=? AND deleted_at=0`,
+			now, now, s.machineID, id); err == nil {
+			_, err = tx.ExecContext(ctx, `DELETE FROM mem_learning_files WHERE learning_id=?`, id)
+		}
+	}
+	if err != nil {
+		return "", err
+	}
+	return short, tx.Commit()
+}
+
+// RestoreMemory brings a deleted rule or learning back under the same alias.
+func (s *Store) RestoreMemory(ctx context.Context, ref string) (string, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	kind, id, err := memoryKindOf(ctx, tx, ref, true)
+	if err != nil {
+		return "", err
+	}
+	now := s.nowMs()
+	var short string
+	if kind == KindRule {
+		rs, err := queryRules(ctx, tx, `WHERE id=?`, id)
+		if err != nil || len(rs) == 0 {
+			return "", errors.Join(err, memory.ErrNotFound)
+		}
+		r := rs[0]
+		if r.Question == "(deleted)" {
+			r.Question = ""
+		}
+		if err := memory.ValidateRule(r); err != nil {
+			return "", err
+		}
+		r.DeletedAt, r.UpdatedAt, r.Machine = 0, now, s.machineID
+		if err := upsertRule(ctx, tx, r); err != nil {
+			return "", err
+		}
+		short = r.Short
+	} else {
+		ls, err := queryLearnings(ctx, tx, `WHERE id=?`, id)
+		if err != nil || len(ls) == 0 {
+			return "", errors.Join(err, memory.ErrNotFound)
+		}
+		l := ls[0]
+		var other string
+		err = tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0 AND id<>?`,
+			l.Repo, l.Hash, l.ID).Scan(&other)
+		if err == nil {
+			return "", fmt.Errorf("%s holds the same learning: edit or rm it first", other)
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return "", err
+		}
+		l.DeletedAt, l.UpdatedAt, l.Machine = 0, now, s.machineID
+		if err := upsertLearning(ctx, tx, l); err != nil {
+			return "", err
+		}
+		short = l.Short
+	}
+	return short, tx.Commit()
 }
 
 // ---- closed features ----
@@ -655,7 +937,7 @@ func (s *Store) Search(ctx context.Context, repo string, all bool, q string, lim
 		  AND (mem_fts.kind <> 'rule' OR NOT EXISTS
 		       (SELECT 1 FROM mem_rules n WHERE n.supersedes=r.id AND n.deleted_at=0))
 		  AND (mem_fts.kind <> 'learning' OR (l.promoted_to='' AND l.obsolete_at=0))
-		  AND (? = 1 OR mem_fts.repo = ? OR (mem_fts.kind='feature' AND EXISTS
+		  AND (? = 1 OR mem_fts.repo = ? OR (mem_fts.repo = '' AND mem_fts.kind IN ('rule','learning')) OR (mem_fts.kind='feature' AND EXISTS
 		       (SELECT 1 FROM mem_feature_repos fr WHERE fr.feature_id=mem_fts.row_id AND fr.repo=?)))
 		ORDER BY bm25(mem_fts), mem_fts.row_id
 		LIMIT ?`, fts, allFlag, repo, repo, limit)
@@ -759,7 +1041,7 @@ func (s *Store) SaveNote(ctx context.Context, n memory.Note) (memory.Note, error
 	}
 	n.ID, n.Machine = newULID(t, rand.Reader), s.machineID
 	n.CreatedAt, n.UpdatedAt, n.DeletedAt = now, now, 0
-	if n.Short, err = nextShort(ctx, tx, KindNote); err != nil {
+	if n.Short, err = nextShort(ctx, tx, KindNote, "N"); err != nil {
 		return memory.Note{}, err
 	}
 	if err := upsertNote(ctx, tx, n); err != nil {
@@ -1003,7 +1285,7 @@ func (s *Store) ApplyImport(ctx context.Context, d memory.Diff) error {
 		}
 		r := c.Row
 		if c.Kind == memory.New {
-			if r.Short, err = shortFor(ctx, tx, KindRule, r.Short, c.ReassignShort); err != nil {
+			if r.Short, err = shortFor(ctx, tx, KindRule, r.Repo, r.Short, c.ReassignShort); err != nil {
 				return err
 			}
 		}
@@ -1042,7 +1324,22 @@ func (s *Store) ApplyImport(ctx context.Context, d memory.Diff) error {
 						return err
 					}
 				}
-				if l.Short, err = shortFor(ctx, tx, KindLearning, l.Short, c.ReassignShort); err != nil {
+				if l.Short, err = shortFor(ctx, tx, KindLearning, l.Repo, l.Short, c.ReassignShort); err != nil {
+					return err
+				}
+			}
+			if c.Kind == memory.Changed && !l.Deleted() {
+				// an edit or restore from the other machine may land on a hash a live local row holds:
+				// fold it into that row and keep it as a tombstone instead of breaking the unique index
+				var dup string
+				err := tx.QueryRowContext(ctx, `SELECT id FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0 AND id<>?`,
+					l.Repo, l.Hash, l.ID).Scan(&dup)
+				if err == nil {
+					if err := s.foldLearning(ctx, tx, dup, l, now); err != nil {
+						return err
+					}
+					l.DeletedAt = l.UpdatedAt
+				} else if !errors.Is(err, sql.ErrNoRows) {
 					return err
 				}
 			}
@@ -1057,7 +1354,7 @@ func (s *Store) ApplyImport(ctx context.Context, d memory.Diff) error {
 		}
 		n := c.Row
 		if c.Kind == memory.New {
-			if n.Short, err = shortFor(ctx, tx, KindNote, n.Short, c.ReassignShort); err != nil {
+			if n.Short, err = shortFor(ctx, tx, KindNote, "", n.Short, c.ReassignShort); err != nil {
 				return err
 			}
 		}

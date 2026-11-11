@@ -21,8 +21,8 @@ const (
 // Conventions, decisions, bugs and preferences become learnings; a live handoff
 // a note; an archived one (id with "-done-") a closed feature. File edges become
 // the files of the learning or feature; a memory another one supersedes is not
-// imported; the other edges are dropped and counted. Global memories are counted
-// and left out.
+// imported; the other edges are dropped and counted. Global memories of those types
+// become learnings of the empty repo (global learnings), kept apart in Sources.
 func ConvertMemory(mems []Memory, edges []Edge, repo, folder string, now int64) Import {
 	var imp Import
 	c := &imp.Counts
@@ -47,15 +47,40 @@ func ConvertMemory(mems []Memory, edges []Edge, repo, folder string, now int64) 
 
 	ttl := memory.NoteTTL.Milliseconds()
 	for _, m := range sorted {
-		if m.Scope == "global" {
-			c.Globals++
-			continue
-		}
-		if m.Scope != "project" && m.Scope != "area" {
+		global := m.Scope == "global"
+		if !global && m.Scope != "project" && m.Scope != "area" {
 			continue
 		}
 		if superseded[m.ID] {
 			c.Superseded++
+			if global {
+				imp.GlobalLeft.Superseded++
+			}
+			continue
+		}
+		if global {
+			switch m.Type {
+			case "convention", "decision", "bug", "preference":
+				if m.Private {
+					c.Private++
+					imp.GlobalLeft.Private++
+					continue
+				}
+				text := strings.TrimSpace(m.Title)
+				if m.Area != "" {
+					text += " (área " + m.Area + ")"
+				}
+				fs := uniq(files[m.ID])
+				imp.Sources = append(imp.Sources, Source{Kind: SourceGlobalLearning, Index: len(imp.Learnings), LegacyID: m.ID})
+				imp.Learnings = append(imp.Learnings, memory.Learning{
+					Meta: memory.Meta{CreatedAt: m.Created, UpdatedAt: m.Updated}, Repo: memory.GlobalRepo, Text: text, Files: fs,
+					Hash: memory.LearningHash(text, fs), Seen: 1, LastSeenAt: m.Updated,
+				})
+				c.Globals++
+			default:
+				c.Other++
+				imp.GlobalLeft.Other++
+			}
 			continue
 		}
 		meta := memory.Meta{CreatedAt: m.Created, UpdatedAt: m.Updated}

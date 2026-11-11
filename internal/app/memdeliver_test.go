@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 // deliverMemory is a FlowMemory that serves fixed rules and learnings and records what the flow does.
 type deliverMemory struct {
 	rules      []memory.Rule
+	globals    []memory.Rule
 	learnings  []memory.Learning
 	delivered  []string
 	obsolete   []string
@@ -35,6 +37,7 @@ func (m *deliverMemory) DeleteNotesOfFeature(context.Context, string) (int, erro
 func (m *deliverMemory) DeleteNotesUnder(context.Context, string, bool) (int, error) { return 0, nil }
 
 func (m *deliverMemory) Rules(context.Context, string) ([]memory.Rule, error) { return m.rules, nil }
+func (m *deliverMemory) GlobalRules(context.Context) ([]memory.Rule, error)   { return m.globals, nil }
 func (m *deliverMemory) Related(_ context.Context, _ string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error) {
 	m.relatedFor = paths
 	return nil, m.learnings, nil
@@ -184,6 +187,59 @@ func TestDeliverPlannerGetsEveryRule(t *testing.T) {
 	h.Memory = empty
 	if got := h.memoryFor(context.Background(), domain.Feature{ProjectDir: root}, rolePlanner, nil).Text; got != noRulesYet {
 		t.Errorf("empty memory text = %q", got)
+	}
+}
+
+func globalRule(id, short, text string, roles []string, paths ...string) memory.Rule {
+	r := deliverRule(id, short, text, paths...)
+	r.Repo = memory.GlobalRepo
+	r.Roles = roles
+	return r
+}
+
+func TestDeliverGlobalRulesByRole(t *testing.T) {
+	mem := &deliverMemory{
+		rules: []memory.Rule{deliverRule("U1", "K1", "repo rule")},
+		globals: []memory.Rule{
+			globalRule("G1", "G1", "plan globally", []string{memory.RolePlanner}),
+			globalRule("G2", "G2", "review globally", []string{memory.RoleReviewer}),
+			globalRule("G3", "G3", "main only", []string{memory.RoleMain}),
+			globalRule("G4", "G4", "go only", nil, "*.go"),
+			globalRule("G5", "G5", "docs only", nil, "docs/*.md"),
+		},
+	}
+	h, root, _ := deliverSetup(t, mem)
+	f := domain.Feature{ProjectDir: root}
+	ctx := context.Background()
+
+	pl := h.memoryFor(ctx, f, rolePlanner, nil).Text
+	for _, want := range []string{"K1: repo rule", "G1: plan globally", "G4: go only", "G5: docs only", memory.GlobalPrecedence} {
+		if !strings.Contains(pl, want) {
+			t.Errorf("planner lacks %q:\n%s", want, pl)
+		}
+	}
+	if strings.Index(pl, "K1") > strings.Index(pl, "G1") || strings.Contains(pl, "G2") || strings.Contains(pl, "G3") {
+		t.Errorf("planner text = %s", pl)
+	}
+	im := h.memoryFor(ctx, f, roleImplementer, []string{"calc.go"}).Text
+	if !strings.Contains(im, "G4: go only") || strings.Contains(im, "G5") || strings.Contains(im, "G1") || strings.Contains(im, "G2") {
+		t.Errorf("implementer text = %s", im)
+	}
+	rv := h.memoryFor(ctx, f, roleReviewer, []string{"calc.go"}).Text
+	if !strings.Contains(rv, "G2: review globally") || strings.Contains(rv, "G1") {
+		t.Errorf("reviewer text = %s", rv)
+	}
+	mn := h.engineerMemoryNote(ctx, f)
+	if !strings.Contains(mn, "G3: main only") || strings.Contains(mn, "G2") {
+		t.Errorf("main note = %s", mn)
+	}
+	if sc := h.memoryFor(ctx, f, roleScout, []string{"calc.go"}).Text; strings.Contains(sc, "G4") {
+		t.Errorf("scout got a global rule: %s", sc)
+	}
+	mem.delivered = nil
+	h.memoryFor(ctx, f, roleReviewer, []string{"calc.go"})
+	if !slices.Contains(mem.delivered, "G2") {
+		t.Errorf("delivered = %v, want G2 counted", mem.delivered)
 	}
 }
 

@@ -14,7 +14,7 @@ You are the nxy implementer for feature {{.Feature.ID}}, batch {{.Batch.N}} of {
 
 {{.Mem}}
 
-K<n> are rules of this repo: follow them. A<n> are learnings, not rules: use them as hints.
+K<n> are rules of this repo and G<n> the user's global rules: follow them. A<n> are learnings, not rules: use them as hints.
 If you find out something true and not obvious that cost you to discover, add a line to your final reply: `learned: <text> | files: a, b`. If a learning above is false, add `false: A7` (if the line starts with `[repo]`, write `false: [repo] A7`). Nothing else.
 {{end}}
 ## Criteria this batch covers

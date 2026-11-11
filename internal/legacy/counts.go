@@ -26,8 +26,12 @@ type Counts struct {
 
 	Superseded   int `json:"superseded,omitempty"`
 	EdgesDropped int `json:"edges_dropped,omitempty"`
-	Globals      int `json:"globals,omitempty"`
+	Globals      int `json:"globals,omitempty"` // global learnings stored (converted, before the store)
 	Private      int `json:"private,omitempty"` // private learnings/archived, left out
+
+	// The real A<n> range of the global learnings stored; set by the store.
+	GlobalFirst int `json:"global_first,omitempty"`
+	GlobalLast  int `json:"global_last,omitempty"`
 
 	FilterRows     int `json:"filter_rows,omitempty"`
 	FilterSessions int `json:"filter_sessions,omitempty"`
@@ -49,7 +53,8 @@ func (c Counts) Add(o Counts) Counts {
 		Notes: c.Notes + o.Notes, NotesExpired: c.NotesExpired + o.NotesExpired, NotesCut: c.NotesCut + o.NotesCut,
 		Features: c.Features + o.Features, Superseded: c.Superseded + o.Superseded,
 		EdgesDropped: c.EdgesDropped + o.EdgesDropped, Globals: c.Globals + o.Globals,
-		Private:    c.Private + o.Private,
+		Private:     c.Private + o.Private,
+		GlobalFirst: firstNonZero(c.GlobalFirst, o.GlobalFirst), GlobalLast: max(c.GlobalLast, o.GlobalLast),
 		FilterRows: c.FilterRows + o.FilterRows, FilterSessions: c.FilterSessions + o.FilterSessions,
 		FilterNoSess: c.FilterNoSess + o.FilterNoSess, FilterV2: c.FilterV2 + o.FilterV2,
 		Reviews: c.Reviews + o.Reviews, Picks: c.Picks + o.Picks, Chosen: c.Chosen + o.Chosen,
@@ -84,6 +89,21 @@ func (c Counts) Render() string {
 			parts = append(parts, fmt.Sprintf("%s → aprendizajes%s", strings.Join(kinds, ", "), rng))
 		} else {
 			parts = append(parts, fmt.Sprintf("%s →%s", plural(c.Learnings, "aprendizaje", "aprendizajes"), rng))
+		}
+	}
+	if c.Globals > 0 {
+		rng := ""
+		switch {
+		case c.GlobalFirst == 0:
+		case c.GlobalFirst == c.GlobalLast:
+			rng = fmt.Sprintf(" A%d", c.GlobalFirst)
+		default:
+			rng = fmt.Sprintf(" A%d..A%d", c.GlobalFirst, c.GlobalLast)
+		}
+		if c.Globals == 1 {
+			parts = append(parts, "1 global → aprendizaje global"+rng)
+		} else {
+			parts = append(parts, fmt.Sprintf("%d globales → aprendizajes globales%s", c.Globals, rng))
 		}
 	}
 	if c.Repeated > 0 {

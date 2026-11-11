@@ -9,6 +9,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/internal/memory"
 	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/review"
 )
@@ -21,7 +22,25 @@ const (
 	roleRefuter       = "nxy:refuter"
 	roleScout         = "nxy:scout"
 	roleDocumenter    = "nxy:documenter"
+	// roleMain is the engineer-mode main thread, which is not an agent.
+	roleMain = "main"
 )
+
+// memRole is the memory role of a dispatch role for the global rules; the others (scout, delegate,
+// refuter, documenter) get none.
+func memRole(role string) string {
+	switch role {
+	case rolePlanner:
+		return memory.RolePlanner
+	case roleImplementer:
+		return memory.RoleImplementer
+	case roleReviewer, roleReviewerQuick:
+		return memory.RoleReviewer
+	case roleMain:
+		return memory.RoleMain
+	}
+	return ""
+}
 
 // roleFor is the nxy subagent each dispatch action expects.
 var roleFor = map[domain.ActionKind]string{

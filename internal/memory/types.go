@@ -52,11 +52,54 @@ type Rule struct {
 	Origin      string   `json:"origin"`
 	FeatureID   string   `json:"feature_id,omitempty"`
 	Paths       []string `json:"paths,omitempty"` // globs
+	Roles       []string `json:"roles,omitempty"` // global rules only: who receives it; empty = everyone
 	Supersedes  string   `json:"supersedes,omitempty"`
 	Deliveries  int      `json:"deliveries,omitempty"`
 	Citations   int      `json:"citations,omitempty"`
 	LastCitedAt int64    `json:"last_cited_at,omitempty"`
 }
+
+// GlobalRepo is the repo of a global rule or learning (G<n>).
+const GlobalRepo = ""
+
+// RuleLetter is the alias letter of a rule of the repo: G for global, K otherwise.
+func RuleLetter(repo string) byte {
+	if repo == GlobalRepo {
+		return 'G'
+	}
+	return 'K'
+}
+
+// Roles that can receive a global rule.
+const (
+	RolePlanner     = "planner"
+	RoleImplementer = "implementer"
+	RoleReviewer    = "reviewer"
+	RoleMain        = "main"
+)
+
+// RuleRoles lists the valid roles of a global rule.
+var RuleRoles = []string{RolePlanner, RoleImplementer, RoleReviewer, RoleMain}
+
+// RuleEdit is a change to a rule; nil fields stay as they are.
+type RuleEdit struct {
+	Text, Question *string
+	Paths, Roles   *[]string
+}
+
+// Empty reports whether the edit changes nothing.
+func (e RuleEdit) Empty() bool {
+	return e.Text == nil && e.Question == nil && e.Paths == nil && e.Roles == nil
+}
+
+// LearningEdit is a change to a learning; nil fields stay as they are.
+type LearningEdit struct {
+	Text  *string
+	Files *[]string
+}
+
+// Empty reports whether the edit changes nothing.
+func (e LearningEdit) Empty() bool { return e.Text == nil && e.Files == nil }
 
 // FileRef is a file of a feature, in a repo.
 type FileRef struct {

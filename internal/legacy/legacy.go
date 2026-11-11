@@ -30,6 +30,8 @@ const (
 	SourceLearning = "learning"
 	SourceFeature  = "feature"
 	SourceNote     = "note"
+
+	SourceGlobalLearning = "global-learning"
 )
 
 // Source ties an imported value to the id it had in the 1.x. The Meta.ID of the
@@ -47,6 +49,9 @@ type Import struct {
 	Notes     []memory.Note
 	Sources   []Source
 	Counts    Counts
+	// GlobalLeft is the part of Counts (Private, Other, Superseded) that came from global
+	// memories, so the store can keep it in the global mark and not in each repo's.
+	GlobalLeft Counts
 }
 
 // Pick is one finding a 1.x review offered, and whether the user chose it.
