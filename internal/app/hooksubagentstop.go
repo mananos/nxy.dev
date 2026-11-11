@@ -12,6 +12,7 @@ import (
 // return means (a planner without a saved plan retries or gives up; a batch is verified). A
 // foreground subagent is ignored: its PostToolUse follows. It never blocks the subagent.
 func (h Hooks) subagentStop(ctx context.Context, ev HookEvent) HookResponse {
+	h.recordAgentRun(ctx, ev)
 	if isReviewerRole(ev.AgentType) {
 		return h.reviewerStop(ctx, ev)
 	}

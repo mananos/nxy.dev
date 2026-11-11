@@ -121,6 +121,121 @@ func SetAgenda(d *domain.Design, titles []string) []domain.Problem {
 		d.Agenda = append(d.Agenda, domain.Fork{ID: "B" + strconv.Itoa(n), Title: strings.TrimSpace(t), Status: domain.ForkOpen, Source: domain.SourceAgenda})
 		n++
 	}
+	if d.Current != "" && findFork(d, d.Current) == nil {
+		d.Current = ""
+	}
+	return nil
+}
+
+// ForkInput is what the main thread sends to save the options of one fork and its opinion.
+type ForkInput struct {
+	Fork     string              `json:"fork"`
+	Question string              `json:"question,omitempty"`
+	Options  []domain.ForkOption `json:"options"`
+	Opinion  string              `json:"opinion"`
+}
+
+// DecodeForkOptions reads {"fork","question","options":[...],"opinion"}.
+func DecodeForkOptions(r io.Reader) (ForkInput, error) {
+	var in ForkInput
+	if err := decodeStrict(r, "fork", &in); err != nil {
+		return ForkInput{}, err
+	}
+	return in, nil
+}
+
+const (
+	maxForkOptions = 4
+	maxBullets     = 4
+)
+
+// OptionKeys returns the options with the missing keys filled by position (A, B, C, D).
+func OptionKeys(opts []domain.ForkOption) []domain.ForkOption {
+	out := append([]domain.ForkOption(nil), opts...)
+	for i := range out {
+		if out[i].Key == "" && i < maxForkOptions {
+			out[i].Key = string(rune('A' + i))
+		}
+	}
+	return out
+}
+
+// SetForkOptions stores the options and the opinion of an open fork and makes it the current one.
+func SetForkOptions(d *domain.Design, in ForkInput) []domain.Problem {
+	var out []domain.Problem
+	add := func(where, format string, a ...any) {
+		out = append(out, domain.Problem{Where: where, Msg: fmt.Sprintf(format, a...)})
+	}
+	line := func(where, s string, required bool) {
+		switch {
+		case strings.TrimSpace(s) == "":
+			if required {
+				add(where, "empty")
+			}
+		case !oneLine(s) || utf8.RuneCountInString(s) > maxText:
+			add(where, "must be one line of at most %d characters", maxText)
+		}
+	}
+	if d.Pending != nil || d.Close != nil {
+		add("fork", "there is a proposal or close waiting for the user's answer")
+	}
+	f := findFork(d, in.Fork)
+	if f == nil {
+		add("fork", "%q is not in the agenda", in.Fork)
+	} else if f.Status != domain.ForkOpen {
+		add("fork", "%s is already %s", f.ID, f.Status)
+	}
+	line("question", in.Question, false)
+	if n := len(in.Options); n < 2 || n > maxForkOptions {
+		add("options", "2 to %d options are needed, got %d", maxForkOptions, n)
+	}
+	seen := map[string]bool{}
+	for i, o := range in.Options {
+		where := fmt.Sprintf("options[%d]", i)
+		key := o.Key
+		if key == "" && i < maxForkOptions {
+			key = string(rune('A' + i))
+		}
+		if len(key) != 1 || key[0] < 'A' || key[0] > 'D' {
+			add(where+".key", "must be A to D")
+		} else if seen[key] {
+			add(where+".key", "%s is repeated", key)
+		}
+		seen[key] = true
+		line(where+".label", o.Label, true)
+		line(where+".summary", o.Summary, false)
+		line(where+".touches", o.Touches, false)
+		if len(o.Pros) > maxBullets {
+			add(where+".pros", "at most %d", maxBullets)
+		}
+		if len(o.Cons) > maxBullets {
+			add(where+".cons", "at most %d", maxBullets)
+		}
+		for j, p := range o.Pros {
+			line(fmt.Sprintf("%s.pros[%d]", where, j), p, true)
+		}
+		for j, c := range o.Cons {
+			line(fmt.Sprintf("%s.cons[%d]", where, j), c, true)
+		}
+		if strings.Contains(o.D2, "```") {
+			add(where+".d2", "must not contain code fences (```)")
+		}
+	}
+	if strings.TrimSpace(in.Opinion) == "" {
+		add("opinion", "empty: say what you would pick and why")
+	} else if strings.Contains(in.Opinion, "```") {
+		add("opinion", "must not contain code fences (```)")
+	}
+	if len(out) > 0 {
+		return out
+	}
+	f.Question = strings.TrimSpace(in.Question)
+	if f.Question == "" {
+		f.Question = f.Title
+	}
+	f.Options = OptionKeys(in.Options)
+	f.Opinion = strings.TrimSpace(in.Opinion)
+	d.Current = f.ID
 	return nil
 }
 
@@ -193,6 +308,9 @@ func Approve(d *domain.Design) (domain.Decision, bool) {
 	d.Pending = nil
 	if f := findFork(d, dec.Fork); f != nil {
 		f.Status = domain.ForkDecided
+	}
+	if d.Current == dec.Fork {
+		d.Current = ""
 	}
 	return dec, true
 }

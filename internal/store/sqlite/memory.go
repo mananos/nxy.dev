@@ -1152,6 +1152,9 @@ func (s *Store) DeleteNotesUnder(ctx context.Context, folder string, foldCase bo
 // session without transcript no longer shows in trend or stats. Fixed, not configurable.
 const filterSessionTTL = 90 * 24 * time.Hour
 
+// agentRunTTL is how long the agent_runs rows are kept (same span as the filter summary).
+const agentRunTTL = 90 * 24 * time.Hour
+
 // SweepNotes turns the notes not updated for memory.NoteTTL into tombstones and returns how many.
 // In the same pass it deletes the filter summary of the sessions whose last row is older than
 // filterSessionTTL (the whole session, never single rows). legacy_filter_cursor is left alone, so
@@ -1172,6 +1175,10 @@ func (s *Store) SweepNotes(ctx context.Context, now time.Time) (int, error) {
 		`DELETE FROM filter_sessions WHERE (checkout, session_id) IN
 		   (SELECT checkout, session_id FROM filter_sessions GROUP BY checkout, session_id HAVING MAX(updated_at) < ?)`,
 		now.Add(-filterSessionTTL).UTC().UnixMilli()); err != nil {
+		return int(n), err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM agent_runs WHERE ended_at < ?`,
+		now.Add(-agentRunTTL).UTC().UnixMilli()); err != nil {
 		return int(n), err
 	}
 	return int(n), nil

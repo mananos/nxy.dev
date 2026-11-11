@@ -11,10 +11,10 @@ import (
 	"github.com/mananos/nxy.dev/internal/host/claudecode"
 )
 
-// runDesign is `nxy design agenda|propose|close --feature <id>`: the JSON comes on stdin.
+// runDesign is `nxy design agenda|fork|propose|close --feature <id>`: the JSON comes on stdin.
 func runDesign(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	const usage = "usage: nxy design agenda|propose|close --feature <id>  (JSON on stdin)"
-	if len(args) == 0 || (args[0] != "agenda" && args[0] != "propose" && args[0] != "close") {
+	const usage = "usage: nxy design agenda|fork|propose|close --feature <id>  (JSON on stdin)"
+	if len(args) == 0 || (args[0] != "agenda" && args[0] != "fork" && args[0] != "propose" && args[0] != "close") {
 		fmt.Fprintln(stderr, usage)
 		return 1
 	}
@@ -39,6 +39,8 @@ func runDesign(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	switch sub {
 	case "agenda":
 		res, err = h.SaveAgenda(ctx, *id, stdin)
+	case "fork":
+		res, err = h.SaveForkOptions(ctx, *id, stdin)
 	case "propose":
 		res, err = h.ProposeDecision(ctx, *id, stdin)
 	default:
@@ -55,7 +57,7 @@ func runDesign(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	switch sub {
-	case "agenda":
+	case "agenda", "fork":
 		fmt.Fprintln(stdout, design.Agenda(res.Feature.Design))
 	case "propose":
 		fmt.Fprintln(stdout, claudecode.ProposalInstruction(res.Feature))

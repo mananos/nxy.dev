@@ -342,7 +342,7 @@ func (h Hooks) answerQuestions(ctx context.Context, f domain.Feature, answers ma
 			design.AddForks(x.Design, titles, domain.SourceOffer)
 			for i, pq := range x.Plan.Questions {
 				for _, o := range pq.Options {
-					x.Design.Agenda[start+i].Options = append(x.Design.Agenda[start+i].Options, o.Label)
+					x.Design.Agenda[start+i].Options = append(x.Design.Agenda[start+i].Options, domain.ForkOption{Label: o.Label})
 				}
 			}
 			return nil

@@ -68,6 +68,12 @@ func pendingState(d *domain.Design) string {
 			b.WriteString("\n- " + r)
 		}
 	}
+	if f := findFork(d, d.Current); f != nil && f.Status == domain.ForkOpen && len(f.Options) > 0 {
+		fmt.Fprintf(&b, "\n\nBifurcación en debate: %s %s", f.ID, f.Title)
+		for _, o := range OptionKeys(f.Options) {
+			fmt.Fprintf(&b, "\n- %s %s", o.Key, o.Label)
+		}
+	}
 	if d.Pending != nil {
 		b.WriteString("\n\nPropuesta esperando respuesta del usuario\n" + Proposal(d))
 	}

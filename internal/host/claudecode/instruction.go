@@ -7,10 +7,9 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/ask"
 	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/docs"
 	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/review"
 )
 
@@ -56,30 +55,24 @@ func findingsAndAsk(f domain.Feature, stop bool) string {
 	} else {
 		b.WriteString("Next: show this checkpoint to the user verbatim, without summarizing or reformatting.\n")
 	}
-	b.WriteString("--- checkpoint ---\n" + review.Checkpoint(f) + "\n--- end checkpoint ---\n")
+	a := askOf(f)
+	b.WriteString("--- checkpoint ---\n" + a.Body + "\n--- end checkpoint ---\n")
 	if stop {
 		b.WriteString("Input:\n")
 	} else {
 		b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
 	}
-	var offered []domain.Finding
-	if f.Review != nil {
-		offered = review.Offered(*f.Review)
-	}
-	groups, left := review.Groups(offered)
-	qs := make([]askQuestion, 0, len(groups))
-	for i, g := range groups {
-		q := askQuestion{Question: review.FixQuestion(f.ID, i+1, len(groups)), Header: g.Header, MultiSelect: true}
-		for _, o := range g.Options {
-			q.Options = append(q.Options, askOption{o.Label, o.Description})
-		}
-		qs = append(qs, q)
-	}
-	b.WriteString(askInput(qs))
-	if left > 0 {
-		fmt.Fprintf(&b, "\nQuedan %d hallazgos fuera de las preguntas (no caben): tell the user so after asking.", left)
+	b.WriteString(askInput(askInputOf(a.Questions)))
+	if a.Left > 0 {
+		fmt.Fprintf(&b, "\nQuedan %d hallazgos fuera de las preguntas (no caben): tell the user so after asking.", a.Left)
 	}
 	return b.String()
+}
+
+// askOf is the ask.Ask of a step that is always a question.
+func askOf(f domain.Feature) ask.Ask {
+	a, _ := ask.For(f)
+	return a
 }
 
 type askOption struct {
@@ -125,13 +118,13 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 	case domain.DispatchPlanner:
 		s = fmt.Sprintf("nxy: feature %s — Next: Agent tool, subagent_type `nxy:planner`, prompt `feature %s`; nothing else, nxy writes its prompt.", f.ID, f.ID)
 	case domain.AskQuestions:
-		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, questionsInput(f), stop)
+		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(askOf(f), stop)
 	case domain.AskClash:
 		s = "nxy: feature " + f.ID + " — " + clashAsk(f, stop)
 	case domain.AskBranch:
 		s = "nxy: feature " + f.ID + " — " + branchAsk(f, stop)
 	case domain.AskApproval:
-		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(f, approvalInput(f), stop)
+		s = "nxy: feature " + f.ID + " — " + checkpointAndAsk(askOf(f), stop)
 	case domain.AskChangeNote:
 		s = "nxy: feature " + f.ID + " — Next: tell the user to write what to change in the plan in their next message; do nothing else until they do."
 	case domain.DispatchImplementer:
@@ -219,64 +212,41 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 // its options copied as they are. The plan is kept; the answer moves it on without another planner.
 func clashAsk(f domain.Feature, stop bool) string {
 	var b strings.Builder
+	a := askOf(f)
 	b.WriteString("Next: the plan is ready but a repo it needs is held by another active feature:")
-	for _, c := range f.Clash {
-		fmt.Fprintf(&b, "\n- repo %s: feature %s", c.Repo, c.FeatureID)
-		if c.Phase != "" {
-			fmt.Fprintf(&b, " (%s)", c.Phase)
-		}
+	for _, c := range a.Context {
+		b.WriteString("\n- " + c)
 	}
 	if stop {
 		b.WriteString("\nThe user already sees this above: do not repeat it; ask with AskUserQuestion, copying the question and its options as they are, with exactly this input.\nInput:\n")
 	} else {
 		b.WriteString("\nAsk the user with AskUserQuestion, copying the question and its options as they are, with exactly this input.\nThen nothing else: nxy continues with the answer. Input:\n")
 	}
-	opts := plan.ClashOptions(f)
-	ao := make([]askOption, len(opts))
-	for i, o := range opts {
-		ao[i] = askOption{o.Label, o.Description}
-	}
-	b.WriteString(askInput([]askQuestion{{Question: plan.ClashQuestion(f.ID), Header: "Repo ocupado", Options: ao}}))
+	b.WriteString(askInput(askInputOf(a.Questions)))
 	return b.String()
 }
 
 // branchAsk words the AskBranch step: the plan is approved; the questions open are the branch and the
 // base of each repo, copied as they are. Free text in Other is a branch (or base) name.
 func branchAsk(f domain.Feature, stop bool) string {
+	a := askOf(f)
 	var b strings.Builder
 	b.WriteString("Next: the plan is approved; before the first batch ask which branch to work in")
-	if f.BranchOffer != nil && f.BranchOffer.Error != "" {
-		b.WriteString(". The last try failed: " + f.BranchOffer.Error + ". Tell the user that in one line and ask again")
+	if len(a.Context) > 0 {
+		b.WriteString(". The last try failed: " + a.Context[0] + ". Tell the user that in one line and ask again")
 	}
 	if stop {
 		b.WriteString(". The user already sees this above: do not repeat it; ask with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\nInput:\n")
 	} else {
 		b.WriteString(". Ask with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\nThen nothing else: nxy creates the branch and continues with the answer. Input:\n")
 	}
-	asks := plan.BranchQuestions(f)
-	qs := make([]askQuestion, 0, len(asks))
-	for _, a := range asks {
-		q := askQuestion{Question: a.Question, Header: a.Header}
-		for _, o := range a.Options {
-			q.Options = append(q.Options, askOption{o.Label, o.Description})
-		}
-		qs = append(qs, q)
-	}
-	b.WriteString(askInput(qs))
+	b.WriteString(askInput(askInputOf(a.Questions)))
 	return b.String()
 }
 
 // docsAsk words the AskDocs step: the question about the docs that name the change, copied as is.
 func docsAsk(f domain.Feature, stop bool) string {
-	var paths []string
-	if f.Docs != nil {
-		paths = f.Docs.Paths()
-	}
-	q := docs.Question(f.ID, paths)
-	opts := make([]askOption, len(q.Options))
-	for i, o := range q.Options {
-		opts[i] = askOption{o.Label, o.Description}
-	}
+	a := askOf(f)
 	var b strings.Builder
 	b.WriteString("Next: the review is done and some docs of the repo name what changed; ask the user with AskUserQuestion, copying the question and its options as they are, with exactly this input.\n")
 	if stop {
@@ -284,22 +254,14 @@ func docsAsk(f domain.Feature, stop bool) string {
 	} else {
 		b.WriteString("Then nothing else: nxy continues with the answer. Input:\n")
 	}
-	b.WriteString(askInput([]askQuestion{{Question: q.Question, Header: q.Header, Options: opts}}))
+	b.WriteString(askInput(askInputOf(a.Questions)))
 	return b.String()
 }
 
 // rulesAsk words the AskRules step: the multiSelect questions with the rule candidates, copied as
 // they are. Stopping the feature instead saves no rule.
 func rulesAsk(f domain.Feature, stop bool) string {
-	groups := plan.RuleGroups(f.RuleOffer)
-	qs := make([]askQuestion, 0, len(groups))
-	for i, g := range groups {
-		q := askQuestion{Question: plan.RulesQuestion(f.ID, i+1, len(groups)), Header: g.Header, MultiSelect: true}
-		for _, o := range g.Options {
-			q.Options = append(q.Options, askOption{o.Label, o.Description})
-		}
-		qs = append(qs, q)
-	}
+	a := askOf(f)
 	var b strings.Builder
 	b.WriteString("Next: the feature is done and some of its decisions may become rules of the repo; ask the user with AskUserQuestion, copying the questions and their options as they are, with exactly this input.\n")
 	if stop {
@@ -307,14 +269,15 @@ func rulesAsk(f domain.Feature, stop bool) string {
 	} else {
 		b.WriteString("Then nothing else: nxy saves the rules the user picks and closes the feature. Input:\n")
 	}
-	b.WriteString(askInput(qs))
-	if n := len(f.RuleOffer) - len(plan.RuleShown(f.RuleOffer)); n > 0 {
-		fmt.Fprintf(&b, "\nQuedan %d candidatas fuera de las preguntas (no caben): tell the user so after asking.", n)
+	b.WriteString(askInput(askInputOf(a.Questions)))
+	if a.Left > 0 {
+		fmt.Fprintf(&b, "\nQuedan %d candidatas fuera de las preguntas (no caben): tell the user so after asking.", a.Left)
 	}
 	return b.String()
 }
 
-func checkpointAndAsk(f domain.Feature, input string, stop bool) string {
+// checkpointAndAsk words the AskQuestions and AskApproval steps: the plan checkpoint, then the questions.
+func checkpointAndAsk(a ask.Ask, stop bool) string {
 	var b strings.Builder
 	if stop {
 		b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
@@ -322,171 +285,63 @@ func checkpointAndAsk(f domain.Feature, input string, stop bool) string {
 		b.WriteString("Next: show this checkpoint to the user verbatim, without summarizing or reformatting.\n")
 	}
 	b.WriteString("--- checkpoint ---\n")
-	if f.Plan != nil {
-		b.WriteString(plan.CheckpointOf(f))
-	}
+	b.WriteString(a.Body)
 	b.WriteString("\n--- end checkpoint ---\n")
 	if stop {
 		b.WriteString("Input:\n")
 	} else {
 		b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
 	}
-	b.WriteString(input)
+	b.WriteString(askInput(askInputOf(a.Questions)))
 	return b.String()
 }
 
 // decisionAndAsk words the AskDecision step: the failure, then the question to ask.
 func decisionAndAsk(f domain.Feature, stop bool) string {
-	var b strings.Builder
-	var input string
-	switch f.State.Phase {
-	case domain.PhaseBatchFailed:
-		if stop {
-			b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
-		} else {
-			b.WriteString("Next: show this failure to the user verbatim, without summarizing or reformatting.\n")
-		}
-		fmt.Fprintf(&b, "--- Lote %d fallido ---\n", f.State.Batch)
-		b.WriteString(f.ProofOf(f.State.Batch).Failure)
-		b.WriteString("\n--- fin ---\n")
-		input = decisionInput(plan.DecisionQuestion(f.ID, f.State.Batch), "Batch", []askOption{
-			{plan.Retry, "Run the batch again"},
-			{plan.Continue, "Accept it as is and go to the next batch"},
-			{plan.Stop, "End the feature"},
-		})
-	case domain.PhaseAffectedFailed, domain.PhaseAffectedUnverified:
-		if stop {
-			b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
-		} else {
-			b.WriteString("Next: show this to the user verbatim, without summarizing or reformatting.\n")
-		}
-		failed := f.State.Phase == domain.PhaseAffectedFailed
-		body := ""
-		if f.Affected != nil {
-			body = strings.TrimSpace(f.Affected.Reason + "\n" + f.Affected.Note)
-			if failed {
-				body = f.Affected.Failure
-			}
-		}
-		if failed {
-			b.WriteString("--- Afectados fallidos ---\n" + body + "\n--- fin ---\n")
-		} else {
-			b.WriteString("--- Afectados sin verificar ---\n" + body + "\n--- fin ---\n")
-		}
-		if stop {
-			b.WriteString("Input:\n")
-		} else {
-			b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
-		}
-		if failed {
-			input = decisionInput(plan.AffectedFailedQuestion(f.ID), "Afectados", []askOption{
-				{plan.Retry, "Dispatch the implementer to fix them again"},
-				{plan.Continue, "Accept them failing and go on to review"},
-				{plan.Stop, "End the feature"},
-			})
-		} else {
-			input = decisionInput(plan.UnverifiedQuestion(f.ID), "Afectados", []askOption{
-				{plan.Retry, "Run nxy affected again (e.g. after adding .nxy/runners.json or suite)"},
-				{plan.Continue, "Go on without verifying"},
-				{plan.Stop, "End the feature"},
-			})
-		}
-	case domain.PhaseFixesFailed:
-		if stop {
-			b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
-		} else {
-			b.WriteString("Next: show this to the user verbatim, without summarizing or reformatting.\n")
-		}
-		body := ""
-		if f.Affected != nil {
-			body = strings.TrimSpace(f.Affected.Failure + "\n" + f.Affected.Reason + "\n" + f.Affected.Note)
-		}
-		b.WriteString("--- Arreglos fallidos ---\n" + body + "\n--- fin ---\n")
-		if stop {
-			b.WriteString("Input:\n")
-		} else {
-			b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
-		}
-		input = decisionInput(plan.FixesFailedQuestion(f.ID), "Arreglos", []askOption{
-			{plan.Retry, "Dispatch the implementer to fix them again"},
-			{plan.Continue, "Accept it as is and finish"},
-			{plan.Stop, "End the feature"},
-		})
-	case domain.PhasePlannerFailed:
-		b.WriteString("Next: the planner ended without saving a plan; ask with AskUserQuestion, with exactly this input.\n")
-		input = decisionInput(plan.PlannerFailedQuestion(f.ID), "Planner", []askOption{
-			{plan.Retry, "Plan again"},
-			{plan.Stop, "End the feature"},
-		})
-	default:
+	a, ok := ask.For(f)
+	if !ok {
 		return f.Next.Label() + ": not available yet in this build; stop here. To end the feature: `nxy feature stop`."
 	}
-	if f.State.Phase == domain.PhaseBatchFailed {
-		if stop {
-			b.WriteString("Input:\n")
-		} else {
-			b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
-		}
+	var b strings.Builder
+	if a.Kind == ask.KindPlannerFailed {
+		b.WriteString("Next: the planner ended without saving a plan; ask with AskUserQuestion, with exactly this input.\n")
+		b.WriteString(askInput(askInputOf(a.Questions)))
+		return b.String()
 	}
-	b.WriteString(input)
+	if stop {
+		b.WriteString("Next: the user already sees this above: do not repeat it; ask with AskUserQuestion, with exactly this input.\n")
+	} else if a.Kind == ask.KindBatchFailed {
+		b.WriteString("Next: show this failure to the user verbatim, without summarizing or reformatting.\n")
+	} else {
+		b.WriteString("Next: show this to the user verbatim, without summarizing or reformatting.\n")
+	}
+	b.WriteString("--- " + a.Title + " ---\n" + a.Body + "\n--- fin ---\n")
+	if stop {
+		b.WriteString("Input:\n")
+	} else {
+		b.WriteString("Then ask with AskUserQuestion, with exactly this input:\n")
+	}
+	b.WriteString(askInput(askInputOf(a.Questions)))
 	return b.String()
 }
 
-func decisionInput(question, header string, opts []askOption) string {
-	return askInput([]askQuestion{{Question: question, Header: header, Options: opts}})
-}
-
-func approvalInput(f domain.Feature) string {
-	return askInput([]askQuestion{{
-		Question: plan.ApprovalQuestion(f.ID, f.PlanRev),
-		Header:   "Plan",
-		Options: []askOption{
-			{plan.Approve, "Start executing batch 1"},
-			{plan.Change, "Write what to change; nxy re-plans"},
-			{plan.ViewFull, "Open the full plan in your editor"},
-		},
-	}})
-}
-
-func questionsInput(f domain.Feature) string {
-	var qs []askQuestion
-	if f.Plan != nil {
-		answered := map[string]bool{}
-		for _, a := range f.Answers {
-			answered[a.Question] = true
-		}
-		offer := f.Mode != domain.ModeEngineer && !f.OfferAnswered && len(f.Plan.Questions) > 0
-		if offer {
-			qs = append(qs, askQuestion{
-				Question: design.OfferQuestion(f.ID),
-				Header:   "Engineer",
-				Options: []askOption{
-					{design.LabelToEngineer, "Decide these with Claude, fork by fork, before planning"},
-					{design.LabelAnswerHere, "Answer the questions here"},
-				},
-			})
-		}
-		qs = append(qs, pendingQuestions(f.Plan.Questions, answered, 4-len(qs))...)
-		if len(qs) == 0 || (offer && len(qs) == 1) { // nothing left unanswered: ask them all again
-			qs = append(qs, pendingQuestions(f.Plan.Questions, nil, 4-len(qs))...)
+// askInputOf maps the questions of an ask.Ask to the JSON structs of AskUserQuestion; Recommended
+// and Argv are not part of it. A nil list stays nil so the JSON keeps null where it had it.
+func askInputOf(qs []ask.Question) []askQuestion {
+	if qs == nil {
+		return nil
+	}
+	out := make([]askQuestion, len(qs))
+	for i, q := range qs {
+		out[i] = askQuestion{Question: q.Question, Header: q.Header, MultiSelect: q.MultiSelect}
+		if q.Options != nil {
+			out[i].Options = make([]askOption, len(q.Options))
+			for j, o := range q.Options {
+				out[i].Options[j] = askOption{o.Label, o.Description}
+			}
 		}
 	}
-	return askInput(qs)
-}
-
-func pendingQuestions(all []domain.Question, answered map[string]bool, max int) []askQuestion {
-	var qs []askQuestion
-	for _, q := range all {
-		if answered[q.Question] || len(qs) >= max {
-			continue
-		}
-		aq := askQuestion{Question: q.Question, Header: q.Header}
-		for _, o := range q.Options {
-			aq.Options = append(aq.Options, askOption{o.Label, o.Description})
-		}
-		qs = append(qs, aq)
-	}
-	return qs
+	return out
 }
 
 // askInstruction words an app.AskSpec as an instruction to ask it with AskUserQuestion.

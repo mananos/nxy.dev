@@ -53,6 +53,9 @@ func (h Hooks) advanceSteps(ctx context.Context, id string, fn func(*domain.Feat
 		}
 		var as []domain.Action
 		for _, ev := range evs {
+			if ev.At == 0 {
+				ev.At = h.now().UnixMilli()
+			}
 			s, a, err := flow.Next(f.State, ev)
 			if err != nil {
 				return f, err

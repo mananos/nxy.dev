@@ -85,6 +85,17 @@ func (h Hooks) SaveAgenda(ctx context.Context, id string, r io.Reader) (DesignRe
 	})
 }
 
+// SaveForkOptions stores the options and the opinion of one open fork.
+func (h Hooks) SaveForkOptions(ctx context.Context, id string, r io.Reader) (DesignResult, error) {
+	in, err := design.DecodeForkOptions(r)
+	if err != nil {
+		return DesignResult{}, err
+	}
+	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
+		return design.SetForkOptions(d, in)
+	})
+}
+
 // ProposeDecision leaves a decision waiting for the user's OK.
 func (h Hooks) ProposeDecision(ctx context.Context, id string, r io.Reader) (DesignResult, error) {
 	p, err := design.DecodeProposal(r)

@@ -409,6 +409,16 @@ func (l *lazyStore) PruneSessions(ctx context.Context, before time.Time) (int, e
 	return s.PruneSessions(ctx, before)
 }
 
+var _ app.AgentRuns = (*lazyStore)(nil)
+
+func (l *lazyStore) RecordAgentRun(ctx context.Context, r domain.AgentRun) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.RecordAgentRun(ctx, r)
+}
+
 var _ app.Bootstrap = (*lazyStore)(nil)
 
 func (l *lazyStore) Bootstrap(ctx context.Context, repo string) (app.BootstrapState, bool, error) {
@@ -768,5 +778,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{},
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 		LegacyData: legacyFiles{}, LegacyStore: st,
+		AgentFiles: claudecode.AgentFile{}, Runs: st,
 	}, st
 }

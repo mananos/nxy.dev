@@ -489,9 +489,40 @@ func Next(s domain.State, ev Event) (domain.State, []domain.Action, error) {
 		for _, r := range rows {
 			if r.on == ev.Kind && r.guard(s, ev) {
 				ns, as := r.apply(s, ev)
+				if ev.At != 0 && len(ns.Steps) > 0 {
+					ns.Steps = stamp(steps(s), ns.Steps, ev.At)
+				}
 				return ns, as, nil
 			}
 		}
 	}
 	return s, nil, ErrOutOfOrder
+}
+
+// stamp returns after (a copy) with the times of the steps that changed status: a step that
+// starts running keeps the start of its first attempt, one that ends (green, failed or accepted)
+// gets the end, and one that goes from failed back to running loses it.
+func stamp(before, after []domain.Step, at int64) []domain.Step {
+	out := append([]domain.Step(nil), after...)
+	for i := range out {
+		prev := domain.StepPending
+		if b := findStep(before, out[i].N); b != nil {
+			prev = b.Status
+		}
+		st := &out[i]
+		switch st.Status {
+		case domain.StepRunning:
+			if st.StartedAt == 0 {
+				st.StartedAt = at
+			}
+			if prev == domain.StepFailed {
+				st.EndedAt = 0
+			}
+		case domain.StepGreen, domain.StepFailed, domain.StepAccepted:
+			if prev != st.Status {
+				st.EndedAt = at
+			}
+		}
+	}
+	return out
 }

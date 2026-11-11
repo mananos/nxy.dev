@@ -39,7 +39,7 @@ var commands = map[string]command{
 	"version":    runVersion,
 }
 
-const usage = "usage: nxy <hook|bench|design agenda|propose|close|plan save|gaps|review save|refute|docs|batch red|green|affected|status|stats|trend|statusline|setup status|run|filter status|on|off|gate status|once|reads|config show|set|cache-ttl|locate|legacy import|status|mem rule|edit|rm|restore|show|search|promote|related|export|import|note|note save|list|done|feature list|new|pause|resume|close|stop|tui --demo [--dump <pantalla> --width N --plain]|version>"
+const usage = "usage: nxy <hook|bench|design agenda|fork|propose|close|plan save|gaps|review save|refute|docs|batch red|green|affected|status|stats|trend|statusline|setup status|run|filter status|on|off|gate status|once|reads|config show|set|cache-ttl|locate|legacy import|status|mem rule|edit|rm|restore|show|search|promote|related|export|import|note|note save|list|done|feature list|new|pause|resume|close|stop|tui --demo [--dump <pantalla> --width N --plain]|version>"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))

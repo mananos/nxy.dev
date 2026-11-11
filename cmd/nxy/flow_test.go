@@ -407,6 +407,19 @@ func TestBackgroundImplementerEndToEnd(t *testing.T) {
 		"agent_id": "a1", "agent_type": "nxy:implementer"}); out != "" {
 		t.Fatalf("SubagentStop should print nothing: %q", out)
 	}
+	dbPath, err := platform.DBPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs, err := sqlite.Open(context.Background(), dbPath, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runs, err := rs.AgentRuns(context.Background(), id)
+	rs.Close()
+	if err != nil || len(runs) != 1 || runs[0].AgentID != "a1" || runs[0].Batch != 1 || runs[0].Role != "implementer" {
+		t.Fatalf("agent_runs = %+v, err %v", runs, err)
+	}
 	out = hookCall(t, map[string]any{"hook_event_name": "Stop", "cwd": repo})
 	if !strings.Contains(out, `"decision":"block"`) || !strings.Contains(out, "all batches are green") {
 		t.Fatalf("Stop did not deliver the result: %q", out)
@@ -422,6 +435,47 @@ func TestBashHookDoesNotOpenDB(t *testing.T) {
 		"tool_input": map[string]any{"command": "git status"}})
 	if _, err := os.Stat(filepath.Join(os.Getenv("NXY_HOME"), "nxy.db")); !os.IsNotExist(err) {
 		t.Fatalf("db opened by a Bash hook: %v", err)
+	}
+}
+
+func TestDesignForkSavesOptions(t *testing.T) {
+	repo := flowRepo(t)
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:engineer add a flag"})
+	id := featureID(t)
+	if code, _, errb := runCmd(t, `{"forks":["where the flag lives"]}`, "design", "agenda", "--feature", id); code != 0 {
+		t.Fatalf("agenda: code %d, err %q", code, errb)
+	}
+	ok := `{"fork":"B1","options":[{"label":"cmd","pros":["simple"],"cons":["global"],"touches":"cmd/main.go","d2":"a -> b"},{"label":"config"}],"opinion":"A, unless config exists"}`
+	if code, so, errb := runCmd(t, ok, "design", "fork", "--feature", id); code != 0 || !strings.Contains(so, "B1") {
+		t.Fatalf("fork: code %d, out %q, err %q", code, so, errb)
+	}
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "Diseñando") {
+		t.Fatalf("status: %q", st)
+	}
+	dbPath, err := platform.DBPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs, err := sqlite.Open(context.Background(), dbPath, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := rs.Feature(context.Background(), id)
+	rs.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Design.Agenda) != 1 || len(f.Design.Agenda[0].Options) != 2 ||
+		f.Design.Agenda[0].Opinion != "A, unless config exists" || f.Design.Current != "B1" {
+		t.Fatalf("saved design = %+v", f.Design)
+	}
+	for name, in := range map[string]string{
+		"not in agenda": `{"fork":"B9","options":[{"label":"a"},{"label":"b"}],"opinion":"x"}`,
+		"one option":    `{"fork":"B1","options":[{"label":"a"}],"opinion":"x"}`,
+	} {
+		if code, _, errb := runCmd(t, in, "design", "fork", "--feature", id); code != 1 || errb == "" {
+			t.Errorf("%s accepted: code %d, err %q", name, code, errb)
+		}
 	}
 }
 

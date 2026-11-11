@@ -25,6 +25,8 @@ type HookEvent struct {
 	AgentType string
 	// AgentResult is the last message of the subagent that stopped (SubagentStop).
 	AgentResult string
+	// AgentTranscript is the subagent's own transcript file (SubagentStop).
+	AgentTranscript string
 	// Prompt is the user's prompt (UserPromptSubmit); Source is SessionStart's source.
 	Prompt    string
 	Source    string
@@ -158,6 +160,9 @@ type Hooks struct {
 	// means no import.
 	LegacyData  LegacyData
 	LegacyStore LegacyStore
+	// AgentFiles and Runs record what each subagent cost at SubagentStop; either nil means no record.
+	AgentFiles AgentFiles
+	Runs       AgentRuns
 }
 
 // Handle answers a hook event, one use case per event/tool.

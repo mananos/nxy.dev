@@ -76,4 +76,5 @@ type Event struct {
 	Docs         bool          // DocsChecked: there are docs that name the change
 	Update       bool          // DocsAnswered: the user wants the docs updated
 	Candidates   bool          // DocsChecked, DocsAnswered, DocumenterReturned: there are rule candidates to ask about
+	At           int64         // epoch ms the event happened; 0 = do not stamp the times of the steps
 }

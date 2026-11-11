@@ -105,6 +105,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 	}
 	if ev.Name == "SubagentStop" {
 		ev.AgentResult = in.LastAssistantMessage
+		ev.AgentTranscript = in.AgentTranscriptPath
 		if ev.AgentResult == "" {
 			ev.AgentResult = lastAssistantText(in.AgentTranscriptPath)
 		}

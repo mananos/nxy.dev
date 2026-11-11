@@ -354,6 +354,16 @@ type FilterEngine interface {
 	Rewrite(info filter.EngineInfo, cmd string) (filter.RewriteResult, error)
 }
 
+// AgentFiles reads a subagent's transcript; ok is false when it could not be read.
+type AgentFiles interface {
+	Read(path, agentID string) (transcript.FileResult, bool)
+}
+
+// AgentRuns keeps one row per subagent run.
+type AgentRuns interface {
+	RecordAgentRun(ctx context.Context, r domain.AgentRun) error
+}
+
 // Roles gives the model and effort the config sets for a subagent role ("planner", "scout"...);
 // an empty string means the config says nothing and the role keeps its frontmatter.
 type Roles interface {

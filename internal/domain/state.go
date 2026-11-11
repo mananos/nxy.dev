@@ -141,6 +141,9 @@ type Step struct {
 	Status   StepStatus `json:"status,omitempty"`
 	Attempt  int        `json:"attempt,omitempty"`  // retries used
 	Launched bool       `json:"launched,omitempty"` // the main thread launched its implementer
+
+	StartedAt int64 `json:"started_at,omitempty"` // epoch ms the first attempt started
+	EndedAt   int64 `json:"ended_at,omitempty"`   // epoch ms it ended (green, failed or accepted); 0 while running
 }
 
 // Running lists the batches that are running (not yet returned), in order.

@@ -216,7 +216,7 @@ func TestOfferInQuestions(t *testing.T) {
 	}
 	f.OfferAnswered = false
 	f.Plan.Questions = nil
-	if s := questionsInput(f); strings.Contains(s, "Pasar a engineer") {
+	if s := askInput(askInputOf(askOf(f).Questions)); strings.Contains(s, "Pasar a engineer") {
 		t.Errorf("offer without questions: %s", s)
 	}
 }

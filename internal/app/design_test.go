@@ -151,7 +151,7 @@ func TestOwnStepDesign(t *testing.T) {
 		}
 		return HookEvent{Name: "PreToolUse", Tool: "Bash", Command: c, HasCommand: true, AgentID: aid, AgentType: agent, ProjectDir: "/p", Cwd: "/p"}
 	}
-	for _, sub := range []string{"agenda", "propose", "close"} {
+	for _, sub := range []string{"agenda", "fork", "propose", "close"} {
 		if _, ok := h.ownStep(context.Background(), ev(cmd(sub, id), "")); !ok {
 			t.Errorf("design %s not allowed", sub)
 		}

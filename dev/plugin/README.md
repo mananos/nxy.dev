@@ -174,6 +174,8 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 
 **El debate.** Claude te refuta o te da 2–3 opciones con su trade-off, y su opinión es condicionada ("B, salvo que X"). Si ve un problema que no pediste mirar (N+1, índice, carrera, transacción, contrato, seguridad), lo dice con `path:línea` o lo marca como duda. No hay límite de vueltas ni desempate automático: cambia de opinión sólo con un argumento y lo dice, no cede por insistencia. Si cerrás con tu opción igual, queda registrado que Claude no estaba de acuerdo.
 
+**Opciones de cada bifurcación.** Qué ves: al abrir una bifurcación, Claude guarda (`nxy design fork`) sus 2–4 opciones, cada una con resumen, pros, contras, qué toca y un diagrama D2 opcional, más su opinión; en el chat sigue viéndose el debate de siempre. Qué significa: la TUI de la F5 va a mostrar esas opciones como tarjetas, con la opinión de Claude detrás de una tecla (en el chat no aparece hasta que la pidas). Después de un `/clear` la guía vuelve con las etiquetas de la bifurcación en debate. Qué hacer: nada; si Claude reenvía la agenda, las opciones de las bifurcaciones abiertas se guardan de nuevo.
+
 **Guardar cada decisión.** Qué ves: una pregunta `nxy feature <id>: ¿guardar la decisión D<n>?` con la decisión, el porqué y, si lo hay, "Claude mantiene su desacuerdo: …". **OK, guardar** la deja en la db en el acto; **Seguir debatiendo** (o escribir otra cosa) no guarda nada. Tus mensajes mientras diseñás se guardan tal cual como referencias para el planner.
 
 **Cerrar.** Cuando están todas decididas, Claude propone cerrar: ves las decisiones, los criterios R1…Rn y el diagrama D2 como fuente. **Cerrar y planificar** aprueba los criterios y arranca el planner; **Seguir diseñando** vuelve. Si decís "decidí vos el resto", las bifurcaciones abiertas quedan delegadas al planner y el plan las marca como "las eligió el planner".
@@ -185,6 +187,8 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 **Review.** El base pass explica el diff por decisión (`D1 → path:línea — cómo`), y cada hallazgo trae el porqué y una regla general para aprender de él.
 
 **A validar en vivo:** `/clear` con el planner en background justo tras cerrar; el peso de las referencias en el prompt del planner (≈25 KB con 50 mensajes); que nxy no valida la sintaxis d2 (un bloque roto se ve recién al renderizarlo a mano).
+
+**F5.2a: datos para la TUI.** Qué se guarda ahora: por cada subagente su modelo, tokens, costo y tiempo (tabla `agent_runs`, una fila por subagente, escrita una vez al terminar), y el inicio y el fin de cada lote. Qué significa: es sólo para que la TUI muestre costos y duraciones; vive en tu máquina, el bundle de memoria no la lleva y se borra a los 90 días. Pesa unos 4 KB por feature y unos 0,5 MB como mucho con 10 features por semana (estimación). Qué hacer: nada.
 
 ## F3.2: stats, trend y statusline
 
