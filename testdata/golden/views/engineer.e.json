@@ -1,0 +1,128 @@
+{
+  "feature": {
+    "id": "FEAT-E",
+    "title": "cobrar por suscripción",
+    "status": "needs_you",
+    "phase": "Diseñando",
+    "stage": "design",
+    "stage_detail": "",
+    "closed_at": "",
+    "repos": [
+      {
+        "name": "api",
+        "path": "/srv/dev/api",
+        "role": "",
+        "branch": "",
+        "worktree": false
+      }
+    ],
+    "batch": 0,
+    "batches": 0,
+    "elapsed_ms": 10800000,
+    "cost_usd": 0,
+    "cost_estimated": false
+  },
+  "agenda": [
+    {
+      "id": "B1",
+      "title": "Dónde vive el cobro",
+      "status": "decided",
+      "choice": "El cobro vive en el servicio de facturación"
+    },
+    {
+      "id": "B2",
+      "title": "Cómo se reintenta",
+      "status": "current",
+      "choice": ""
+    },
+    {
+      "id": "B3",
+      "title": "Formato de los recibos",
+      "status": "decided",
+      "choice": "la decide el planner"
+    },
+    {
+      "id": "B4",
+      "title": "Moneda",
+      "status": "pending",
+      "choice": ""
+    }
+  ],
+  "current": "B2",
+  "question": "¿Cómo se reintenta un cobro fallido?",
+  "options": [
+    {
+      "key": "A",
+      "label": "Cola de reintentos",
+      "summary": "Un worker reintenta con espera creciente.",
+      "pros": [
+        "No bloquea"
+      ],
+      "cons": [
+        "Una pieza más"
+      ],
+      "touches": "src/billing/",
+      "diagram": {
+        "source": "cola: Cola\nCola -> Cobro",
+        "lines": [
+          "[cola: Cola]"
+        ],
+        "renderer": "d2 0.7.1 txt"
+      },
+      "action": {
+        "id": "decide-A",
+        "label": "Cola de reintentos",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-E",
+          "--option",
+          "1"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    },
+    {
+      "key": "B",
+      "label": "Reintento en línea",
+      "summary": "El mismo pedido reintenta tres veces.",
+      "pros": [
+        "Simple"
+      ],
+      "cons": [],
+      "touches": "",
+      "diagram": {
+        "source": "",
+        "lines": [],
+        "renderer": ""
+      },
+      "action": {
+        "id": "decide-B",
+        "label": "Reintento en línea",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-E",
+          "--option",
+          "2"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    }
+  ],
+  "opinion": "Reintento con cola: es lo que menos toca.",
+  "today": {
+    "source": "cobro: Cobro\nCobro -> Pasarela",
+    "lines": [
+      "[cobro: Cobro]"
+    ],
+    "renderer": "d2 0.7.1 txt"
+  },
+  "other": "Otra: escribila en el chat"
+}

@@ -15,6 +15,33 @@ func forkIn(fork string, n int) ForkInput {
 	return in
 }
 
+func TestSetToday(t *testing.T) {
+	d := &domain.Design{}
+	if p := SetToday(d, "a -> b"); p != nil || d.Today != "a -> b" {
+		t.Fatalf("store: %v %+v", p, d)
+	}
+	if p := SetToday(d, "c -> d"); p != nil || d.Today != "c -> d" {
+		t.Fatalf("overwrite: %v %+v", p, d)
+	}
+	if p := SetToday(d, "  \n"); len(p) != 1 || d.Today != "c -> d" {
+		t.Fatalf("empty: %v %+v", p, d)
+	}
+	if p := SetToday(d, "```d2\na -> b\n```"); len(p) != 1 || d.Today != "c -> d" {
+		t.Fatalf("fenced: %v %+v", p, d)
+	}
+	SetAgenda(d, []string{"x"})
+	Propose(d, prop("B1"))
+	if p := SetToday(d, "e -> f"); p != nil || d.Today != "e -> f" {
+		t.Fatalf("pending: %v %+v", p, d)
+	}
+	if got, err := DecodeToday(strings.NewReader(`{"d2":"q"}`)); err != nil || got != "q" {
+		t.Fatalf("decode: %q %v", got, err)
+	}
+	if _, err := DecodeToday(strings.NewReader(`{"d2":"q","x":1}`)); err == nil {
+		t.Fatal("unknown field accepted")
+	}
+}
+
 func TestSetForkOptionsStoresAndMarksCurrent(t *testing.T) {
 	d := &domain.Design{}
 	SetAgenda(d, []string{"dónde vive el flag", "otra"})

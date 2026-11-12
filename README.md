@@ -43,6 +43,7 @@ Opcionales, que suman ahorro:
 | [rtk](https://github.com/rtk-ai/rtk) | Filtra la salida de los comandos (tests, builds, git, logs) | Los comandos pasan enteros; nada se rompe |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) | Búsqueda de texto del scout; rtk también lo usa | El scout busca más lento y rtk recorta menos |
 | [codegraph](https://github.com/colbymchenry/codegraph) | "Quién llama a qué" para el scout | El scout usa el índice propio de nxy y `rg` |
+| [d2](https://d2lang.com) (v2) | Dibuja los diagramas del diseño en la TUI | El diagrama se muestra como texto fuente |
 
 ```
 # Windows

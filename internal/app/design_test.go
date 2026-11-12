@@ -54,6 +54,23 @@ func TestDesignChangeOutsideDesigningFails(t *testing.T) {
 	}
 }
 
+func TestDesignTodaySaves(t *testing.T) {
+	h, st, id := engineerFeature(t)
+	ctx := context.Background()
+	if res, err := h.SaveToday(ctx, id, strings.NewReader(`{"d2":"a -> b"}`)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("today: %+v %v", res, err)
+	}
+	if got := st.feats[id].Design.Today; got != "a -> b" {
+		t.Errorf("Today = %q", got)
+	}
+	f := st.feats[id]
+	f.State.Phase = domain.PhasePlanning
+	st.feats[id] = f
+	if _, err := h.SaveToday(ctx, id, strings.NewReader(`{"d2":"c -> d"}`)); err == nil {
+		t.Error("today saved outside designing")
+	}
+}
+
 func TestDesignProposeAndOK(t *testing.T) {
 	h, st, id := engineerFeature(t)
 	ctx := context.Background()
@@ -151,7 +168,7 @@ func TestOwnStepDesign(t *testing.T) {
 		}
 		return HookEvent{Name: "PreToolUse", Tool: "Bash", Command: c, HasCommand: true, AgentID: aid, AgentType: agent, ProjectDir: "/p", Cwd: "/p"}
 	}
-	for _, sub := range []string{"agenda", "fork", "propose", "close"} {
+	for _, sub := range []string{"agenda", "fork", "today", "propose", "close"} {
 		if _, ok := h.ownStep(context.Background(), ev(cmd(sub, id), "")); !ok {
 			t.Errorf("design %s not allowed", sub)
 		}

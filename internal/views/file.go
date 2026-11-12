@@ -60,6 +60,6 @@ type FileFeature struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`
 	Batch    int    `json:"batch"`
-	State    string `json:"state"` // running|failed|closed
+	State    string `json:"state"` // pending|running|failed|closed
 	ClosedAt string `json:"closed_at"`
 }

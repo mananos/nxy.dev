@@ -308,9 +308,9 @@ func (h Hooks) reviewRefuteWords(toks []string) string {
 	return toks[4]
 }
 
-// designWords is `"<exe>" design agenda|fork|propose|close --feature <id>`; it returns the id.
+// designWords is `"<exe>" design agenda|fork|today|propose|close --feature <id>`; it returns the id.
 func (h Hooks) designWords(toks []string) string {
-	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "design" || (toks[2] != "agenda" && toks[2] != "fork" && toks[2] != "propose" && toks[2] != "close") || toks[3] != "--feature" {
+	if len(toks) != 5 || !h.isExe(toks[0]) || toks[1] != "design" || (toks[2] != "agenda" && toks[2] != "fork" && toks[2] != "today" && toks[2] != "propose" && toks[2] != "close") || toks[3] != "--feature" {
 		return ""
 	}
 	return toks[4]

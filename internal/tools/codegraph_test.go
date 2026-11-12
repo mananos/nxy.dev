@@ -142,6 +142,26 @@ func res(exit int, out string, err error) []func() (int, string, error) {
 
 const affJSON = `{"affectedTests":["a.spec.ts"]}`
 
+func TestAffectedIndexedQueryOnly(t *testing.T) {
+	f := &fake{answer: map[string][]func() (int, string, error){"affected": res(0, affJSON, nil)}}
+	ex := 0
+	g := newGraph(t, f, &ex)
+	if _, ok := g.AffectedIndexed(context.Background(), f.root, []string{"a.ts"}); ok {
+		t.Fatal("no index: must be false")
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("no index must not run anything: %v", f.calls)
+	}
+	mk(t, f.root)
+	tests, ok := g.AffectedIndexed(context.Background(), f.root, []string{"a.ts"})
+	if !ok || !reflect.DeepEqual(tests, []string{"a.spec.ts"}) {
+		t.Fatalf("got %v %v", tests, ok)
+	}
+	if !reflect.DeepEqual(f.calls, []string{"affected"}) || ex != 0 {
+		t.Fatalf("only the query: %v exclude %d", f.calls, ex)
+	}
+}
+
 func TestLifecycleInitThenSync(t *testing.T) {
 	f := &fake{answer: map[string][]func() (int, string, error){"affected": res(0, affJSON, nil)}}
 	ex := 0

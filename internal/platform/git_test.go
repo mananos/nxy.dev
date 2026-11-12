@@ -90,6 +90,22 @@ func gitRepo(t *testing.T) string {
 	return d
 }
 
+func TestGitFileAt(t *testing.T) {
+	d := gitRepo(t)
+	ctx := context.Background()
+	got, ok, err := GitFileAt(ctx, d, "HEAD", "sub/b.txt")
+	if err != nil || !ok || got != "b" {
+		t.Fatalf("present: %q %v %v", got, ok, err)
+	}
+	got, ok, err = GitFileAt(ctx, d, "HEAD", "nope.txt")
+	if err != nil || ok || got != "" {
+		t.Fatalf("absent: %q %v %v", got, ok, err)
+	}
+	if _, _, err := GitFileAt(ctx, d, "no-such-rev", "a.txt"); err == nil {
+		t.Fatal("bad rev must be an error")
+	}
+}
+
 func TestGitChangedAndFiles(t *testing.T) {
 	d := gitRepo(t)
 	base := GitHead(d)

@@ -680,6 +680,25 @@
         "confirm": "Instala codegraph",
         "planned": false
       }
+    },
+    {
+      "name": "d2",
+      "found": false,
+      "version": "",
+      "path": "",
+      "install": {
+        "id": "install",
+        "label": "Instalar d2",
+        "argv": [
+          "nxy",
+          "setup",
+          "run",
+          "d2",
+          "--yes"
+        ],
+        "confirm": "Instala d2",
+        "planned": false
+      }
     }
   ],
   "binary": {

@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/setup"
+	"github.com/mananos/nxy.dev/internal/store/sqlite"
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -34,9 +37,10 @@ func TestViewArgs(t *testing.T) {
 		{"missing --json", []string{"view", "cockpit"}, "usage: nxy view"},
 		{"unknown id", []string{"view", "nope", "--json"}, "usage: nxy view"},
 		{"bad scope", []string{"view", "memory", "--json", "--scope", "x"}, "usage: nxy view"},
-		{"plan later", []string{"view", "plan", "--json"}, "llega en F5.2c"},
-		{"file later", []string{"view", "file", "--json"}, "llega en F5.2c"},
-		{"engineer later", []string{"view", "engineer", "--json"}, "llega en F5.2c"},
+		{"file without path", []string{"view", "file", "--json", "--feature", "x"}, "usage: nxy view"},
+		{"plan without feature", []string{"view", "plan", "--json"}, "no hay una feature activa"},
+		{"engineer without feature", []string{"view", "engineer", "--json"}, "no hay una feature activa"},
+		{"file without feature", []string{"view", "file", "--json", "--path", "a.go"}, "no hay una feature activa"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -48,6 +52,36 @@ func TestViewArgs(t *testing.T) {
 				t.Fatalf("stdout %q stderr %q, want %q on stderr only", out.String(), errb.String(), c.want)
 			}
 		})
+	}
+}
+
+func TestViewPlanEngineerNull(t *testing.T) {
+	proj := isolateView(t)
+	path, err := platform.DBPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	st, err := sqlite.Open(ctx, path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := st.CreateFeature(ctx, domain.Feature{
+		Repo: "k", ProjectDir: proj, Home: "h", Holds: []string{"h"}, Request: "x",
+		State: domain.State{Phase: domain.PhasePlanning},
+	})
+	st.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range []string{"plan", "engineer"} {
+		var out, errb bytes.Buffer
+		if code := run([]string{"view", v, "--json", "--feature", id}, strings.NewReader(""), &out, &errb); code != 0 {
+			t.Fatalf("%s: exit %d: %s", v, code, errb.String())
+		}
+		if strings.TrimSpace(out.String()) != "null" {
+			t.Fatalf("%s should print null, got %q", v, out.String())
+		}
 	}
 }
 

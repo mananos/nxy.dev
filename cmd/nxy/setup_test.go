@@ -42,7 +42,7 @@ func TestSetupStatus(t *testing.T) {
 			Plan struct{ Tool, Action string }
 		}
 	}
-	if code != 0 || json.Unmarshal([]byte(out), &got) != nil || !got.OK || len(got.Tools) != 3 || got.Tools["rg"].Plan.Tool != "rg" {
+	if code != 0 || json.Unmarshal([]byte(out), &got) != nil || !got.OK || len(got.Tools) != 4 || got.Tools["rg"].Plan.Tool != "rg" {
 		t.Fatalf("status --json (%d): %s", code, out)
 	}
 	if got.Platform != "win32" && got.Platform != "linux" && got.Platform != "darwin" {

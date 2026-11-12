@@ -14,6 +14,39 @@ func handState() State {
 			Plan: InstallPlan("rtk", Opts{Platform: "linux", Found: true, Conflict: ConflictYes, RtkPath: &rtkPath})},
 		Rg:        ToolInfo{Found: true, Path: "rg", OnPath: true, Plan: InstallPlan("rg", Opts{Platform: "linux", PM: "apt-get", Found: true})},
 		Codegraph: ToolInfo{Plan: InstallPlan("codegraph", Opts{Platform: "linux"})},
+		D2:        ToolInfo{Plan: InstallPlan("d2", Opts{Platform: "linux"})},
+	}
+}
+
+func TestD2Plan(t *testing.T) {
+	for _, c := range []struct {
+		os, file, args string
+		found          bool
+	}{
+		{"win32", "winget", "install Terrastruct.D2", false},
+		{"win32", "winget", "upgrade Terrastruct.D2", true},
+		{"darwin", "brew", "install d2", false},
+		{"darwin", "brew", "upgrade d2", true},
+	} {
+		p := InstallPlan("d2", Opts{Platform: c.os, Found: c.found})
+		if len(p.Steps) != 1 || p.Steps[0].File != c.file || strings.Join(p.Steps[0].Args, " ") != c.args {
+			t.Errorf("%s found=%v: %+v", c.os, c.found, p.Steps)
+		}
+	}
+	p := InstallPlan("d2", Opts{Platform: "linux"})
+	if len(p.Steps) != 1 || p.Steps[0].File != "sh" || p.Steps[0].NeedsSudo ||
+		!strings.Contains(p.Steps[0].Display, "https://d2lang.com/install.sh") ||
+		!strings.Contains(p.Steps[0].Display, `--prefix "$HOME/.local"`) || len(p.Manual) != 0 {
+		t.Errorf("linux: %+v", p)
+	}
+	if !strings.Contains(StatusText(handState()), "\nd2: no encontrada — no encontrada\n") {
+		t.Error("status text lacks d2")
+	}
+	if handState().Tool("d2").Plan.Tool != "d2" {
+		t.Error("Tool(d2)")
+	}
+	if !strings.Contains(StatusJSON(handState()), `"d2":{"found":false`) {
+		t.Error("json lacks d2")
 	}
 }
 
@@ -51,7 +84,7 @@ func TestStatusJSONShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(line), &got); err != nil {
 		t.Fatal(err)
 	}
-	if !got.OK || got.Platform != "linux" || len(got.Tools) != 3 {
+	if !got.OK || got.Platform != "linux" || len(got.Tools) != 4 {
 		t.Fatalf("got %+v", got)
 	}
 	if got.Tools["rtk"]["conflict"] != true || got.Tools["rg"]["conflict"] != false {

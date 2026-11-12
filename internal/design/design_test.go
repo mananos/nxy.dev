@@ -153,7 +153,7 @@ func TestGuideCarriesLastRefs(t *testing.T) {
 func TestGuideHasCommands(t *testing.T) {
 	f := domain.Feature{ID: "f1", Request: "hacer x", Design: &domain.Design{}}
 	g := Guide(f, `C:\bin\nxy.exe`)
-	for _, w := range []string{"design agenda --feature f1", "design propose --feature f1", "design close --feature f1", "salvo que", "C:/bin/nxy.exe", "una sola vez"} {
+	for _, w := range []string{"design agenda --feature f1", "design today --feature f1", "design propose --feature f1", "design close --feature f1", "salvo que", "C:/bin/nxy.exe", "una sola vez"} {
 		if !strings.Contains(g, w) {
 			t.Errorf("guide lacks %q", w)
 		}

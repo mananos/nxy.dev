@@ -166,6 +166,23 @@ func GitChanged(ctx context.Context, dir, base string) ([]string, error) {
 	return res, nil
 }
 
+// GitFileAt reads path (relative to the repo root, forward slashes) as it is at rev. exists is false
+// when the revision has no such file; err is for a bad revision or a failing git.
+func GitFileAt(ctx context.Context, dir, rev, path string) (content string, exists bool, err error) {
+	if _, err := gitOut(ctx, dir, "rev-parse", "--verify", "--quiet", rev+"^{commit}"); err != nil {
+		return "", false, fmt.Errorf("git: revision %q not found", rev)
+	}
+	spec := rev + ":" + filepath.ToSlash(path)
+	if _, err := gitOut(ctx, dir, "cat-file", "-e", spec); err != nil {
+		return "", false, nil
+	}
+	out, err := gitOut(ctx, dir, "cat-file", "blob", spec)
+	if err != nil {
+		return "", false, err
+	}
+	return out, true, nil
+}
+
 // maxUntrackedDiff is the size above which an untracked file gets a header only.
 const maxUntrackedDiff = 256 * 1024
 

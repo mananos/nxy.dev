@@ -25,7 +25,7 @@ func jsPlatform(goos string) string {
 	return goos
 }
 
-// setupState detects the three tools: what is installed, what collides, and the plan for each.
+// setupState detects the tools: what is installed, what collides, and the plan for each.
 // It reads files and runs `--version`; it never installs.
 func setupState(cwd string, getenv func(string) string) setup.State {
 	goos := jsPlatform(runtime.GOOS)
@@ -46,6 +46,8 @@ func setupState(cwd string, getenv func(string) string) setup.State {
 		rg.Path = "rg"
 	}
 	cg := setup.ToolInfo{Found: cgFound, Path: cgPath, Version: cgVersion, OnPath: cgFound && !strings.ContainsAny(cgPath, `\/`)}
+	d2Path, d2Version, d2Found := tools.FindD2(getenv)
+	d2 := setup.ToolInfo{Found: d2Found, Path: d2Path, Version: d2Version, OnPath: d2Found && !strings.ContainsAny(d2Path, `\/`)}
 	switch {
 	case facts.HasMCP:
 		cg.Conflict = setup.ConflictMCP
@@ -56,13 +58,13 @@ func setupState(cwd string, getenv func(string) string) setup.State {
 	for _, t := range []struct {
 		name string
 		info *setup.ToolInfo
-	}{{"rtk", &rtk}, {"rg", &rg}, {"codegraph", &cg}} {
+	}{{"rtk", &rtk}, {"rg", &rg}, {"codegraph", &cg}, {"d2", &d2}} {
 		t.info.Plan = setup.InstallPlan(t.name, setup.Opts{
 			Platform: goos, PM: pm, Found: t.info.Found, Conflict: t.info.Conflict,
 			RtkPath: &rtk.Path, HookScopes: facts.HookScopes, MCPScope: facts.MCPScope,
 		})
 	}
-	return setup.State{Platform: goos, Rtk: rtk, Rg: rg, Codegraph: cg}
+	return setup.State{Platform: goos, Rtk: rtk, Rg: rg, Codegraph: cg, D2: d2}
 }
 
 type setupArgs struct {
@@ -94,7 +96,7 @@ func parseSetupArgs(args []string) setupArgs {
 	return a
 }
 
-// runSetup is `nxy setup status [--json] | run <rtk|rg|codegraph> --yes [--dry-run]`. It only ever
+// runSetup is `nxy setup status [--json] | run <rtk|rg|codegraph|d2> --yes [--dry-run]`. It only ever
 // installs by the user's explicit choice (/nxy:setup or the panel's Config button); no hook calls it.
 // Like the 1.x it answers on stdout, and exits 1 when it did not install what was asked.
 func runSetup(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {

@@ -343,53 +343,10 @@ func TestViewGolden(t *testing.T) {
 	src := newViewSource(st, os.Getenv, cwd, func() time.Time { return now }, loc)
 	defer src.Close()
 
-	rootVariants := []string{root, filepath.ToSlash(root), strings.ReplaceAll(root, `\`, `\\`)}
-	if real, err := filepath.EvalSymlinks(root); err == nil && real != root {
-		rootVariants = append(rootVariants, real, filepath.ToSlash(real), strings.ReplaceAll(real, `\`, `\\`))
-	}
 	var pairs []string
 	pairs = append(pairs, idA, "FEAT-A", idB, "FEAT-B", idC, "FEAT-C", idD, "FEAT-D")
 	pairs = append(pairs, transcript.ProjectSlug(cwd), transcript.ProjectSlug(vgRoot+"/app"))
-	for _, v := range rootVariants {
-		pairs = append(pairs, v, vgRoot)
-	}
-	norm := strings.NewReplacer(pairs...)
-
-	check := func(viewID, name string, v any) {
-		t.Helper()
-		got := []byte(norm.Replace(string(vgEncode(t, v))))
-		if v != nil {
-			if err := views.Decode(got, views.New(viewID)); err != nil {
-				t.Errorf("%s: strict decode: %v", name, err)
-			}
-		}
-		for _, bad := range vgBad {
-			if strings.Contains(string(got), bad) {
-				t.Errorf("%s holds a personal path (%q)", name, bad)
-			}
-		}
-		path := filepath.Join("..", "..", "testdata", "golden", "views", name+".json")
-		if os.Getenv("NXY_WRITE_GOLDEN") == "1" {
-			if err := os.WriteFile(path, got, 0o644); err != nil {
-				t.Fatal(err)
-			}
-			return
-		}
-		want, err := os.ReadFile(path)
-		if err != nil {
-			t.Errorf("%s: %v (NXY_WRITE_GOLDEN=1 writes it)", name, err)
-			return
-		}
-		w := strings.ReplaceAll(string(want), "\r\n", "\n")
-		if w != string(got) {
-			t.Errorf("%s differs from %s (NXY_WRITE_GOLDEN=1 rewrites it):\n%s", name, path, vgFirstDiff(w, string(got)))
-		}
-		for _, bad := range vgBad {
-			if strings.Contains(w, bad) {
-				t.Errorf("golden %s holds a personal path (%q)", path, bad)
-			}
-		}
-	}
+	check := vgChecker(t, root, pairs)
 
 	cockpit, err := src.Cockpit(ctx)
 	if err != nil {
@@ -437,6 +394,56 @@ func TestViewGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	check("config", "config", cfg)
+}
+
+// vgChecker compares a view with its golden. pairs are the replacements (old, new) for ids and the
+// like; every spelling of the temp root becomes vgRoot after them.
+func vgChecker(t *testing.T, root string, pairs []string) func(viewID, name string, v any) {
+	rootVariants := []string{root, filepath.ToSlash(root), strings.ReplaceAll(root, `\`, `\\`)}
+	if real, err := filepath.EvalSymlinks(root); err == nil && real != root {
+		rootVariants = append(rootVariants, real, filepath.ToSlash(real), strings.ReplaceAll(real, `\`, `\\`))
+	}
+	all := append([]string{}, pairs...)
+	for _, v := range rootVariants {
+		all = append(all, v, vgRoot)
+	}
+	norm := strings.NewReplacer(all...)
+
+	return func(viewID, name string, v any) {
+		t.Helper()
+		got := []byte(norm.Replace(string(vgEncode(t, v))))
+		if v != nil {
+			if err := views.Decode(got, views.New(viewID)); err != nil {
+				t.Errorf("%s: strict decode: %v", name, err)
+			}
+		}
+		for _, bad := range vgBad {
+			if strings.Contains(string(got), bad) {
+				t.Errorf("%s holds a personal path (%q)", name, bad)
+			}
+		}
+		path := filepath.Join("..", "..", "testdata", "golden", "views", name+".json")
+		if os.Getenv("NXY_WRITE_GOLDEN") == "1" {
+			if err := os.WriteFile(path, got, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		want, err := os.ReadFile(path)
+		if err != nil {
+			t.Errorf("%s: %v (NXY_WRITE_GOLDEN=1 writes it)", name, err)
+			return
+		}
+		w := strings.ReplaceAll(string(want), "\r\n", "\n")
+		if w != string(got) {
+			t.Errorf("%s differs from %s (NXY_WRITE_GOLDEN=1 rewrites it):\n%s", name, path, vgFirstDiff(w, string(got)))
+		}
+		for _, bad := range vgBad {
+			if strings.Contains(w, bad) {
+				t.Errorf("golden %s holds a personal path (%q)", path, bad)
+			}
+		}
+	}
 }
 
 // vgFirstDiff is the first line where two texts differ, with the line number.

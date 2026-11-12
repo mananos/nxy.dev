@@ -144,6 +144,32 @@ func DecodeForkOptions(r io.Reader) (ForkInput, error) {
 	return in, nil
 }
 
+type todayInput struct {
+	D2 string `json:"d2"`
+}
+
+// DecodeToday reads {"d2": "source"}.
+func DecodeToday(r io.Reader) (string, error) {
+	var t todayInput
+	if err := decodeStrict(r, "today", &t); err != nil {
+		return "", err
+	}
+	return t.D2, nil
+}
+
+// SetToday stores the d2 of how the code is today; it decides nothing, so it works with a
+// proposal or close waiting, and it overwrites the previous one.
+func SetToday(d *domain.Design, src string) []domain.Problem {
+	switch {
+	case strings.TrimSpace(src) == "":
+		return []domain.Problem{{Where: "d2", Msg: "empty"}}
+	case strings.Contains(src, "```"):
+		return []domain.Problem{{Where: "d2", Msg: "must not contain code fences (```)"}}
+	}
+	d.Today = src
+	return nil
+}
+
 const (
 	maxForkOptions = 4
 	maxBullets     = 4

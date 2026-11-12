@@ -351,6 +351,24 @@ func (g *Graph) Affected(ctx context.Context, root string, changed []string) Gra
 	return res
 }
 
+// AffectedIndexed asks only the `affected` query of an index that already exists: it never inits or
+// syncs, so a view does not build or refresh anything. false when there is no codegraph, no index
+// or the query fails.
+func (g *Graph) AffectedIndexed(ctx context.Context, root string, changed []string) ([]string, bool) {
+	if len(g.Argv) == 0 || len(changed) == 0 || !HasIndex(root, g.getenv) {
+		return nil, false
+	}
+	exit, out, err := g.run(ctx, queryBudget, root, strings.Join(changed, "\n")+"\n", "affected", "--json", "--stdin", "-p", root)
+	if !ok(exit, err) {
+		return nil, false
+	}
+	tests, perr := ParseAffected(out)
+	if perr != nil {
+		return nil, false
+	}
+	return tests, true
+}
+
 // Budgets and cap of Explore/Relations (core/scout/codegraph.mjs runCodegraph): the payload is dense,
 // but it dies with the scout that reads it.
 const exploreMaxChars = 24_000

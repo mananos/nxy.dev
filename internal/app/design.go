@@ -96,6 +96,17 @@ func (h Hooks) SaveForkOptions(ctx context.Context, id string, r io.Reader) (Des
 	})
 }
 
+// SaveToday stores the d2 of how the code is today from {"d2": "..."}.
+func (h Hooks) SaveToday(ctx context.Context, id string, r io.Reader) (DesignResult, error) {
+	src, err := design.DecodeToday(r)
+	if err != nil {
+		return DesignResult{}, err
+	}
+	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
+		return design.SetToday(d, src)
+	})
+}
+
 // ProposeDecision leaves a decision waiting for the user's OK.
 func (h Hooks) ProposeDecision(ctx context.Context, id string, r io.Reader) (DesignResult, error) {
 	p, err := design.DecodeProposal(r)

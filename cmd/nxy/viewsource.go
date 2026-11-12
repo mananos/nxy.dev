@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	nxydev "github.com/mananos/nxy.dev"
@@ -24,6 +25,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/report"
 	"github.com/mananos/nxy.dev/internal/setup"
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/internal/tools"
 	"github.com/mananos/nxy.dev/internal/version"
 	"github.com/mananos/nxy.dev/internal/views"
 )
@@ -34,6 +36,66 @@ var (
 	viewBinary     = realBinary
 	viewWorktrees  = platform.ListWorktrees
 )
+
+// viewToolset is what the plan, file and engineer screens ask of the machine: the code index, a
+// search, d2. The defaults are real; tests replace viewTools as a whole.
+type viewToolset struct {
+	// Indexed says whether codegraph is installed and root has an index.
+	Indexed func(root string) bool
+	// Affected is the tests the index says depend on files (query only, never builds the index).
+	Affected func(ctx context.Context, root string, files []string) ([]string, bool)
+	// RgFound says whether rg is installed.
+	RgFound func() bool
+	// Grep is the rows (one per file, at most 30) where word appears in root.
+	Grep     func(ctx context.Context, root, word string) []tools.RgRow
+	FindD2   func() (path, version string, ok bool)
+	RenderD2 func(ctx context.Context, bin, src string) ([]string, error)
+}
+
+func realViewTools(getenv func(string) string) viewToolset {
+	var (
+		once sync.Once
+		g    *tools.Graph
+	)
+	graph := func() *tools.Graph {
+		once.Do(func() { g = tools.NewGraph(getenv) })
+		return g
+	}
+	return viewToolset{
+		Indexed: func(root string) bool { return len(graph().Argv) > 0 && tools.HasIndex(root, getenv) },
+		Affected: func(ctx context.Context, root string, files []string) ([]string, bool) {
+			return graph().AffectedIndexed(ctx, root, files)
+		},
+		RgFound: func() bool { _, ok := tools.FindRg(getenv); return ok },
+		Grep: func(ctx context.Context, root, word string) []tools.RgRow {
+			r := tools.RgSearch(ctx, root, word, tools.RgOpts{MaxRows: 30, MaxPerFile: 1, Word: true, Getenv: getenv})
+			return r.Rows
+		},
+		FindD2:   func() (string, string, bool) { return tools.FindD2(getenv) },
+		RenderD2: tools.RenderD2,
+	}
+}
+
+// viewTools is the replacement tests install; the zero value means the real tools of the source.
+var viewTools viewToolset
+
+func (t viewToolset) isSet() bool {
+	return t.Indexed != nil || t.Affected != nil || t.RgFound != nil || t.Grep != nil || t.FindD2 != nil || t.RenderD2 != nil
+}
+
+// tools is the toolset of this source: the test replacement, else the real one over its getenv.
+func (v *viewSource) tools() viewToolset {
+	if viewTools.isSet() {
+		return viewTools
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.ts == nil {
+		ts := realViewTools(v.getenv)
+		v.ts = &ts
+	}
+	return *v.ts
+}
 
 // viewSource builds the views from the real data of the repo at cwd: nxy.db, the transcripts of
 // the sessions linked to each feature, the config and the tools. It implements views.Source.
@@ -46,6 +108,11 @@ type viewSource struct {
 	cwd    string
 	loc    *time.Location
 	done   func()
+
+	mu      sync.Mutex
+	impacts map[string]planImpact // by feature id, plan revision and HEAD of each repo
+	d2      *d2Cache
+	ts      *viewToolset // real tools over getenv, built on first use
 }
 
 var _ views.Source = (*viewSource)(nil)

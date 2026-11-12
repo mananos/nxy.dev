@@ -1,4 +1,4 @@
-// Package setup plans the install of the external tools nxy leans on (rtk, rg, codegraph) and
+// Package setup plans the install of the external tools nxy leans on (rtk, rg, codegraph, d2) and
 // words what `nxy setup` prints. Port of core/setup.mjs and hosts/claude-code/entries/setup.mjs.
 //
 // Pure: planning never touches the machine; Run only calls the Spawn it is given. Platform names
@@ -18,9 +18,10 @@ import (
 )
 
 // Tools are the tools `nxy setup` knows, in the order it lists them.
-var Tools = []string{"rtk", "rg", "codegraph"}
+var Tools = []string{"rtk", "rg", "codegraph", "d2"}
 
 const (
+	d2Sh  = "https://d2lang.com/install.sh"
 	rtkSh = "https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh"
 	cgSh  = "https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh"
 	cgPs1 = "https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1"
@@ -166,6 +167,12 @@ func shStep(url, source string) Step {
 	return Step{Display: script, File: "sh", Args: []string{"-c", script}, Source: source}
 }
 
+// shStepArgs is shStep with arguments for the downloaded script (`sh "$t" args`).
+func shStepArgs(url, source, args string) Step {
+	script := fmt.Sprintf(`t=$(mktemp) && curl -fsSL %s -o "$t" && sh "$t" %s; r=$?; rm -f "$t"; exit $r`, url, args)
+	return Step{Display: script, File: "sh", Args: []string{"-c", script}, Source: source}
+}
+
 func cmdStep(file string, args []string, source string) Step {
 	parts := append([]string{file}, args...)
 	for i, p := range parts {
@@ -216,6 +223,15 @@ func stepsFor(tool, os, pm string, found bool) []Step {
 		return []Step{shStep(rtkSh, "github.com/rtk-ai/rtk install.sh")}
 	case "rg":
 		return rgSteps(os, pm, found)
+	case "d2":
+		switch os {
+		case "win32":
+			return []Step{cmdStep("winget", []string{installOrUpgrade(found), "Terrastruct.D2"}, "d2lang.com")}
+		case "darwin":
+			return []Step{cmdStep("brew", []string{installOrUpgrade(found), "d2"}, "d2lang.com")}
+		}
+		// no sudo: the official script installs under ~/.local
+		return []Step{shStepArgs(d2Sh, "d2lang.com install.sh", `--prefix "$HOME/.local"`)}
 	case "codegraph":
 		if os == "win32" {
 			// Stop makes a failed download a terminating error, hence a non-zero exit.
@@ -436,12 +452,13 @@ func (i ToolInfo) MarshalJSON() ([]byte, error) {
 	return bytes.TrimSuffix(b.Bytes(), []byte("\n")), err
 }
 
-// State is the detection of the three tools (hosts/claude-code/setup-state.mjs toolsState).
+// State is the detection of the tools (hosts/claude-code/setup-state.mjs toolsState, plus d2).
 type State struct {
 	Platform  string
 	Rtk       ToolInfo
 	Rg        ToolInfo
 	Codegraph ToolInfo
+	D2        ToolInfo
 }
 
 // Tool returns the info of one of Tools.
@@ -451,6 +468,8 @@ func (s State) Tool(name string) ToolInfo {
 		return s.Rtk
 	case "rg":
 		return s.Rg
+	case "d2":
+		return s.D2
 	}
 	return s.Codegraph
 }
@@ -467,12 +486,14 @@ func StatusJSON(s State) string {
 			Rtk       ToolInfo `json:"rtk"`
 			Rg        ToolInfo `json:"rg"`
 			Codegraph ToolInfo `json:"codegraph"`
+			D2        ToolInfo `json:"d2"`
 		} `json:"tools"`
 	}{OK: true, Platform: s.Platform, Tools: struct {
 		Rtk       ToolInfo `json:"rtk"`
 		Rg        ToolInfo `json:"rg"`
 		Codegraph ToolInfo `json:"codegraph"`
-	}{s.Rtk, s.Rg, s.Codegraph}})
+		D2        ToolInfo `json:"d2"`
+	}{s.Rtk, s.Rg, s.Codegraph, s.D2}})
 	return strings.TrimSuffix(b.String(), "\n")
 }
 
@@ -520,8 +541,8 @@ func StatusText(s State) string {
 
 // Usage lines of `nxy setup`.
 const (
-	StatusUsage = "uso: nxy setup status [--json] | run <rtk|rg|codegraph> --yes [--dry-run]"
-	RunUsage    = "uso: nxy setup run <rtk|rg|codegraph> --yes [--dry-run]"
+	StatusUsage = "uso: nxy setup status [--json] | run <rtk|rg|codegraph|d2> --yes [--dry-run]"
+	RunUsage    = "uso: nxy setup run <rtk|rg|codegraph|d2> --yes [--dry-run]"
 )
 
 // MissingYesText is what `run` prints without --yes (exit 1).

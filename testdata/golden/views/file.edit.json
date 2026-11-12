@@ -1,0 +1,188 @@
+{
+  "path": "src/billing/Nota.java",
+  "repo": "api",
+  "source": "codegraph",
+  "language": "java",
+  "edited_by": "lo edita el lote 1",
+  "diff_label": "diff de la feature",
+  "hunks": [
+    {
+      "old_start": 9,
+      "new_start": 9,
+      "lines": [
+        {
+          "kind": "context",
+          "old": 9,
+          "new": 9,
+          "text": "linea I"
+        },
+        {
+          "kind": "context",
+          "old": 10,
+          "new": 10,
+          "text": "linea J"
+        },
+        {
+          "kind": "context",
+          "old": 11,
+          "new": 11,
+          "text": "linea K"
+        },
+        {
+          "kind": "del",
+          "old": 12,
+          "new": 0,
+          "text": "linea L"
+        },
+        {
+          "kind": "add",
+          "old": 0,
+          "new": 12,
+          "text": "linea nueva 12"
+        },
+        {
+          "kind": "context",
+          "old": 13,
+          "new": 13,
+          "text": "linea M"
+        },
+        {
+          "kind": "context",
+          "old": 14,
+          "new": 14,
+          "text": "linea N"
+        },
+        {
+          "kind": "context",
+          "old": 15,
+          "new": 15,
+          "text": "linea O"
+        }
+      ]
+    },
+    {
+      "old_start": 17,
+      "new_start": 17,
+      "lines": [
+        {
+          "kind": "context",
+          "old": 17,
+          "new": 17,
+          "text": "linea Q"
+        },
+        {
+          "kind": "context",
+          "old": 18,
+          "new": 18,
+          "text": "linea R"
+        },
+        {
+          "kind": "context",
+          "old": 19,
+          "new": 19,
+          "text": "linea S"
+        },
+        {
+          "kind": "del",
+          "old": 20,
+          "new": 0,
+          "text": "linea T"
+        },
+        {
+          "kind": "add",
+          "old": 0,
+          "new": 20,
+          "text": "linea nueva 20"
+        }
+      ]
+    }
+  ],
+  "content": [
+    "linea A",
+    "linea B",
+    "linea C",
+    "linea D",
+    "linea E",
+    "linea F",
+    "linea G",
+    "linea H",
+    "linea I",
+    "linea J",
+    "linea K",
+    "linea nueva 12",
+    "linea M",
+    "linea N",
+    "linea O",
+    "linea P",
+    "linea Q",
+    "linea R",
+    "linea S",
+    "linea nueva 20"
+  ],
+  "notes": [
+    {
+      "line": 12,
+      "kind": "fail",
+      "text": "src/billing/Nota.java:12: se esperaba 100.00 y dio 99.99"
+    }
+  ],
+  "imported_by": [
+    {
+      "path": "src/billing/Factura.java",
+      "line": 30
+    },
+    {
+      "path": "src/web/Listado.java",
+      "line": 7
+    }
+  ],
+  "tests": [
+    {
+      "path": "src/test/NotaTest.java",
+      "status": "fail"
+    },
+    {
+      "path": "src/test/NotaServiceTest.java",
+      "status": "none"
+    }
+  ],
+  "rules": [
+    {
+      "id": "K1",
+      "kind": "rule",
+      "text": "Usar BigDecimal para los importes",
+      "cited": false
+    }
+  ],
+  "learnings": [
+    {
+      "id": "A1",
+      "kind": "learning",
+      "text": "Los importes se guardan en centavos",
+      "cited": false
+    }
+  ],
+  "features": [
+    {
+      "id": "FEAT-P",
+      "title": "Notas de crédito en facturación",
+      "batch": 1,
+      "state": "running",
+      "closed_at": ""
+    },
+    {
+      "id": "FEAT-Q",
+      "title": "Revisar el formato de las notas",
+      "batch": 1,
+      "state": "pending",
+      "closed_at": ""
+    },
+    {
+      "id": "CF-NOTA",
+      "title": "Primera versión de las notas",
+      "batch": 0,
+      "state": "closed",
+      "closed_at": "2026-11-05T21:05:00Z"
+    }
+  ]
+}

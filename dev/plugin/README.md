@@ -170,7 +170,7 @@ Para cambios donde querés decidir vos el diseño antes de que nadie planifique.
 
 **Cómo entrás.** `/nxy:engineer <pedido>`, o la oferta **Pasar a engineer** que aparece entre las preguntas de `/nxy:feature` (la otra opción es **Responder acá**, que sigue como siempre). La oferta ocupa uno de los 4 lugares de la pantalla de preguntas; si el plan tiene 4, la cuarta llega en la vuelta siguiente. Si pasás a engineer, las preguntas del plan se vuelven las primeras bifurcaciones.
 
-**Diseñando.** Qué ves: `nxy status` dice "Diseñando", y el chat muestra la agenda (`3 de 5 decididas`) con cada bifurcación B1, B2… y su estado. Antes, Claude hace un reconocimiento con `nxy:scout` y te muestra un diagrama chico del estado actual como bloque de código `d2` (nxy no lo dibuja; es texto). Qué significa: todavía no hay plan ni se toca código; se debate. Qué hacer: respondé en el chat, proponé tu opción o pedí opciones.
+**Diseñando.** Qué ves: `nxy status` dice "Diseñando", y el chat muestra la agenda (`3 de 5 decididas`) con cada bifurcación B1, B2… y su estado. Antes, Claude hace un reconocimiento con `nxy:scout` y escribe un diagrama chico del estado actual, lo muestra como bloque de código `d2` y lo guarda con `nxy design today` (la TUI lo dibuja). Qué significa: todavía no hay plan ni se toca código; se debate. Qué hacer: respondé en el chat, proponé tu opción o pedí opciones.
 
 **El debate.** Claude te refuta o te da 2–3 opciones con su trade-off, y su opinión es condicionada ("B, salvo que X"). Si ve un problema que no pediste mirar (N+1, índice, carrera, transacción, contrato, seguridad), lo dice con `path:línea` o lo marca como duda. No hay límite de vueltas ni desempate automático: cambia de opinión sólo con un argumento y lo dice, no cede por insistencia. Si cerrás con tu opción igual, queda registrado que Claude no estaba de acuerdo.
 
@@ -234,7 +234,7 @@ Qué ves: sin argumento, el bloque `statusLine` que se escribiría en `~/.claude
 
 ### /nxy:setup
 
-Qué ves: el estado de rtk, rg y codegraph (instalados o no, de dónde, con pistas de instalación). Qué significa: nxy detecta, no instala solo. Qué hacer: `setup run <rtk|rg|codegraph> --yes` instala con tu sí (sin `--yes` muestra los pasos y no hace nada; con `--dry-run` los lista sin correrlos). Un `sudo` sin terminal te devuelve el comando para correr a mano. No escribe archivos propios.
+Qué ves: el estado de rtk, rg, codegraph y d2 (instalados o no, de dónde, con pistas de instalación). Qué significa: nxy detecta, no instala solo. d2 es opcional: dibuja como texto, en la TUI, los diagramas del diseño. Qué hacer: `setup run <rtk|rg|codegraph|d2> --yes` instala con tu sí (sin `--yes` muestra los pasos y no hace nada; con `--dry-run` los lista sin correrlos). Un `sudo` sin terminal te devuelve el comando para correr a mano. No escribe archivos propios.
 
 ### /nxy:filter status|on|off
 
@@ -439,11 +439,11 @@ Si ves cuadrados en lugar de íconos, forzá el set con `--icons unicode` o con 
 
 `nxy tui --demo --dump <destino> --width 80 --plain` imprime la pantalla y sale; probá `--width 80`, `120` y `200`. `--feature <clave>` elige la feature, el repo de memoria o el archivo, y `--theme light` el tema. Destinos: `inicio`, `worktrees`, `feature`, `agentes`, `decision`, `ingeniero` (`ingeniero.hoy`, `ingeniero.claude`), `plan`, `archivo` (`archivo.entero`), `memoria` (`memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`), `gasto`, `tendencia` (`tendencia.semana`) y `config`. Con un destino desconocido, el comando lista los válidos.
 
-## `nxy view`: las pantallas con tus datos (F5.2b)
+## `nxy view`: las pantallas con tus datos
 
-Qué ves: `nxy view <pantalla> --json` imprime, como JSON, lo que mostraría esa pantalla de la TUI con los datos reales de tu repo (la db, los transcripts de Claude Code, tu config y tus herramientas). No cambia nada: sólo lee. Las pantallas son `cockpit` (Inicio), `agents`, `decision`, `memory`, `stats`, `trend` y `config`. `plan`, `file` y `engineer` llegan en F5.2c: por ahora dicen «llega en F5.2c» y salen con error.
+Qué ves: `nxy view <pantalla> --json` imprime, como JSON, lo que mostraría esa pantalla de la TUI con los datos reales de tu repo (la db, los transcripts de Claude Code, tu config y tus herramientas). No cambia nada: sólo lee. Las pantallas son `cockpit` (Inicio), `agents`, `decision`, `memory`, `stats`, `trend` y `config`, más `plan`, `file` y `engineer` (abajo).
 
-Opciones: `--feature <id>` (en `agents` y `decision`; sin ella usa la feature activa de la carpeta), `--scope repo|global` (en `memory`), `--session <id>` (en `stats`; sin ella, la actual o la última del repo) y `--cwd <carpeta>`. Sin `--json` muestra el uso. `decision` de una feature que no espera nada imprime `null`.
+Opciones: `--feature <id>` (en `agents`, `decision`, `plan`, `file` y `engineer`; sin ella usa la feature activa de la carpeta), `--scope repo|global` (en `memory`), `--session <id>` (en `stats`; sin ella, la actual o la última del repo) y `--cwd <carpeta>`. Sin `--json` muestra el uso. `decision` de una feature que no espera nada imprime `null`.
 
 Qué significa lo que ves:
 - **Costo de una feature:** incluye el hilo principal (lo que se habló en la sesión desde que empezó la feature) más todos sus subagentes. Por eso es mayor que la suma de los agentes. Si Claude Code borró el transcript (a los 30 días), el costo de una feature vieja baja a lo que guardó la db de sus agentes.
@@ -455,3 +455,15 @@ Qué significa lo que ves:
 - **Decisión:** las respuestas muestran el comando `nxy action decide ...`, que todavía no existe (llega con F5.4); quedan marcadas como planeadas.
 
 Costo: es una sola lectura. `nxy view cockpit` y `nxy view trend` leen enteros los transcripts principales de las features activas y de hoy o de las últimas 8 semanas: estimado de 0,1 a 1 s con muchas sesiones, sin medir. No se guarda nada en disco.
+
+### `plan`, `file` y `engineer`
+
+Se piden con `--feature <id>` (sin ella, la feature activa de la carpeta; si no hay, dice «no hay una feature activa»).
+
+**`nxy view plan --json`.** Qué ves: los lotes con su estado y el intento, los criterios, las decisiones (marcadas las que vinieron del diseño) y el mapa de impacto: cada archivo que toca el plan como `edit` o `new`, quién lo usa y sus tests. Qué significa: `Source` dice de dónde sale el impacto. `codegraph` viene del índice; `name` es una adivinanza por nombre (busca el nombre del módulo con rg y empareja tests por nombre), puede sobrar o faltar; `none` es que no hubo con qué calcularlo y las listas quedan vacías. Si el plan toca varios repos, vale el más débil de todos. La fecha de aprobación se aproxima con el inicio del primer lote. Qué hacer: si ves `name`, instalá codegraph con `/nxy:setup`. Una feature que todavía no tiene plan imprime `null`.
+
+**`nxy view file --path <ruta> --json`.** Qué ves: el diff de toda la feature contra el commit que había al aprobarla (3 líneas de contexto), «lo edita el lote N» o «lo editan los lotes 2 y 3», notas `fail` en las líneas `ruta:línea` que aparecen en la salida de la prueba que falló, y las reglas, aprendizajes y features (activas y cerradas) que tocan ese archivo. Qué significa: no hay un diff por lote, porque nxy no commitea por lote. Los fines de línea CRLF y LF no cuentan como cambio. El contenido del archivo se corta en 1 MB. Qué hacer: pasá la ruta como está en el plan (con el prefijo del repo si el plan toca varios). `--path` es obligatorio.
+
+**`nxy view engineer --json`.** Qué ves: la agenda de bifurcaciones, la actual con sus opciones (pros, contras, qué toca y un diagrama) y el diagrama «hoy», que el hilo principal guarda con `nxy design today`. La opinión de Claude está en los datos y la TUI la esconde hasta que la pedís. Qué significa: los diagramas los dibuja d2 como texto. Sin d2 ves la fuente d2 y la pista de instalarlo desde Config. Qué hacer: instalá d2 desde `/nxy:setup` o Config (opcional). Una feature que no está diseñando imprime `null`.
+
+Costo, estimado y sin medir: `plan` hace por archivo del plan una consulta a codegraph (0,1 a 1 s), una búsqueda con rg y un `git cat-file`; el resultado queda en memoria del proceso y no se escribe nada en disco. `engineer` dibuja de 2 a 5 diagramas con d2, de 100 a 300 ms cada uno.

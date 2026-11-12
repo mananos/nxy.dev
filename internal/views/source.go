@@ -15,4 +15,10 @@ type Source interface {
 	Stats(ctx context.Context, session string) (Stats, error)
 	Trend(ctx context.Context) (Trend, error)
 	Config(ctx context.Context) (Config, error)
+	// Plan is false when the feature has no plan yet.
+	Plan(ctx context.Context, featureID string) (Plan, bool, error)
+	// File is one file of the feature (path as written in the plan).
+	File(ctx context.Context, featureID, path string) (File, error)
+	// Engineer is false when the feature has no design.
+	Engineer(ctx context.Context, featureID string) (Engineer, bool, error)
 }

@@ -77,4 +77,5 @@ type Design struct {
 	Refs      []string     `json:"refs,omitempty"`
 	Closed    bool         `json:"closed,omitempty"`
 	Current   string       `json:"current,omitempty"` // fork being debated
+	Today     string       `json:"today,omitempty"`   // d2 source of how the code is today
 }

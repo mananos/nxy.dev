@@ -5,7 +5,7 @@ Pedido (literal): {{.Feature.Request}}
 {{.Agenda}}
 
 Cómo trabajar:
-1. Reconocimiento: usá el agente `nxy:scout` y codegraph. Nunca leas archivos en el hilo principal. Con lo que vuelva, escribí en el chat un D2 chico del estado actual como bloque de código d2 (nxy no lo renderiza).
+1. Reconocimiento: usá el agente `nxy:scout` y codegraph. Nunca leas archivos en el hilo principal. Con lo que vuelva, armá un D2 chico del estado actual y guardalo con `"{{.Exe}}" design today --feature {{.Feature.ID}}` y `{"d2":"fuente d2"}` (la TUI lo dibuja); mostralo también en el chat como bloque de código d2.
 2. Agenda: `"{{.Exe}}" design agenda --feature {{.Feature.ID}}` con `{"forks":["título corto", ...]}`. Sólo títulos, sin opciones largas.
 3. Opciones: al abrir cada bifurcación, antes de debatirla, guardá sus 2-4 opciones y tu opinión con `"{{.Exe}}" design fork --feature {{.Feature.ID}}` y este JSON: `{"fork":"B1","question":"pregunta corta","options":[{"key":"A","label":"una línea","summary":"una línea","pros":["..."],"cons":["..."],"touches":"qué toca, una línea","d2":"fuente d2 opcional"}],"opinion":"tu opinión condicionada"}`. Hasta 4 pros y 4 contras, de una línea; sin bloques de código. Ejemplo con heredoc:
 ```
@@ -27,7 +27,7 @@ En PowerShell:
 7. D2 sólo si la decisión cambia la estructura.
 8. Cierre: cuando no queden bifurcaciones (o el usuario diga "decidí vos el resto", que cierra con `"delegate":true`), `"{{.Exe}}" design close --feature {{.Feature.ID}}` con `{"criteria":[{"id":"R1","text":"comportamiento que debe tener"}],"d2":"fuente d2 opcional","delegate":false}`. No escribas los criterios ni el resumen antes de correr `design close`. nxy te devuelve el resumen y se muestra una sola vez. Después hacé la pregunta de cierre con AskUserQuestion tal cual.
 
-Pasá el JSON (de `agenda`, `fork`, `propose` y `close`) por stdin con heredoc:
+Pasá el JSON (de `agenda`, `fork`, `today`, `propose` y `close`) por stdin con heredoc:
 ```
 "{{.Exe}}" design propose --feature {{.Feature.ID}} <<'EOF'
 {...}

@@ -1,0 +1,113 @@
+{
+  "feature": {
+    "id": "FEAT-Q",
+    "title": "Revisar el formato de las notas",
+    "status": "needs_you",
+    "phase": "Aprobación del plan",
+    "stage": "plan",
+    "stage_detail": "",
+    "closed_at": "",
+    "repos": [
+      {
+        "name": "api",
+        "path": "/srv/dev/api",
+        "role": "",
+        "branch": "feat/formato",
+        "worktree": false
+      }
+    ],
+    "batch": 0,
+    "batches": 1,
+    "elapsed_ms": 86400000,
+    "cost_usd": 0,
+    "cost_estimated": false
+  },
+  "state": "approval",
+  "approved_at": "",
+  "goal": "Revisar el formato de las notas",
+  "repos": [
+    {
+      "name": "api",
+      "path": "/srv/dev/api",
+      "role": "",
+      "branch": "feat/formato",
+      "worktree": false
+    }
+  ],
+  "criteria": [
+    {
+      "id": "R1",
+      "text": "Revisar el formato de las notas",
+      "test": "tdd"
+    }
+  ],
+  "decisions": [],
+  "batches": [
+    {
+      "n": 1,
+      "title": "Formato",
+      "repo": "",
+      "status": "pending",
+      "depends": [],
+      "risk": "low",
+      "risk_why": "",
+      "attempt": 0,
+      "attempts": 2,
+      "accept": "go test ./src/ -run TestFormato",
+      "changes": [
+        {
+          "at": "src/billing/Nota.java:4",
+          "what": "Formato"
+        }
+      ]
+    }
+  ],
+  "risks": [],
+  "impact": {
+    "source": "codegraph",
+    "files": [
+      {
+        "path": "src/billing/Nota.java",
+        "repo": "api",
+        "batch": 1,
+        "kind": "edit",
+        "lines": [
+          {
+            "line": 4,
+            "what": "Formato"
+          }
+        ],
+        "imported_by": [
+          "Factura.java",
+          "Listado.java"
+        ],
+        "tests": [
+          {
+            "path": "src/test/NotaTest.java",
+            "status": "none"
+          },
+          {
+            "path": "src/test/NotaServiceTest.java",
+            "status": "none"
+          }
+        ],
+        "contract": null
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "pause",
+      "label": "Pausar",
+      "argv": [
+        "nxy",
+        "feature",
+        "pause",
+        "--feature",
+        "FEAT-Q"
+      ],
+      "confirm": "",
+      "planned": false
+    }
+  ]
+}

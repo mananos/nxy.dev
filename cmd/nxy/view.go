@@ -15,10 +15,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
-const viewUsage = "usage: nxy view <cockpit|agents|decision|memory|stats|trend|config> --json [--feature id] [--scope repo|global] [--session id] [--cwd dir]"
-
-// laterViews are the views that need more than the cheap reads; they arrive in F5.2c.
-var laterViews = map[string]bool{"plan": true, "file": true, "engineer": true}
+const viewUsage = "usage: nxy view <cockpit|agents|decision|memory|stats|trend|config|plan|file|engineer> --json [--feature id] [--path ruta] [--scope repo|global] [--session id] [--cwd dir]"
 
 // runView is `nxy view <id> --json`: it prints a view built from the real data of the repo in the
 // shape of internal/views.
@@ -28,10 +25,6 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	id := args[0]
-	if laterViews[id] {
-		fmt.Fprintf(stderr, "nxy view %s: llega en F5.2c\n", id)
-		return 1
-	}
 	if views.New(id) == nil {
 		fmt.Fprintln(stderr, viewUsage)
 		return 1
@@ -40,6 +33,7 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	asJSON := fs.Bool("json", false, "print the view as JSON")
 	feature := fs.String("feature", "", "the feature (agents, decision); default the active one of the folder")
+	filePath := fs.String("path", "", "file: the file as written in the plan")
 	scope := fs.String("scope", views.ScopeRepo, "memory: repo or global")
 	session := fs.String("session", "", "stats: the session; default the current or the last one")
 	cwd := fs.String("cwd", "", "the folder; default CLAUDE_PROJECT_DIR or the current one")
@@ -48,6 +42,10 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if *scope != views.ScopeRepo && *scope != views.ScopeGlobal {
+		fmt.Fprintln(stderr, viewUsage)
+		return 1
+	}
+	if id == "file" && *filePath == "" {
 		fmt.Fprintln(stderr, viewUsage)
 		return 1
 	}
@@ -72,7 +70,7 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	switch id {
 	case "cockpit":
 		v, err = src.Cockpit(ctx)
-	case "agents", "decision":
+	case "agents", "decision", "plan", "file", "engineer":
 		fid := *feature
 		if fid == "" {
 			var ok bool
@@ -84,17 +82,28 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		if err != nil {
 			break
 		}
-		if id == "agents" {
+		switch id {
+		case "agents":
 			v, err = src.Agents(ctx, fid)
-			break
-		}
-		var d views.Decision
-		var ok bool
-		if d, ok, err = src.Decision(ctx, fid); err == nil {
-			if ok {
+		case "file":
+			v, err = src.File(ctx, fid, *filePath)
+		case "decision":
+			var d views.Decision
+			var ok bool
+			if d, ok, err = src.Decision(ctx, fid); err == nil && ok {
 				v = d
-			} else {
-				v = nil
+			}
+		case "plan":
+			var p views.Plan
+			var ok bool
+			if p, ok, err = src.Plan(ctx, fid); err == nil && ok {
+				v = p
+			}
+		case "engineer":
+			var e views.Engineer
+			var ok bool
+			if e, ok, err = src.Engineer(ctx, fid); err == nil && ok {
+				v = e
 			}
 		}
 	case "memory":

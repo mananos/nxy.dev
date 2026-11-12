@@ -202,6 +202,8 @@ func featureState(now string, ft views.FileFeature) line {
 		return append(l, T("en rojo", tFail))
 	case "running":
 		return append(l, T("en curso", tWork))
+	case "pending":
+		return append(l, T("por empezar", tMu))
 	}
 	if a := ago(now, ft.ClosedAt); a != "" {
 		return append(l, T("cerrada "+a, tMu))

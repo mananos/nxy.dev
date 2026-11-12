@@ -479,6 +479,37 @@ func TestDesignForkSavesOptions(t *testing.T) {
 	}
 }
 
+func TestDesignTodayCommand(t *testing.T) {
+	repo := flowRepo(t)
+	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:engineer add a flag"})
+	id := featureID(t)
+	if code, _, errb := runCmd(t, `{"forks":["where the flag lives"]}`, "design", "agenda", "--feature", id); code != 0 {
+		t.Fatalf("agenda: code %d, err %q", code, errb)
+	}
+	if code, so, errb := runCmd(t, `{"d2":"a -> b"}`, "design", "today", "--feature", id); code != 0 || !strings.Contains(so, "B1") {
+		t.Fatalf("today: code %d, out %q, err %q", code, so, errb)
+	}
+	dbPath, err := platform.DBPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs, err := sqlite.Open(context.Background(), dbPath, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := rs.Feature(context.Background(), id)
+	rs.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Design.Today != "a -> b" {
+		t.Fatalf("saved design = %+v", f.Design)
+	}
+	if code, _, errb := runCmd(t, "{\"d2\":\"```d2\\na\\n```\"}", "design", "today", "--feature", id); code != 1 || errb == "" {
+		t.Errorf("fenced accepted: code %d, err %q", code, errb)
+	}
+}
+
 // engineerToPlanning drives /nxy:engineer up to the planner dispatch, with one decided fork.
 func engineerToPlanning(t *testing.T, repo string) string {
 	t.Helper()
