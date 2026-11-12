@@ -519,8 +519,8 @@ func (st *state) memDetail(row memRow, scope string, search bool, ri int) []line
 		cited := "nunca"
 		if r.Cited > 0 {
 			cited = fmt.Sprint(r.Cited)
-			if r.LastCited != "" {
-				cited += " · la última, " + r.LastCited
+			if d := fmtDM(r.LastCited); d != "" {
+				cited += " · la última, " + d
 			}
 		}
 		out = append(out, kvl("citada", cited, tMu, ri)...)

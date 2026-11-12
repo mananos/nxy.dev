@@ -188,6 +188,37 @@ func TestMemRelatedAcrossRepos(t *testing.T) {
 	}
 }
 
+func TestClosedFeatures(t *testing.T) {
+	s, clock := newMem(t)
+	save := func(id, title string, files ...memory.FileRef) {
+		t.Helper()
+		if _, err := s.SaveClosedFeature(ctx, memory.ClosedFeature{Meta: memory.Meta{ID: id}, Title: title, Files: files}); err != nil {
+			t.Fatal(err)
+		}
+		*clock = clock.Add(time.Minute)
+	}
+	save("F1", "first", memory.FileRef{Repo: "a", Path: "x.go"}, memory.FileRef{Repo: "b", Path: "y.go"})
+	save("F2", "second", memory.FileRef{Repo: "a", Path: "z.go"})
+	save("F3", "other repo", memory.FileRef{Repo: "b", Path: "w.go"})
+	save("F4", "gone", memory.FileRef{Repo: "a", Path: "g.go"})
+	if _, err := s.db.ExecContext(ctx, `UPDATE mem_features SET deleted_at=1 WHERE id='F4'`); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.ClosedFeatures(ctx, "a", 0)
+	if err != nil || len(got) != 2 || got[0].ID != "F2" || got[1].ID != "F1" {
+		t.Fatalf("repo a = %+v %v", got, err)
+	}
+	if len(got[1].Files) != 1 || got[1].Files[0].Repo != "a" || got[1].Files[0].Path != "x.go" {
+		t.Errorf("files of F1 = %+v", got[1].Files)
+	}
+	if got, _ := s.ClosedFeatures(ctx, "a", 1); len(got) != 1 || got[0].ID != "F2" {
+		t.Errorf("limit 1 = %+v", got)
+	}
+	if got, _ := s.ClosedFeatures(ctx, "none", 5); len(got) != 0 {
+		t.Errorf("none = %+v", got)
+	}
+}
+
 func TestMemNotesFoldersAndExpiry(t *testing.T) {
 	s, clock := newMem(t)
 	n, err := s.SaveNote(ctx, memory.Note{Folder: "/w/proj", Title: "wip", Body: "left off at step 3"})

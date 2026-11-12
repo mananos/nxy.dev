@@ -14,8 +14,7 @@ type Memory struct {
 	Learnings []Learning      `json:"learnings"`
 	Closed    []ClosedFeature `json:"closed"`
 	Proposals []Proposal      `json:"proposals"`
-	// Create makes a new rule in this scope. In a repo it is the nxy mem rule that exists;
-	// global rules are a plan of their own.
+	// Create makes a new rule in this scope: nxy mem rule, with --global and --roles for a global one.
 	Create Action `json:"create"`
 }
 
@@ -31,17 +30,19 @@ type Rule struct {
 	Text      string   `json:"text"`
 	Question  string   `json:"question"`
 	Paths     []string `json:"paths"`
-	Origin    string   `json:"origin"`     // closing|chat|bootstrap|legacy
+	Origin    string   `json:"origin"`     // closing|chat|bootstrap
 	OriginRef string   `json:"origin_ref"` // the feature of a closing
 	CreatedAt string   `json:"created_at"` // RFC3339
 	Flag      string   `json:"flag"`       // uncited|legacy or empty
 	Cited     int      `json:"cited"`
-	LastCited string   `json:"last_cited"` // "F7K2 lote 2"
+	LastCited string   `json:"last_cited"` // RFC3339; empty when never cited
 	Delivered int      `json:"delivered"`
 	UpdatedAt string   `json:"updated_at"`
 	// Roles a global rule reaches; empty is every role.
 	Roles []string `json:"roles"`
-	// Actions are edit and delete (ids "edit", "delete"); both Planned.
+	// Actions are edit, delete and restore (ids "edit", "delete", "restore"), all real: nxy mem
+	// edit, nxy mem rm and nxy mem restore (the TUI's undo `u`). Only live rules are listed:
+	// a deleted one is not, restore is for the moment right after deleting.
 	Actions []Action `json:"actions"`
 }
 
@@ -69,14 +70,14 @@ type ClosedFeature struct {
 	ID       string   `json:"id"`
 	Title    string   `json:"title"`
 	ClosedAt string   `json:"closed_at"`
-	Outcome  string   `json:"outcome"`
+	Outcome  string   `json:"outcome"` // "success": only successful closings are saved
 	Files    []string `json:"files"`
 }
 
 // Proposal is a memory cleanup the user can accept or reject.
 type Proposal struct {
 	ID     string `json:"id"`
-	Kind   string `json:"kind"` // delete|promote|merge
+	Kind   string `json:"kind"` // delete|promote (merge is not built yet)
 	Target string `json:"target"`
 	Text   string `json:"text"`
 	Why    string `json:"why"`

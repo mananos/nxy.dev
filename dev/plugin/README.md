@@ -438,3 +438,20 @@ Si ves cuadrados en lugar de íconos, forzá el set con `--icons unicode` o con 
 ### Ver una pantalla sin abrir la TUI
 
 `nxy tui --demo --dump <destino> --width 80 --plain` imprime la pantalla y sale; probá `--width 80`, `120` y `200`. `--feature <clave>` elige la feature, el repo de memoria o el archivo, y `--theme light` el tema. Destinos: `inicio`, `worktrees`, `feature`, `agentes`, `decision`, `ingeniero` (`ingeniero.hoy`, `ingeniero.claude`), `plan`, `archivo` (`archivo.entero`), `memoria` (`memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`), `gasto`, `tendencia` (`tendencia.semana`) y `config`. Con un destino desconocido, el comando lista los válidos.
+
+## `nxy view`: las pantallas con tus datos (F5.2b)
+
+Qué ves: `nxy view <pantalla> --json` imprime, como JSON, lo que mostraría esa pantalla de la TUI con los datos reales de tu repo (la db, los transcripts de Claude Code, tu config y tus herramientas). No cambia nada: sólo lee. Las pantallas son `cockpit` (Inicio), `agents`, `decision`, `memory`, `stats`, `trend` y `config`. `plan`, `file` y `engineer` llegan en F5.2c: por ahora dicen «llega en F5.2c» y salen con error.
+
+Opciones: `--feature <id>` (en `agents` y `decision`; sin ella usa la feature activa de la carpeta), `--scope repo|global` (en `memory`), `--session <id>` (en `stats`; sin ella, la actual o la última del repo) y `--cwd <carpeta>`. Sin `--json` muestra el uso. `decision` de una feature que no espera nada imprime `null`.
+
+Qué significa lo que ves:
+- **Costo de una feature:** incluye el hilo principal (lo que se habló en la sesión desde que empezó la feature) más todos sus subagentes. Por eso es mayor que la suma de los agentes. Si Claude Code borró el transcript (a los 30 días), el costo de una feature vieja baja a lo que guardó la db de sus agentes.
+- **Duración vacía (`elapsed_ms` en -1):** el lote no tiene hora de inicio, porque es de una feature guardada antes de que nxy anotara las horas. No se inventa una: la TUI no escribe duración. Un lote que todavía no arrancó tampoco la tiene.
+- **Memoria, lo raro:** una regla «sin citar» es la que se entregó 10 veces o más y ningún agente la citó; un aprendizaje «visto» es el que se vio 2 veces o más; «obsoleto» es el que tiene archivos y ya no existe ninguno (se mira con stat al armar la pantalla). Son umbrales fijos, no hay nada que calibrar; el 10 es una estimación. De ahí salen las propuestas: borrar la regla sin citar, pasar a regla el aprendizaje visto o el global que vino de la 1.x. Tampoco se cuenta «en cuántas features» se vio un aprendizaje: son las veces que se vio, y la lista de features muestra sólo la primera.
+- **«Pausada»:** en la línea de qué está pasando, la feature está pausada y no te pide nada. Si además te necesita (por ejemplo, un plan por aprobar), se ve «Te necesita: …» y no «Pausada».
+- **«Lote N en curso»:** hay un solo lote corriendo y todavía no se sabe qué herramienta usa; cuando se sabe, se ve «Lote N · Edit archivo».
+- **Agentes que corren:** se leen del final de su transcript. Un subagente que todavía no tiene fila en la db se ve «corriendo» sólo mientras la fase lo está esperando; después se ve como terminado, con sus números.
+- **Decisión:** las respuestas muestran el comando `nxy action decide ...`, que todavía no existe (llega con F5.4); quedan marcadas como planeadas.
+
+Costo: es una sola lectura. `nxy view cockpit` y `nxy view trend` leen enteros los transcripts principales de las features activas y de hoy o de las últimas 8 semanas: estimado de 0,1 a 1 s con muchas sesiones, sin medir. No se guarda nada en disco.

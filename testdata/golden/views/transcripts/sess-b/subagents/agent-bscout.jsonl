@@ -1,0 +1,2 @@
+{"type":"user","uuid":"bs-u0","timestamp":"2026-11-11T09:05:00.000Z","isSidechain":true,"message":{"role":"user","content":"feature FEAT-B: explorá la exportación actual de facturas."}}
+{"type":"assistant","uuid":"bs-a1","timestamp":"2026-11-11T09:08:00.000Z","isSidechain":true,"requestId":"req-bs-1","message":{"id":"msg_bs_1","model":"claude-haiku-5-5","usage":{"input_tokens":900,"output_tokens":200,"cache_read_input_tokens":2000,"cache_creation_input_tokens":0},"content":[{"type":"text","text":"La exportación vive en ExportService; no hay CSV todavía."}]}}

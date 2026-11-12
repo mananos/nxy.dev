@@ -3,6 +3,12 @@
   "feature_id": "F7K2",
   "repo": "facturacion-web",
   "kind": "batch_failed",
+  "title": "Lote 3 fallido",
+  "body": [
+    "nota-credito.component.spec.ts:42",
+    "TS2345: el tipo NotaCredito no se puede asignar a NotaParcial"
+  ],
+  "rest": [],
   "header": "Lote 3 falló",
   "question": "El lote 3 sigue en rojo después del reintento. ¿Cómo seguimos?",
   "context": [

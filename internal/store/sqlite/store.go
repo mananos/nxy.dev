@@ -246,7 +246,29 @@ type FeatureFilter struct {
 
 // Features lists features, newest first.
 func (s *Store) Features(ctx context.Context, flt FeatureFilter) ([]domain.Feature, error) {
-	q := `SELECT state FROM features`
+	rows, err := s.FeatureRows(ctx, flt, 0)
+	if err != nil {
+		return nil, err
+	}
+	var out []domain.Feature
+	for _, r := range rows {
+		out = append(out, r.Feature)
+	}
+	return out, nil
+}
+
+// FeatureRow is a feature with its stored creation and last update (ms).
+type FeatureRow struct {
+	Feature   domain.Feature
+	CreatedAt int64
+	UpdatedAt int64
+}
+
+// FeatureRows is Features with the stored times. With doneSince not 0 the features that finished
+// at or after it (ms) are listed too under the Active filter (not under Paused, which asks for paused
+// features only). Newest first.
+func (s *Store) FeatureRows(ctx context.Context, flt FeatureFilter, doneSince int64) ([]FeatureRow, error) {
+	q := `SELECT state, created_at, updated_at, done FROM features`
 	var args []any
 	var where []string
 	if flt.Home != "" {
@@ -254,7 +276,12 @@ func (s *Store) Features(ctx context.Context, flt FeatureFilter) ([]domain.Featu
 		args = append(args, flt.Home, flt.Home)
 	}
 	if flt.Active || flt.Paused {
-		where = append(where, `done=0`)
+		if doneSince != 0 && !flt.Paused {
+			where = append(where, `(done=0 OR updated_at>=?)`)
+			args = append(args, doneSince)
+		} else {
+			where = append(where, `done=0`)
+		}
 	}
 	if len(where) > 0 {
 		q += ` WHERE ` + strings.Join(where, ` AND `)
@@ -264,20 +291,21 @@ func (s *Store) Features(ctx context.Context, flt FeatureFilter) ([]domain.Featu
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Feature
+	var out []FeatureRow
 	for rows.Next() {
 		var state string
-		if err := rows.Scan(&state); err != nil {
+		var r FeatureRow
+		var done int
+		if err := rows.Scan(&state, &r.CreatedAt, &r.UpdatedAt, &done); err != nil {
 			return nil, err
 		}
-		var f domain.Feature
-		if err := json.Unmarshal([]byte(state), &f); err != nil {
+		if err := json.Unmarshal([]byte(state), &r.Feature); err != nil {
 			return nil, fmt.Errorf("sqlite: decode feature: %w", err)
 		}
-		if (flt.Active || flt.Paused) && f.Paused != flt.Paused {
+		if (flt.Active || flt.Paused) && done == 0 && r.Feature.Paused != flt.Paused {
 			continue
 		}
-		out = append(out, f)
+		out = append(out, r)
 	}
 	return out, rows.Err()
 }

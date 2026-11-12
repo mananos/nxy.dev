@@ -1,0 +1,88 @@
+{
+  "id": "FEAT-A:batch_failed:1",
+  "feature_id": "FEAT-A",
+  "repo": "/srv/dev/app",
+  "kind": "batch_failed",
+  "title": "Lote 3 fallido",
+  "body": [
+    "--- FAIL: TestEndpoint (0.01s)",
+    "    endpoint_test.go:42: want 100.00, got 99.99",
+    "FAIL",
+    "FAIL\tacme/billing\t0.012s"
+  ],
+  "header": "Batch",
+  "question": "nxy feature FEAT-A: batch 3 failed twice — what now?",
+  "context": [],
+  "multi_select": false,
+  "asked_at": "2026-11-11T11:00:00Z",
+  "fork": null,
+  "options": [
+    {
+      "label": "Reintentar",
+      "description": "Run the batch again",
+      "recommended": false,
+      "action": {
+        "id": "reintentar",
+        "label": "Reintentar",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-A",
+          "--question",
+          "1",
+          "--option",
+          "1"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    },
+    {
+      "label": "Seguir",
+      "description": "Accept it as is and go to the next batch",
+      "recommended": false,
+      "action": {
+        "id": "seguir",
+        "label": "Seguir",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-A",
+          "--question",
+          "1",
+          "--option",
+          "2"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    },
+    {
+      "label": "Parar",
+      "description": "End the feature",
+      "recommended": false,
+      "action": {
+        "id": "parar",
+        "label": "Parar",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-A",
+          "--question",
+          "1",
+          "--option",
+          "3"
+        ],
+        "confirm": "Termina la feature",
+        "planned": true
+      }
+    }
+  ],
+  "rest": []
+}

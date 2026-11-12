@@ -31,6 +31,9 @@ const (
 	StageClose   = "close"
 )
 
+// UnknownMs is a duration with no start (a step saved before the start was stamped): the TUI prints nothing.
+const UnknownMs int64 = -1
+
 // Action is a button: a command of the binary. Confirm says what it changes;
 // Planned means the command does not exist yet. An Argv may carry "{value}": the
 // TUI replaces it with the option the user picked (Config uses it for model and effort).
@@ -54,7 +57,7 @@ type FeatureHeader struct {
 	Repos         []RepoRef `json:"repos"`
 	Batch         int       `json:"batch"`
 	Batches       int       `json:"batches"`
-	ElapsedMs     int64     `json:"elapsed_ms"`
+	ElapsedMs     int64     `json:"elapsed_ms"` // -1 (UnknownMs) = no duration
 	CostUSD       float64   `json:"cost_usd"`
 	CostEstimated bool      `json:"cost_estimated"`
 }

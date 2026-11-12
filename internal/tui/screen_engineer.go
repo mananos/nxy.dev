@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/format"
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -94,9 +93,9 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 	for _, x := range f.Repos {
 		names = append(names, x.Name)
 	}
-	meta := []string{strings.Join(names, " + "), format.FmtDuration(float64(f.ElapsedMs)), costText(f.CostUSD, f.CostEstimated)}
+	meta := []string{strings.Join(names, " + "), durText(f.ElapsedMs), costText(f.CostUSD, f.CostEstimated)}
 	l1 := lr(L(T("←", tMu), "   ", B(f.Title, ""), "   ", T(f.ID, tSb)), L(S(" ingeniero ", "ch-ac")), aw-6)
-	l2 := L("    ", T(strings.Join(meta, " · "), tMu))
+	l2 := L("    ", T(strings.Join(nonEmpty(meta...), " · "), tMu))
 	out := []line{nil}
 	out = append(out, indent(block([]line{l1, l2}, aw, tBg1, 3), 2)...)
 	out = append(out, nil, L("  ", stepper(f.Stage, f.StageDetail)), nil)

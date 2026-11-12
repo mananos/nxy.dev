@@ -1,9 +1,9 @@
 {
   "scope": "repo",
   "repo": { "name": "pagos-worker", "path": "/srv/dev/pagos-worker", "role": "worker (Scala)", "branch": "main", "worktree": false },
-  "create": { "id": "create", "label": "Nueva regla", "argv": ["nxy", "mem", "rule", "<texto>", "--question", "<pregunta>"], "confirm": "Crea una regla en pagos-worker", "planned": false },
+  "create": { "id": "create", "label": "Nueva regla", "argv": ["nxy", "mem", "rule", "{text}", "--question", "{question}", "--paths", "{paths}"], "confirm": "Crea una regla en pagos-worker", "planned": false },
   "rules": [
-    { "id": "K1", "text": "Un pago se procesa una sola vez: la clave de idempotencia es el id del pago", "question": "¿Cómo se evita cobrar dos veces?", "paths": ["src/main/scala/**/Pago*.scala"], "origin": "bootstrap", "origin_ref": "", "created_at": "2026-10-12T09:00:00Z", "flag": "", "cited": 2, "last_cited": "F7K9 diseño", "delivered": 3, "updated_at": "2026-10-12T09:00:00Z", "roles": [], "actions": [{ "id": "edit", "label": "Editar", "argv": ["nxy", "mem", "edit", "K1", "--text", "{text}", "--question", "{question}", "--paths", "{paths}"], "confirm": "Cambia K1 y conserva sus contadores", "planned": true }, { "id": "delete", "label": "Borrar", "argv": ["nxy", "mem", "delete", "K1"], "confirm": "Borra la regla K1 del repo", "planned": true }] }
+    { "id": "K1", "text": "Un pago se procesa una sola vez: la clave de idempotencia es el id del pago", "question": "¿Cómo se evita cobrar dos veces?", "paths": ["src/main/scala/**/Pago*.scala"], "origin": "bootstrap", "origin_ref": "", "created_at": "2026-10-12T09:00:00Z", "flag": "", "cited": 2, "last_cited": "2026-11-10T09:00:00Z", "delivered": 3, "updated_at": "2026-10-12T09:00:00Z", "roles": [], "actions": [{ "id": "edit", "label": "Editar", "argv": ["nxy", "mem", "edit", "K1", "--text", "{text}", "--question", "{question}", "--paths", "{paths}"], "confirm": "Cambia K1 y conserva sus contadores", "planned": false }, { "id": "delete", "label": "Borrar", "argv": ["nxy", "mem", "rm","K1"], "confirm": "Borra la regla K1 del repo", "planned": false }, { "id": "restore", "label": "Deshacer", "argv": ["nxy", "mem", "restore", "K1"], "planned": false }] }
   ],
   "learnings": [],
   "closed": [],

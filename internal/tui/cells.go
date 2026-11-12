@@ -5,11 +5,22 @@ import (
 	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/mananos/nxy.dev/internal/format"
 )
 
 // The cell model of the mockup: a line is a list of segments, each with its own colors. A
 // segment without Bg takes the Bg of the block it ends up in (bgize); when painted every
 // segment carries both colors, so a text color never cuts the background of a block.
+
+// durText is a duration in ms for the screens; a negative one (views.UnknownMs: a step with no
+// start) prints nothing instead of the "?" of FmtDuration.
+func durText(ms int64) string {
+	if ms < 0 {
+		return ""
+	}
+	return format.FmtDuration(float64(ms))
+}
 
 // chipW is the width of the state chips.
 const chipW = 13

@@ -72,6 +72,24 @@ func (s *Store) LinkFeature(ctx context.Context, sessionID, featureID string) er
 	return err
 }
 
+// SessionsOfFeature lists the sessions linked to the feature, oldest start first.
+func (s *Store) SessionsOfFeature(ctx context.Context, featureID string) ([]Session, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE feature_id=? ORDER BY started_at, session_id`, featureID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		x, err := scanSession(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 // OtherLive is true when a session other than exceptID, not ended, is linked to the feature.
 func (s *Store) OtherLive(ctx context.Context, featureID, exceptID string) (bool, error) {
 	var n int

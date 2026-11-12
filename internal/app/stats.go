@@ -36,6 +36,33 @@ type Usage struct {
 
 // Stats is entries/stats.mjs: the session selector, the early exits, the filter and ledger reads.
 func (u Usage) Stats(args []string) report.Output {
+	d, _, dir, early := u.statsData(args)
+	if early != nil {
+		return *early
+	}
+	out := report.Stats(d)
+	if !d.JSON && out.Code == 0 && u.Gate != nil {
+		if rows := u.Gate.Rows(dir); len(rows) > 0 {
+			if !strings.HasSuffix(out.Stdout, "\n") {
+				out.Stdout += "\n"
+			}
+			out.Stdout += "\n" + strings.Join(gate.Summary(rows), "\n") + "\n"
+		}
+	}
+	return out
+}
+
+// StatsData is the data of `nxy stats` for the session the args select: the numbers, the session
+// and, when there is nothing to show (no session, no calls), the output that says so instead.
+func (u Usage) StatsData(args []string) (report.StatsData, *transcript.SessionRef, *report.Output) {
+	d, ref, _, early := u.statsData(args)
+	return d, ref, early
+}
+
+func (u Usage) statsData(args []string) (report.StatsData, *transcript.SessionRef, string, *report.Output) {
+	exit := func(o report.Output) (report.StatsData, *transcript.SessionRef, string, *report.Output) {
+		return report.StatsData{}, nil, "", &o
+	}
 	a := format.ParseArgs(args)
 	cwd := u.Getwd()
 	if v, ok := a.Str("cwd"); ok {
@@ -67,16 +94,16 @@ func (u Usage) Stats(args []string) report.Output {
 	if ref == nil {
 		if wantsCurrent || (currentID != "" && selector == currentID) {
 			// Brand-new session: Claude Code creates the transcript with the first API response.
-			return report.Output{Stdout: "nxy stats: this session has no API calls yet — the first one is the answer to this command. Run /nxy:stats again on the next turn, or `/nxy:stats last` for the previous session.\n"}
+			return exit(report.Output{Stdout: "nxy stats: this session has no API calls yet — the first one is the answer to this command. Run /nxy:stats again on the next turn, or `/nxy:stats last` for the previous session.\n"})
 		}
-		return report.Output{Stderr: "nxy: no session found (" + selector + ") for " + cwd + ". Try --all or --session <id>.\n", Code: 1}
+		return exit(report.Output{Stderr: "nxy: no session found (" + selector + ") for " + cwd + ". Try --all or --session <id>.\n", Code: 1})
 	}
 	include := !a.Flag("no-agents")
 	threshold := settings.CacheBreakThreshold
 	s := u.Transcripts.ParseSession(*ref, transcript.SessionOpts{IncludeSubagents: &include, CacheBreakThreshold: &threshold, Timing: true})
 	asJSON := a.Flag("json")
 	if s.Usage.Calls == 0 && !asJSON {
-		return report.StatsNoCalls(s)
+		return exit(report.StatsNoCalls(s))
 	}
 
 	dir := cwd
@@ -108,14 +135,5 @@ func (u Usage) Stats(args []string) report.Output {
 			d.CacheTTL = &ttl
 		}
 	}
-	out := report.Stats(d)
-	if !asJSON && out.Code == 0 && u.Gate != nil {
-		if rows := u.Gate.Rows(dir); len(rows) > 0 {
-			if !strings.HasSuffix(out.Stdout, "\n") {
-				out.Stdout += "\n"
-			}
-			out.Stdout += "\n" + strings.Join(gate.Summary(rows), "\n") + "\n"
-		}
-	}
-	return out
+	return d, ref, dir, nil
 }

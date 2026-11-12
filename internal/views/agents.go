@@ -28,7 +28,7 @@ type AgentNode struct {
 	CacheRead     int64       `json:"cache_read"`
 	CacheWrite    int64       `json:"cache_write"`
 	CacheHitPct   *float64    `json:"cache_hit_pct"`
-	ElapsedMs     int64       `json:"elapsed_ms"`
+	ElapsedMs     int64       `json:"elapsed_ms"` // -1 (UnknownMs) = no duration
 	CostUSD       float64     `json:"cost_usd"`
 	CostEstimated bool        `json:"cost_estimated"`
 	Received      []MemRef    `json:"received"`

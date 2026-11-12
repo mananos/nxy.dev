@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/internal/platform"
 )
 
@@ -463,37 +464,7 @@ func firstUserText(path string) string {
 	if err != nil {
 		return ""
 	}
-	for _, line := range bytes.Split(head, []byte{'\n'}) {
-		var e struct {
-			Type    string `json:"type"`
-			Message struct {
-				Content json.RawMessage `json:"content"`
-			} `json:"message"`
-		}
-		if json.Unmarshal(line, &e) != nil || e.Type != "user" {
-			continue
-		}
-		var s string
-		if json.Unmarshal(e.Message.Content, &s) == nil && s != "" {
-			return s
-		}
-		var blocks []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		}
-		if json.Unmarshal(e.Message.Content, &blocks) == nil {
-			var parts []string
-			for _, b := range blocks {
-				if b.Type == "text" && b.Text != "" {
-					parts = append(parts, b.Text)
-				}
-			}
-			if len(parts) > 0 {
-				return strings.Join(parts, "\n")
-			}
-		}
-	}
-	return ""
+	return transcript.FirstUserText(head)
 }
 
 func marshal(v any) ([]byte, error) {

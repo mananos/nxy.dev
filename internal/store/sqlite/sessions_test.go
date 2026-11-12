@@ -7,6 +7,27 @@ import (
 	"github.com/mananos/nxy.dev/internal/memory"
 )
 
+func TestSessionsOfFeature(t *testing.T) {
+	s, _ := newMem(t)
+	for _, x := range []Session{{ID: "late", StartedAt: 300}, {ID: "early", StartedAt: 100}, {ID: "other", StartedAt: 200}, {ID: "free", StartedAt: 50}} {
+		if err := s.StartSession(ctx, x); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for id, f := range map[string]string{"late": "F1", "early": "F1", "other": "F2"} {
+		if err := s.LinkFeature(ctx, id, f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := s.SessionsOfFeature(ctx, "F1")
+	if err != nil || len(got) != 2 || got[0].ID != "early" || got[1].ID != "late" || got[0].FeatureID != "F1" {
+		t.Fatalf("F1 = %+v %v", got, err)
+	}
+	if got, _ := s.SessionsOfFeature(ctx, "none"); len(got) != 0 {
+		t.Fatalf("none = %+v", got)
+	}
+}
+
 func TestSessionOnceOnlyFlags(t *testing.T) {
 	s, _ := newMem(t)
 	if err := s.StartSession(ctx, Session{ID: "s1", Folder: "/w/proj", Source: "startup", NotesPending: true}); err != nil {

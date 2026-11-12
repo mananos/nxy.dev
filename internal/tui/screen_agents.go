@@ -143,7 +143,7 @@ func (agentsScreen) view(st *state, r route, w int) ([]line, int) {
 			if n.CacheHitPct != nil {
 				cache = fmt.Sprintf("%.0f %%", *n.CacheHitPct)
 			}
-			when = format.FmtDuration(float64(n.ElapsedMs))
+			when = durText(n.ElapsedMs)
 			cost = costText(n.CostUSD, n.CostEstimated)
 		}
 		note := T("", tMu)

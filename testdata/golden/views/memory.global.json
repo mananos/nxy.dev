@@ -1,0 +1,185 @@
+{
+  "scope": "global",
+  "repo": {
+    "name": "global",
+    "path": "",
+    "role": "",
+    "branch": "",
+    "worktree": false
+  },
+  "rules": [
+    {
+      "id": "G1",
+      "text": "Sin comentarios que repitan el código",
+      "question": "¿Cómo se comenta el código?",
+      "paths": [],
+      "origin": "chat",
+      "origin_ref": "",
+      "created_at": "2026-10-08T10:00:00Z",
+      "flag": "",
+      "cited": 1,
+      "last_cited": "2026-11-10T12:00:00Z",
+      "delivered": 6,
+      "updated_at": "2026-10-08T10:00:00Z",
+      "roles": [
+        "implementer",
+        "reviewer"
+      ],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "G1",
+            "--text",
+            "{text}",
+            "--question",
+            "{question}",
+            "--paths",
+            "{paths}",
+            "--roles",
+            "{roles}"
+          ],
+          "confirm": "Cambia G1 y a qué roles llega",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "G1"
+          ],
+          "confirm": "Borra la regla G1",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "G1"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "learnings": [
+    {
+      "id": "A9",
+      "text": "Preferir composición a herencia en los servicios",
+      "files": [],
+      "seen": 1,
+      "stale": false,
+      "flag": "",
+      "features": [],
+      "delivered": 0,
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "A9",
+            "--text",
+            "{text}",
+            "--files",
+            "{files}"
+          ],
+          "confirm": "Cambia A9",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "A9"
+          ],
+          "confirm": "Borra el aprendizaje A9",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "A9"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "closed": [],
+  "proposals": [
+    {
+      "id": "promote:A9",
+      "kind": "promote",
+      "target": "A9",
+      "text": "Preferir composición a herencia en los servicios",
+      "why": "Viene de la 1.x como aprendizaje global: conviene que sea una regla tuya",
+      "accept": {
+        "id": "accept",
+        "label": "Hacerla regla",
+        "argv": [
+          "nxy",
+          "mem",
+          "promote",
+          "A9",
+          "--question",
+          "{question}"
+        ],
+        "confirm": "Convierte A9 en una regla",
+        "planned": false
+      },
+      "reject": {
+        "id": "reject",
+        "label": "Dejarla",
+        "argv": [
+          "nxy",
+          "mem",
+          "keep",
+          "A9"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    }
+  ],
+  "create": {
+    "id": "create",
+    "label": "Nueva regla tuya",
+    "argv": [
+      "nxy",
+      "mem",
+      "rule",
+      "{text}",
+      "--question",
+      "{question}",
+      "--paths",
+      "{paths}",
+      "--global",
+      "--roles",
+      "{roles}"
+    ],
+    "confirm": "Crea una regla tuya que vale en todos los repos",
+    "planned": false
+  }
+}

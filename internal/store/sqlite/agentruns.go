@@ -33,9 +33,18 @@ func (s *Store) RecordAgentRun(ctx context.Context, r domain.AgentRun) error {
 
 // AgentRuns lists the runs of a feature ordered by start and agent id.
 func (s *Store) AgentRuns(ctx context.Context, featureID string) ([]domain.AgentRun, error) {
+	return s.queryAgentRuns(ctx, `WHERE feature_id=?`, featureID)
+}
+
+// AgentRunsSince lists the runs of every feature that ended at or after since (ms).
+func (s *Store) AgentRunsSince(ctx context.Context, since int64) ([]domain.AgentRun, error) {
+	return s.queryAgentRuns(ctx, `WHERE ended_at>=?`, since)
+}
+
+func (s *Store) queryAgentRuns(ctx context.Context, where string, arg any) ([]domain.AgentRun, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT feature_id, agent_id, batch, role, model, effort, calls, tokens_in, tokens_out,
 	  cache_read, cache_write, cost_usd, cost_estimated, started_at, ended_at
-	  FROM agent_runs WHERE feature_id=? ORDER BY started_at, agent_id`, featureID)
+	  FROM agent_runs `+where+` ORDER BY started_at, agent_id`, arg)
 	if err != nil {
 		return nil, err
 	}

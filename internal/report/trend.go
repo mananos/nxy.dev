@@ -229,8 +229,8 @@ func usdCell(usd float64, partial, estimated bool) string {
 	return format.FmtUsdPartial(usd, partial, estimated)
 }
 
-// periodKey is the label of the period a timestamp falls in: its local date, or the Monday of its week.
-func periodKey(ts float64, by string, loc *time.Location) string {
+// PeriodKey is the label of the period a timestamp falls in: its local date, or the Monday of its week.
+func PeriodKey(ts float64, by string, loc *time.Location) string {
 	if by == "week" {
 		if y, mon, d, _, _, wd, ok := jscompat.LocalTime(ts, loc); ok {
 			monday := time.Date(y, time.Month(mon+1), d-(wd+6)%7, 12, 0, 0, 0, loc)
@@ -292,7 +292,7 @@ func Trend(d TrendData) Output {
 	for _, s := range sessions {
 		key := s.SessionID
 		if d.By != "session" {
-			key = periodKey(s.Ts, d.By, d.Loc)
+			key = PeriodKey(s.Ts, d.By, d.Loc)
 		}
 		g, ok := groups[key]
 		if !ok {

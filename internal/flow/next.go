@@ -512,7 +512,7 @@ func stamp(before, after []domain.Step, at int64) []domain.Step {
 		st := &out[i]
 		switch st.Status {
 		case domain.StepRunning:
-			if st.StartedAt == 0 {
+			if st.StartedAt == 0 && prev == domain.StepPending { // a legacy running step keeps no start
 				st.StartedAt = at
 			}
 			if prev == domain.StepFailed {

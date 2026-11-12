@@ -1,0 +1,106 @@
+{
+  "id": "FEAT-D:approval:2",
+  "feature_id": "FEAT-D",
+  "repo": "acme/pagos",
+  "kind": "approval",
+  "title": "",
+  "body": [
+    "## Migrar pagos a la API v3",
+    "",
+    "### Criterios",
+    "",
+    "- R1: Migrar pagos a la API v3 (tdd)",
+    "",
+    "### Lote 1 — Cliente de la API v3",
+    "- Cubre: R1",
+    "- Cambiar:",
+    "  - src/billing/File.java:10 — Cliente de la API v3",
+    "- Test: TestCliente de la API v3 (nuevo)",
+    "- Accept: `go test ./pay/ -run TestClient`",
+    "- Riesgo: bajo",
+    "",
+    "### Lote 2 — Cambiar el servicio de cobro",
+    "- Cubre: R1",
+    "- Cambiar:",
+    "  - src/billing/File.java:10 — Cambiar el servicio de cobro",
+    "- Test: TestCambiar el servicio de cobro (nuevo)",
+    "- Accept: `go test ./pay/ -run TestCharge`",
+    "- Riesgo: bajo",
+    ""
+  ],
+  "header": "Plan",
+  "question": "Approve nxy plan FEAT-D r2?",
+  "context": [],
+  "multi_select": false,
+  "asked_at": "2026-11-10T14:00:00Z",
+  "fork": null,
+  "options": [
+    {
+      "label": "Approve",
+      "description": "Start executing batch 1",
+      "recommended": false,
+      "action": {
+        "id": "approve",
+        "label": "Approve",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-D",
+          "--question",
+          "1",
+          "--option",
+          "1"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    },
+    {
+      "label": "Change",
+      "description": "Write what to change; nxy re-plans",
+      "recommended": false,
+      "action": {
+        "id": "change",
+        "label": "Change",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-D",
+          "--question",
+          "1",
+          "--option",
+          "2"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    },
+    {
+      "label": "Ver completo",
+      "description": "Open the full plan in your editor",
+      "recommended": false,
+      "action": {
+        "id": "ver_completo",
+        "label": "Ver completo",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--feature",
+          "FEAT-D",
+          "--question",
+          "1",
+          "--option",
+          "3"
+        ],
+        "confirm": "",
+        "planned": true
+      }
+    }
+  ],
+  "rest": []
+}

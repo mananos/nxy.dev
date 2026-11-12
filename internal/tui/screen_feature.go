@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/format"
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -240,9 +239,9 @@ func featureHead(f views.FeatureHeader, w int) []line {
 	if branch != "" {
 		meta = append(meta, branch)
 	}
-	meta = append(meta, format.FmtDuration(float64(f.ElapsedMs)), costText(f.CostUSD, f.CostEstimated))
+	meta = append(meta, durText(f.ElapsedMs), costText(f.CostUSD, f.CostEstimated))
 	l1 := lr(L(T("←", tMu), "   ", B(f.Title, ""), "   ", T(f.ID, tSb)), chip(statusLabel(f.Status), statusTok(f.Status), chipW), iw)
-	l2 := L("    ", T(strings.Join(meta, " · "), tMu))
+	l2 := L("    ", T(strings.Join(nonEmpty(meta...), " · "), tMu))
 	out := []line{nil}
 	out = append(out, indent(block([]line{l1, l2}, w-4, tBg1, 3), 2)...)
 	return append(out, nil, L("  ", stepper(f.Stage, f.StageDetail)), nil)
@@ -301,7 +300,7 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 		model, when, cost := "", "", ""
 		if !pending {
 			model = modelEffort(n, " · ")
-			when = format.FmtDuration(float64(n.ElapsedMs))
+			when = durText(n.ElapsedMs)
 			cost = costText(subtreeCost(n), n.CostEstimated)
 		}
 		l := L(st.stepGlyph(n.Status), "  ", col(fmt.Sprint(n.Batch), 3), col(title, tw-1), " ")
@@ -337,7 +336,7 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 	}
 	if red != nil {
 		label := S(fmt.Sprintf(" Lote %d ", red.Batch), "ch-fail")
-		head := L(label, "   ", T(strings.Join(nonEmpty(attemptText(red), modelEffort(red, " "), format.FmtDuration(float64(red.ElapsedMs))), " · "), tMu))
+		head := L(label, "   ", T(strings.Join(nonEmpty(attemptText(red), modelEffort(red, " "), durText(red.ElapsedMs)), " · "), tMu))
 		pad := spaces(lw(L(label))+3, "")
 		lines := []line{head, L(pad, T(red.Failure.Test, tMu))}
 		for _, s := range red.Failure.Lines {
@@ -367,7 +366,7 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 			continue
 		}
 		l := L("     ", B(roleName(n.Role), ""),
-			T("   "+strings.Join(nonEmpty(modelEffort(n, " · "), format.FmtDuration(float64(n.ElapsedMs))), " · "), tMu),
+			T("   "+strings.Join(nonEmpty(modelEffort(n, " · "), durText(n.ElapsedMs)), " · "), tMu),
 			T("   "+costText(n.CostUSD, n.CostEstimated), ""))
 		var scouts []*views.AgentNode
 		for j := range n.Children {
@@ -382,7 +381,7 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 				name = fmt.Sprintf("%d scouts", len(scouts))
 			}
 			sp := L(B(name, ""),
-				T("   "+strings.Join(nonEmpty(modelEffort(s, " · "), format.FmtDuration(float64(s.ElapsedMs))), " · "), tMu),
+				T("   "+strings.Join(nonEmpty(modelEffort(s, " · "), durText(s.ElapsedMs)), " · "), tMu),
 				T("   "+costText(s.CostUSD, s.CostEstimated), ""))
 			if lw(l)+6+lw(sp) <= w {
 				l = L(l, "      ", sp)

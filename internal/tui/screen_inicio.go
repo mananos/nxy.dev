@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/format"
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -155,7 +154,7 @@ func card(f views.CockpitFeature, selected bool, w int, now string) []line {
 		return block([]line{lr(l, rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6), iw)}, w, bg, 3)
 	}
 	st := statusTok(f.Status)
-	right1 := L(T(format.FmtDuration(float64(f.ElapsedMs)), tMu), "   ", rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6))
+	right1 := L(T(durText(f.ElapsedMs), tMu), "   ", rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6))
 	l1 := lr(L(chip(statusLabel(f.Status), st, chipW), "   ", B(f.Title, ""), "   ", T(f.ID, tSb)), right1, iw)
 	n, m := progressOf(f)
 	right2 := L(progress(n, m, 12, st), "  ", col(T(phaseText(f), tMu), 10))

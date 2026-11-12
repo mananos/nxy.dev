@@ -38,18 +38,43 @@ func (u Usage) Trend(args []string) report.Output {
 	}
 
 	here := a.Flag("here")
-	lookup := SessionLookup{Cwd: cwd, All: !here, ProjectsDir: settings.ProjectsDir}
-	if since != nil {
-		lookup.Since = *since
-	}
-	refs := u.Transcripts.ListSessions(lookup)
 	d := report.TrendData{Since: since, By: by, Here: here, Cwd: cwd, JSON: a.Flag("json"), Settings: settings, Loc: u.Loc}
-	if len(refs) == 0 {
+	nrefs := u.readTrend(&d, cwd, since)
+	if nrefs == 0 {
 		where := "any project"
 		if here {
 			where = cwd
 		}
 		return report.Output{Stdout: "nxy trend: no sessions since " + format.FmtDate(tsOrNaN(since), u.Loc, true) + " for " + where + ". Try a longer --since.\n"}
+	}
+	if !d.LedgerOK && by == "day" && u.Gain != nil {
+		if gain, ok := u.Gain(here, cwd); ok && jscompat.Truthy(gain) {
+			d.HasGain = true
+			d.GainDaily = report.DailyFromGain(gain) // a failed `rtk gain` must show `?`, not zeros
+		}
+	}
+	return report.Trend(d)
+}
+
+// TrendSessions are the sessions of the days since (nil is all), per session as `nxy trend` counts
+// them; here limits them to the project of cwd.
+func (u Usage) TrendSessions(since *int64, here bool, cwd string) []report.TrendSession {
+	d := report.TrendData{Since: since, By: "day", Here: here, Cwd: cwd, Settings: report.SettingsFrom(u.Config(cwd)), Loc: u.Loc}
+	u.readTrend(&d, cwd, since)
+	return d.Sessions
+}
+
+// readTrend lists the sessions in range and fills d (sessions, or agent runs for by agent, and
+// whether rtk's ledger was read). It returns how many sessions it found.
+func (u Usage) readTrend(d *report.TrendData, cwd string, since *int64) int {
+	by, here, settings := d.By, d.Here, d.Settings
+	lookup := SessionLookup{Cwd: cwd, All: !here, ProjectsDir: settings.ProjectsDir}
+	if since != nil {
+		lookup.Since = *since
+	}
+	refs := u.Transcripts.ListSessions(lookup)
+	if len(refs) == 0 {
+		return 0
 	}
 
 	// The filter summary is per project cwd and session; cache it per pair.
@@ -71,12 +96,6 @@ func (u Usage) Trend(args []string) report.Output {
 	// rtk's ledger for the whole range, attributed to sessions by time window + cwd.
 	ledger, ledgerOK := u.Ledger.Rows(since, nil)
 	d.LedgerOK = ledgerOK
-	if !ledgerOK && by == "day" && u.Gain != nil {
-		if gain, ok := u.Gain(here, cwd); ok && jscompat.Truthy(gain) {
-			d.HasGain = true
-			d.GainDaily = report.DailyFromGain(gain) // a failed `rtk gain` must show `?`, not zeros
-		}
-	}
 
 	threshold := settings.CacheBreakThreshold
 	for _, ref := range refs {
@@ -130,7 +149,7 @@ func (u Usage) Trend(args []string) report.Output {
 			Nxy: nxy, FirstPrompt: prompt, ByModel: s.ByModel, CacheBreaks: s.CacheBreaks, TTLWhatIf: s.TTLWhatIf,
 		})
 	}
-	return report.Trend(d)
+	return len(refs)
 }
 
 // tsOrNaN is a nullable epoch ms as the float the formatters take (NaN is JS null).

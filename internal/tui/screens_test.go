@@ -651,7 +651,7 @@ func TestMemoryEditBlocksDecision(t *testing.T) {
 	// enter saves: the toast shows the Planned command with the new text
 	m = inMemory(t)
 	press(m, "e", "!", "enter")
-	if !strings.Contains(m.st.toast, "nxy mem edit K9 --text Los logs de facturación usan el MDC con el id de factura!") || !strings.Contains(m.st.toast, "todavía no existe") {
+	if !strings.Contains(m.st.toast, "nxy mem edit K9 --text Los logs de facturación usan el MDC con el id de factura!") || strings.Contains(m.st.toast, "todavía no existe") {
 		t.Fatalf("toast %q", m.st.toast)
 	}
 	out := dump(t, "memoria.editar", 100)
@@ -687,7 +687,7 @@ func TestMemoryDeleteUndo(t *testing.T) {
 	// without u, the command shows when the window is over
 	press(m, "x", "y")
 	m.st.onMemExpire(m.st.mem.undo.seq)
-	if !strings.Contains(m.st.toast, "$ nxy mem delete K9") || !strings.Contains(m.st.toast, "todavía no existe") || m.st.mem.undo != nil {
+	if !strings.Contains(m.st.toast, "$ nxy mem rm K9") || strings.Contains(m.st.toast, "todavía no existe") || m.st.mem.undo != nil {
 		t.Fatalf("toast %q", m.st.toast)
 	}
 }
@@ -695,7 +695,7 @@ func TestMemoryDeleteUndo(t *testing.T) {
 func TestMemoryProposalAndCreate(t *testing.T) {
 	m := inMemory(t)
 	press(m, "y")
-	if !strings.Contains(m.st.toast, "nxy mem delete K9") {
+	if !strings.Contains(m.st.toast, "nxy mem rm K9") {
 		t.Fatalf("y on K9: %q", m.st.toast)
 	}
 	if strings.Contains(m.st.frame(true), "se entregó 9 veces") {
@@ -706,7 +706,7 @@ func TestMemoryProposalAndCreate(t *testing.T) {
 		t.Fatalf("+ toast %q", m.st.toast)
 	}
 	press(m, "[", "+")
-	if !strings.Contains(m.st.toast, "--global") || !strings.Contains(m.st.toast, "todavía no existe") {
+	if !strings.Contains(m.st.toast, "--global") || strings.Contains(m.st.toast, "todavía no existe") {
 		t.Fatalf("global + toast %q", m.st.toast)
 	}
 }

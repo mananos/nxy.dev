@@ -237,6 +237,85 @@ func TestLatestFeatureReturnsDone(t *testing.T) {
 	}
 }
 
+func TestFeatureRows(t *testing.T) {
+	clock := memT0
+	s := memStore(t, dbPath(t), &clock)
+	finish := func(id string) {
+		t.Helper()
+		if err := s.Transition(ctx, id, func(f domain.Feature) (domain.Feature, error) {
+			f.State = domain.State{Phase: domain.PhaseDone, Outcome: domain.OutcomeSuccess}
+			return f, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	oldDone, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r1", Request: "old"})
+	finish(oldDone)
+	clock = clock.Add(48 * time.Hour)
+	since := clock.UnixMilli()
+	active, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r1", Request: "active"})
+	paused, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r2", Request: "paused", Paused: true})
+	clock = clock.Add(time.Hour)
+	newDone, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r3", Request: "new"})
+	finish(newDone)
+	other, _ := s.CreateFeature(ctx, domain.Feature{Repo: "r4", Request: "other"})
+
+	ids := func(rows []FeatureRow) []string {
+		var out []string
+		for _, r := range rows {
+			out = append(out, r.Feature.ID)
+		}
+		return out
+	}
+	has := func(rows []FeatureRow, id string) bool {
+		for _, x := range ids(rows) {
+			if x == id {
+				return true
+			}
+		}
+		return false
+	}
+	rows, err := s.FeatureRows(ctx, FeatureFilter{Active: true}, since)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has(rows, active) || !has(rows, newDone) || !has(rows, other) {
+		t.Errorf("active+done since: %v", ids(rows))
+	}
+	if has(rows, oldDone) || has(rows, paused) {
+		t.Errorf("done before since or paused listed: %v", ids(rows))
+	}
+	for i := 1; i < len(rows); i++ {
+		if rows[i].UpdatedAt > rows[i-1].UpdatedAt {
+			t.Errorf("not newest first: %v", ids(rows))
+		}
+	}
+	for _, r := range rows {
+		if r.CreatedAt == 0 || r.UpdatedAt < r.CreatedAt {
+			t.Errorf("times of %s: %d %d", r.Feature.ID, r.CreatedAt, r.UpdatedAt)
+		}
+	}
+	rows, _ = s.FeatureRows(ctx, FeatureFilter{Active: true}, 0)
+	if has(rows, newDone) || has(rows, oldDone) || len(rows) != 2 {
+		t.Errorf("doneSince 0 lists done: %v", ids(rows))
+	}
+	rows, _ = s.FeatureRows(ctx, FeatureFilter{Paused: true}, since)
+	if has(rows, newDone) || has(rows, oldDone) || !has(rows, paused) || len(rows) != 1 {
+		t.Errorf("paused+doneSince lists done: %v", ids(rows))
+	}
+	rows, _ = s.FeatureRows(ctx, FeatureFilter{Active: true}, since)
+	if !has(rows, newDone) {
+		t.Errorf("active+doneSince lacks done: %v", ids(rows))
+	}
+	rows, _ = s.FeatureRows(ctx, FeatureFilter{Home: "r1"}, 0)
+	if len(rows) != 2 {
+		t.Errorf("home r1: %v", ids(rows))
+	}
+	if all, _ := s.Features(ctx, FeatureFilter{}); len(all) != 5 {
+		t.Errorf("Features all = %d", len(all))
+	}
+}
+
 func TestRecordPicksIdempotent(t *testing.T) {
 	s := mustOpen(t, dbPath(t))
 	picks := []domain.Pick{

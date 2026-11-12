@@ -76,11 +76,14 @@
     }
   ],
   "settings": [
-    { "id": "filter.enabled", "label": "Filtro de salida", "value": true, "source": "default", "options": [true, false], "actions": [] },
-    { "id": "filter.engine", "label": "Motor del filtro", "value": "rtk", "source": "user", "options": ["rtk", "nxy"], "actions": [] },
-    { "id": "metrics.enabled", "label": "Métricas", "value": true, "source": "default", "options": [true, false], "actions": [] },
-    { "id": "gate.enabled", "label": "Gate de escritura y lectura", "value": true, "source": "default", "options": [true, false], "actions": [] },
-    { "id": "gate.reads", "label": "Búsquedas amplias", "value": "on", "source": "default", "options": ["on", "off"], "actions": [] }
+    { "id": "modules.filter", "label": "Filtro de salida", "value": true, "source": "default", "options": [true, false], "actions": [
+      { "id": "set", "label": "Cambiar", "argv": ["nxy", "config", "set", "modules.filter", "{value}"], "confirm": "Guarda en ~/.nxy/config.json", "planned": false },
+      { "id": "set_repo", "label": "Cambiar en este repo", "argv": ["nxy", "config", "set", "modules.filter", "{value}", "--repo"], "confirm": "Guarda en .nxy/config.json del repo", "planned": false }
+    ] },
+    { "id": "filter.engine", "label": "Motor del filtro", "value": "rtk", "source": "user", "options": ["auto", "rtk", "off"], "actions": [
+      { "id": "set", "label": "Cambiar", "argv": ["nxy", "config", "set", "filter.engine", "{value}"], "confirm": "Guarda en ~/.nxy/config.json", "planned": false },
+      { "id": "set_repo", "label": "Cambiar en este repo", "argv": ["nxy", "config", "set", "filter.engine", "{value}", "--repo"], "confirm": "Guarda en .nxy/config.json del repo", "planned": false }
+    ] }
   ],
   "statusline": {
     "installed": false,

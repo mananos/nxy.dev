@@ -33,6 +33,26 @@ func TestAgentRuns(t *testing.T) {
 	}
 }
 
+func TestAgentRunsSince(t *testing.T) {
+	s := mustOpen(t, dbPath(t))
+	for _, r := range []domain.AgentRun{
+		{FeatureID: "F1", AgentID: "old", StartedAt: 10, EndedAt: 50},
+		{FeatureID: "F1", AgentID: "edge", StartedAt: 60, EndedAt: 100},
+		{FeatureID: "F2", AgentID: "new", StartedAt: 70, EndedAt: 200},
+	} {
+		if err := s.RecordAgentRun(ctx, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := s.AgentRunsSince(ctx, 100)
+	if err != nil || len(got) != 2 || got[0].AgentID != "edge" || got[1].AgentID != "new" {
+		t.Fatalf("since 100 = %+v %v", got, err)
+	}
+	if got, _ := s.AgentRunsSince(ctx, 201); len(got) != 0 {
+		t.Fatalf("since 201 = %+v", got)
+	}
+}
+
 func TestAgentRunRepeatedStopKeepsData(t *testing.T) {
 	s := mustOpen(t, dbPath(t))
 	a := domain.AgentRun{FeatureID: "F1", AgentID: "a1", Role: "implementer", Batch: 2, Model: "m", Calls: 3, TokensIn: 10, CostUSD: 0.5, StartedAt: 100, EndedAt: 200}

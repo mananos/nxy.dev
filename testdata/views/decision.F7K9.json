@@ -3,6 +3,9 @@
   "feature_id": "F7K9",
   "repo": "pagos-worker",
   "kind": "fork",
+  "title": "",
+  "body": [],
+  "rest": [],
   "header": "Elegí una bifurcación",
   "question": "¿Dónde vive el backoff de los reintentos de pago?",
   "context": [

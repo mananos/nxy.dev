@@ -839,6 +839,29 @@ func (s *Store) SaveClosedFeature(ctx context.Context, f memory.ClosedFeature) (
 	return got[0], tx.Commit()
 }
 
+// ClosedFeatures lists the live closed features of a repo, newest created first, with only the
+// files of that repo. A limit of 0 or less means all.
+func (s *Store) ClosedFeatures(ctx context.Context, repo string, limit int) ([]memory.ClosedFeature, error) {
+	if limit <= 0 {
+		limit = -1
+	}
+	got, err := loadFeatures(ctx, s.db, `WHERE deleted_at=0 AND id IN (SELECT feature_id FROM mem_feature_repos WHERE repo=?)
+		ORDER BY created_at DESC, id DESC LIMIT ?`, repo, limit)
+	if err != nil {
+		return nil, err
+	}
+	for i := range got {
+		var own []memory.FileRef
+		for _, f := range got[i].Files {
+			if f.Repo == repo {
+				own = append(own, f)
+			}
+		}
+		got[i].Files = own
+	}
+	return got, nil
+}
+
 // Related returns the closed features and the open learnings of a repo that touched any of
 // the paths (relative to the repo root; a directory matches the files under it).
 func (s *Store) Related(ctx context.Context, repo string, paths []string) ([]memory.ClosedFeature, []memory.Learning, error) {
