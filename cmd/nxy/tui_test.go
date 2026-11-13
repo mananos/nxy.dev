@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -64,9 +66,57 @@ func TestTuiDumpUnknown(t *testing.T) {
 	}
 }
 
-func TestTuiNoDemo(t *testing.T) {
+// the dump without --demo reads the real db: an empty one still draws every section
+func TestTuiSelfArgv(t *testing.T) {
+	got, err := selfArgv([]string{"nxy", "mem", "rm", "K3"})
+	if err != nil || strings.Join(got, " ") != "mem rm K3" {
+		t.Fatalf("selfArgv = %v, %v", got, err)
+	}
+	for _, bad := range [][]string{nil, {}, {"rm", "-rf", "x"}, {"/usr/bin/nxy", "mem"}} {
+		if _, err := selfArgv(bad); err == nil {
+			t.Errorf("selfArgv(%v) should fail", bad)
+		}
+	}
+}
+
+func TestTuiWhere(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("NXY_HOME", home)
+	old := nxyOnPath
+	t.Cleanup(func() { nxyOnPath = old })
+
+	nxyOnPath = func() string { return "" }
 	var out, errb bytes.Buffer
-	if code := run([]string{"tui"}, strings.NewReader(""), &out, &errb); code != 1 {
-		t.Fatalf("exit %d", code)
+	if code := run([]string{"tui", "where"}, strings.NewReader(""), &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	if _, err := os.Stat(filepath.Join(home, "bin", "nxy.cmd")); err != nil {
+		t.Errorf("shim not ensured: %v", err)
+	}
+	shim := filepath.ToSlash(filepath.Join(home, "bin", "nxy.cmd"))
+	for _, want := range []string{"& \"" + shim + "\" tui", "sh \"" + shim + "\" tui", "nxy en el PATH"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("without nxy in the PATH, lacks %q:\n%s", want, out.String())
+		}
+	}
+
+	nxyOnPath = func() string { return "/x/nxy" }
+	out.Reset()
+	if code := run([]string{"tui", "where"}, strings.NewReader(""), &out, &errb); code != 0 || !strings.Contains(out.String(), "  nxy tui") || strings.Contains(out.String(), "PowerShell") {
+		t.Fatalf("with nxy in the PATH (%d):\n%s", code, out.String())
+	}
+}
+
+func TestTuiRealDump(t *testing.T) {
+	t.Setenv("NXY_HOME", t.TempDir())
+	for _, target := range []string{"inicio", "memoria", "gasto", "config"} {
+		var out, errb bytes.Buffer
+		args := []string{"tui", "--dump", target, "--plain", "--icons", "unicode", "--cwd", t.TempDir()}
+		if code := run(args, strings.NewReader(""), &out, &errb); code != 0 {
+			t.Fatalf("%s: exit %d: %s", target, code, errb.String())
+		}
+		if strings.TrimSpace(out.String()) == "" {
+			t.Errorf("%s: empty dump", target)
+		}
 	}
 }

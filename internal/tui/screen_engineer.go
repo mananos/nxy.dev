@@ -82,7 +82,7 @@ func engDiagram(d views.Diagram, w int) []line {
 func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 	e := st.data.Engineer[r.key]
 	if e == nil {
-		return indent([]line{nil, L(T("No hay ingeniero de "+r.key+" en el demo.", tMu))}, 2), 0
+		return st.missing("engineer/"+r.key, "No hay ingeniero de "+r.key+".", w), 0
 	}
 	aw := w - 4 // width of the blocks
 	cur := st.engCursor(r, e)
@@ -215,7 +215,7 @@ func (engineerScreen) key(st *state, r route, k string) intent {
 		st.engToggle(r, "c")
 	case "enter":
 		if cur < len(e.Options) {
-			return intent{toast: actionToast("Elegir "+e.Options[cur].Key, e.Options[cur].Action)}
+			return intent{toast: st.runAction(actionReq{label: "Elegir " + e.Options[cur].Key, a: e.Options[cur].Action})}
 		}
 	}
 	return intent{}

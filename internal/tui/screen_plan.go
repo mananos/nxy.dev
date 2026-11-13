@@ -5,6 +5,8 @@ import (
 	"path"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -20,7 +22,7 @@ func (planScreen) keys(st *state, r route) []hint {
 	if p := st.data.Plans[r.key]; p != nil && p.State == views.PlanApproval {
 		return []hint{{"a", "aprobar"}, {"c", "cambiar"}, {"x", "parar"}, {"←→", "lote"}, {"enter", "código"}}
 	}
-	return []hint{{"←→", "lote"}, {"↑↓", "archivo"}, {"enter", "ver código"}, {"a", "agentes"}, {"d", "decidir"}}
+	return []hint{{"←→", "lote"}, {"↑↓", "archivo"}, {"enter", "ver código"}, {"a", "agentes"}, {"d", "decidir"}, {"r", "recalcular"}}
 }
 
 // planBatch is the position of the batch under the cursor. It starts on the red batch of a plan
@@ -91,7 +93,7 @@ func paras(first line, text string, w, hang int) []line {
 func (planScreen) view(st *state, r route, w int) ([]line, int) {
 	p := st.data.Plans[r.key]
 	if p == nil || len(p.Batches) == 0 {
-		return indent([]line{nil, L(T("No hay un plan de "+r.key+" en el demo.", tMu))}, 2), 0
+		return st.missing("plan/"+r.key, "No hay un plan de "+r.key+" todavía.", w), 0
 	}
 	approval := p.State == views.PlanApproval
 	iw := w - 4 - 6
@@ -305,6 +307,10 @@ func planAction(p *views.Plan, id string) (views.Action, bool) {
 }
 
 func (planScreen) key(st *state, r route, k string) intent {
+	if k == "r" {
+		st.cmd = tea.Batch(st.cmd, st.topCmd(true))
+		return intent{toast: "Recalculando el plan…"}
+	}
 	p := st.data.Plans[r.key]
 	if p == nil || len(p.Batches) == 0 {
 		return intent{}
@@ -331,24 +337,21 @@ func (planScreen) key(st *state, r route, k string) intent {
 			return intent{}
 		}
 		fk := files[fi].Repo + "/" + files[fi].Path
-		if _, ok := st.data.Files[fk]; !ok {
-			return intent{toast: "El demo no trae el código de " + path.Base(files[fi].Path) + "."}
-		}
-		return intent{push: &route{screen: "archivo", key: fk}}
+		return intent{push: &route{screen: "archivo", key: fk, feature: r.key}}
 	case "a":
 		if !approval {
 			return intent{push: &route{screen: "agentes", key: r.key}}
 		}
 		if a, ok := planAction(p, "approve"); ok {
-			return intent{toast: actionToast("aprobar", a)}
+			return intent{toast: st.runAction(actionReq{label: "aprobar", a: a})}
 		}
 	case "c":
 		if a, ok := planAction(p, "change"); approval && ok {
-			return intent{toast: actionToast("cambiar", a)}
+			return intent{toast: st.runAction(actionReq{label: "cambiar", a: a})}
 		}
 	case "x":
 		if a, ok := planAction(p, "stop"); approval && ok {
-			return intent{toast: actionToast("parar", a)}
+			return intent{toast: st.runAction(actionReq{label: "parar", a: a})}
 		}
 	case "d":
 		if approval {

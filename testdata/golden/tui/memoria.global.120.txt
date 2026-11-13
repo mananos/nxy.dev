@@ -1,0 +1,22 @@
+   nxy      Inicio   ›Memoria    Gasto    Config                                         ● 2 decisiones    hoy $0.079   
+
+   Global   │   app                                                                                       [ ]  cambiar  
+
+     Tuyas, en todos los repos                                    se suman a las del repo donde trabaja cada agente   
+
+     Reglas tuyas                                          1        G1   regla tuya                          global   
+  ›  G1   Sin comentarios que repitan el código                                                                       
+                                                                    Sin comentarios que repitan el código             
+     Aprendizajes                                          1                                                          
+     A9   Preferir composición a herencia en los servicios          llega a    implementer, reviewer                  
+                                                                    vino de    chat · 08/10                           
+                                                                                                                      
+                                                                    entregada  6 veces                                
+                                                                    citada     1 · la última, 10/11                   
+                                                                                                                      
+                                                                    si un repo dice lo contrario,                     
+                                                                    gana el repo                                      
+                                                                                                                      
+                                                                     e  editar    x  borrar                           
+                                                                                                                      
+  ↑↓  mover     /  buscar     e  editar     x  borrar     +  nueva     [ ]  repo     esc  volver     ?  ayuda           

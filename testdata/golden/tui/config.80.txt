@@ -1,0 +1,29 @@
+   nxy      Inicio    Memoria    Gasto   ›Config            ● 2    hoy $0.079   
+
+   usuario   /srv/dev/nxyhome/config.json       repo   /srv/dev/… gana el repo  
+
+     Roles                         se aplica al próximo agente que se lance   
+     Rol             Qué hace                      Modelo  Effort  Origen     
+  ›  planner         Lee el repo y escribe el pla…                 default    
+     scout           Explora el repo con búsqueda…                 default    
+     implementer     Escribe el código de un lote…                 default    
+     reviewer        Revisa el diff completo con … opus    medium  repo       
+     reviewer-quick  Revisión corta para cambios …                 default    
+     refuter         Intenta refutar cada hallazg…                 default    
+     documenter      Actualiza la documentación d…                 default    
+
+     Módulos                                                                  
+       Filtro de salida                                                  sí   
+       Motor del filtro                                                auto   
+
+     Herramientas                                                             
+       ✓ rtk                                                         0.39.0   
+       ✓ rg                                                          14.1.0   
+       ○ codegraph                                   no está    i  instalar   
+       ○ d2                                          no está    i  instalar   
+       ○ nxy en el PATH                              no está    i  instalar   
+
+       Statusline   ○ no instalada                                            
+                     i  instalar · cambia /srv/dev/userdir/.claude/setting…   
+       Binario      2.0.0-dev                                                 
+  ↑↓  fila     e  modelo     f  effort     r  guardar en el repo     ?  ayuda   

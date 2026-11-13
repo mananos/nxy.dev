@@ -11,22 +11,25 @@ import (
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
-func testData(t *testing.T) *Data {
+func testSource(t *testing.T) *jsonSource {
 	t.Helper()
-	d, err := LoadDemo(os.DirFS("../.."))
+	s, err := newJSONSource(os.DirFS("../.."), "testdata/views")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return d
+	return s
 }
 
+// testData is everything the demo has, to look at what the screens must show.
+func testData(t *testing.T) *Data { return testSource(t).d }
+
 func TestScreensFit(t *testing.T) {
-	d := testData(t)
+	d := testSource(t)
 	for _, tg := range DumpTargets() {
 		for _, w := range []int{80, 120, 200} {
 			for _, nerd := range []bool{false, true} {
 				for _, plain := range []bool{true, false} {
-					out, err := Render(Options{Data: d, Width: w, Dark: true, Nerd: nerd, Plain: plain}, tg.ID, tg.Key)
+					out, err := Render(Options{Source: d, Demo: true, Width: w, Dark: true, Nerd: nerd, Plain: plain}, tg.ID, tg.Key)
 					if err != nil {
 						t.Fatalf("%s: %v", tg.ID, err)
 					}
@@ -46,7 +49,7 @@ func TestScreensFit(t *testing.T) {
 
 func dump(t *testing.T, target string, w int) string {
 	t.Helper()
-	out, err := Render(Options{Data: testData(t), Width: w, Dark: true, Plain: true}, target, "")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: w, Dark: true, Plain: true}, target, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +96,7 @@ func press(m *model, keys ...string) {
 
 func testModel(t *testing.T) *model {
 	t.Helper()
-	m := &model{st: newState(Options{Data: testData(t), Width: 100, Dark: true, Plain: true})}
+	m := &model{st: newState(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true, eager: true})}
 	m.st.height = 40
 	return m
 }
@@ -182,9 +185,9 @@ func TestWorktreesAndKeysDrop(t *testing.T) {
 }
 
 func TestDecisionBadgeNarrow(t *testing.T) {
-	d := testData(t)
-	wide, _ := Render(Options{Data: d, Width: 120, Plain: true}, "inicio", "")
-	narrow, _ := Render(Options{Data: d, Width: 80, Plain: true}, "inicio", "")
+	d := testSource(t)
+	wide, _ := Render(Options{Source: d, Demo: true, Width: 120, Plain: true}, "inicio", "")
+	narrow, _ := Render(Options{Source: d, Demo: true, Width: 80, Plain: true}, "inicio", "")
 	if !strings.Contains(wide, "decisi") {
 		t.Error("wide bar has no decisions label")
 	}
@@ -194,7 +197,7 @@ func TestDecisionBadgeNarrow(t *testing.T) {
 }
 
 func TestFeature(t *testing.T) {
-	out, err := Render(Options{Data: testData(t), Width: 100, Dark: true, Plain: true}, "feature", "F7K2")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "feature", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,6 +264,16 @@ func TestDecisionQueue(t *testing.T) {
 	// answering the first leaves the other
 	m = testModel(t)
 	press(m, "ctrl+n", "enter")
+	if m.st.answered["F7K2"] || m.st.toast != "llega en F5.4" {
+		t.Fatalf("a planned option answered: %v toast %q", m.st.answered, m.st.toast)
+	}
+	m = testModel(t)
+	for _, d := range m.st.data.Decisions {
+		for i := range d.Options {
+			d.Options[i].Action.Planned = false
+		}
+	}
+	press(m, "ctrl+n", "enter")
 	if !m.st.answered["F7K2"] || !m.st.decOpen || m.st.decCur != "F7K9" || m.st.decisionCount() != 1 {
 		t.Fatalf("after answering F7K2: %v open=%v cur=%s", m.st.answered, m.st.decOpen, m.st.decCur)
 	}
@@ -274,7 +287,7 @@ func TestPlanApproval(t *testing.T) {
 	if strings.Contains(out, "esperando tu aprobación") {
 		t.Fatal("the default plan (F7K2) is running, not waiting")
 	}
-	out, err := Render(Options{Data: testData(t), Width: 100, Dark: true, Plain: true}, "plan", "F7K9")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "plan", "F7K9")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,7 +320,7 @@ func TestPlanApproval(t *testing.T) {
 		t.Fatalf("the cursor starts on %d, want 0", got)
 	}
 	press(m, "a")
-	if !strings.Contains(m.st.toast, "nxy action decide --feature F7K9 --option 1") {
+	if m.st.toast != "llega en F5.4" {
 		t.Errorf("toast %q", m.st.toast)
 	}
 
@@ -337,14 +350,14 @@ func TestPlanApproval(t *testing.T) {
 }
 
 func TestPlanGraph(t *testing.T) {
-	wide, err := Render(Options{Data: testData(t), Width: 100, Dark: true, Plain: true}, "plan", "F7K2")
+	wide, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "plan", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(wide, "┬") || !strings.Contains(wide, "┘") || !strings.Contains(wide, "├") {
 		t.Errorf("the graph at 100 has no connectors:\n%s", wide)
 	}
-	narrow, err := Render(Options{Data: testData(t), Width: 80, Dark: true, Plain: true}, "plan", "F7K2")
+	narrow, err := Render(Options{Source: testSource(t), Demo: true, Width: 80, Dark: true, Plain: true}, "plan", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -409,8 +422,9 @@ func TestFileHunks(t *testing.T) {
 	if got := m.st.frame(true); !strings.Contains(got, "readonly titulo") || strings.Contains(got, "sin cambios") {
 		t.Errorf("v did not show the whole file:\n%s", got)
 	}
+	m.st.getenv = func(string) string { return "" }
 	press(m, "o")
-	if !strings.Contains(m.st.toast, "$EDITOR +36 src/app/notas/nota-credito.component.ts") {
+	if !strings.Contains(m.st.toast, "nota-credito.component.ts:36") {
 		t.Errorf("toast %q", m.st.toast)
 	}
 }
@@ -441,11 +455,16 @@ func TestPlanImpactOpensFile(t *testing.T) {
 	if top := m.st.top(); top.screen != "archivo" || top.key != componentKey {
 		t.Fatalf("top %+v", top)
 	}
-	// a file without a view in the demo says so instead of opening
+	// a file that does not load opens anyway and shows the error where the code goes
 	m.st.stack = m.st.targetStack("plan", "F7K2")
 	press(m, "down", "enter")
-	if m.st.top().screen != "plan" || !strings.Contains(m.st.toast, "no trae el código") {
-		t.Fatalf("top %+v toast %q", m.st.top(), m.st.toast)
+	top := m.st.top()
+	if top.screen != "archivo" || top.feature != "F7K2" || !strings.HasSuffix(top.key, "nota-parcial.model.ts") {
+		t.Fatalf("top %+v", top)
+	}
+	m.st.loadRoute(top)
+	if got := m.st.frame(true); !strings.Contains(got, "No se pudo cargar") {
+		t.Fatalf("no error block:\n%s", got)
 	}
 }
 
@@ -571,7 +590,7 @@ func TestMemoryScopes(t *testing.T) {
 	if !strings.Contains(g, "nxy propone pasarlo a regla") || !strings.Contains(g, "F6A1 · F7C3 · F7K2") {
 		t.Fatalf("learning detail:\n%s", g)
 	}
-	out, err := Render(Options{Data: testData(t), Width: 100, Dark: true, Plain: true}, "memoria", "global")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "memoria", "global")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -674,7 +693,7 @@ func TestMemoryDeleteUndo(t *testing.T) {
 	if _, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"}); cmd == nil {
 		t.Fatal("deleting should leave the undo timer")
 	}
-	if !strings.Contains(m.st.toast, "borrada K9 · u deshace") {
+	if !strings.Contains(m.st.toast, "$ nxy mem rm K9") || m.st.mem.undo == nil {
 		t.Fatalf("toast %q", m.st.toast)
 	}
 	if got := m.st.frame(true); strings.Contains(got, "K9   Los logs") {
@@ -684,11 +703,11 @@ func TestMemoryDeleteUndo(t *testing.T) {
 	if got := m.st.frame(true); !strings.Contains(got, "K9   Los logs") || m.st.mem.undo != nil {
 		t.Fatalf("u did not bring K9 back:\n%s", got)
 	}
-	// without u, the command shows when the window is over
+	// the undo window only lasts so long: after it u does nothing
 	press(m, "x", "y")
 	m.st.onMemExpire(m.st.mem.undo.seq)
-	if !strings.Contains(m.st.toast, "$ nxy mem rm K9") || strings.Contains(m.st.toast, "todavía no existe") || m.st.mem.undo != nil {
-		t.Fatalf("toast %q", m.st.toast)
+	if m.st.mem.undo != nil {
+		t.Fatal("the undo window should be over")
 	}
 }
 
@@ -702,11 +721,12 @@ func TestMemoryProposalAndCreate(t *testing.T) {
 		t.Fatal("the answered proposal is still on top")
 	}
 	press(m, "+")
-	if !strings.Contains(m.st.toast, "nxy mem rule") || strings.Contains(m.st.toast, "todavía no existe") {
+	// no form until F5.4: creating a rule does not run with placeholders
+	if m.st.toast != "llega en F5.4" {
 		t.Fatalf("+ toast %q", m.st.toast)
 	}
 	press(m, "[", "+")
-	if !strings.Contains(m.st.toast, "--global") || strings.Contains(m.st.toast, "todavía no existe") {
+	if m.st.toast != "llega en F5.4" {
 		t.Fatalf("global + toast %q", m.st.toast)
 	}
 }
@@ -778,7 +798,7 @@ func TestActionToastShared(t *testing.T) {
 	m := inConfig(t)
 	press(m, "down", "down")
 	press(m, "e")
-	if got := m.st.toast; !strings.HasPrefix(got, "correría · $ ") {
+	if got := m.st.toast; !strings.Contains(got, " · $ nxy config set roles.") {
 		t.Fatalf("config toast %q", got)
 	}
 }
@@ -824,7 +844,7 @@ func TestLookupUnknownPanics(t *testing.T) {
 }
 
 func TestRenderUnknownKey(t *testing.T) {
-	o := Options{Data: testData(t), Width: 100, Dark: true, Plain: true}
+	o := Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}
 	if _, err := Render(o, "feature", "ZZZZ"); err == nil || !strings.Contains(err.Error(), "F7K2") {
 		t.Fatalf("err %v", err)
 	}
@@ -867,9 +887,9 @@ func TestFullWidth(t *testing.T) {
 	if n := trimW(lineWith(inicio, "$4.62")); n < 190 {
 		t.Errorf("cost column ends at %d of 200", n)
 	}
-	d := testData(t)
+	d := testSource(t)
 	plan := func(w int) string {
-		out, err := Render(Options{Data: d, Width: w, Dark: true, Plain: true}, "plan", "F7K2")
+		out, err := Render(Options{Source: d, Demo: true, Width: w, Dark: true, Plain: true}, "plan", "F7K2")
 		if err != nil {
 			t.Fatal(err)
 		}

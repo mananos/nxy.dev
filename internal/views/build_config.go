@@ -21,6 +21,8 @@ type SettingIn struct {
 
 // ConfigIn is the data of Config: the screen holds the fixed tables, the caller the values.
 type ConfigIn struct {
+	// InRepo is false when the folder is not inside a repo: no repo layer and no repo actions.
+	InRepo     bool
 	Layers     []Layer
 	Roles      []RoleIn
 	Settings   []SettingIn
@@ -55,12 +57,18 @@ func BuildConfig(in ConfigIn) Config {
 		byRole[r.Role] = r
 	}
 	c := Config{
-		Layers:     append([]Layer{}, in.Layers...),
+		Layers:     []Layer{},
 		Roles:      []RoleRow{},
 		Settings:   []Setting{},
 		Statusline: in.Statusline,
 		Tools:      append([]Tool{}, in.Tools...),
 		Binary:     in.Binary,
+	}
+	for _, l := range in.Layers {
+		if l.Name == "repo" && !in.InRepo {
+			continue
+		}
+		c.Layers = append(c.Layers, l)
 	}
 	for _, info := range roleTable {
 		r := byRole[info.role]
@@ -73,12 +81,7 @@ func BuildConfig(in ConfigIn) Config {
 			Model: r.Model, Effort: r.Effort, Source: src,
 			Models:  append([]string{}, configedit.Models...),
 			Efforts: append([]string{}, configedit.Efforts...),
-			Actions: []Action{
-				setAction("model", "Modelo", "roles."+info.role+".model", false),
-				setAction("effort", "Esfuerzo", "roles."+info.role+".effort", false),
-				setAction("model_repo", "Modelo en este repo", "roles."+info.role+".model", true),
-				setAction("effort_repo", "Esfuerzo en este repo", "roles."+info.role+".effort", true),
-			},
+			Actions: roleActions(info.role, in.InRepo),
 		})
 	}
 	vals := map[string]SettingIn{}
@@ -98,16 +101,30 @@ func BuildConfig(in ConfigIn) Config {
 		if label == "" {
 			label = f.ID
 		}
+		acts := []Action{setAction("set", "Cambiar", f.ID, false)}
+		if in.InRepo {
+			acts = append(acts, setAction("set_repo", "Cambiar en este repo", f.ID, true))
+		}
 		c.Settings = append(c.Settings, Setting{
 			ID: f.ID, Label: label, Value: v.Value, Source: src,
 			Options: append([]any{}, f.Options...),
-			Actions: []Action{
-				setAction("set", "Cambiar", f.ID, false),
-				setAction("set_repo", "Cambiar en este repo", f.ID, true),
-			},
+			Actions: acts,
 		})
 	}
 	return c
+}
+
+func roleActions(role string, inRepo bool) []Action {
+	acts := []Action{
+		setAction("model", "Modelo", "roles."+role+".model", false),
+		setAction("effort", "Esfuerzo", "roles."+role+".effort", false),
+	}
+	if inRepo {
+		acts = append(acts,
+			setAction("model_repo", "Modelo en este repo", "roles."+role+".model", true),
+			setAction("effort_repo", "Esfuerzo en este repo", "roles."+role+".effort", true))
+	}
+	return acts
 }
 
 func setAction(id, label, key string, repo bool) Action {

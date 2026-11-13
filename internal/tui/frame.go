@@ -64,11 +64,12 @@ func (st *state) helpLines(w int) []line {
 		L(keycap("esc"), "  ", "sube un nivel; en la raíz de una sección vuelve a Inicio"),
 		L(keycap("tab"), "  ", "cambia de sección"),
 		L(keycap("q"), "  ", "salir"),
-		L(T("demo", tMu)),
 		L(keycap("ctrl+t"), "  ", "tema oscuro o claro"),
 		L(keycap("ctrl+g"), "  ", "íconos nerd o unicode"),
-		L(keycap("ctrl+n"), "  ", "simula que llega una decisión"),
 	)
+	if st.demo {
+		rows = append(rows, L(keycap("ctrl+n"), "  ", "simula que llega una decisión"))
+	}
 	inner := append(append([]line{nil}, rows...), nil)
 	return append([]line{nil}, indent(block(inner, w-4, tBg1, 3), 2)...)
 }
@@ -97,6 +98,10 @@ func (st *state) frame(dump bool) string {
 		head = append(head, paint(lr(L("  ", crumb(parts)), L(T("esc vuelve", tSb), "  "), cw)))
 	}
 
+	if st.stale {
+		head = append(head, paint(fit(L("  ", T("nxy se actualizó: cerrá y volvé a abrir", tNeed)), cw)))
+	}
+
 	var body []line
 	focus := 0
 	if st.help {
@@ -106,10 +111,18 @@ func (st *state) frame(dump bool) string {
 	}
 
 	foot := []string{}
-	if !dump && st.toast != "" {
+	if !dump && st.confirm != nil {
+		for _, s := range wrap(st.confirmLine(), cw-4) {
+			foot = append(foot, paint(fit(L("  ", T(s, tNeed)), cw)))
+		}
+	} else if !dump && st.toast != "" {
 		// the toast carries commands: wrap it instead of cutting it
+		tok := tAc
+		if st.toastErr {
+			tok = tFail
+		}
 		for _, s := range wrap(st.toast, cw-4) {
-			foot = append(foot, paint(fit(L("  ", T(s, tAc)), cw)))
+			foot = append(foot, paint(fit(L("  ", T(s, tok)), cw)))
 		}
 	}
 	hints := scr.keys(st, r)

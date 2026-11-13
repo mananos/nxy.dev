@@ -89,7 +89,7 @@ func trendBlock(title string, right line, rows []trendRow, iw int) []line {
 func (trendScreen) view(st *state, r route, w int) ([]line, int) {
 	t := st.data.Trend
 	if t == nil {
-		return indent([]line{nil, L(T("El demo no trae la tendencia.", tMu))}, 2), 0
+		return st.missing("trend", "No hay tendencia para mostrar.", w), 0
 	}
 	iw := w - 4 - 6
 	g := st.trendGroup(r)

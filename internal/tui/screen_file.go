@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
@@ -22,7 +24,7 @@ func (fileScreen) keys(st *state, r route) []hint {
 	if st.fileFull(r) {
 		v = hint{"v", "diff"}
 	}
-	return []hint{{"n N", "otro cambio"}, v, {"o", "editor"}, {"enter", "importador"}, {"↑↓", "importador"}}
+	return []hint{{"n N", "otro cambio"}, v, {"o", "editor"}, {"r", "recalcular"}, {"enter", "importador"}, {"↑↓", "importador"}}
 }
 
 func (st *state) fileFull(r route) bool { return st.cur[r.ckey()+"#v"] == 1 }
@@ -260,7 +262,7 @@ func (st *state) fileSide(f *views.File, imp, w int) []line {
 func (fileScreen) view(st *state, r route, w int) ([]line, int) {
 	f := st.data.Files[r.key]
 	if f == nil {
-		return indent([]line{nil, L(T("No hay datos de "+r.key+" en el demo.", tMu))}, 2), 0
+		return st.missing("file/"+r.key, "No hay datos de "+r.key+".", w), 0
 	}
 	iw := w - 4 - 6
 	full := st.fileFull(r)
@@ -319,6 +321,10 @@ func (fileScreen) view(st *state, r route, w int) ([]line, int) {
 }
 
 func (fileScreen) key(st *state, r route, k string) intent {
+	if k == "r" {
+		st.cmd = tea.Batch(st.cmd, st.topCmd(true))
+		return intent{toast: "Recalculando el archivo…"}
+	}
 	f := st.data.Files[r.key]
 	if f == nil {
 		return intent{}
@@ -341,17 +347,14 @@ func (fileScreen) key(st *state, r route, k string) intent {
 		if cur < len(f.Hunks) {
 			line = f.Hunks[cur].NewStart
 		}
-		return intent{toast: fmt.Sprintf("correría: $EDITOR +%d %s", line, f.Path)}
+		return intent{toast: st.openEditor(st.absFile(r.feature, f.Repo, f.Path), line)}
 	case "enter":
 		if len(f.ImportedBy) == 0 {
 			return intent{}
 		}
 		x := f.ImportedBy[imp]
 		key := f.Repo + "/" + x.Path
-		if _, ok := st.data.Files[key]; !ok {
-			return intent{toast: "El demo no trae el código de " + path.Base(x.Path) + "."}
-		}
-		return intent{push: &route{screen: "archivo", key: key}}
+		return intent{push: &route{screen: "archivo", key: key, feature: r.feature}}
 	}
 	return intent{}
 }

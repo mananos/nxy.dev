@@ -98,7 +98,7 @@ func (agentsScreen) view(st *state, r route, w int) ([]line, int) {
 	a := st.data.Agents[r.key]
 	f, _ := st.findFeature(r.key)
 	if a == nil {
-		return indent([]line{nil, L(T("No hay agentes de "+r.key+" en el demo.", tMu))}, 2), 0
+		return st.missing("agents/"+r.key, "No hay agentes de "+r.key+".", w), 0
 	}
 	rows := agentRows(st, r.key)
 	sel := st.agentsCursor(r, rows)

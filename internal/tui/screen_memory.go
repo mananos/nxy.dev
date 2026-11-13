@@ -647,7 +647,11 @@ func (memoryScreen) view(st *state, r route, w int) ([]line, int) {
 	scope := st.memScope(r)
 	mem := st.data.Memory[scope]
 	if mem == nil {
-		return indent([]line{nil, L(T("No hay memoria en el demo.", tMu))}, 2), 0
+		key := "memory/global"
+		if st.data.Errs["memory/repo"] != nil {
+			key = "memory/repo"
+		}
+		return st.missing(key, "No hay memoria para mostrar.", w), 0
 	}
 	m := st.memUI()
 	aw := w - 4
@@ -745,7 +749,14 @@ func (memoryScreen) key(st *state, r route, k string) intent {
 	case "/":
 		st.memOpenSearch()
 	case "+":
-		return intent{toast: actionToast("Nueva regla", st.data.Memory[scope].Create)}
+		mem := st.data.Memory[scope]
+		if mem == nil {
+			return intent{}
+		}
+		// no form until F5.4: the action still has its placeholders
+		a := mem.Create
+		a.Planned = true
+		return intent{toast: st.runAction(actionReq{label: "Nueva regla", a: a})}
 	case "u":
 		return st.memUndo()
 	case "e":
@@ -764,11 +775,12 @@ func (memoryScreen) key(st *state, r route, k string) intent {
 		if p == nil {
 			return intent{toast: "No hay una propuesta para " + row.it.id + "."}
 		}
-		m.answered[scope+"/"+p.ID] = true
+		pk := scope + "/" + p.ID
+		after := func() { m.answered[pk] = true }
 		if k == "y" {
-			return intent{toast: actionToast(p.Accept.Label, p.Accept)}
+			return intent{toast: st.runAction(actionReq{label: p.Accept.Label, a: planIfForm(p.Accept), after: after})}
 		}
-		return intent{toast: actionToast("Se queda "+p.Target, p.Reject)}
+		return intent{toast: st.runAction(actionReq{label: "Se queda " + p.Target, a: p.Reject, after: after})}
 	case "enter":
 		switch row.kind {
 		case "head":
@@ -820,8 +832,10 @@ func (st *state) memOpenFile(it *memItem) intent {
 		return intent{}
 	}
 	for _, f := range files {
-		if _, ok := st.data.Files[it.scope+"/"+f]; ok {
-			return intent{push: &route{screen: "archivo", key: it.scope + "/" + f}}
+		key := it.scope + "/" + f
+		_, loaded := st.data.Files[key]
+		if feat := st.featureOfFile(key); loaded || feat != "" {
+			return intent{push: &route{screen: "archivo", key: key, feature: feat}}
 		}
 	}
 	if len(files) == 0 {

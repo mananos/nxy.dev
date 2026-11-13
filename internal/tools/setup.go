@@ -33,10 +33,19 @@ func RunPlan(plan setup.Plan) setup.RunResult {
 	return setup.Run(plan, runStep)
 }
 
+// stepArgs are the args a step really runs with: winget gets the agreements flags so it never
+// waits for a prompt nobody can answer (the plan's Display, and the 1.x golden, stay as they are).
+func stepArgs(s setup.Step) []string {
+	if s.File != "winget" {
+		return s.Args
+	}
+	return append(append([]string{}, s.Args...), "--accept-source-agreements", "--accept-package-agreements")
+}
+
 func runStep(s setup.Step) setup.SpawnResult {
 	ctx, cancel := context.WithTimeout(context.Background(), stepTimeout)
 	defer cancel()
-	c := exec.CommandContext(ctx, s.File, s.Args...)
+	c := exec.CommandContext(ctx, s.File, stepArgs(s)...)
 	hideWindow(c)
 	var stdout, stderr bytes.Buffer
 	c.Stdout, c.Stderr = &stdout, &stderr

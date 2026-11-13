@@ -1,0 +1,18 @@
+   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+  Inicio › FEAT-B › Agentes                                         esc vuelve  
+
+     Agentes                                              7 agentes · $0.18   
+     Agente               Modelo            ↓ tiempo       $                  
+  ›  ○ Hilo principal     sonnet-4.6     3.0k 3h 00m   $0.03   Agent          
+     ├ ✓ planner          sonnet-4.6     2.5k     6m   $0.04                  
+     │ └ ✓ scout          haiku-5.5       900     3m   $0.00                  
+     ├ ✓ lote 1           sonnet-4.6     1.2k    20m   $0.08                  
+     ├ ● lote 2           sonnet-4.6     1.3k 1h 00m   $0.03   Edit           
+     ├ ● lote 3                             0    50m   $0.00                  
+     └ ○ lote 4                                                espera a 2,3   
+
+     Hilo principal                                       sonnet-4.6 · high   
+     herramientas  Agent 1                                                    
+     recibió       nada                                                       
+     aprendió      nada                                                       
+  ↑↓  agente     enter  plegar     d  decidir     ?  ayuda                      

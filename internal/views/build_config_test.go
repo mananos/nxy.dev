@@ -7,6 +7,7 @@ import (
 
 func TestBuildConfig(t *testing.T) {
 	c := BuildConfig(ConfigIn{
+		InRepo:   true,
 		Roles:    []RoleIn{{Role: "planner", Model: "opus", Effort: "high", Source: "user"}, {Role: "scout", Model: "haiku", Source: "repo"}},
 		Settings: []SettingIn{{ID: "modules.filter", Value: false, Source: "env"}},
 	})
@@ -43,5 +44,29 @@ func TestBuildConfig(t *testing.T) {
 	}
 	if c.Layers == nil || c.Tools == nil {
 		t.Error("lists must not be nil")
+	}
+}
+
+func TestBuildConfigOutsideRepo(t *testing.T) {
+	c := BuildConfig(ConfigIn{
+		InRepo: false,
+		Layers: []Layer{{Name: "user", Path: "u"}, {Name: "repo", Path: "r"}},
+	})
+	if len(c.Layers) != 1 || c.Layers[0].Name != "user" {
+		t.Errorf("layers %+v", c.Layers)
+	}
+	for _, r := range c.Roles {
+		for _, a := range r.Actions {
+			if a.ID == "model_repo" || a.ID == "effort_repo" {
+				t.Errorf("%s has %s", r.Role, a.ID)
+			}
+		}
+	}
+	for _, s := range c.Settings {
+		for _, a := range s.Actions {
+			if a.ID == "set_repo" {
+				t.Errorf("%s has set_repo", s.ID)
+			}
+		}
 	}
 }

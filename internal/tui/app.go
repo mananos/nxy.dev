@@ -1,27 +1,58 @@
 package tui
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/mananos/nxy.dev/internal/views"
 )
 
-// Options configure the prototype. Width only matters for Render.
+// Options configure the TUI. Width only matters for Render.
 type Options struct {
-	Data  *Data
-	Width int
-	Dark  bool
-	Nerd  bool
-	Plain bool
+	Source views.Source
+	InRepo bool // the folder is inside a repo: Memory has the repo and Config the repo layer
+	Demo   bool // sample data: ctrl+n simulates a decision
+	Width  int
+	Dark   bool
+	Nerd   bool
+	Plain  bool
+	// FileFeature is the feature of the file a dump of archivo shows (empty: the one whose plan
+	// touches it).
+	FileFeature string
+	// Watch polls the db: its data version (it changes with every write of another process) and
+	// its schema version. Nil (demo, golden): no refresh.
+	Watch func(ctx context.Context) (version int64, schema int, err error)
+	// Ver is the data_version read before the first load (HaveVer): a change after it reloads.
+	Ver     int64
+	HaveVer bool
+	// Schema is the newest schema this binary knows; a db above it means nxy was updated.
+	Schema int
+	// Run runs a command of nxy (argv[0] is "nxy") and returns what it printed. Nil (demo): the
+	// buttons only say what they would run.
+	Run func(ctx context.Context, argv []string) (out string, err error)
+	// Getenv, GOOS and LookPath are the system the editor and the clipboard look at; nil: the
+	// real ones (tests replace them).
+	Getenv   func(string) string
+	GOOS     string
+	LookPath func(string) (string, error)
+
+	eager bool // load every view up front (tests that drive the screens with keys)
 }
 
 // route is one level of the path: a screen and what it shows (a feature, a memory scope, a file).
 type route struct {
 	screen string
 	key    string
+	// feature is the feature of a file ("archivo"): its key is the repo and the path only.
+	feature string
 }
 
 func (r route) ckey() string { return r.screen + "/" + r.key }
@@ -97,15 +128,57 @@ type state struct {
 	folded    map[string]bool   // agents folded in the tree
 	mem       *memUI            // the memory screen (see memory_search.go)
 	cmd       tea.Cmd           // what a key leaves for the program to run (the undo timer)
-	cfg       map[string]string // roles changed in this run: "<role>/model" and "<role>/model#src"
 	cfgKind   string            // model or effort: what `r` saves in the repo
+	ld        *loader           // where the views come from
+	cheapBusy bool              // a cheap load is in flight
+	demo      bool
+	dumpFeat  string // the feature of the file a dump shows
+
+	watch      func(ctx context.Context) (int64, int, error)
+	schema     int
+	haveVer    bool  // lastVer is the first reading
+	lastVer    int64 // last data_version seen
+	stale      bool  // the db is from a newer nxy
+	cheapDirty bool  // a refresh came while a cheap load was in flight
+	liveOn     bool  // the one-second tick is armed
+
+	run      func(ctx context.Context, argv []string) (string, error)
+	confirm  *actionReq        // an action waits for y/n
+	busy     map[string]string // row key → the running line of a command in flight
+	toastErr bool              // the toast is a failure
+	errNext  bool              // the toast runAction just returned is a failure
+	cfgPend  map[string]string // value picked with e and not saved: "role/kind" or "setting/id"
+
+	getenv   func(string) string
+	goos     string
+	lookPath func(string) (string, error)
 }
 
 func newState(o Options) *state {
-	st := &state{data: o.Data, dark: o.Dark, nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
+	st := &state{data: newData(), dark: o.Dark, nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
 		stack: []route{{screen: "inicio"}}, cur: map[string]int{}, postponed: map[string]bool{},
-		answered: map[string]bool{}, folded: map[string]bool{}}
+		answered: map[string]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
+		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, cfgPend: map[string]string{}}
+	st.haveVer, st.lastVer = o.HaveVer, o.Ver
+	st.getenv, st.goos, st.lookPath = o.Getenv, o.GOOS, o.LookPath
+	if st.getenv == nil {
+		st.getenv = os.Getenv
+	}
+	if st.goos == "" {
+		st.goos = runtime.GOOS
+	}
+	if st.lookPath == nil {
+		st.lookPath = exec.LookPath
+	}
+	// the screens read the cockpit without asking: until it loads it is an empty one
+	st.data.Cockpit = &views.Cockpit{}
+	if o.Source != nil {
+		st.ld = &loader{ctx: context.Background(), src: o.Source, inRepo: o.InRepo}
+	}
 	st.restyle()
+	if o.eager {
+		st.loadAll()
+	}
 	return st
 }
 
@@ -132,7 +205,7 @@ func (st *state) currentSection() string { return st.lookup(st.stack[0].screen).
 
 func (st *state) goSection(id string) {
 	st.stack = []route{{screen: id}}
-	st.toast = ""
+	st.toast, st.toastErr = "", false
 }
 
 // pop takes one level out; at the root of a section it goes back to Inicio.
@@ -143,15 +216,16 @@ func (st *state) pop() {
 	case st.stack[0].screen != "inicio":
 		st.goSection("inicio")
 	}
-	st.toast = ""
+	st.toast, st.toastErr = "", false
 }
 
 func (st *state) decisionCount() int { return len(st.pending()) }
 
 func (st *state) apply(in intent) {
 	if in.toast != "" {
-		st.toast = in.toast
+		st.toast, st.toastErr = in.toast, st.errNext
 	}
+	st.errNext = false
 	if in.section != "" {
 		st.goSection(in.section)
 	}
@@ -171,6 +245,10 @@ func (st *state) apply(in intent) {
 func (st *state) onKey(k string) (quit bool) {
 	if k == "ctrl+c" {
 		return true
+	}
+	if st.confirm != nil {
+		st.confirmKey(k)
+		return false
 	}
 	if st.help {
 		st.help = false
@@ -197,7 +275,9 @@ func (st *state) onKey(k string) (quit bool) {
 		st.nerd = !st.nerd
 		st.restyle()
 	case "ctrl+n":
-		st.openDecision("")
+		if st.demo {
+			st.openDecision("")
+		}
 	case "tab", "shift+tab":
 		d := 1
 		if k == "shift+tab" {
@@ -219,6 +299,23 @@ func (st *state) onKey(k string) (quit bool) {
 
 // Target is a screen of the dump: --dump <ID> --feature <Key>.
 type Target struct{ ID, Key string }
+
+// loadsKey is for a dump of a feature that is not in the cockpit (a plan, the agents or the
+// engineer of a feature that is not active): true when the source has the view of the target.
+func (st *state) loadsKey(target, key string) bool {
+	switch {
+	case target == "plan":
+		st.data.merge(st.ld.plan(key))
+		return st.data.Plans[key] != nil
+	case target == "agentes":
+		st.data.merge(st.ld.agents(key))
+		return st.data.Agents[key] != nil
+	case strings.HasPrefix(target, "ingeniero"):
+		st.data.merge(st.ld.engineer(key))
+		return st.data.Engineer[key] != nil
+	}
+	return false
+}
 
 // DumpTargets lists what `nxy tui --demo --dump` can print.
 func DumpTargets() []Target {
@@ -256,8 +353,12 @@ func (st *state) targetStack(id, key string) []route {
 	case "plan":
 		return []route{{screen: "inicio"}, {screen: "feature", key: key}, {screen: "plan", key: key}}
 	case "archivo", "archivo.entero":
-		if f := st.featureOfFile(key); f != "" {
-			return []route{{screen: "inicio"}, {screen: "feature", key: f}, {screen: "plan", key: f}, {screen: "archivo", key: key}}
+		f := st.dumpFeat
+		if f == "" {
+			f = st.featureOfFile(key)
+		}
+		if f != "" {
+			return []route{{screen: "inicio"}, {screen: "feature", key: f}, {screen: "plan", key: f}, {screen: "archivo", key: key, feature: f}}
 		}
 		return []route{{screen: "inicio"}, {screen: "archivo", key: key}}
 	}
@@ -273,7 +374,16 @@ func (d *Data) validKeys(target string) []string {
 			out = append(out, k)
 		}
 	case strings.HasPrefix(target, "archivo"):
+		seen := map[string]bool{}
 		for k := range d.Files {
+			seen[k] = true
+		}
+		for _, p := range d.Plans {
+			for _, f := range p.Impact.Files {
+				seen[f.Repo+"/"+f.Path] = true
+			}
+		}
+		for k := range seen {
 			out = append(out, k)
 		}
 	case target == "decision":
@@ -292,38 +402,66 @@ func (d *Data) validKeys(target string) []string {
 // Render draws a target without running a program (dump and tests). key picks the feature,
 // the memory scope or the file; empty is the default of the target.
 func Render(o Options, target, key string) (string, error) {
-	if o.Data == nil || o.Data.Cockpit == nil {
+	if o.Source == nil {
 		return "", fmt.Errorf("tui: no data")
 	}
 	if o.Width < 40 {
 		return "", fmt.Errorf("tui: width %d is too small", o.Width)
 	}
-	found, keyed := false, false
+	found := false
+	var defaults []string
 	for _, t := range DumpTargets() {
 		if t.ID == target {
-			if !found && key == "" {
-				key = t.Key
-			}
 			found = true
-			keyed = keyed || t.Key != ""
+			if t.Key != "" {
+				defaults = append(defaults, t.Key)
+			}
 		}
 	}
 	if !found {
 		return "", fmt.Errorf("tui: unknown target %q", target)
 	}
-	if keyed {
-		valid := o.Data.validKeys(target)
-		i := sort.SearchStrings(valid, key)
-		if i >= len(valid) || valid[i] != key {
+	st := newState(o)
+	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	if err := st.data.Errs["cockpit"]; err != nil {
+		return "", fmt.Errorf("tui: %w", err)
+	}
+	if len(defaults) > 0 {
+		isFile := strings.HasPrefix(target, "archivo")
+		if isFile && (key == "" || st.dumpFeat == "") {
+			for _, f := range st.data.Cockpit.Features {
+				st.data.merge(st.ld.plan(f.ID))
+			}
+		}
+		valid := st.data.validKeys(target)
+		has := func(k string) bool {
+			i := sort.SearchStrings(valid, k)
+			return i < len(valid) && valid[i] == k
+		}
+		switch {
+		case key == "":
+			for _, k := range defaults {
+				if has(k) {
+					key = k
+					break
+				}
+			}
+			if key == "" && len(valid) > 0 {
+				key = valid[0]
+			}
+			if key == "" {
+				return "", fmt.Errorf("tui: nothing to show for %q", target)
+			}
+		case !isFile && !has(key) && !st.loadsKey(target, key):
 			return "", fmt.Errorf("tui: %q is not a valid key for %q; valid: %s", key, target, strings.Join(valid, ", "))
 		}
 	}
-	st := newState(o)
 	if target == "decision" {
 		st.openDecision(key)
 		return st.frame(true), nil
 	}
 	st.stack = st.targetStack(target, key)
+	st.loadRoute(st.top())
 	if target == "archivo.entero" {
 		st.cur[st.top().ckey()+"#v"] = 1
 	}
@@ -344,16 +482,22 @@ func Render(o Options, target, key string) (string, error) {
 // model is the Bubble Tea program.
 type model struct{ st *state }
 
-// Run opens the interactive prototype.
+// Run opens the interactive TUI.
 func Run(o Options) error {
-	if o.Data == nil || o.Data.Cockpit == nil {
+	if o.Source == nil {
 		return fmt.Errorf("tui: no data")
 	}
-	_, err := tea.NewProgram(&model{st: newState(o)}).Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	st := newState(o)
+	st.ld.ctx = ctx
+	_, err := tea.NewProgram(&model{st: st}).Run()
 	return err
 }
 
-func (m *model) Init() tea.Cmd { return tea.RequestBackgroundColor }
+func (m *model) Init() tea.Cmd {
+	return tea.Batch(tea.RequestBackgroundColor, m.st.cheapCmd(), m.st.topCmd(false), m.st.pollCmd())
+}
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -368,7 +512,34 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.st.onKey(msg.String()) {
 			return m, tea.Quit
 		}
-		return m, m.st.takeCmd()
+		// the screen the key led to may need its view
+		return m, tea.Batch(m.st.takeCmd(), m.st.topCmd(false))
+	case cheapMsg:
+		m.st.onLoad(msg)
+		cmds := []tea.Cmd{m.st.liveTickCmd()}
+		if m.st.cheapDirty {
+			m.st.cheapDirty = false
+			cmds = append(cmds, m.st.cheapCmd())
+		}
+		return m, tea.Batch(cmds...)
+	case topMsg:
+		m.st.onLoad(msg)
+	case pollTick:
+		return m, m.st.pollCmd()
+	case pollMsg:
+		return m, m.st.onPoll(msg)
+	case liveTick:
+		return m, m.st.onLive()
+	case actionDoneMsg:
+		return m, tea.Batch(m.st.onActionDone(msg), m.st.takeCmd())
+	case editorDoneMsg:
+		if msg.err != nil {
+			m.st.toast, m.st.toastErr = "el editor falló: "+msg.err.Error(), true
+		}
+	case clipDoneMsg:
+		if msg.err != nil {
+			m.st.toast, m.st.toastErr = "no se pudo copiar con "+msg.name+": "+msg.err.Error(), true
+		}
 	case memExpireMsg:
 		m.st.onMemExpire(msg.seq)
 	}

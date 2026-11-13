@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -21,6 +23,10 @@ func isolateView(t *testing.T) string {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("NXY_HOME", t.TempDir())
 	proj := t.TempDir()
+	// an empty .git is all GitRoot looks for: the folder counts as a repo
+	if err := os.Mkdir(filepath.Join(proj, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("CLAUDE_PROJECT_DIR", proj)
 	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
 	return proj

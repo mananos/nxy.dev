@@ -1,8 +1,11 @@
 package tui
 
 import (
+	"fmt"
 	"path"
 	"strings"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/mananos/nxy.dev/internal/views"
 )
@@ -15,13 +18,28 @@ func (configScreen) id() string                 { return "config" }
 func (configScreen) section() string            { return "config" }
 func (configScreen) crumb(*state, route) string { return "Config" }
 
-func (configScreen) keys(*state, route) []hint {
-	return []hint{{"↑↓", "fila"}, {"e", "modelo"}, {"f", "effort"}, {"r", "guardar en el repo"}, {"i", "instalar"}, {"c", "copiar"}}
+func (configScreen) keys(st *state, _ route) []hint {
+	h := []hint{{"↑↓", "fila"}, {"e", "modelo"}, {"f", "effort"}}
+	if c := st.data.Config; c != nil && hasRepoActions(c) {
+		h = append(h, hint{"r", "guardar en el repo"})
+	}
+	return append(h, hint{"i", "instalar"}, hint{"c", "copiar"})
+}
+
+// hasRepoActions tells whether the view brings the actions that save in the repo (it does not
+// outside a repo).
+func hasRepoActions(c *views.Config) bool {
+	for _, ro := range c.Roles {
+		if _, ok := roleAction(ro, "model_repo"); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // cfgRow is one row the cursor can stand on.
 type cfgRow struct {
-	kind string // role|tool|statusline|binary
+	kind string // role|setting|tool|statusline|binary
 	idx  int
 }
 
@@ -29,6 +47,9 @@ func cfgRows(c *views.Config) []cfgRow {
 	var out []cfgRow
 	for i := range c.Roles {
 		out = append(out, cfgRow{"role", i})
+	}
+	for i := range c.Settings {
+		out = append(out, cfgRow{"setting", i})
 	}
 	for i := range c.Tools {
 		out = append(out, cfgRow{"tool", i})
@@ -40,12 +61,9 @@ func (st *state) cfgCursor(r route, n int) int {
 	return min(max(st.cur[r.ckey()], 0), max(n-1, 0))
 }
 
-// cfgValue is what a role has now: the view's value unless this run changed it. kind is
-// model or effort. The second value is where it comes from.
+// cfgValue is what a role has now, from the view. kind is model or effort. The second value is
+// where it comes from.
 func (st *state) cfgValue(ro views.RoleRow, kind string) (string, string) {
-	if v, ok := st.cfg[ro.Role+"/"+kind]; ok {
-		return v, st.cfg[ro.Role+"/"+kind+"#src"]
-	}
 	if kind == "model" {
 		return ro.Model, ro.Source
 	}
@@ -117,48 +135,22 @@ func (configScreen) key(st *state, r route, k string) intent {
 	rows := cfgRows(c)
 	sel := st.cfgCursor(r, len(rows))
 	cur := rows[sel]
-	if st.cfg == nil {
-		st.cfg = map[string]string{}
-	}
 	switch k {
 	case "up", "k":
 		st.setCursor(r, max(sel-1, 0))
 	case "down", "j":
 		st.setCursor(r, min(sel+1, len(rows)-1))
 	case "e", "f", "r":
-		if cur.kind != "role" {
-			return intent{toast: "Elegí un rol para cambiarle el modelo o el effort."}
-		}
-		ro := c.Roles[cur.idx]
-		kind, repo := "model", false
-		switch k {
-		case "f":
-			kind = "effort"
-		case "r":
-			kind, repo = st.cfgKind, true
-			if kind == "" {
-				kind = "model"
+		switch cur.kind {
+		case "role":
+			return st.cfgRole(c.Roles[cur.idx], k)
+		case "setting":
+			if k == "f" {
+				return intent{toast: "El effort es de los roles; un módulo se cambia con e."}
 			}
+			return st.cfgSetting(c.Settings[cur.idx], k == "r")
 		}
-		now, _ := st.cfgValue(ro, kind)
-		opts := ro.Models
-		if kind == "effort" {
-			opts = ro.Efforts
-		}
-		next, id, src := now, kind, "user"
-		if repo {
-			id, src = kind+"_repo", "repo"
-		} else {
-			next = cycle(opts, now)
-			st.cfgKind = kind
-		}
-		a, ok := roleAction(ro, id)
-		if !ok {
-			return intent{toast: "El demo no trae la acción " + id + " de " + ro.Role + "."}
-		}
-		st.cfg[ro.Role+"/"+kind] = next
-		st.cfg[ro.Role+"/"+kind+"#src"] = src
-		return intent{toast: actionToast("correría", withValue(a, next))}
+		return intent{toast: "Elegí un rol o un módulo para cambiarlo."}
 	case "i":
 		switch cur.kind {
 		case "tool":
@@ -166,12 +158,12 @@ func (configScreen) key(st *state, r route, k string) intent {
 			if t.Found || t.Install == nil {
 				return intent{toast: t.Name + " ya está instalada."}
 			}
-			return intent{toast: actionToast("instalar", *t.Install)}
+			return intent{toast: st.runAction(actionReq{key: "tool/" + t.Name, label: "instalar " + t.Name, busy: "instalando " + t.Name + "…", a: *t.Install})}
 		case "statusline":
 			if c.Statusline.Installed {
-				return intent{toast: "La statusline ya está instalada."}
+				return intent{toast: st.runAction(actionReq{key: "statusline", label: "quitar la statusline", busy: "quitando…", a: c.Statusline.Remove})}
 			}
-			return intent{toast: actionToast("instalar", c.Statusline.Install)}
+			return intent{toast: st.runAction(actionReq{key: "statusline", label: "instalar la statusline", busy: "instalando…", a: c.Statusline.Install})}
 		}
 		return intent{toast: "Elegí una herramienta o la statusline para instalar."}
 	case "c":
@@ -181,9 +173,81 @@ func (configScreen) key(st *state, r route, k string) intent {
 		if c.Binary.ManualCommand == "" {
 			return intent{toast: "No hace falta descargar nada."}
 		}
-		return intent{toast: "copiaría · " + c.Binary.ManualCommand}
+		cp, toast := st.copyText(c.Binary.ManualCommand)
+		st.cmd = tea.Batch(st.cmd, cp)
+		return intent{toast: toast}
 	}
 	return intent{}
+}
+
+// cfgRole handles e, f and r on a role. e and f move to the next value and ask y/n with it; n
+// leaves it pending for the next press; r saves in the repo the pending value (or the current).
+func (st *state) cfgRole(ro views.RoleRow, k string) intent {
+	kind, repo := "model", false
+	switch k {
+	case "f":
+		kind = "effort"
+	case "r":
+		kind, repo = st.cfgKind, true
+		if kind == "" {
+			kind = "model"
+		}
+	}
+	pk := ro.Role + "/" + kind
+	now, _ := st.cfgValue(ro, kind)
+	if v, ok := st.cfgPend[pk]; ok {
+		now = v
+	}
+	opts := ro.Models
+	if kind == "effort" {
+		opts = ro.Efforts
+	}
+	next, id := now, kind
+	if repo {
+		id = kind + "_repo"
+	} else {
+		next = cycle(opts, now)
+		st.cfgKind = kind
+		st.cfgPend[pk] = next
+	}
+	a, ok := roleAction(ro, id)
+	if !ok {
+		return intent{toast: "Esta carpeta no es un repo: no hay dónde guardarlo."}
+	}
+	return intent{toast: st.runAction(actionReq{label: next + " para " + ro.Role, a: withValue(a, next),
+		after: func() { delete(st.cfgPend, pk) }})}
+}
+
+// cfgSetting is the same for a module: e cycles its options, r saves the value in the repo.
+func (st *state) cfgSetting(s views.Setting, repo bool) intent {
+	pk := "setting/" + s.ID
+	now := fmt.Sprint(s.Value)
+	if v, ok := st.cfgPend[pk]; ok {
+		now = v
+	}
+	var opts []string
+	for _, o := range s.Options {
+		opts = append(opts, fmt.Sprint(o))
+	}
+	next, id := now, "set"
+	if repo {
+		id = "set_repo"
+	} else {
+		next = cycle(opts, now)
+		st.cfgPend[pk] = next
+	}
+	var a views.Action
+	found := false
+	for _, x := range s.Actions {
+		if x.ID == id {
+			a, found = x, true
+		}
+	}
+	if !found {
+		return intent{toast: "Esta carpeta no es un repo: no hay dónde guardarlo."}
+	}
+	return intent{toast: st.runAction(actionReq{label: valueText(next) + " para " + s.Label, a: withValue(a, next),
+		after: func() { delete(st.cfgPend, pk) }})}
 }
 
 // lead is the two cells before a selectable row; in plain a selected one shows ›.
@@ -197,7 +261,7 @@ func lead(selected bool) seg {
 func (configScreen) view(st *state, r route, w int) ([]line, int) {
 	c := st.data.Config
 	if c == nil {
-		return indent([]line{nil, L(T("El demo no trae la config.", tMu))}, 2), 0
+		return st.missing("config", "No hay config para mostrar.", w), 0
 	}
 	iw := w - 4 - 6
 	rows := cfgRows(c)
@@ -240,16 +304,9 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 	prevStage := ""
 	for i, ro := range c.Roles {
 		isSel := sel == i
-		model, msrc := st.cfgValue(ro, "model")
-		effort, esrc := st.cfgValue(ro, "effort")
+		model, _ := st.cfgValue(ro, "model")
+		effort, _ := st.cfgValue(ro, "effort")
 		src := ro.Source
-		_, mset := st.cfg[ro.Role+"/model"]
-		_, eset := st.cfg[ro.Role+"/effort"]
-		if msrc == "repo" && mset || esrc == "repo" && eset {
-			src = "repo"
-		} else if mset || eset {
-			src = "user"
-		}
 		stage := ""
 		if ro.Stage != prevStage {
 			stage = ro.Stage
@@ -292,18 +349,31 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 		colW[1] = w - 4 - 2 - colW[0]
 	}
 	mods := []line{L(B("Módulos", ""))}
-	for _, s := range c.Settings {
-		mods = append(mods, lr(L(s.Label), L(B(valueText(s.Value), "")), colW[0]-6))
+	for i, s := range c.Settings {
+		isSel := sel == len(c.Roles)+i
+		l := lr(L(lead(isSel), T(s.Label, "")), L(B(valueText(s.Value), "")), colW[0]-6)
+		if isSel {
+			l = bgize(l, tSel)
+			focus = len(out) + len(mods)
+		}
+		mods = append(mods, l)
 	}
+	toolBase := len(c.Roles) + len(c.Settings)
 	tools := []line{L(B("Herramientas", ""))}
 	for i, t := range c.Tools {
-		isSel := sel == len(c.Roles)+i
+		isSel := sel == toolBase+i
 		ld := lead(isSel)
 		var l line
-		if t.Found {
-			l = lr(L(ld, T(st.ic.Done+" ", tDone), T(t.Name, "")), L(T(t.Version, tMu)), colW[1]-6)
+		tname := t.Name
+		if tname == "nxy" {
+			tname = "nxy en el PATH"
+		}
+		if run := st.busy["tool/"+t.Name]; run != "" {
+			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(tname, "")), L(T(run, tWork)), colW[1]-6)
+		} else if t.Found {
+			l = lr(L(ld, T(st.ic.Done+" ", tDone), T(tname, "")), L(T(t.Version, tMu)), colW[1]-6)
 		} else {
-			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(t.Name, "")), L(T("no está   ", tSb), keycap("i"), T(" instalar", tMu)), colW[1]-6)
+			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(tname, "")), L(T("no está   ", tSb), keycap("i"), T(" instalar", tMu)), colW[1]-6)
 		}
 		if isSel {
 			l = bgize(l, tSel)
@@ -316,7 +386,7 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 		out = append(out, indent(mb, 2)...)
 		out = append(out, nil)
 		out = append(out, indent(tb, 2)...)
-		focus = focusFix(focus, sel, len(c.Roles), len(c.Tools), len(out)-len(tb))
+		focus = focusFix(focus, sel, toolBase, len(c.Tools), len(out)-len(tb))
 	} else {
 		out = append(out, indent(hcat([][]line{mb, tb}, colW[:], 2), 2)...)
 	}
@@ -324,11 +394,14 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 
 	// statusline and binary
 	sl := c.Statusline
-	slSel, binSel := sel == len(c.Roles)+len(c.Tools), sel == len(c.Roles)+len(c.Tools)+1
+	slSel, binSel := sel == toolBase+len(c.Tools), sel == toolBase+len(c.Tools)+1
 	var slText line
 	var slHint line
-	if sl.Installed {
+	if run := st.busy["statusline"]; run != "" {
+		slText = L(T(run, tWork))
+	} else if sl.Installed {
 		slText = L(T(st.ic.Done+" instalada", tDone))
+		slHint = L(keycap("i"), T(" quitar", tMu))
 	} else {
 		slText = L(T(st.ic.Pending+" no instalada", tMu))
 		slHint = L(keycap("i"), T(" instalar · cambia "+sl.SettingsPath, tMu))

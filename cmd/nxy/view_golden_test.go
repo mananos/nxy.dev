@@ -108,7 +108,8 @@ func TestViewGolden(t *testing.T) {
 	web := filepath.Join(root, "web")
 	pagos := filepath.Join(root, "pagos")
 	pagosWT := filepath.Join(root, "pagos-wt")
-	for _, d := range []string{home, nxyHome, filepath.Join(cwd, "src", "billing"), web, pagos, pagosWT} {
+	// an empty .git is all GitRoot looks for: the folder is "inside a repo" (Config, Memoria)
+	for _, d := range []string{home, nxyHome, filepath.Join(cwd, "src", "billing"), filepath.Join(cwd, ".git"), web, pagos, pagosWT} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -140,6 +141,9 @@ func TestViewGolden(t *testing.T) {
 	viewBinary = func() views.Binary {
 		return views.Binary{Installed: "2.0.0-dev", Wanted: "2.0.0-dev", Path: "~/.nxy/bin/nxy", Download: "none"}
 	}
+	oldP := nxyOnPath
+	t.Cleanup(func() { nxyOnPath = oldP })
+	nxyOnPath = func() string { return "" }
 	dirty := 2
 	viewWorktrees = func(_ context.Context, dir string) (platform.WorktreeList, error) {
 		if !platform.SamePath(dir, pagos) {

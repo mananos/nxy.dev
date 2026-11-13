@@ -699,6 +699,25 @@
         "confirm": "Instala d2",
         "planned": false
       }
+    },
+    {
+      "name": "nxy",
+      "found": false,
+      "version": "",
+      "path": "",
+      "install": {
+        "id": "install",
+        "label": "Poner nxy en el PATH",
+        "argv": [
+          "nxy",
+          "setup",
+          "run",
+          "path",
+          "--yes"
+        ],
+        "confirm": "nxy setup run path --yes",
+        "planned": false
+      }
     }
   ],
   "binary": {

@@ -671,7 +671,7 @@ func (v *viewSource) Memory(ctx context.Context, scope string) (views.Memory, er
 	repo := repoKeys{}.Key(v.cwd)
 	root, _ := repoKeys{}.Root(v.cwd)
 	if root == "" {
-		root = v.cwd
+		return views.Memory{}, errors.New("esta carpeta no es un repo")
 	}
 	in.Repo = views.RepoRef{Name: filepath.Base(root), Path: filepath.ToSlash(root), Branch: platform.CurrentBranch(ctx, v.cwd)}
 	if in.Rules, err = v.store.Rules(ctx, repo); err != nil {
@@ -734,6 +734,12 @@ func (v *viewSource) Trend(ctx context.Context) (views.Trend, error) {
 	}), nil
 }
 
+// InRepo says whether the folder of the source is inside a git repo.
+func (v *viewSource) InRepo() bool {
+	root, _ := repoKeys{}.Root(v.cwd)
+	return root != ""
+}
+
 // Config is Config: the layers, the roles, the settings, the statusline, the tools and the binary.
 func (v *viewSource) Config(ctx context.Context) (views.Config, error) {
 	cwd := v.cwd
@@ -745,7 +751,9 @@ func (v *viewSource) Config(ctx context.Context) (views.Config, error) {
 	repoState, repoObj := fileState(repoPath)
 	files := configedit.Files{User: userObj, Repo: repoObj}
 	cfg := platform.LoadConfig(cwd, v.getenv)
+	root, _ := repoKeys{}.Root(cwd)
 	in := views.ConfigIn{
+		InRepo: root != "",
 		Layers: []views.Layer{
 			{Name: "user", Path: filepath.ToSlash(userPath), Exists: userState != "no existe"},
 			{Name: "repo", Path: filepath.ToSlash(repoPath), Exists: repoState != "no existe"},
@@ -777,6 +785,14 @@ func (v *viewSource) Config(ctx context.Context) (views.Config, error) {
 		}
 		in.Tools = append(in.Tools, t)
 	}
+	nxyTool := views.Tool{Name: "nxy"}
+	if p := nxyOnPath(); p != "" {
+		nxyTool.Found, nxyTool.Path = true, filepath.ToSlash(p)
+	} else {
+		cmd := "nxy setup run path --yes"
+		nxyTool.Install = &views.Action{ID: "install", Label: "Poner nxy en el PATH", Argv: []string{"nxy", "setup", "run", "path", "--yes"}, Confirm: cmd}
+	}
+	in.Tools = append(in.Tools, nxyTool)
 	in.Binary = viewBinary()
 	return views.BuildConfig(in), nil
 }

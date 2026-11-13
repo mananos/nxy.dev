@@ -79,7 +79,7 @@ func runHook(_ []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	}
 	if ev.Name == "SessionStart" {
 		if u, err := platform.UserDir(); err == nil {
-			refreshStableShim(u)
+			_ = ensureStableShim(u)
 		}
 	}
 	h, st := newHooksStore()

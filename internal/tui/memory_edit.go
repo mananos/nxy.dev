@@ -160,7 +160,7 @@ func (st *state) memEditKey(k string) intent {
 			argv[i] = x
 		}
 		a.Argv = argv
-		return intent{toast: actionToast("Guardada "+it.id, a)}
+		return intent{toast: st.runAction(actionReq{label: "Guardar " + it.id, a: a})}
 	default:
 		if msg := keyMsg(k); msg != nil {
 			m.efields[m.efield], _ = m.efields[m.efield].Update(msg)
@@ -182,12 +182,20 @@ func (st *state) memConfirmKey(scope, k string) intent {
 			return intent{}
 		}
 		a, _ := itemAction(it, "delete")
-		m.deleted[key] = true
-		m.seq++
-		m.undo = &memUndo{key: key, id: it.id, seq: m.seq, act: a}
-		seq := m.seq
-		st.cmd = tea.Tick(memUndoWindow, func(time.Time) tea.Msg { return memExpireMsg{seq} })
-		return intent{toast: "borrada " + it.id + " · u deshace"}
+		a.Confirm = "" // the ¿Borrar? of the detail was the question
+		restore, _ := itemAction(it, "restore")
+		id := it.id
+		t := st.runAction(actionReq{label: "borrar " + id, a: a, after: func() {
+			m.deleted[key] = true
+			if len(restore.Argv) == 0 {
+				return
+			}
+			m.seq++
+			seq := m.seq
+			m.undo = &memUndo{key: key, id: id, seq: seq, act: restore}
+			st.cmd = tea.Batch(st.cmd, tea.Tick(memUndoWindow, func(time.Time) tea.Msg { return memExpireMsg{seq} }))
+		}})
+		return intent{toast: t}
 	case "n", "esc":
 		m.confirm = ""
 	}
@@ -200,18 +208,16 @@ func (st *state) memUndo() intent {
 	if m.undo == nil {
 		return intent{}
 	}
-	delete(m.deleted, m.undo.key)
-	id := m.undo.id
+	u := *m.undo
 	m.undo = nil
-	return intent{toast: id + " vuelve"}
+	return intent{toast: st.runAction(actionReq{label: "restaurar " + u.id, a: u.act, after: func() { delete(m.deleted, u.key) }})}
 }
 
-// onMemExpire is the end of the undo window: now the command would run.
+// onMemExpire is the end of the undo window: the delete can no longer be undone.
 func (st *state) onMemExpire(seq int) {
 	m := st.memUI()
 	if m.undo == nil || m.undo.seq != seq {
 		return
 	}
-	st.toast = actionToast("Borrada "+m.undo.id, m.undo.act)
 	m.undo = nil
 }

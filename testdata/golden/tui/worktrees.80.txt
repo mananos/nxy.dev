@@ -1,0 +1,10 @@
+   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+  Inicio › Worktrees                                                esc vuelve  
+
+                                                                              
+     Worktrees  2 carpetas                                                    
+                                                                              
+     pagos  feat/pagos-v3  FEAT-D  pausado   ↑1 · sin commitear               
+     pagos  fix/viejo      —       huérfano                                   
+                                                                              
+  esc  volver     tab  sección     ?  ayuda                                     

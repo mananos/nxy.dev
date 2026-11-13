@@ -1,0 +1,25 @@
+   nxy      Inicio   ›Memoria    Gasto    Config                                                                                                                         ● 2 decisiones    hoy $0.079   
+
+   Global   │   app                                                                                                                                                                       [ ]  cambiar  
+
+     Propuestas                                                                                                                                                      nxy las arma, vos aceptás o no   
+      borrar       K2  La recibieron 10 veces y nadie la citó                                                                                                               y  borrar    n  dejarla   
+      promover     A2  Se vio 2 veces: ya parece una regla                                                                                                                y  promover    n  dejarla   
+
+     Reglas                                                3        K2   regla                                                                                                             del repo   
+  ›  K2   Los endpoints devuelven 422 ante datos … sin citar                                                                                                                                          
+     K1   Usar BigDecimal para los importes                         Los endpoints devuelven 422 ante datos inválidos                                                                                  
+     K3   Cada migración trae su rollback                                                                                                                                                             
+                                                                    pregunta   ¿Qué código devuelve un endpoint ante datos inválidos?                                                                 
+     Aprendizajes                                          2        aplica a                                                                                                                          
+     A2   Los importes se guardan en centavos        visto 2        vino de    chat · 06/10                                                                                                           
+     A1   El redondeo de IVA va por línea, no por … obsoleto                                                                                                                                          
+                                                                    entregada  10 veces                                                                                                               
+     ▸ Features cerradas                                   1        citada     nunca                                                                                                                  
+                                                                                                                                                                                                      
+                                                                    nxy propone borrarla                                                                                                              
+                                                                     y  borrar    n  dejarla                                                                                                          
+                                                                                                                                                                                                      
+                                                                     e  editar    x  borrar                                                                                                           
+                                                                                                                                                                                                      
+  ↑↓  mover     /  buscar     e  editar     x  borrar     +  nueva     [ ]  repo     y n  propuesta     esc  volver     ?  ayuda                                                                        

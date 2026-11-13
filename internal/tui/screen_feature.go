@@ -17,7 +17,7 @@ func (featureScreen) section() string                { return "inicio" }
 func (featureScreen) crumb(_ *state, r route) string { return r.key }
 
 func (featureScreen) keys(*state, route) []hint {
-	return []hint{{"d", "decidir"}, {"a", "agentes"}, {"p", "plan"}, {"enter", "ir al agente"}, {"↑↓", "lote"}}
+	return []hint{{"d", "decidir"}, {"a", "agentes"}, {"p", "plan"}, {"enter", "ir al agente"}, {"↑↓", "lote"}, {"space", "pausar/reanudar"}}
 }
 
 // findFeature is the cockpit row of a feature.
@@ -250,7 +250,7 @@ func featureHead(f views.FeatureHeader, w int) []line {
 func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 	f, ok := st.findFeature(r.key)
 	if !ok {
-		return indent([]line{nil, L(T("No hay datos de "+r.key+" en el demo.", tMu))}, 2), 0
+		return st.missing("cockpit", "No hay datos de "+r.key+".", w), 0
 	}
 	a := st.data.Agents[r.key]
 	rows := batchNodes(a)
@@ -260,7 +260,13 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 	out := featureHead(f.FeatureHeader, w)
 
 	if len(rows) == 0 {
-		out = append(out, L("  ", T("Sin detalle de lotes todavía.", tMu)))
+		if err := st.data.Errs["agents/"+r.key]; err != nil {
+			out = append(out, indent(errBlock(err.Error(), w-4), 2)...)
+		} else if st.data.Loading["agents/"+r.key] {
+			out = append(out, L("  ", loadingLine()))
+		} else {
+			out = append(out, L("  ", T("Sin detalle de lotes todavía.", tMu)))
+		}
 		return out, 0
 	}
 
@@ -407,6 +413,10 @@ func (featureScreen) key(st *state, r route, k string) intent {
 		return intent{push: &route{screen: "agentes", key: r.key}}
 	case "p":
 		return intent{push: &route{screen: "plan", key: r.key}}
+	case "space", " ":
+		if f, ok := st.findFeature(r.key); ok {
+			return st.toggleLife(f)
+		}
 	case "d":
 		if indexOfDecision(st.pending(), r.key) < 0 {
 			return intent{toast: "No hay una decisión pendiente en " + r.key + "."}

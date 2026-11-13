@@ -17,7 +17,7 @@ func (inicioScreen) section() string            { return "inicio" }
 func (inicioScreen) crumb(*state, route) string { return "Inicio" }
 
 func (inicioScreen) keys(*state, route) []hint {
-	return []hint{{"↑↓", "mover"}, {"enter", "abrir"}, {"d", "decidir"}, {"tab", "sección"}, {"w", "worktrees"}}
+	return []hint{{"↑↓", "mover"}, {"enter", "abrir"}, {"d", "decidir"}, {"tab", "sección"}, {"w", "worktrees"}, {"space", "pausar/reanudar"}}
 }
 
 type inicioGroup struct {
@@ -78,6 +78,10 @@ func (inicioScreen) key(st *state, r route, k string) intent {
 		return intent{decide: true}
 	case "w":
 		return intent{push: &route{screen: "worktrees"}}
+	case "space", " ":
+		if len(order) > 0 {
+			return st.toggleLife(order[sel])
+		}
 	}
 	return intent{}
 }
@@ -223,6 +227,9 @@ func (inicioScreen) view(st *state, r route, w int) ([]line, int) {
 			}
 			n++
 		}
+	}
+	if len(c.Features) == 0 && (st.data.Errs["cockpit"] != nil || st.data.Loading["cockpit"]) {
+		out = append(out, st.missing("cockpit", "", w)[1:]...)
 	}
 	if wl := worktreeLine(c); wl != nil {
 		out = append(out, nil, wl)

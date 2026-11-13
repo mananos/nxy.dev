@@ -1,0 +1,25 @@
+   nxy     ›Inicio    Memoria    Gasto    Config                                                                                                                         ● 2 decisiones    hoy $0.079   
+  Inicio › FEAT-Q › Plan                                                                                                                                                                    esc vuelve  
+
+     ←   Revisar el formato de las notas   FEAT-Q                                                                                                                                      Te necesita    
+         api · feat/formato · 1d 0h · $0.00                                                                                                                                                           
+
+   ✓ Diseño  ━━  Plan  ──  Lotes  ──  Review  ──  Cierre 
+
+     Lotes                                                                                                                                        esperando tu aprobación  ·  en fila, un solo repo   
+     ›○ 1 Formato                                                                                                                                                                                     
+                                                                                                                                                                                                      
+     Lote 1 · Formato                                                                                                                                                                   riesgo bajo   
+     accept  go test ./src/ -run TestFormato                                                                                                                                                          
+
+     Objetivo                                                   Impacto · lote 1                                                                                                          codegraph   
+     Revisar el formato de las notas                                                                                                                                                                  
+                                                             ›   edita   Nota.java                                                                                                                    
+     Criterios                                                           :4  Formato                                                                                                                  
+     R1  Revisar el formato de las notas                                 ← Factura.java                                                                                                               
+                                                                         ← Listado.java                                                                                                               
+     Decisiones                                                          ○ NotaTest.java                                                                                                              
+                                                                         ○ NotaServiceTest.java                                                                                                       
+                                                                                                                                                                                                      
+                                                                ← importa   ○ test que lo cubre                                                                                                       
+  a  aprobar     c  cambiar     x  parar     ←→  lote     enter  código     ?  ayuda                                                                                                                    

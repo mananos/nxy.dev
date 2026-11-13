@@ -169,9 +169,13 @@ func (st *state) decKey(k string) bool {
 			break
 		}
 		o := d.Options[st.decOption(d)]
-		st.toast = actionToast("decidir", o.Action)
-		st.answered[d.FeatureID] = true
-		st.decNext()
+		feat := d.FeatureID
+		if t := st.runAction(actionReq{label: "decidir", a: o.Action, after: func() {
+			st.answered[feat] = true
+			st.decNext()
+		}}); t != "" {
+			st.toast, st.toastErr = t, false
+		}
 	default:
 		if len(k) == 1 && k[0] >= '1' && k[0] <= '9' && !isFork(d) {
 			if v := int(k[0] - '1'); v < len(d.Options) {

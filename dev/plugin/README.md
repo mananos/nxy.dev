@@ -399,11 +399,17 @@ Qué hacer:
 
 Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; en una máquina con repos ya importados, una copia más, una sola vez, para las globales; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.
 
-## Prototipo de la TUI (F5.1)
+## La TUI
+
+### Cómo se abre
+
+`nxy tui` (sin flags, desde cualquier carpeta) abre la TUI con tus datos reales: la db, los transcripts de Claude Code, tu config y tus herramientas. Inicio muestra todos los checkouts; Memoria «repo» es el repo de la carpeta donde la abriste y, fuera de un repo, arranca en Global; Config muestra sólo la capa de usuario y esconde «guardar en el repo». `nxy tui --demo` abre el mismo programa con datos de ejemplo embebidos: no lee tu db ni toca tu repo.
+
+Como `nxy` casi nunca está en el PATH, `/nxy:tui` imprime el comando exacto para pegar en otra terminal (no abre ninguna terminal sola); es lo mismo que `nxy tui where`. Para que alcance con escribir `nxy tui`: `/nxy:setup` y la fila «nxy en el PATH» (o `nxy setup run path --yes`; sin `--yes` sólo muestra qué haría, y `--dry-run` imprime el comando). Qué escribe: en Windows suma la carpeta del shim (`~/.nxy/bin`) al PATH del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (`#!/bin/sh` y `exec sh <shim> "$@"`, unos 60 bytes), y esa carpeta tiene que estar en tu PATH (la fila lo avisa). Si cambiás `NXY_HOME`, repetí el comando. El shim (`~/.nxy/bin/nxy.cmd`, 13,5 KB) ahora se escribe siempre, aunque no tengas statusline, y no se borra solo; se actualiza con cada versión nueva. Para sacar nxy del PATH: en Windows quitá esa carpeta de las variables de entorno del usuario; en Linux/macOS borrá `~/.local/bin/nxy`.
 
 ### Qué ves
 
-`nxy tui --demo` abre un prototipo navegable con las 11 pantallas (Inicio, Worktrees, Feature, Agentes, Decisión, Ingeniero, Plan, Archivo, Memoria, Gasto con Tendencia y Config) y datos de ejemplo embebidos en el binario. No lee tu db ni toca tu repo, y anda desde cualquier carpeta.
+La TUI tiene 11 pantallas (Inicio, Worktrees, Feature, Agentes, Decisión, Ingeniero, Plan, Archivo, Memoria, Gasto con Tendencia y Config). Cada pantalla carga sus datos cuando entrás; si una falla, ves un bloque rojo con el error en esa pantalla y las demás siguen andando. Se refresca sola cuando nxy escribe en su db (un hook, un lote que termina) y, mientras un agente trabaja, cada segundo en Inicio y Agentes; el cursor sigue a la fila y no a la posición, así no salta. En Plan y Archivo, `r` recalcula (el árbol de git no se vigila). Si nxy se actualiza con la TUI abierta, aparece «nxy se actualizó: cerrá y volvé a abrir» y las acciones se apagan: cerrala y abrila de nuevo.
 
 Arriba hay 4 secciones fijas: Inicio, Memoria, Gasto y Config. Lo demás se abre con `enter` y se vuelve con `esc`; el camino aparece debajo de la barra, por ejemplo `Inicio › F7K2 › Plan › nota-credito.component.ts`. El contenido usa todo el ancho de la terminal: en las pantallas de dos paneles la columna de la izquierda no crece más allá de lo que mide a 120 columnas y el panel de la derecha toma el resto. Colorear el código del visor de archivos suma unos 4,5 MB al binario (medido en Windows).
 
@@ -420,16 +426,16 @@ Arriba hay 4 secciones fijas: Inicio, Memoria, Gasto y Config. Lo demás se abre
 
 Las teclas disponibles siempre están en la barra de abajo; `?` muestra todas y `q` sale.
 
-- Inicio: `↑↓` mueve, `enter` abre la feature, `d` abre la decisión, `w` los worktrees.
-- Feature: `a` agentes, `p` plan, `d` decidir, `enter` sobre un lote va a su agente.
+- Inicio: `↑↓` mueve, `enter` abre la feature, `d` abre la decisión, `w` los worktrees, `space` pausa o reanuda la feature elegida.
+- Feature: `space` pausa o reanuda, `a` agentes, `p` plan, `d` decidir, `enter` sobre un lote va a su agente.
 - Plan: `←→` cambia de lote, `↑↓` de archivo, `enter` abre el archivo. Si está por aprobar: `a` aprobar, `c` cambiar, `x` parar.
-- Archivo: `n` / `N` saltan entre cambios, `v` alterna diff y archivo entero, `o` muestra el comando del editor.
+- Archivo: `n` / `N` saltan entre cambios, `v` alterna diff y archivo entero, `o` abre el archivo en tu editor (`$VISUAL` o `$EDITOR`, en la línea del cambio; la TUI se suspende y vuelve sola; sin editor muestra `ruta:línea`), `r` recalcula.
 - Ingeniero: `↑↓` opción, `enter` elige, `h` cómo es hoy, `c` qué elegiría Claude (no se muestra hasta que lo pedís, para no condicionarte).
 - Memoria: `[ ]` cambia de repo o global, `/` busca (`tab` alterna este repo y todos), `e` edita, `x` borra (`y` confirma, `u` deshace durante 5 segundos), `+` crea una regla, `y` / `n` aceptan o descartan propuestas.
 - Gasto: `tab` pasa a Tendencia, `s` elige otra sesión.
-- Config: `↑↓` recorre, `e` / `f` ciclan modelo y effort del rol, `r` lo guarda en el repo, `i` instala, `c` copia el comando.
+- Config: `↑↓` recorre, `e` / `f` ciclan modelo y effort del rol, `r` lo guarda en el repo (no aparece fuera de un repo), `i` instala o quita la herramienta, `c` copia el comando. La fila «nxy en el PATH» es la de la sección anterior.
 
-Las acciones no hacen nada: sólo muestran abajo el comando que correrían. Las que dicen "todavía no existe" (decidir desde la TUI) llegan con otros planes. Editar, borrar y restaurar memoria y las reglas globales ya existen en la línea de comandos (`nxy mem edit|rm|restore`, `--global`); la TUI todavía no los llama.
+Las acciones son reales: corren como un subproceso del mismo `nxy`, en segundo plano. Las que cambian algo fuera de la TUI (config, instalar, statusline, editar memoria) piden `y`/`n` en el pie y dicen qué archivo tocan; si salen bien, un aviso y la pantalla se refresca; si fallan, un aviso rojo con la primera línea del error. Borrar memoria corre enseguida y `u` la restaura mientras dura la ventana de 5 segundos. Instalar muestra «instalando…» en su fila mientras corre (winget puede tardar). Lo que dice «llega en F5.4» (contestar una decisión, aprobar/cambiar/parar el plan, elegir una opción del ingeniero, crear una regla nueva con `+` y pasar una propuesta a regla con «Hacerla regla», porque todavía no hay formulario para escribirlas) todavía no hace nada: se contesta desde Claude. Cada acción se corta a los 10 minutos: si una instalación se cuelga, aparece el error en rojo. Los pasos de winget corren aceptando los acuerdos (`--accept-source-agreements --accept-package-agreements`) aunque el comando mostrado no los incluya. `c` copia con `clip.exe` (Windows), `wl-copy` o `xclip` (Linux); si no hay ninguno, manda el texto a la terminal por OSC 52 y el aviso trae el comando por si no se pegó.
 
 Cosas del demo: en Inicio F7K9 está en diseño y en su Plan aparece por aprobar (son dos momentos de la misma feature). `ctrl+n` simula que llega una decisión nueva, `ctrl+t` alterna tema claro/oscuro y `ctrl+g` los íconos. Una bifurcación del ingeniero que aparece en la ventana de decisión se lee ahí, pero se contesta en Ingeniero (`enter` te lleva).
 
@@ -437,7 +443,7 @@ Si ves cuadrados en lugar de íconos, forzá el set con `--icons unicode` o con 
 
 ### Ver una pantalla sin abrir la TUI
 
-`nxy tui --demo --dump <destino> --width 80 --plain` imprime la pantalla y sale; probá `--width 80`, `120` y `200`. `--feature <clave>` elige la feature, el repo de memoria o el archivo, y `--theme light` el tema. Destinos: `inicio`, `worktrees`, `feature`, `agentes`, `decision`, `ingeniero` (`ingeniero.hoy`, `ingeniero.claude`), `plan`, `archivo` (`archivo.entero`), `memoria` (`memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`), `gasto`, `tendencia` (`tendencia.semana`) y `config`. Con un destino desconocido, el comando lista los válidos.
+`nxy tui --dump <destino> --width 80 --plain` imprime la pantalla con tus datos reales y sale (con `--demo`, con los de ejemplo); probá `--width 80`, `120` y `200`. `--feature <clave>` elige la feature, el repo de memoria o el archivo; para `archivo` con datos reales, `--path <ruta>` elige el archivo y `--feature` su feature. `--theme light` el tema. (Los tests dibujan las pantallas a 80/120/200 en `testdata/golden/tui/`.) Destinos: `inicio`, `worktrees`, `feature`, `agentes`, `decision`, `ingeniero` (`ingeniero.hoy`, `ingeniero.claude`), `plan`, `archivo` (`archivo.entero`), `memoria` (`memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`), `gasto`, `tendencia` (`tendencia.semana`) y `config`. Con un destino desconocido, el comando lista los válidos.
 
 ## `nxy view`: las pantallas con tus datos
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/setup"
 )
 
@@ -30,7 +31,7 @@ func TestSetupStatus(t *testing.T) {
 
 	code, out, _ := runCmd(t, "", "setup", "status", "--cwd", cwd)
 	if code != 0 || !strings.HasPrefix(out, "nxy setup (") || !strings.Contains(out, "\nrtk: ") ||
-		!strings.Contains(out, "\ncodegraph: ") || !strings.HasSuffix(out, "Para instalar: nxy setup run <herramienta> --yes\n") {
+		!strings.Contains(out, "\ncodegraph: ") || !strings.Contains(out, "Para instalar: nxy setup run <herramienta> --yes\n") || !strings.Contains(out, "\nnxy en el PATH: ") {
 		t.Fatalf("status (%d):\n%s", code, out)
 	}
 
@@ -103,6 +104,27 @@ func TestSetupRunDryRunRunsNothing(t *testing.T) {
 	}
 	if len(*calls) != 0 {
 		t.Fatalf("dry-run ran %d plans", len(*calls))
+	}
+}
+
+func TestSetupPath(t *testing.T) {
+	isolate(t)
+	calls := noInstall(t, setup.RunResult{OK: true})
+	code, out, _ := runCmd(t, "", "setup", "run", "path")
+	if code != 1 || !strings.HasPrefix(out, "Falta --yes: no se instala nada. Lo que correría para path:\n") || len(*calls) != 0 {
+		t.Fatalf("without --yes (%d, %d calls): %s", code, len(*calls), out)
+	}
+	code, out, _ = runCmd(t, "", "setup", "run", "path", "--yes", "--dry-run")
+	if code != 0 || len(*calls) != 0 || !strings.Contains(out, "dry-run") {
+		t.Fatalf("dry-run (%d, %d calls): %s", code, len(*calls), out)
+	}
+	code, out, _ = runCmd(t, "", "setup", "run", "path", "--yes")
+	if code != 0 || len(*calls) != 1 || (*calls)[0].Tool != "path" {
+		t.Fatalf("--yes (%d, %d calls): %s", code, len(*calls), out)
+	}
+	u, _ := platform.UserDir()
+	if _, err := os.Stat(stableShimPath(u)); err != nil {
+		t.Errorf("shim not ensured: %v", err)
 	}
 }
 

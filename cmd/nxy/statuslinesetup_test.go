@@ -128,20 +128,21 @@ func TestStatuslineRemove(t *testing.T) {
 	if _, ok := readSettings(t, s)["statusLine"]; ok {
 		t.Fatal("statusLine still there")
 	}
-	if _, err := os.Stat(stableShimPath(s.userDir)); err == nil {
-		t.Fatal("stable shim not removed")
+	if _, err := os.Stat(stableShimPath(s.userDir)); err != nil {
+		t.Fatal("stable shim removed: the PATH and /nxy:tui use it")
 	}
 }
 
 func TestRefreshStableShim(t *testing.T) {
-	dir := t.TempDir()
-	refreshStableShim(dir) // no statusline installed: nothing written
-	if _, err := os.Stat(stableShimPath(dir)); err == nil {
-		t.Fatal("shim created without an install")
+	dir := filepath.Join(t.TempDir(), "nxyhome")
+	if err := ensureStableShim(dir); err != nil { // no statusline needed: the shim is always written
+		t.Fatal(err)
 	}
-	os.MkdirAll(filepath.Dir(stableShimPath(dir)), 0o755)
+	if b, _ := os.ReadFile(stableShimPath(dir)); !bytes.Equal(b, nxydev.Shim) {
+		t.Fatal("shim not created")
+	}
 	os.WriteFile(stableShimPath(dir), []byte("old shim"), 0o644)
-	refreshStableShim(dir)
+	ensureStableShim(dir)
 	if b, _ := os.ReadFile(stableShimPath(dir)); !bytes.Equal(b, nxydev.Shim) {
 		t.Fatal("old shim not refreshed")
 	}

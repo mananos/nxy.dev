@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -119,6 +121,7 @@ func runSetup(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 			fmt.Fprintln(stdout, setup.StatusJSON(st))
 		} else {
 			fmt.Fprintln(stdout, setup.StatusText(st))
+			fmt.Fprintln(stdout, nxyPathStatus())
 		}
 		return 0
 	case "run":
@@ -126,10 +129,64 @@ func runSetup(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 		if len(a.positional) > 1 {
 			tool = strings.ToLower(a.positional[1])
 		}
+		if tool == "path" {
+			return setupRunPath(a, stdout)
+		}
 		return setupRun(cwd, tool, a, stdout)
 	}
 	fmt.Fprintln(stdout, setup.StatusUsage)
 	return 1
+}
+
+// nxyOnPath is where `nxy` resolves in the PATH of this process ("" when it does not).
+var nxyOnPath = func() string {
+	p, err := exec.LookPath("nxy")
+	if err != nil {
+		return ""
+	}
+	return p
+}
+
+// nxyPathPlan is the plan that makes `nxy` resolvable, over the stable shim.
+func nxyPathPlan() (setup.Plan, error) {
+	u, err := platform.UserDir()
+	if err != nil {
+		return setup.Plan{}, err
+	}
+	return setup.PathPlan(setup.PathOpts{Platform: jsPlatform(runtime.GOOS), ShimPath: stableShimPath(u), Home: homeDir()}), nil
+}
+
+// nxyPathStatus is the "nxy en el PATH" row of `nxy setup status`, with the command that fixes it.
+func nxyPathStatus() string {
+	if p := nxyOnPath(); p != "" {
+		return fmt.Sprintf("\nnxy en el PATH: sí (%s)", filepath.ToSlash(p))
+	}
+	return "\nnxy en el PATH: no. Para dejarlo: nxy setup run path --yes"
+}
+
+// setupRunPath is `nxy setup run path --yes [--dry-run]`: it makes sure the shim exists and puts
+// `nxy` in the PATH (user Path on Windows, a 2-line script in ~/.local/bin elsewhere).
+func setupRunPath(a setupArgs, stdout io.Writer) int {
+	plan, err := nxyPathPlan()
+	if err != nil {
+		fmt.Fprintf(stdout, "error: %v\n", err)
+		return 1
+	}
+	if !a.yes {
+		fmt.Fprintln(stdout, setup.MissingYesText("path", plan))
+		return 1
+	}
+	fmt.Fprintln(stdout, setup.RunHeader("path", plan, a.dryRun))
+	if a.dryRun {
+		return 0
+	}
+	if u, err := platform.UserDir(); err != nil || ensureStableShim(u) != nil {
+		fmt.Fprintln(stdout, "no pude escribir el shim en ~/.nxy/bin")
+		return 1
+	}
+	text, code := setup.RunOutcome("path", plan, runSetupPlan(plan))
+	fmt.Fprintln(stdout, text)
+	return code
 }
 
 func setupRun(cwd, tool string, a setupArgs, stdout io.Writer) int {

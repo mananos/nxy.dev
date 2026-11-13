@@ -175,6 +175,31 @@ func block(lines []line, w int, bg tok, padX int) []line {
 	return out
 }
 
+// errBlock is the dim red block of a view that failed to load: the first line of the error.
+func errBlock(msg string, w int) []line {
+	first := strings.TrimSpace(msg)
+	if i := strings.IndexByte(first, '\n'); i >= 0 {
+		first = strings.TrimSpace(first[:i])
+	}
+	return block([]line{L(T("No se pudo cargar", tFail)), L(T(first, tMu))}, w, tFailBg, 2)
+}
+
+func loadingLine() line { return L(T("cargando…", tMu)) }
+
+// missing is what a screen shows while its view is not there: the error, the loading line or the
+// plain statement that there is nothing (empty).
+func (st *state) missing(key, empty string, w int) []line {
+	if err := st.data.Errs[key]; err != nil {
+		return indent(append([]line{nil}, errBlock(err.Error(), w-4)...), 2)
+	}
+	// the cheap views load together: one flag
+	cheap := key == "stats" || key == "trend" || key == "config" || strings.HasPrefix(key, "memory/")
+	if st.data.Loading[key] || (cheap && st.data.Loading["cockpit"]) {
+		return indent([]line{nil, loadingLine()}, 2)
+	}
+	return indent([]line{nil, L(T(empty, tMu))}, 2)
+}
+
 // hcat puts columns side by side. A column shorter than the others is filled with the
 // background of its last line.
 func hcat(cols [][]line, ws []int, gap int) []line {

@@ -84,7 +84,7 @@ func tile(label, value, sub string, valueTok tok, w int) []line {
 func (statsScreen) view(st *state, _ route, w int) ([]line, int) {
 	s := st.data.Stats
 	if s == nil {
-		return indent([]line{nil, L(T("El demo no trae la sesión.", tMu))}, 2), 0
+		return st.missing("stats", "No hay una sesión para mostrar.", w), 0
 	}
 	iw := w - 4 - 6
 	out := []line{nil, lr(statsNav("gasto"), L(T(path0(s.Project), tSb), "  "), w), nil}

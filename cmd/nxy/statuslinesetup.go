@@ -18,8 +18,8 @@ import (
 // The statusline runs a stable copy of the shim, ~/.nxy/bin/nxy.cmd (about 13 KB), never the one
 // inside the versioned plugin folder: that path changes with every update. The copy is the shim of
 // the binary that wrote it (embedded), and every SessionStart puts it back in line with the running
-// binary, so after an update the statusline follows the hooks. It exists only while the statusline
-// is installed.
+// binary, so after an update the statusline follows the hooks. It is always there (SessionStart
+// writes it) and is never removed: the PATH entry and /nxy:tui use it too.
 
 type statuslineSetup struct {
 	home    string // OS home: Claude Code's settings live in <home>/.claude
@@ -175,9 +175,8 @@ func (s statuslineSetup) remove(w io.Writer) int {
 		fmt.Fprintf(w, "no pude escribir %s: %v\n", filepath.ToSlash(path), err)
 		return 1
 	}
-	_ = os.Remove(stableShimPath(s.userDir))
 	fmt.Fprintf(w, "statusLine de nxy quitada de %s\n", filepath.ToSlash(path))
-	fmt.Fprintf(w, "shim borrado: %s\n", filepath.ToSlash(stableShimPath(s.userDir)))
+	fmt.Fprintf(w, "shim: %s (queda: lo usan el PATH y /nxy:tui)\n", filepath.ToSlash(stableShimPath(s.userDir)))
 	fmt.Fprintf(w, "backup: %s (se conservan %d)\n", filepath.ToSlash(b), kept)
 	fmt.Fprintln(w, "Reiniciá Claude Code para aplicarlo.")
 	return 0
@@ -206,13 +205,17 @@ func runStatuslineSetup(args []string, stdout, stderr io.Writer) int {
 	return 1
 }
 
-// refreshStableShim keeps the statusline's shim equal to this binary's (SessionStart). It only
-// rewrites a copy that exists: no statusline installed, nothing written. Cost: one read of ~13 KB.
-func refreshStableShim(userDir string) {
+// ensureStableShim keeps the stable shim equal to this binary's (SessionStart) and creates it when
+// missing: the statusline, the PATH entry and /nxy:tui all run it. Cost: one read of ~13.5 KB, and a
+// write only when the version changed. No exec bit needed: on Linux/macOS it is always run with sh.
+func ensureStableShim(userDir string) error {
 	p := stableShimPath(userDir)
 	cur, err := os.ReadFile(p)
-	if err != nil || bytes.Equal(cur, nxydev.Shim) {
-		return
+	if err == nil && bytes.Equal(cur, nxydev.Shim) {
+		return nil
 	}
-	_ = platform.WriteAtomic(p, nxydev.Shim)
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
+	return platform.WriteAtomic(p, nxydev.Shim)
 }

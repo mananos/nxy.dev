@@ -1,0 +1,12 @@
+   nxy     ›Inicio    Memoria    Gasto    Config                                                                                                                         ● 2 decisiones    hoy $0.079   
+  Inicio › FEAT-P › Plan › Credito.java                                                                                                                                                     esc vuelve  
+
+     ←   Credito.java   api                                                                                                                                                              codegraph    
+         src/billing/Credito.java · lo edita el lote 2                                                                                                                                                
+
+      diff de la feature   archivo                                                                                                    v  alterna  o  editor        Memoria anclada                    
+                                                                                                                                                                   K1  Usar BigDecimal para los im…   
+     ▸ 1 + class Credito {                                                                                                                                                                            
+       2 + }                                                                                                                                                       Features                           
+                                                                                                                                                                   FEAT-P  lote 2 · en rojo           
+  n N  otro cambio     v  archivo entero     o  editor     r  recalcular     enter  importador     ↑↓  importador     ?  ayuda                                                                          

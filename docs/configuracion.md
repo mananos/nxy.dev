@@ -95,6 +95,8 @@ No hay clave de configuración: se detecta cada vez. Comandos por sistema operat
 | codegraph | `install.ps1` de colbymchenry/codegraph | `install.sh` de colbymchenry/codegraph | ídem Linux |
 | d2 (v2, dibuja los diagramas del diseño) | `winget install Terrastruct.D2` | `install.sh` de d2lang.com con `--prefix "$HOME/.local"` | `brew install d2` |
 
+**nxy en el PATH** (fila aparte, para abrir la TUI con `nxy tui`): corre `nxy setup run path --yes` sólo con tu sí. En Windows agrega la carpeta del shim (`~/.nxy/bin`) al `Path` del usuario (sin tocar los `%VAR%` que ya tenías); en Linux y macOS escribe `~/.local/bin/nxy`, un script de 2 líneas que llama al shim con `sh` (esa carpeta tiene que estar en tu PATH). Si cambiás `NXY_HOME`, repetilo. No hay «sacar»: quitá la carpeta del PATH del usuario o borrá `~/.local/bin/nxy`. El shim (13,5 KB) queda siempre en `~/.nxy/bin/nxy.cmd`.
+
 **Choque:** rtk choca si hay un hook de rtk propio (`rtk init -g`), detectado con la misma regla del filtro; codegraph choca si `mcpServers.codegraph` está en `~/.claude.json` o `.mcp.json`, o un hook de `settings.json` nombra codegraph. La celda dice cuál: `choca: hook de rtk` (Reinstalar corre `rtk init -g --uninstall` si el hook es global; si está en el proyecto, nota manual), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) o `choca: hook en settings` (sólo aviso: nxy no edita settings ajenos). Después de quitar, Reinstalar actualiza. **Linux:** los pasos con permisos usan `sudo -n`; si pide contraseña, falla sin colgarse y se imprime el comando sin `-n`. Nada corre sin confirmación ni en SessionStart.
 
 ### `metrics`

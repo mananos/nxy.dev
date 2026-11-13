@@ -105,7 +105,11 @@ Queda instalado para tu usuario en todos los proyectos. `/plugin` lo lista y lo 
 
 La escribe en `~/.claude/settings.json` (con backup) y se actualiza sola con cada versión nueva del plugin. Reiniciá Claude Code para verla.
 
-### 4. Verificá
+### 4. La TUI (opcional)
+
+`/nxy:tui` imprime el comando para abrir la TUI (inicio de features, agentes, plan, memoria, gasto y config) en otra terminal. Para que alcance con escribir `nxy tui`, corré `/nxy:setup` y aceptá la fila «nxy en el PATH»: en Windows suma `~/.nxy/bin` al PATH del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (esa carpeta tiene que estar en tu PATH). Para sacarlo, quitá esa carpeta del PATH o borrá ese archivo. Detalle en [dev/plugin/README.md](dev/plugin/README.md#la-tui).
+
+### 5. Verificá
 
 | Comando | Tiene que decir |
 | --- | --- |

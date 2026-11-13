@@ -1,16 +1,15 @@
 package tui
 
 import (
-	"fmt"
-	"io/fs"
-	"path"
 	"sort"
-	"strings"
 
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
-// Data is everything the screens show: one struct of the contract per screen.
+// Data is everything the screens show: one struct of the contract per screen. It is a cache the
+// loader fills; a view that is not here yet is either in Loading or failed (Errs). The keys of
+// Errs and Loading are "cockpit", "stats", "trend", "config", "memory/<scope>", "decision/<id>",
+// "agents/<id>", "plan/<id>", "engineer/<id>" and "file/<repo/path>".
 type Data struct {
 	Cockpit   *views.Cockpit
 	Agents    map[string]*views.Agents   // by feature id
@@ -22,6 +21,24 @@ type Data struct {
 	Stats     *views.Stats
 	Trend     *views.Trend
 	Config    *views.Config
+
+	Errs    map[string]error
+	Loading map[string]bool
+	Done    map[string]bool // keys already asked for: no second load unless forced
+}
+
+func newData() *Data {
+	return &Data{
+		Agents:    map[string]*views.Agents{},
+		Plans:     map[string]*views.Plan{},
+		Decisions: map[string]*views.Decision{},
+		Engineer:  map[string]*views.Engineer{},
+		Memory:    map[string]*views.Memory{},
+		Files:     map[string]*views.File{},
+		Errs:      map[string]error{},
+		Loading:   map[string]bool{},
+		Done:      map[string]bool{},
+	}
 }
 
 // decisionQueue is the pending questions, the oldest first.
@@ -37,67 +54,4 @@ func (d *Data) decisionQueue() []*views.Decision {
 		return out[i].FeatureID < out[j].FeatureID
 	})
 	return out
-}
-
-const demoDir = "testdata/views"
-
-// LoadDemo reads testdata/views/*.json from fsys. The part of the file name before the first
-// dot picks the struct; an unknown screen or an unknown field is an error.
-func LoadDemo(fsys fs.FS) (*Data, error) {
-	entries, err := fs.ReadDir(fsys, demoDir)
-	if err != nil {
-		return nil, err
-	}
-	d := &Data{
-		Agents:    map[string]*views.Agents{},
-		Plans:     map[string]*views.Plan{},
-		Decisions: map[string]*views.Decision{},
-		Engineer:  map[string]*views.Engineer{},
-		Memory:    map[string]*views.Memory{},
-		Files:     map[string]*views.File{},
-	}
-	for _, e := range entries {
-		name := e.Name()
-		if e.IsDir() || !strings.HasSuffix(name, ".json") {
-			continue
-		}
-		id, _, _ := strings.Cut(name, ".")
-		v := views.New(id)
-		if v == nil {
-			return nil, fmt.Errorf("%s: unknown view %q", name, id)
-		}
-		data, err := fs.ReadFile(fsys, path.Join(demoDir, name))
-		if err != nil {
-			return nil, err
-		}
-		if err := views.Decode(data, v); err != nil {
-			return nil, fmt.Errorf("%s: %w", name, err)
-		}
-		switch x := v.(type) {
-		case *views.Cockpit:
-			d.Cockpit = x
-		case *views.Agents:
-			d.Agents[x.Feature.ID] = x
-		case *views.Plan:
-			d.Plans[x.Feature.ID] = x
-		case *views.Decision:
-			d.Decisions[x.FeatureID] = x
-		case *views.Engineer:
-			d.Engineer[x.Feature.ID] = x
-		case *views.Memory:
-			d.Memory[x.Repo.Name] = x
-		case *views.File:
-			d.Files[x.Repo+"/"+x.Path] = x
-		case *views.Stats:
-			d.Stats = x
-		case *views.Trend:
-			d.Trend = x
-		case *views.Config:
-			d.Config = x
-		}
-	}
-	if d.Cockpit == nil {
-		return nil, fmt.Errorf("%s: cockpit.json is missing", demoDir)
-	}
-	return d, nil
 }
