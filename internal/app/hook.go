@@ -9,8 +9,14 @@ import (
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
+// permissionModeAuto is the one permission mode where a rewritten input with no decision gets refused.
+const permissionModeAuto = "auto"
+
 // HookEvent is a host hook call, already decoded by an adapter.
 type HookEvent struct {
+	// PermissionMode is the host's permission mode as sent (Claude Code: default, plan, acceptEdits,
+	// auto, dontAsk, bypassPermissions); empty when the host did not send it.
+	PermissionMode string
 	Name           string
 	Tool           string
 	SessionID      string

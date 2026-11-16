@@ -44,12 +44,20 @@ var (
 	pinRe     = regexp.MustCompile(`(^|&&` + reS + `*|\|\|` + reS + `*|;` + reS + `*|\|` + reS + `*|` + assignRe + `)rtk(?:\.exe)?(` + reS + `)`)
 )
 
+// RtkInvocation is how to spell rtk in a command: bare `rtk`, or the quoted forward-slash path.
+func RtkInvocation(rtkPath string) string {
+	if rtkPath == "" || bareRtkRe.MatchString(rtkPath) {
+		return "rtk"
+	}
+	return `"` + strings.ReplaceAll(rtkPath, `\`, "/") + `"`
+}
+
 // PinRtkPath replaces the bare `rtk` rtk emits with the absolute path it was found at.
 func PinRtkPath(rewritten, rtkPath string) string {
 	if rtkPath == "" || bareRtkRe.MatchString(rtkPath) {
 		return rewritten
 	}
-	quoted := `"` + strings.ReplaceAll(rtkPath, `\`, "/") + `"`
+	quoted := RtkInvocation(rtkPath)
 	return pinRe.ReplaceAllString(rewritten, "${1}"+strings.ReplaceAll(quoted, "$", "$$")+"${2}")
 }
 

@@ -30,6 +30,7 @@ type hookInput struct {
 	Reason         string          `json:"reason"`
 	ToolUseID      string          `json:"tool_use_id"`
 	ToolResponse   json.RawMessage `json:"tool_response"`
+	PermissionMode string          `json:"permission_mode"`
 
 	LastAssistantMessage string `json:"last_assistant_message"`
 	AgentTranscriptPath  string `json:"agent_transcript_path"`
@@ -54,6 +55,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		Source:         in.Source,
 		Reason:         in.Reason,
 		ToolUseID:      in.ToolUseID,
+		PermissionMode: in.PermissionMode,
 	}
 	var ti struct {
 		Command      json.RawMessage `json:"command"`

@@ -144,6 +144,9 @@ func TestEncodeResponses(t *testing.T) {
 	if h["permissionDecision"] != "deny" || h["permissionDecisionReason"] != "no" {
 		t.Errorf("deny: %v", m)
 	}
+	if _, ok := h["updatedInput"]; ok {
+		t.Errorf("deny must not carry updatedInput: %v", m)
+	}
 
 	m = encode(t, app.HookEvent{Name: "PreToolUse", ToolInput: json.RawMessage(`{"subagent_type":"nxy:planner","prompt":"old"}`)},
 		app.HookResponse{Prompt: "new <b>"})

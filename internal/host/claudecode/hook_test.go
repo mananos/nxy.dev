@@ -75,6 +75,17 @@ func TestDecodeCommand(t *testing.T) {
 	}
 }
 
+func TestDecodePermissionMode(t *testing.T) {
+	ev, err := Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Bash","permission_mode":"auto","tool_input":{"command":"git status"}}`))
+	if err != nil || ev.PermissionMode != "auto" {
+		t.Fatalf("got %+v, %v", ev, err)
+	}
+	ev, err = Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git status"}}`))
+	if err != nil || ev.PermissionMode != "" {
+		t.Fatalf("got %+v, %v", ev, err)
+	}
+}
+
 func TestDecodeProjectDir(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_PROJECT_DIR", dir)

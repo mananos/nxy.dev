@@ -21,6 +21,8 @@ Known limit: the SHA-256 in `checksums.txt` comes from the same GitHub Release a
 
 PreToolUse on Bash/PowerShell now rewrites the command through rtk exactly like the 1.x plugin (same golden-tested rules). Disable the installed 1.x plugin while you load `dev/plugin`: both would rewrite the same command. Everything else still answers nothing.
 
+Auto mode (`permission_mode == "auto"`, rtk active): Claude Code refuses a changed input that comes without a permission decision, and nxy does not approve on its own, so it does not rewrite there. SessionStart adds a line asking Claude to put `rtk` (or the pinned path) in front of the commands rtk filters; if one arrives without it, PreToolUse denies it and the reason gives the exact command to run. A command that matches an allow rule keeps the rewrite + allow of other modes. Other modes, or no `permission_mode`, work as before.
+
 Two differences with 1.x, both in how fast the answer comes, not in what it says:
 
 - rtk's answer is remembered per exact command, so a command you already ran (`git status`, `go test ./...`) is rewritten without starting rtk: about 55 ms less per Bash call on Windows. The cache is one file, `~/.nxy/cache/rewrite-v2.json`: at most 500 commands (about 75 KB), each kept 7 days, the oldest dropped first. It is thrown away whole when rtk's path or version changes, or when rtk's own config (`rtk config` shows where) is created, edited or removed. Errors and timeouts are never kept. `NXY_REWRITE_CACHE=0` skips it.

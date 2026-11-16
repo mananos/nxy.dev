@@ -28,15 +28,60 @@ type fakeRules struct{ r filter.Rules }
 func (f fakeRules) Rules(string) filter.Rules { return f.r }
 
 func run(s filter.Settings, res filter.RewriteResult, rules filter.Rules, tool, cmd string, has bool) HookResponse {
+	return runMode(s, res, rules, tool, cmd, has, "", "rtk")
+}
+
+func runMode(s filter.Settings, res filter.RewriteResult, rules filter.Rules, tool, cmd string, has bool, mode, rtkPath string) HookResponse {
 	h := Hooks{
 		Config:      fakeConfig{s},
-		Engine:      fakeEngine{filter.EngineInfo{Engine: "rtk", RtkPath: "rtk"}, res},
+		Engine:      fakeEngine{filter.EngineInfo{Engine: "rtk", RtkPath: rtkPath}, res},
 		Permissions: fakeRules{rules},
 	}
-	return h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: tool, Command: cmd, HasCommand: has})
+	return h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: tool, Command: cmd, HasCommand: has, PermissionMode: mode})
 }
 
 var on = filter.Settings{Enabled: true, Engine: "rtk", AutoAllow: true}
+
+func TestPreToolBashAutoMode(t *testing.T) {
+	ok := filter.RewriteResult{Code: 0, Stdout: "rtk git status"}
+	ask := filter.RewriteResult{Code: 3, Stdout: "rtk git status"}
+	allowGit := filter.Rules{Allow: []string{"Bash(git status:*)"}}
+	noAuto := on
+	noAuto.AutoAllow = false
+	auto := func(s filter.Settings, res filter.RewriteResult, rules filter.Rules, tool, cmd string) HookResponse {
+		return runMode(s, res, rules, tool, cmd, true, "auto", "rtk")
+	}
+
+	if r := auto(on, ask, filter.Rules{}, "Bash", "git status"); r.Rewrite != nil || !strings.Contains(r.Deny, "rtk git status") {
+		t.Errorf("ask, no rule: %+v", r)
+	}
+	if r := auto(on, ask, allowGit, "Bash", "git status"); r.Rewrite == nil || !r.Rewrite.Allow || r.Deny != "" {
+		t.Errorf("allow rule: %+v", r)
+	}
+	if r := auto(noAuto, ok, allowGit, "Bash", "git status"); r.Rewrite != nil || r.Deny == "" {
+		t.Errorf("AutoAllow false: %+v", r)
+	}
+	if r := auto(on, ok, filter.Rules{}, "Bash", "rtk git status"); r.Rewrite != nil || r.Deny != "" {
+		t.Errorf("already wrapped: %+v", r)
+	}
+	if r := auto(on, ok, filter.Rules{Deny: []string{"Bash(git status:*)"}}, "Bash", "git status"); r.Rewrite != nil || r.Deny != "" {
+		t.Errorf("deny verdict: %+v", r)
+	}
+	if r := auto(on, ask, filter.Rules{}, "PowerShell", "git status"); r.Rewrite != nil || r.Deny == "" {
+		t.Errorf("powershell: %+v", r)
+	}
+	if r := runMode(on, ask, filter.Rules{}, "Bash", "git status", true, "auto", "C:/tools/rtk.exe"); r.Rewrite != nil || !strings.Contains(r.Deny, `"C:/tools/rtk.exe" git status`) {
+		t.Errorf("pinned path: %+v", r)
+	}
+	if r := runMode(on, ask, filter.Rules{}, "PowerShell", "git status", true, "auto", "C:/tools/rtk.exe"); r.Rewrite != nil || !strings.Contains(r.Deny, `& "C:/tools/rtk.exe" git status`) {
+		t.Errorf("powershell pinned path: %+v", r)
+	}
+	for _, mode := range []string{"default", ""} {
+		if r := runMode(on, ask, filter.Rules{}, "Bash", "git status", true, mode, "rtk"); r.Deny != "" || r.Rewrite == nil || r.Rewrite.Allow || r.Rewrite.Command != "rtk git status" {
+			t.Errorf("mode %q: %+v", mode, r)
+		}
+	}
+}
 
 func TestPreToolBash(t *testing.T) {
 	ok := filter.RewriteResult{Code: 0, Stdout: "rtk git status"}

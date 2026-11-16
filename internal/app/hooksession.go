@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/filter"
 	"github.com/mananos/nxy.dev/internal/flow"
 )
 
@@ -175,5 +176,25 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		r.Notice += legacyNotice
 	}
+	if ev.PermissionMode == permissionModeAuto {
+		if _, info, active := h.rtkActive(dir); active {
+			if r.Context != "" {
+				r.Context += "\n\n"
+			}
+			r.Context += autoModeRtkContext(filter.RtkInvocation(info.RtkPath))
+		}
+	}
 	return r
+}
+
+// autoModeRtkContext tells the model to wrap the filtered commands itself: in auto mode nxy cannot rewrite them.
+func autoModeRtkContext(rtk string) string {
+	eg := "`" + rtk + " git status`"
+	if strings.HasPrefix(rtk, `"`) {
+		eg = "Bash: `" + rtk + " git status`; PowerShell: `& " + rtk + " git status`"
+	}
+	return "nxy: the permission mode is auto and nxy filters shell output through rtk. Start the Bash/PowerShell commands rtk filters " +
+		"(git, ls/cat/grep/find, test runners, builds, linters) with `" + rtk + " ` (e.g. " + eg + "). " +
+		"nxy cannot rewrite them in auto mode. A command that already starts with rtk is left alone. " +
+		"If nxy denies one, run the exact command its reason gives."
 }

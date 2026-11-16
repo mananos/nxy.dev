@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/filter"
 )
 
 func TestOwnStepAllow(t *testing.T) {
@@ -114,6 +115,42 @@ func TestOwnStepAllow(t *testing.T) {
 		}
 		if r.AllowReason != "" && r.Rewrite != nil {
 			t.Errorf("%s: allow combined with a rewrite", c.name)
+		}
+	}
+}
+
+// In auto mode with rtk active, nxy's own steps stay pre-approved and are not
+// denied by the rtk rule. The engine would ask for a rewrite of every command,
+// so skipping the own-step check would end in a deny here.
+func TestOwnStepAllowAutoModeRtk(t *testing.T) {
+	dir := t.TempDir()
+	exe := "/opt/nxy/nxy"
+	cases := []struct {
+		name, mode, cmd string
+		want            bool
+	}{
+		{"auto own step", "auto", `/opt/nxy/nxy batch green --feature ID`, true},
+		{"auto own step quoted", "auto", `"/opt/nxy/nxy" batch red --feature ID`, true},
+		{"default own step", "default", `/opt/nxy/nxy batch green --feature ID`, true},
+		{"auto other exe", "auto", `/tmp/evil batch green --feature ID`, false},
+	}
+	for _, c := range cases {
+		h, st := flowHooks(false)
+		h.Exe = exe
+		h.Config = fakeConfig{on}
+		h.Engine = fakeEngine{filter.EngineInfo{Engine: "rtk", RtkPath: "rtk"}, filter.RewriteResult{Code: 3, Stdout: "rtk x"}}
+		h.Permissions = fakeRules{}
+		id := seed(t, h, st, dir, runningState, runningNext)
+		r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Bash", Command: replaceID(c.cmd, id), HasCommand: true,
+			ProjectDir: dir, Cwd: dir, PermissionMode: c.mode})
+		if got := r.AllowReason != ""; got != c.want {
+			t.Errorf("%s: allow = %v (%q), want %v", c.name, got, r.AllowReason, c.want)
+		}
+		if c.want && (r.Deny != "" || r.Rewrite != nil) {
+			t.Errorf("%s: denied or rewritten: %+v", c.name, r)
+		}
+		if !c.want && c.mode == "auto" && r.Deny == "" {
+			t.Errorf("%s: control case was not denied, test proves nothing: %+v", c.name, r)
 		}
 	}
 }

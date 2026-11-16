@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"regexp"
+	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
@@ -105,20 +106,9 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		h.markEdit(ctx, ev)
 	}
-	s := h.Config.Filter(ev.ProjectDir)
+	s, info, fctx, _ := h.rtkEngine(ev.ProjectDir, ev.Tool)
 	if !s.Enabled {
 		return HookResponse{}
-	}
-	info := h.Engine.Info(s, ev.ProjectDir)
-	fctx := filter.Context{
-		Tool:            ev.Tool,
-		Engine:          info.Engine,
-		RtkHookDetected: info.RtkHookDetected,
-		ExcludeCommands: s.ExcludeCommands,
-		OnlyCommands:    s.OnlyCommands,
-	}
-	if info.RtkPath != "" {
-		fctx.Rewrite = func(c string) (filter.RewriteResult, error) { return h.Engine.Rewrite(info, c) }
 	}
 	d := filter.Decide(ev.Command, fctx)
 	if d.Action != "rewrite" || d.Command == "" {
@@ -131,8 +121,51 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	// rtk's own verdict only counts for a single command; for a chain ours checks every part.
 	rtkAllows := d.Allow && len(filter.CommandSegments(ev.Command)) == 1 && !filter.HasSubstitution(ev.Command)
-	return HookResponse{Rewrite: &CommandRewrite{
-		Command: filter.PinRtkPath(d.Command, info.RtkPath),
-		Allow:   s.AutoAllow && (rtkAllows || verdict == "allow"),
-	}}
+	pinned := filter.PinRtkPath(d.Command, info.RtkPath)
+	allow := s.AutoAllow && (rtkAllows || verdict == "allow")
+	// Auto mode refuses a changed input that carries no decision: ask for the rewrite instead.
+	if ev.PermissionMode == permissionModeAuto && !allow {
+		return HookResponse{Deny: autoModeRtkDeny(pinned, ev.Tool)}
+	}
+	return HookResponse{Rewrite: &CommandRewrite{Command: pinned, Allow: allow}}
+}
+
+// autoModeRtkDeny names the command to run instead; PowerShell needs `&` to run a quoted path.
+func autoModeRtkDeny(cmd, tool string) string {
+	if tool == "PowerShell" && strings.HasPrefix(cmd, `"`) {
+		cmd = "& " + cmd
+	}
+	return "nxy: auto mode — nxy filters this command through rtk but cannot rewrite it for you here; run exactly this instead: " + cmd
+}
+
+// rtkActive resolves the filter settings and engine; the bool is true when rtk is the active engine.
+func (h Hooks) rtkActive(dir string) (filter.Settings, filter.EngineInfo, bool) {
+	if h.Config == nil || h.Engine == nil {
+		return filter.Settings{}, filter.EngineInfo{}, false
+	}
+	s := h.Config.Filter(dir)
+	if !s.Enabled {
+		return s, filter.EngineInfo{}, false
+	}
+	info := h.Engine.Info(s, dir)
+	return s, info, info.Engine == "rtk" && info.RtkPath != "" && !info.RtkHookDetected
+}
+
+// rtkEngine resolves the filter settings, engine and decision context; the bool is true when rtk is the active engine.
+func (h Hooks) rtkEngine(dir, tool string) (filter.Settings, filter.EngineInfo, filter.Context, bool) {
+	s, info, active := h.rtkActive(dir)
+	if !s.Enabled {
+		return s, filter.EngineInfo{}, filter.Context{}, false
+	}
+	fctx := filter.Context{
+		Tool:            tool,
+		Engine:          info.Engine,
+		RtkHookDetected: info.RtkHookDetected,
+		ExcludeCommands: s.ExcludeCommands,
+		OnlyCommands:    s.OnlyCommands,
+	}
+	if info.RtkPath != "" {
+		fctx.Rewrite = func(c string) (filter.RewriteResult, error) { return h.Engine.Rewrite(info, c) }
+	}
+	return s, info, fctx, active
 }
