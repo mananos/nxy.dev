@@ -149,17 +149,29 @@ func (h Hooks) firstPromptNotes(ctx context.Context, ev HookEvent) (HookResponse
 	if got, err := h.Sessions.ConsumeNotesPending(ctx, ev.SessionID); err != nil || !got || isFeature {
 		return HookResponse{}, false
 	}
-	now := h.now()
-	notes, err := h.Memory.Notes(ctx, s.Folder, foldNoteFolders, now)
-	if err != nil || len(notes) == 0 {
+	spec, ok := h.notesAsk(ctx, s.Folder, s.RecommendedNote)
+	if !ok {
 		return HookResponse{}, false
 	}
-	q := memory.NotesQuestion(notes, s.RecommendedNote, now)
+	return HookResponse{Ask: spec}, true
+}
+
+// notesAsk is the "¿con cuál seguimos?" question for the notes of a folder; ok is false with none.
+func (h Hooks) notesAsk(ctx context.Context, folder, recommended string) (*AskSpec, bool) {
+	if h.Memory == nil {
+		return nil, false
+	}
+	now := h.now()
+	notes, err := h.Memory.Notes(ctx, folder, foldNoteFolders, now)
+	if err != nil || len(notes) == 0 {
+		return nil, false
+	}
+	q := memory.NotesQuestion(notes, recommended, now)
 	spec := &AskSpec{Question: q.Question, Header: q.Header}
 	for _, o := range q.Options {
 		spec.Options = append(spec.Options, AskOption{Label: o.Label, Description: o.Description})
 	}
-	return HookResponse{Ask: spec}, true
+	return spec, true
 }
 
 // answerNotes turns the answer to the notes question into context: the chosen note is chained to the

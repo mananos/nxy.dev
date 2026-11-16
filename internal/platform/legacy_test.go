@@ -9,6 +9,88 @@ import (
 	"github.com/mananos/nxy.dev/internal/goldentest"
 )
 
+// planSnapshot lists every file under root with its bytes and mtime, and every directory.
+func planSnapshot(t *testing.T, root string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	err := filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			out[p] = "dir"
+			return nil
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		out[p] = string(b) + "|" + info.ModTime().String()
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestLegacyPlanFiles(t *testing.T) {
+	root := realTemp(t)
+	local := filepath.Join(root, ".nxy", "local")
+	write := func(rel, body string) {
+		p := filepath.Join(local, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	empty, err := ReadLegacyPlanFiles(root)
+	if err != nil || len(empty.Approved) != 0 || len(empty.Verify) != 0 {
+		t.Fatalf("missing .nxy/local: %+v %v", empty, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".nxy")); err == nil {
+		t.Fatal("the read created .nxy")
+	}
+
+	write("plan-approvals.json", `["aaaa1111","bbbb2222"]`)
+	write("verify/aaaa1111/batch-1.json", `{"status":"pass","branch":"main"}`)
+	write("verify/aaaa1111/batch-2.json", `{"status":"fail"}`)
+	write("verify/aaaa1111/batch-3.json", `not json`)
+	write("verify/aaaa1111/notes.txt", `{"status":"pass"}`)
+	write("verify/bbbb2222/batch-1.json", `{"status":"running","branch":"other"}`)
+	write("verify/Bad_Name/batch-1.json", `{"status":"pass"}`)
+
+	before := planSnapshot(t, root)
+	got, err := ReadLegacyPlanFiles(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(got.Approved, ",") != "aaaa1111,bbbb2222" {
+		t.Errorf("approved %v", got.Approved)
+	}
+	if len(got.Verify) != 2 || got.Verify["aaaa1111"][1] != "pass" || got.Verify["aaaa1111"][2] != "fail" ||
+		len(got.Verify["aaaa1111"]) != 2 || got.Verify["bbbb2222"][1] != "running" {
+		t.Errorf("verify %+v", got.Verify)
+	}
+	after := planSnapshot(t, root)
+	if len(after) != len(before) {
+		t.Fatalf("entries changed: %d -> %d", len(before), len(after))
+	}
+	for p, v := range before {
+		if after[p] != v {
+			t.Errorf("%s changed", p)
+		}
+	}
+
+	write("plan-approvals.json", `{"not":"an array"}`)
+	if bad, err := ReadLegacyPlanFiles(root); err != nil || len(bad.Approved) != 0 {
+		t.Errorf("bad approvals: %+v %v", bad, err)
+	}
+}
+
 func TestLegacyProjectKeyGolden(t *testing.T) {
 	for _, c := range goldentest.Load(t, "legacykey") {
 		c := c

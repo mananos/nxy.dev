@@ -24,7 +24,10 @@ type fakeLegacyData struct {
 	hasFilter  bool
 	head       string
 	filterRead []int64 // offsets filter.jsonl was read from
+	plans      legacy.PlanFiles
 }
+
+func (f *fakeLegacyData) PlanFiles(string) (legacy.PlanFiles, error) { return f.plans, nil }
 
 func (f *fakeLegacyData) ProjectKey(string) string { return "proj" }
 func (f *fakeLegacyData) RepoKey(string) string    { return "repo:/p" }
@@ -72,6 +75,15 @@ type addedGroup struct {
 
 func newFakeLegacyStore() *fakeLegacyStore {
 	return &fakeLegacyStore{marks: map[string]legacy.Mark{}, v2: map[string]bool{}}
+}
+
+func (s *fakeLegacyStore) MarkLegacyPlan(_ context.Context, key, answer string, at int64) (bool, error) {
+	k := legacy.ScopeHalfPlan + "/" + key
+	if _, ok := s.marks[k]; ok {
+		return false, nil
+	}
+	s.marks[k] = legacy.Mark{Scope: legacy.ScopeHalfPlan, Key: key, ImportedAt: at, Answer: answer}
+	return true, nil
 }
 
 func (s *fakeLegacyStore) mark(scope, key string, c legacy.Counts) bool {

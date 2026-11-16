@@ -3,13 +3,16 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/mananos/nxy.dev/internal/legacy"
 	"github.com/mananos/nxy.dev/internal/platform"
 	"github.com/mananos/nxy.dev/internal/report"
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
@@ -188,6 +191,105 @@ func TestLegacySessionStartImportsOnce(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "datos de la 1.x importados") {
 		t.Errorf("second start repeats the notice: %q", out.String())
+	}
+}
+
+// treeSums is the sha256 of every file under dir (relative path -> sum).
+func treeSums(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	sums := map[string]string{}
+	err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(b)
+		rel, _ := filepath.Rel(dir, p)
+		sums[filepath.ToSlash(rel)] = hex.EncodeToString(sum[:])
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sums
+}
+
+func TestLegacyHalfPlanOfferedOnceAndFilesUntouched(t *testing.T) {
+	repo, memDB := legacyWorld(t)
+	body := "Goal: migrar el login a tokens\n\n## Plan\nGoal: migrar el login a tokens\n### Batch 1 — modelo\n- internal/a.go\nAccept: `go test ./a`\n### Batch 2 — handler\n- internal/b.go\nAccept: `go test ./b`\n"
+	hash := legacy.PlanHash(legacy.ExtractPlan(body))
+	db, err := sql.Open("sqlite", memDB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UnixMilli()
+	_, err = db.Exec(`INSERT INTO memories (id, scope, project, type, title, body, created, updated) VALUES (?,?,?,?,?,?,?,?)`,
+		"project-handoff-plan1x-fffff", "project", "github.com/o/r", "handoff", "handoff: migrar el login", body, now-500, now+1)
+	db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite := func(p, text string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mustWrite(platform.LegacyPlanApprovals(repo), `["`+hash+`"]`)
+	mustWrite(filepath.Join(platform.LegacyVerifyDir(repo), hash, "batch-1.json"), `{"status":"pass"}`)
+
+	local := filepath.Join(repo, ".nxy", "local")
+	filesBefore := treeSums(t, local)
+	memBefore := treeSums(t, filepath.Dir(memDB))
+
+	t.Setenv("CLAUDE_PROJECT_DIR", repo)
+	start := func() string {
+		t.Helper()
+		return hookCall(t, map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s9", "cwd": repo, "project_dir": repo})
+	}
+	first := start()
+	for _, want := range []string{"migrar el login a tokens", "Planificarla de nuevo"} {
+		if !strings.Contains(first, want) {
+			t.Errorf("first start lacks %q:\n%s", want, first)
+		}
+	}
+	hookCall(t, map[string]any{"hook_event_name": "PostToolUse", "tool_name": "AskUserQuestion", "cwd": repo,
+		"tool_response": map[string]any{"answers": map[string]any{
+			"Quedó a medias la feature de la 1.x «migrar el login a tokens» (plan " + hash + "). ¿La planifico de nuevo con la v2?": "Ignorarla"}}})
+	second := start()
+	if strings.Contains(second, "migrar el login a tokens") || strings.Contains(second, "Planificarla de nuevo") {
+		t.Errorf("second start offers it again:\n%s", second)
+	}
+	if out := legacyRun(t, "legacy", "status"); !strings.Contains(out, "feature de la 1.x "+hash) || !strings.Contains(out, "ignorada") {
+		t.Errorf("status lacks the answer:\n%s", out)
+	}
+	if got := closedPlansLine(1); got != "1 plan de la 1.x ya cerrado en la 1.x" {
+		t.Errorf("one closed plan: %q", got)
+	}
+	if got := closedPlansLine(3); got != "3 planes de la 1.x ya cerrados en la 1.x" {
+		t.Errorf("three closed plans: %q", got)
+	}
+
+	filesAfter := treeSums(t, local)
+	if len(filesAfter) != len(filesBefore) {
+		t.Errorf("files under .nxy/local: %d before, %d after", len(filesBefore), len(filesAfter))
+	}
+	for p, sum := range filesBefore {
+		if filesAfter[p] != sum {
+			t.Errorf("%s changed", p)
+		}
+	}
+	memAfter := treeSums(t, filepath.Dir(memDB))
+	for p, sum := range memBefore {
+		if memAfter[p] != sum {
+			t.Errorf("1.x memory file %s changed", p)
+		}
 	}
 }
 

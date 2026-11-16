@@ -57,7 +57,6 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 	if dir == "" {
 		dir = ev.Cwd
 	}
-	repo := h.Repos.Key(dir)
 	home := h.Repos.Checkout(dir)
 	if f, ok := h.linkedFeature(ctx, ev); ok {
 		return inProgress(f)
@@ -67,8 +66,14 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 	} else if found && !h.heldByOther(ctx, ev, f) {
 		return inProgress(f)
 	}
+	return h.beginFeature(ctx, ev, dir, request, engineer)
+}
+
+// beginFeature starts the feature of a request: the once-per-repo rules offer when in a repo, else
+// the feature itself.
+func (h Hooks) beginFeature(ctx context.Context, ev HookEvent, dir, request string, engineer bool) HookResponse {
 	if _, isRepo := h.Repos.Root(dir); isRepo {
-		if r, ok := h.offerBootstrap(ctx, repo, request, engineer); ok {
+		if r, ok := h.offerBootstrap(ctx, h.Repos.Key(dir), request, engineer); ok {
 			return r
 		}
 	}

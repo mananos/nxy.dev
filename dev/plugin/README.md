@@ -395,6 +395,8 @@ Qué hacer:
 - `nxy mem promote A<n> --question "<qué resuelve>"` vuelve regla una convención que sigue valiendo.
 - `nxy note list` muestra los handoffs importados como notas; `nxy note done <id>` borra los que ya no sirven.
 
+**Feature de la 1.x a medias.** Qué ves: al abrir Claude Code en un repo donde la 1.x dejó un plan aprobado con lotes sin cerrar (y sin feature de la v2 activa), un aviso en castellano con el objetivo del plan («faltan los lotes 2 y 3» o «aprobada, sin lotes corridos») y la pregunta «¿La planifico de nuevo con la v2?». Qué significa: el plan viejo no se retoma; «Planificarla de nuevo» arranca una feature de la v2 cuyo pedido es el objetivo de la 1.x con su plan como referencia, y «Ignorarla» la descarta. Qué hacer: elegir una; si no contestás, se vuelve a preguntar en el próximo arranque. Cada plan se pregunta una sola vez, y `nxy legacy status` muestra qué se contestó («re-planificada con la v2» o «ignorada»). Los archivos de la 1.x no se tocan.
+
 `nxy stats` y `nxy trend` abren `nxy.db` en sólo lectura: sin db o sin datos del filtro salen sin esas filas, y nunca la crean. La v2 también escribe su propio resumen del filtro (PostToolUse de Bash, sin el comando crudo); si la base está ocupada, el hook descarta la fila después de esperar 200 ms como mucho.
 
 Costo: la primera vez por repo, menos de 200 ms (copia temporal de `memory.db`, ~2,5 MB, que se borra al terminar; en una máquina con repos ya importados, una copia más, una sola vez, para las globales; lectura de ~1 MB de jsonl); después ~1 ms por arranque, o 2 a 5 ms si la 1.x escribió algo. Las filas del filtro son unas 10 a 30 por sesión y las sesiones con más de 90 días se barren en el arranque.

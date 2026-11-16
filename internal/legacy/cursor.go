@@ -25,6 +25,7 @@ type Mark struct {
 	ImportedAt int64
 	Counts     Counts
 	Error      string // scope "memory-error": the last failure of the memory import (ImportedAt = when)
+	Answer     string // scope "plan-1x" (ScopeHalfPlan): replan | ignore | closed, kept as plain text in the counts column
 }
 
 // ScopeMemoryError is the scope of the mark that keeps the last memory import failure per repo.

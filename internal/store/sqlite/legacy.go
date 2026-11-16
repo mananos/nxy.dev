@@ -503,7 +503,21 @@ func (s *Store) SetLegacyError(ctx context.Context, repo string, at int64, msg s
 	return err
 }
 
-// LegacyImports lists the marks (by scope and key) and the filter cursors (by checkout).
+// MarkLegacyPlan marks a half-finished 1.x plan (key = legacy.HalfPlanKey) as answered, once: the
+// raw answer (legacy.Answer*) goes in counts. False when it was already marked. The mark stays
+// out of the Bundle like the rest of legacy_imports.
+func (s *Store) MarkLegacyPlan(ctx context.Context, key, answer string, at int64) (bool, error) {
+	res, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO legacy_imports (scope, key, imported_at, counts) VALUES (?,?,?,?)`,
+		legacy.ScopeHalfPlan, key, at, answer)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+// LegacyImports lists the marks (by scope and key) and the filter cursors (by checkout). For the
+// scope legacy.ScopeHalfPlan, counts holds the plain answer text (Mark.Answer), not JSON.
 func (s *Store) LegacyImports(ctx context.Context) ([]LegacyMark, []LegacyCursor, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT scope, key, imported_at, counts FROM legacy_imports ORDER BY scope, key`)
 	if err != nil {
@@ -519,6 +533,8 @@ func (s *Store) LegacyImports(ctx context.Context) ([]LegacyMark, []LegacyCursor
 		}
 		if m.Scope == legacy.ScopeMemoryError {
 			m.Error = raw
+		} else if m.Scope == legacy.ScopeHalfPlan {
+			m.Answer = raw
 		} else {
 			_ = json.Unmarshal([]byte(raw), &m.Counts)
 		}

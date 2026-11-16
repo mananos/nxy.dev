@@ -318,6 +318,8 @@ type LegacyData interface {
 	FilterHead(dir string, upTo int64) string
 	// FilterFrom reads the complete lines of filter.jsonl from offset.
 	FilterFrom(dir string, offset int64) ([]any, legacy.Cursor, error)
+	// PlanFiles reads plan-approvals.json and verify/<hash>/batch-<n>.json of dir's checkout, read-only.
+	PlanFiles(dir string) (legacy.PlanFiles, error)
 }
 
 // LegacyStore keeps what LegacyData read; each import is atomic and marks itself, so a repeat writes nothing.
@@ -329,6 +331,8 @@ type LegacyStore interface {
 	LegacyImports(ctx context.Context) ([]legacy.Mark, []legacy.StoredCursor, error)
 	// SetLegacyError keeps the last memory import failure of repo (empty msg clears it).
 	SetLegacyError(ctx context.Context, repo string, at int64, msg string) error
+	// MarkLegacyPlan marks a half-finished 1.x plan as answered (replan|ignore|closed); false when already marked.
+	MarkLegacyPlan(ctx context.Context, key, answer string, at int64) (bool, error)
 	// AddFilterGroup adds what the v2's PostToolUse hook saw to the session's summary (source "v2").
 	AddFilterGroup(ctx context.Context, checkout, session string, g report.FilterGroup) error
 }

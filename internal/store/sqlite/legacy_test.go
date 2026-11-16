@@ -426,6 +426,33 @@ func TestOpenReadOnly(t *testing.T) {
 	}
 }
 
+func TestLegacyPlanMark(t *testing.T) {
+	s, _ := newMem(t)
+	key := legacy.HalfPlanKey("/p/.nxy/local", "abcd1234")
+	if ok, err := s.MarkLegacyPlan(ctx, key, legacy.AnswerIgnore, 7); err != nil || !ok {
+		t.Fatalf("first mark: %v %v", ok, err)
+	}
+	if ok, err := s.MarkLegacyPlan(ctx, key, legacy.AnswerReplan, 8); err != nil || ok {
+		t.Fatalf("second mark: %v %v", ok, err)
+	}
+	marks, _, err := s.LegacyImports(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := 0
+	for _, m := range marks {
+		if m.Scope == legacy.ScopeHalfPlan {
+			found++
+			if m.Key != key || m.Answer != legacy.AnswerIgnore || m.ImportedAt != 7 {
+				t.Errorf("mark %+v", m)
+			}
+		}
+	}
+	if found != 1 {
+		t.Fatalf("marks %+v", marks)
+	}
+}
+
 func TestBundleExcludesLegacyTables(t *testing.T) {
 	s, _ := newMem(t)
 	if err := s.AddFilterGroup(ctx, "co", "session-secret", fg("rtk", "", "git", 1, 1)); err != nil {

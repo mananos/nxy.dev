@@ -78,8 +78,20 @@ func (legacyFiles) FilterFrom(dir string, offset int64) ([]any, legacy.Cursor, e
 	return platform.ReadJSONLFrom(platform.LegacyFilterLog(dir), offset)
 }
 
+func (legacyFiles) PlanFiles(dir string) (legacy.PlanFiles, error) {
+	return platform.ReadLegacyPlanFiles(dir)
+}
+
 // lazyStore meets app.LegacyStore.
 var _ app.LegacyStore = (*lazyStore)(nil)
+
+func (l *lazyStore) MarkLegacyPlan(ctx context.Context, key, answer string, at int64) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.MarkLegacyPlan(ctx, key, answer, at)
+}
 
 func (l *lazyStore) ImportLegacyMemory(ctx context.Context, repo string, imp legacy.Import) (legacy.Counts, bool, error) {
 	s, err := l.open(ctx)
@@ -160,6 +172,14 @@ func runLegacy(args []string, _ io.Reader, stdout, stderr io.Writer) (code int) 
 }
 
 func legacyDate(ms int64) string { return time.UnixMilli(ms).Format("2006-01-02") }
+
+// closedPlansLine is the status line for the 1.x plans found with nothing left to do.
+func closedPlansLine(n int) string {
+	if n == 1 {
+		return "1 plan de la 1.x ya cerrado en la 1.x"
+	}
+	return fmt.Sprintf("%d planes de la 1.x ya cerrados en la 1.x", n)
+}
 
 func legacyImport(ctx context.Context, dir string, stdout, stderr io.Writer) int {
 	h, st := newHooksStore()
@@ -242,7 +262,20 @@ func legacyStatus(ctx context.Context, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "nada importado de la 1.x todavía")
 		return 0
 	}
+	closedPlans := 0
 	for _, m := range marks {
+		if m.Scope == legacy.ScopeHalfPlan {
+			checkout, hash, _ := strings.Cut(m.Key, "#")
+			switch m.Answer {
+			case legacy.AnswerClosed:
+				closedPlans++
+			case legacy.AnswerReplan:
+				fmt.Fprintf(stdout, "feature de la 1.x %s en %s — re-planificada con la v2 — el %s\n", hash, strings.TrimSuffix(checkout, "/.nxy/local"), legacyDate(m.ImportedAt))
+			default:
+				fmt.Fprintf(stdout, "feature de la 1.x %s en %s — ignorada — el %s\n", hash, strings.TrimSuffix(checkout, "/.nxy/local"), legacyDate(m.ImportedAt))
+			}
+			continue
+		}
 		if m.Scope == legacy.ScopeMemoryError {
 			fmt.Fprintf(stdout, "memoria de %s — último error el %s: %s (`nxy legacy import` lo reintenta)\n", m.Key, legacyDate(m.ImportedAt), m.Error)
 			continue
@@ -256,6 +289,9 @@ func legacyStatus(ctx context.Context, stdout, stderr io.Writer) int {
 			kind = "review de "
 		}
 		fmt.Fprintf(stdout, "%s%s — importado el %s — %s\n", kind, m.Key, legacyDate(m.ImportedAt), orNothing(m.Counts.Render()))
+	}
+	if closedPlans > 0 {
+		fmt.Fprintln(stdout, closedPlansLine(closedPlans))
 	}
 	for _, c := range cursors {
 		file := filepath.Join(filepath.FromSlash(c.Checkout), "metrics", "filter.jsonl")

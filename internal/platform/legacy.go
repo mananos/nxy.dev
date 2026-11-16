@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/jscompat"
@@ -36,6 +37,71 @@ func LegacyFilterLog(dir string) string {
 // LegacyReviewLog is the 1.x review log of the checkout that contains dir.
 func LegacyReviewLog(dir string) string {
 	return filepath.Join(RuntimeDir(dir), "review.jsonl")
+}
+
+// LegacyVerifyDir is the 1.x folder with one verify/<hash>/batch-<n>.json per plan batch.
+func LegacyVerifyDir(dir string) string {
+	return filepath.Join(RuntimeDir(dir), "verify")
+}
+
+// LegacyPlanApprovals is the 1.x file with the hashes of the approved plans.
+func LegacyPlanApprovals(dir string) string {
+	return filepath.Join(RuntimeDir(dir), "plan-approvals.json")
+}
+
+var (
+	reBatchFile = regexp.MustCompile(`^batch-(\d+)\.json$`)
+)
+
+// ReadLegacyPlanFiles reads, read-only, which plans the 1.x approved and the status of each batch run.
+// Missing or unparsable files count as nothing; the "branch" field of the batch files is ignored.
+func ReadLegacyPlanFiles(dir string) (legacy.PlanFiles, error) {
+	pf := legacy.PlanFiles{Verify: map[string]map[int]string{}}
+	if b, err := os.ReadFile(LegacyPlanApprovals(dir)); err == nil {
+		var hashes []string
+		if json.Unmarshal(b, &hashes) == nil {
+			pf.Approved = hashes
+		}
+	}
+	vdir := LegacyVerifyDir(dir)
+	entries, err := os.ReadDir(vdir)
+	if err != nil {
+		return pf, nil
+	}
+	for _, e := range entries {
+		if !e.IsDir() || !legacy.ValidPlanHash(e.Name()) {
+			continue
+		}
+		files, err := os.ReadDir(filepath.Join(vdir, e.Name()))
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			m := reBatchFile.FindStringSubmatch(f.Name())
+			if m == nil || f.IsDir() {
+				continue
+			}
+			n, err := strconv.Atoi(m[1])
+			if err != nil {
+				continue
+			}
+			b, err := os.ReadFile(filepath.Join(vdir, e.Name(), f.Name()))
+			if err != nil {
+				continue
+			}
+			var st struct {
+				Status string `json:"status"`
+			}
+			if json.Unmarshal(b, &st) != nil || st.Status == "" {
+				continue
+			}
+			if pf.Verify[e.Name()] == nil {
+				pf.Verify[e.Name()] = map[int]string{}
+			}
+			pf.Verify[e.Name()][n] = st.Status
+		}
+	}
+	return pf, nil
 }
 
 // FilterCheckout names the checkout in the filter tables: its runtime dir with forward slashes,

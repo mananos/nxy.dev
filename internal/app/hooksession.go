@@ -61,7 +61,8 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 		imported += msg
 	}
 	featureActive := false
-	defer func() { h.startNotesSession(ctx, ev, featureActive) }()
+	legacyOffered := false
+	defer func() { h.startNotesSession(ctx, ev, featureActive || legacyOffered) }()
 	if h.Store != nil && h.Repos != nil {
 		h.carryLink(ctx, ev)
 		if f, found := h.featureFor(ctx, ev); found {
@@ -157,6 +158,16 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 			r.Notice += "\n"
 		}
 		r.Notice += imported
+	}
+	if !featureActive && h.Store != nil && h.Repos != nil && (ev.Source == "startup" || ev.Source == "clear" || ev.Source == "") {
+		if notice, ask := h.offerLegacyPlan(ctx, dir); ask != nil {
+			legacyOffered = true
+			if r.Notice != "" {
+				r.Notice += "\n"
+			}
+			r.Notice += notice
+			r.Ask = ask
+		}
 	}
 	if h.Legacy != nil && h.Legacy.Active(dir) {
 		if r.Notice != "" {
