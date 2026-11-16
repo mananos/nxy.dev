@@ -264,20 +264,10 @@ func TestDecisionQueue(t *testing.T) {
 	// answering the first leaves the other
 	m = testModel(t)
 	press(m, "ctrl+n", "enter")
-	if m.st.answered["F7K2"] || m.st.toast != "llega en F5.4" {
-		t.Fatalf("a planned option answered: %v toast %q", m.st.answered, m.st.toast)
-	}
-	m = testModel(t)
-	for _, d := range m.st.data.Decisions {
-		for i := range d.Options {
-			d.Options[i].Action.Planned = false
-		}
-	}
-	press(m, "ctrl+n", "enter")
 	if !m.st.answered["F7K2"] || !m.st.decOpen || m.st.decCur != "F7K9" || m.st.decisionCount() != 1 {
 		t.Fatalf("after answering F7K2: %v open=%v cur=%s", m.st.answered, m.st.decOpen, m.st.decCur)
 	}
-	if !strings.Contains(m.st.toast, "nxy action decide --feature F7K2 --option 1") {
+	if !strings.Contains(m.st.toast, "nxy action decide --ask ASK-F7K2 --answer Reintentar") {
 		t.Errorf("toast %q", m.st.toast)
 	}
 }
@@ -320,7 +310,7 @@ func TestPlanApproval(t *testing.T) {
 		t.Fatalf("the cursor starts on %d, want 0", got)
 	}
 	press(m, "a")
-	if m.st.toast != "llega en F5.4" {
+	if !strings.Contains(m.st.toast, "nxy action decide --ask ASK-F7K9-PLAN --answer Approve") {
 		t.Errorf("toast %q", m.st.toast)
 	}
 
@@ -720,14 +710,76 @@ func TestMemoryProposalAndCreate(t *testing.T) {
 	if strings.Contains(m.st.frame(true), "se entregó 9 veces") {
 		t.Fatal("the answered proposal is still on top")
 	}
+	// + opens a form: text, question and applies to; an empty paths drops its flag
 	press(m, "+")
-	// no form until F5.4: creating a rule does not run with placeholders
-	if m.st.toast != "llega en F5.4" {
+	if !m.st.mem.edit || len(m.st.mem.efields) != 3 {
+		t.Fatalf("+ should open a 3 field form: %+v", m.st.mem.ekeys)
+	}
+	press(m, "enter")
+	if !m.st.mem.edit || !strings.Contains(m.st.toast, "Falta") {
+		t.Fatalf("an empty text keeps the form open: %q", m.st.toast)
+	}
+	typeKeys(m, "usar tabs")
+	press(m, "tab")
+	typeKeys(m, "indentacion")
+	press(m, "enter")
+	if m.st.mem.edit {
+		t.Fatal("enter should close the form")
+	}
+	if !strings.Contains(m.st.toast, "$ nxy mem rule usar tabs --question indentacion") || strings.Contains(m.st.toast, "--paths") || strings.Contains(m.st.toast, "{") {
 		t.Fatalf("+ toast %q", m.st.toast)
 	}
+	// with paths filled in the flag stays
+	press(m, "+")
+	typeKeys(m, "a")
+	press(m, "tab")
+	typeKeys(m, "b")
+	press(m, "tab")
+	typeKeys(m, "x/**")
+	press(m, "enter")
+	if !strings.Contains(m.st.toast, "--paths x/**") {
+		t.Fatalf("paths toast %q", m.st.toast)
+	}
+	// esc runs nothing
+	press(m, "+", "esc")
+	if m.st.mem.edit {
+		t.Fatal("esc should close the form")
+	}
+	// global: roles is a fourth field and an empty one drops --roles
 	press(m, "[", "+")
-	if m.st.toast != "llega en F5.4" {
+	if len(m.st.mem.efields) != 4 {
+		t.Fatalf("global form fields %v", m.st.mem.ekeys)
+	}
+	typeKeys(m, "g")
+	press(m, "tab")
+	typeKeys(m, "q")
+	press(m, "enter")
+	if !strings.Contains(m.st.toast, "--global") || strings.Contains(m.st.toast, "--roles") || strings.Contains(m.st.toast, "--paths") {
 		t.Fatalf("global + toast %q", m.st.toast)
+	}
+}
+
+func typeKeys(m *model, s string) {
+	for _, r := range s {
+		press(m, string(r))
+	}
+}
+
+func TestFillForm(t *testing.T) {
+	got, un := fillForm([]string{"nxy", "mem", "promote", "A2", "--question", "{question}"}, map[string]string{"question": " por qué "})
+	if un || strings.Join(got, "|") != "nxy|mem|promote|A2|--question|por qué" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestFillFormKeepsBracesLiteral(t *testing.T) {
+	got, un := fillForm([]string{"mem", "add", "{text}", "--question", "{question}"},
+		map[string]string{"text": "usa {question} y {text}", "question": "¿{x}?"})
+	if un || strings.Join(got, "|") != "mem|add|usa {question} y {text}|--question|¿{x}?" {
+		t.Fatalf("got %q unfilled=%v", got, un)
+	}
+	if _, un := fillForm([]string{"a", "{nope}"}, map[string]string{"text": "x"}); !un {
+		t.Fatal("a placeholder without value must be reported")
 	}
 }
 

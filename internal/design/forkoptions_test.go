@@ -55,7 +55,7 @@ func TestSetForkOptionsStoresAndMarksCurrent(t *testing.T) {
 	if f.Question != "dónde vive el flag" || f.Opinion == "" {
 		t.Fatalf("fork: %+v", f)
 	}
-	if got := pendingState(d); !strings.Contains(got, "B1 dónde vive el flag") || !strings.Contains(got, "- B opción b") {
+	if got := pendingState("f1", d); !strings.Contains(got, "B1 dónde vive el flag") || !strings.Contains(got, "- B opción b") {
 		t.Fatal(got)
 	}
 	Propose(d, prop("B1"))

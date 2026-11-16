@@ -191,14 +191,14 @@ func scanRule(sc scanner) (memory.Rule, error) {
 	var r memory.Rule
 	var paths, roles string
 	err := sc.Scan(&r.ID, &r.Short, &r.Repo, &r.Text, &r.Question, &r.Origin, &r.FeatureID, &paths, &r.Supersedes,
-		&r.Deliveries, &r.Citations, &r.LastCitedAt, &r.CreatedAt, &r.UpdatedAt, &r.DeletedAt, &r.Machine, &roles)
+		&r.Deliveries, &r.Citations, &r.LastCitedAt, &r.CreatedAt, &r.UpdatedAt, &r.DeletedAt, &r.Machine, &roles, &r.KeptAt)
 	r.Paths = decodeStrings(paths)
 	r.Roles = decodeStrings(roles)
 	return r, err
 }
 
 func queryRules(ctx context.Context, q queryer, where string, args ...any) ([]memory.Rule, error) {
-	rows, err := q.QueryContext(ctx, `SELECT `+ruleCols+` FROM mem_rules `+where, args...)
+	rows, err := q.QueryContext(ctx, `SELECT `+ruleCols+`, kept_at FROM mem_rules `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -316,13 +316,13 @@ func scanLearning(sc scanner) (memory.Learning, error) {
 	var l memory.Learning
 	var files string
 	err := sc.Scan(&l.ID, &l.Short, &l.Repo, &l.Text, &files, &l.FeatureID, &l.Hash, &l.Seen, &l.LastSeenAt,
-		&l.ObsoleteAt, &l.PromotedTo, &l.CreatedAt, &l.UpdatedAt, &l.DeletedAt, &l.Machine)
+		&l.ObsoleteAt, &l.PromotedTo, &l.CreatedAt, &l.UpdatedAt, &l.DeletedAt, &l.Machine, &l.KeptAt)
 	l.Files = decodeStrings(files)
 	return l, err
 }
 
 func queryLearnings(ctx context.Context, q queryer, where string, args ...any) ([]memory.Learning, error) {
-	rows, err := q.QueryContext(ctx, `SELECT `+learningCols+` FROM mem_learnings `+where, args...)
+	rows, err := q.QueryContext(ctx, `SELECT `+learningCols+`, kept_at FROM mem_learnings `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -650,6 +650,32 @@ func (s *Store) DeleteMemory(ctx context.Context, ref string) (string, error) {
 		}
 	}
 	if err != nil {
+		return "", err
+	}
+	return short, tx.Commit()
+}
+
+// KeepMemory marks a live rule or learning as kept: nxy stops proposing to delete or promote it.
+// It does not touch updated_at, so it never travels in export/import. Returns the alias.
+func (s *Store) KeepMemory(ctx context.Context, ref string) (string, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	kind, id, err := memoryKindOf(ctx, tx, ref, false)
+	if err != nil {
+		return "", err
+	}
+	table := "mem_learnings"
+	if kind == KindRule {
+		table = "mem_rules"
+	}
+	var short string
+	if err := tx.QueryRowContext(ctx, `SELECT short FROM `+table+` WHERE id=?`, id).Scan(&short); err != nil {
+		return "", err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE `+table+` SET kept_at=? WHERE id=?`, s.nowMs(), id); err != nil {
 		return "", err
 	}
 	return short, tx.Commit()
@@ -1202,6 +1228,10 @@ func (s *Store) SweepNotes(ctx context.Context, now time.Time) (int, error) {
 	}
 	if _, err := s.db.ExecContext(ctx, `DELETE FROM agent_runs WHERE ended_at < ?`,
 		now.Add(-agentRunTTL).UTC().UnixMilli()); err != nil {
+		return int(n), err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM pending_asks WHERE created_at < ?`,
+		now.Add(-pendingAskTTL).UTC().UnixMilli()); err != nil {
 		return int(n), err
 	}
 	return int(n), nil

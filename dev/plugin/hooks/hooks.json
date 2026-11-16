@@ -59,7 +59,8 @@
           {
             "type": "command",
             "command": ". \"${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd\"; exit $LASTEXITCODE",
-            "timeout": 10
+            "timeout": 1800,
+            "statusMessage": "nxy: si tenés la TUI abierta, contestá ahí"
           }
         ]
       }

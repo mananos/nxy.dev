@@ -108,6 +108,33 @@
       ],
       "confirm": "",
       "planned": false
+    },
+    {
+      "id": "approve",
+      "label": "Aprobar",
+      "argv": [],
+      "confirm": "",
+      "planned": false
+    },
+    {
+      "id": "change",
+      "label": "Cambiar",
+      "argv": [],
+      "confirm": "",
+      "planned": false
+    },
+    {
+      "id": "stop",
+      "label": "Parar",
+      "argv": [
+        "nxy",
+        "feature",
+        "stop",
+        "--feature",
+        "FEAT-Q"
+      ],
+      "confirm": "Termina la feature y suelta la pregunta",
+      "planned": false
     }
   ]
 }

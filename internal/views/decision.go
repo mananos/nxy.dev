@@ -15,7 +15,12 @@ type Decision struct {
 	MultiSelect bool     `json:"multi_select"`
 	AskedAt     string   `json:"asked_at"`
 	Fork        *ForkRef `json:"fork"` // only with Kind "fork": it is read here and answered in Ingeniero
-	Options     []Option `json:"options"`
+	// AskID is the pending ask the hook holds for this question; empty when none is waiting, and then
+	// the options have no argv and the question is answered in the Claude Code terminal.
+	AskID string `json:"ask_id"`
+	// Release hands the question back to the Claude Code dialog (decide --release); empty argv without AskID.
+	Release Action   `json:"release"`
+	Options []Option `json:"options"`
 	// Rest are questions 2..n of a multi-question ask.
 	Rest []DecisionQuestion `json:"rest"`
 }

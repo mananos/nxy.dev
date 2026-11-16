@@ -110,6 +110,32 @@ func TestDesignFreeTextDoesNotSave(t *testing.T) {
 	}
 }
 
+func TestDesignForkQuestionAnswer(t *testing.T) {
+	h, st, id := engineerFeature(t)
+	ctx := context.Background()
+	_, _ = h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["donde va el cache"]}`))
+	fork := `{"fork":"B1","options":[{"key":"A","label":"En memoria","summary":"s"},{"key":"B","label":"En disco","summary":"s"}],"opinion":"memoria"}`
+	if res, err := h.SaveForkOptions(ctx, id, strings.NewReader(fork)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("fork: %+v %v", res, err)
+	}
+	f := st.feats[id]
+	if !isNxyQuestion(f, design.ForkQuestion(id, "B1")) {
+		t.Error("fork question is not an nxy question")
+	}
+	q := design.ForkQuestion(id, "B1")
+	r := answer(h, q, "En disco")
+	if !strings.Contains(r.Context, "eligió En disco para B1") || !strings.Contains(r.Context, "design propose") {
+		t.Errorf("picked: %+v", r)
+	}
+	r = answer(h, q, "mejor redis")
+	if !strings.Contains(r.Context, "El usuario dijo: mejor redis") || !strings.Contains(r.Context, "seguí el debate") {
+		t.Errorf("free: %+v", r)
+	}
+	if st.feats[id].State.Phase != domain.PhaseDesigning {
+		t.Errorf("phase = %v", st.feats[id].State.Phase)
+	}
+}
+
 func TestDesignRefsCaptured(t *testing.T) {
 	h, st, id := engineerFeature(t)
 	h.Handle(context.Background(), prompt("  usá  este ejemplo\n"))

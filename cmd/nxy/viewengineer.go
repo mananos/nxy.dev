@@ -92,9 +92,14 @@ func (v *viewSource) Engineer(ctx context.Context, featureID string) (views.Engi
 	if err != nil {
 		return views.Engineer{}, false, err
 	}
+	waiting, err := v.store.OpenPendingAsks(ctx)
+	if err != nil {
+		return views.Engineer{}, false, err
+	}
 	cache := v.d2cache()
 	e, ok := views.BuildEngineer(views.EngineerIn{
 		FeatureIn: fd.featureIn(v.now()),
+		Waiting:   waiting,
 		Draw:      func(src string) views.Diagram { return cache.draw(ctx, src) },
 	})
 	return e, ok, nil

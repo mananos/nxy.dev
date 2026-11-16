@@ -408,13 +408,17 @@ func (v *viewSource) Cockpit(ctx context.Context) (views.Cockpit, error) {
 		return views.Cockpit{}, err
 	}
 	in := views.CockpitIn{Now: now}
+	waiting, err := v.store.OpenPendingAsks(ctx)
+	if err != nil {
+		return views.Cockpit{}, err
+	}
 	var open []domain.Feature
 	for _, row := range rows {
 		fd, err := v.featureData(ctx, row)
 		if err != nil {
 			return views.Cockpit{}, err
 		}
-		it := views.CockpitItem{FeatureIn: fd.featureIn(now), Running: row.Feature.State.Running()}
+		it := views.CockpitItem{FeatureIn: fd.featureIn(now), Running: row.Feature.State.Running(), Waiting: waiting}
 		for _, st := range row.Feature.State.Steps {
 			if st.Status == domain.StepFailed {
 				it.Failed = append(it.Failed, st.N)
@@ -650,7 +654,11 @@ func (v *viewSource) Decision(ctx context.Context, featureID string) (views.Deci
 	if err != nil {
 		return views.Decision{}, false, err
 	}
-	d, ok := views.BuildDecision(row.Feature, row.UpdatedAt)
+	waiting, err := v.store.OpenPendingAsks(ctx)
+	if err != nil {
+		return views.Decision{}, false, err
+	}
+	d, ok := views.BuildDecision(row.Feature, row.UpdatedAt, waiting)
 	return d, ok, nil
 }
 

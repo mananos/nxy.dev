@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mananos/nxy.dev/internal/ask"
 	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/internal/plan"
 	"github.com/mananos/nxy.dev/internal/repos"
 )
 
@@ -26,6 +28,8 @@ type PlanIn struct {
 	FeatureIn
 	Files  map[string]FileImpact
 	Source string
+	// Waiting are the questions the hook holds in the TUI; the approval one gives approve and change their argv.
+	Waiting []domain.PendingAsk
 }
 
 var atLineRe = regexp.MustCompile(`:(\d+)(?:-\d+)?$`)
@@ -103,6 +107,17 @@ func BuildPlan(in PlanIn) (Plan, bool) {
 	}
 	if out.State != PlanDone {
 		out.Actions = append(out.Actions, lifeAction(f))
+	}
+	if out.State == PlanApproval {
+		var row *domain.PendingAsk
+		if a, ok := ask.For(f); ok {
+			row = waitingRow(f, in.Waiting, asked(a.Questions))
+		}
+		out.Actions = append(out.Actions,
+			Action{ID: "approve", Label: "Aprobar", Argv: decideArgv(row, plan.Approve)},
+			Action{ID: "change", Label: "Cambiar", Argv: decideArgv(row, plan.Change)},
+			Action{ID: "stop", Label: "Parar", Argv: []string{"nxy", "feature", "stop", "--feature", f.ID}, Confirm: "Termina la feature y suelta la pregunta"},
+		)
 	}
 	if out.Impact.Source == "" {
 		out.Impact.Source = "none"

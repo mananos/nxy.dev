@@ -69,7 +69,7 @@ func runTui(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 			return code
 		}
 		defer closeSrc()
-		o.Source, o.InRepo, o.Run = src, src.InRepo(), runSelf(dir)
+		o.Source, o.InRepo, o.Run = src, src.InRepo(), runSelf(dir, "")
 		if *dump == "" {
 			w, err := src.store.Watch(context.Background())
 			if err != nil {
@@ -88,6 +88,15 @@ func runTui(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 				return 1
 			}
 			o.Schema = schema
+			// the hook only waits for answers while this mark is fresh
+			if run, rerr := platform.RunDir(); rerr == nil {
+				platform.SweepHeartbeats(run, time.Now())
+				nonce, stopBeat := platform.HeartbeatNonce(run)
+				defer stopBeat()
+				o.Run = runSelf(dir, nonce)
+				// a newer nxy migrated the db: this TUI answers nothing, so it stops counting as alive
+				o.OnStale = stopBeat
+			}
 		}
 	}
 	if *dump == "" {
@@ -157,9 +166,24 @@ func selfArgv(argv []string) ([]string, error) {
 // actionTimeout bounds every button's command (winget can take a while).
 const actionTimeout = 10 * time.Minute
 
+// selfEnv is the environment of a button's subprocess: env plus the TUI's nonce (the proof that
+// `nxy action decide` is the user's), replacing any nonce already there.
+func selfEnv(env []string, nonce string) []string {
+	out := make([]string, 0, len(env)+1)
+	for _, e := range env {
+		if !strings.HasPrefix(e, platform.NonceEnv+"=") {
+			out = append(out, e)
+		}
+	}
+	if nonce != "" {
+		out = append(out, platform.NonceEnv+"="+nonce)
+	}
+	return out
+}
+
 // runSelf runs a button's command as a subprocess of this binary, in dir. stdin is empty so it
 // never takes keys from the TUI; stdout and stderr come back together.
-func runSelf(dir string) func(ctx context.Context, argv []string) (string, error) {
+func runSelf(dir, nonce string) func(ctx context.Context, argv []string) (string, error) {
 	return func(ctx context.Context, argv []string) (string, error) {
 		rest, err := selfArgv(argv)
 		if err != nil {
@@ -173,6 +197,7 @@ func runSelf(dir string) func(ctx context.Context, argv []string) (string, error
 		defer cancel()
 		cmd := exec.CommandContext(ctx, exe, rest...)
 		cmd.Dir = dir
+		cmd.Env = selfEnv(os.Environ(), nonce)
 		out, err := cmd.CombinedOutput()
 		return string(out), err
 	}

@@ -30,7 +30,7 @@
         "question": "El lote 3 (web) sigue en rojo después del reintento. ¿Cómo seguimos?"
       },
       "actions": [
-        { "id": "retry", "label": "Reintentar", "argv": ["nxy", "action", "decide", "--feature", "F7K2", "--option", "1"], "confirm": "", "planned": true },
+        { "id": "retry", "label": "Reintentar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--answer", "Reintentar"], "confirm": "", "planned": false },
         { "id": "pause", "label": "Pausar", "argv": ["nxy", "feature", "pause", "--feature", "F7K2"], "confirm": "", "planned": false }
       ]
     },
@@ -87,7 +87,7 @@
         "question": "¿Dónde vive el backoff?"
       },
       "actions": [
-        { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true }
+        { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "En PagosClient, con sleep"], "confirm": "", "planned": false }
       ]
     },
     {

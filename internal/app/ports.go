@@ -109,6 +109,7 @@ type MemoryStore interface {
 	EditLearning(ctx context.Context, ref string, e memory.LearningEdit) (memory.Learning, error)
 	MemoryKind(ctx context.Context, ref string) (string, error)
 	DeleteMemory(ctx context.Context, ref string) (string, error)
+	KeepMemory(ctx context.Context, ref string) (string, error)
 	RestoreMemory(ctx context.Context, ref string) (string, error)
 	AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error)
 	Learnings(ctx context.Context, repo string) ([]memory.Learning, error)
@@ -362,6 +363,25 @@ type AgentFiles interface {
 // AgentRuns keeps one row per subagent run.
 type AgentRuns interface {
 	RecordAgentRun(ctx context.Context, r domain.AgentRun) error
+}
+
+// PendingAsks keeps the questions of nxy held by the hook until the TUI answers them.
+type PendingAsks interface {
+	CreatePendingAsk(ctx context.Context, a domain.PendingAsk) (domain.PendingAsk, error)
+	// PendingAsk reads one row; it fails when it is gone.
+	PendingAsk(ctx context.Context, id string) (domain.PendingAsk, error)
+	// TouchPendingAsk renews an unanswered row; rows nobody renews stop being listed, read or answerable.
+	TouchPendingAsk(ctx context.Context, id string) error
+	OpenPendingAsks(ctx context.Context) ([]domain.PendingAsk, error)
+	// AnswerPendingAsk is false when the row was already answered or is gone.
+	AnswerPendingAsk(ctx context.Context, id string, answers []string, by string) (bool, error)
+	ReleaseFeatureAsks(ctx context.Context, featureID, by string) error
+	DeletePendingAsk(ctx context.Context, id string) error
+}
+
+// TUILiveness tells whether a TUI is open and can answer questions.
+type TUILiveness interface {
+	Alive() bool
 }
 
 // Roles gives the model and effort the config sets for a subagent role ("planner", "scout"...);

@@ -343,15 +343,22 @@ func (planScreen) key(st *state, r route, k string) intent {
 			return intent{push: &route{screen: "agentes", key: r.key}}
 		}
 		if a, ok := planAction(p, "approve"); ok {
-			return intent{toast: st.runAction(actionReq{label: "aprobar", a: a})}
+			if len(a.Argv) == 0 {
+				return intent{toast: terminalText}
+			}
+			return intent{toast: st.runAction(actionReq{label: "aprobar", a: a, reloadOnErr: true})}
 		}
 	case "c":
 		if a, ok := planAction(p, "change"); approval && ok {
-			return intent{toast: st.runAction(actionReq{label: "cambiar", a: a})}
+			if len(a.Argv) == 0 {
+				return intent{toast: terminalText}
+			}
+			return intent{toast: st.runAction(actionReq{label: "cambiar", a: a, reloadOnErr: true})}
 		}
 	case "x":
 		if a, ok := planAction(p, "stop"); approval && ok {
-			return intent{toast: st.runAction(actionReq{label: "parar", a: a})}
+			return intent{toast: st.runAction(actionReq{label: "parar", a: a, reloadOnErr: true,
+				after: func() { st.toast = "feature parada" }})}
 		}
 	case "d":
 		if approval {

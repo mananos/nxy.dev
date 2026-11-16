@@ -48,7 +48,7 @@
       "text": "K9 nunca se cita: ¿borrarla?",
       "why": "se entregó 9 veces y nadie la citó",
       "accept": { "id": "accept", "label": "Borrar K9", "argv": ["nxy", "mem", "rm","K9"], "confirm": "Borra la regla K9 del repo", "planned": false },
-      "reject": { "id": "reject", "label": "Dejarla", "argv": ["nxy", "mem", "keep", "K9"], "confirm": "", "planned": true }
+      "reject": { "id": "reject", "label": "Dejarla", "argv": ["nxy", "mem", "keep", "K9"], "confirm": "", "planned": false }
     },
     {
       "id": "P2",
@@ -57,7 +57,7 @@
       "text": "A2 se vio 3 veces: ¿promoverla a regla?",
       "why": "lo aprendieron 3 features distintas",
       "accept": { "id": "accept", "label": "Promover A2", "argv": ["nxy", "mem", "promote", "A2", "--question", "{question}"], "confirm": "Crea una regla desde A2", "planned": false },
-      "reject": { "id": "reject", "label": "Dejarlo", "argv": ["nxy", "mem", "keep", "A2"], "confirm": "", "planned": true }
+      "reject": { "id": "reject", "label": "Dejarlo", "argv": ["nxy", "mem", "keep", "A2"], "confirm": "", "planned": false }
     }
   ]
 }

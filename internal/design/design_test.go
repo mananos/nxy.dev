@@ -131,6 +131,19 @@ func TestGuideCarriesDecisionsAndPending(t *testing.T) {
 	}
 }
 
+func TestGuideCarriesForkQuestion(t *testing.T) {
+	d := &domain.Design{}
+	SetAgenda(d, []string{"a"})
+	if p := SetForkOptions(d, ForkInput{Fork: "B1", Opinion: "o", Options: []domain.ForkOption{
+		{Label: "En memoria", Summary: "s"}, {Label: "En disco", Summary: "s"}}}); p != nil {
+		t.Fatal(p)
+	}
+	g := Guide(domain.Feature{ID: "f1", Design: d}, "nxy")
+	if !strings.Contains(g, ForkQuestion("f1", "B1")) || !strings.Contains(g, "En disco") {
+		t.Errorf("guide lacks the fork question: %s", g)
+	}
+}
+
 func TestGuideCarriesLastRefs(t *testing.T) {
 	d := &domain.Design{}
 	for i := 1; i <= 12; i++ {

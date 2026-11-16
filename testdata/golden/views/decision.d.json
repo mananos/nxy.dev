@@ -34,6 +34,14 @@
   "multi_select": false,
   "asked_at": "2026-11-10T14:00:00Z",
   "fork": null,
+  "ask_id": "",
+  "release": {
+    "id": "",
+    "label": "",
+    "argv": [],
+    "confirm": "",
+    "planned": false
+  },
   "options": [
     {
       "label": "Approve",
@@ -42,19 +50,9 @@
       "action": {
         "id": "approve",
         "label": "Approve",
-        "argv": [
-          "nxy",
-          "action",
-          "decide",
-          "--feature",
-          "FEAT-D",
-          "--question",
-          "1",
-          "--option",
-          "1"
-        ],
+        "argv": [],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     },
     {
@@ -64,19 +62,9 @@
       "action": {
         "id": "change",
         "label": "Change",
-        "argv": [
-          "nxy",
-          "action",
-          "decide",
-          "--feature",
-          "FEAT-D",
-          "--question",
-          "1",
-          "--option",
-          "2"
-        ],
+        "argv": [],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     },
     {
@@ -86,19 +74,9 @@
       "action": {
         "id": "ver_completo",
         "label": "Ver completo",
-        "argv": [
-          "nxy",
-          "action",
-          "decide",
-          "--feature",
-          "FEAT-D",
-          "--question",
-          "1",
-          "--option",
-          "3"
-        ],
+        "argv": [],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     }
   ],

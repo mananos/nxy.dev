@@ -61,8 +61,20 @@ func BuildMemory(in MemoryIn) Memory {
 	}
 	sort.SliceStable(m.Learnings, func(i, j int) bool { return m.Learnings[i].Flag != "" && m.Learnings[j].Flag == "" })
 
+	kept := map[string]bool{} // "Dejarla": nxy does not propose these again
+	for _, r := range in.Rules {
+		if r.KeptAt != 0 {
+			kept[ruleOf(r, global).ID] = true
+		}
+	}
+	for _, l := range in.Learnings {
+		if l.KeptAt != 0 {
+			kept[learningOf(l, in).ID] = true
+		}
+	}
+
 	for _, r := range m.Rules {
-		if r.Flag != FlagUncited {
+		if r.Flag != FlagUncited || kept[r.ID] {
 			continue
 		}
 		m.Proposals = append(m.Proposals, Proposal{
@@ -74,6 +86,9 @@ func BuildMemory(in MemoryIn) Memory {
 	}
 	// The input holds only live, non-promoted, non-obsolete learnings (store.Learnings).
 	for _, l := range m.Learnings {
+		if kept[l.ID] {
+			continue
+		}
 		var why string
 		switch {
 		case l.Flag == FlagSeen:
@@ -106,7 +121,7 @@ func restoreAction(id string) Action {
 }
 
 func keepAction(id string) Action {
-	return Action{ID: "reject", Label: "Dejarla", Argv: []string{"nxy", "mem", "keep", id}, Planned: true}
+	return Action{ID: "reject", Label: "Dejarla", Argv: []string{"nxy", "mem", "keep", id}}
 }
 
 func isGlobalLearning(ls []memory.Learning, short string) bool {

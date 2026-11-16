@@ -44,6 +44,7 @@ type Engineer struct {
 	Feature  FeatureHeader `json:"feature"`
 	Agenda   []EngFork     `json:"agenda"`
 	Current  string        `json:"current"` // ID of the current fork
+	AskID    string        `json:"ask_id"`  // the pending ask of the fork question; empty when none waits
 	Question string        `json:"question"`
 	Options  []EngOption   `json:"options"`
 	Opinion  string        `json:"opinion"`

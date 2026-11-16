@@ -35,6 +35,9 @@ func isNxyQuestion(f domain.Feature, q string) bool {
 		strings.HasPrefix(q, "nxy feature "+f.ID+": ¿guardar la decisión D") {
 		return true
 	}
+	if f.Design != nil && f.Design.Current != "" && q == design.ForkQuestion(f.ID, f.Design.Current) {
+		return true
+	}
 	if f.Plan != nil {
 		for _, pq := range f.Plan.Questions {
 			if pq.Question == q {
@@ -89,21 +92,28 @@ func (h Hooks) answerDecision(ctx context.Context, f domain.Feature, answer stri
 	return HookResponse{Next: &Next{Feature: nf}}
 }
 
-// preToolAskUser refuses nxy questions that arrive with answers the model filled in.
+// preToolAskUser refuses nxy questions that arrive with answers the model filled in, and holds the
+// ones a live TUI can answer until the user answers there.
 func (h Hooks) preToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
-	if ev.AgentID != "" || !ev.InputHasAnswers {
+	if ev.AgentID != "" {
+		return HookResponse{}
+	}
+	if !ev.InputHasAnswers && (h.Asks == nil || h.TUI == nil) {
 		return HookResponse{}
 	}
 	f, ok := h.activeFeature(ctx, ev)
 	if !ok {
 		return HookResponse{}
 	}
-	for _, q := range ev.Questions {
-		if isNxyQuestion(f, q) {
-			return HookResponse{Deny: "nxy questions are answered by the user, not pre-filled"}
+	if ev.InputHasAnswers {
+		for _, q := range ev.Questions {
+			if isNxyQuestion(f, q) {
+				return HookResponse{Deny: "nxy questions are answered by the user, not pre-filled"}
+			}
 		}
+		return HookResponse{}
 	}
-	return HookResponse{}
+	return h.waitInTUI(ctx, ev, f)
 }
 
 // postToolAskUser turns the user's answers to nxy's questions into flow events.

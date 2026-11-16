@@ -14,24 +14,26 @@
   "multi_select": false,
   "asked_at": "2026-11-08T14:38:10Z",
   "fork": { "n": 2, "of": 4, "title": "Dónde vive el backoff" },
+  "ask_id": "ASK-F7K9",
+  "release": { "id": "release", "label": "Contestar en la terminal", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--release"], "confirm": "", "planned": false },
   "options": [
     {
       "label": "En PagosClient, con sleep",
       "description": "un lugar · bloquea el consumer",
       "recommended": false,
-      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true }
+      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "En PagosClient, con sleep"], "confirm": "", "planned": false }
     },
     {
       "label": "Reencolar con delay",
       "description": "no bloquea · tabla y job nuevos",
       "recommended": false,
-      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true }
+      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "Reencolar con delay"], "confirm": "", "planned": false }
     },
     {
       "label": "Cola con TTL del broker",
       "description": "sin tabla · depende de RabbitMQ",
       "recommended": false,
-      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "Cola con TTL del broker"], "confirm": "", "planned": false }
     }
   ]
 }

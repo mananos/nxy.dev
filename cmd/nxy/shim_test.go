@@ -752,7 +752,9 @@ type hooksFile struct {
 	Hooks map[string][]struct {
 		Matcher string `json:"matcher"`
 		Hooks   []struct {
-			Command string `json:"command"`
+			Command       string `json:"command"`
+			Timeout       int    `json:"timeout"`
+			StatusMessage string `json:"statusMessage"`
 		} `json:"hooks"`
 	} `json:"hooks"`
 }

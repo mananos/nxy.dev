@@ -194,3 +194,23 @@ func TestMemEditedLearningCollidingOnImportFolds(t *testing.T) {
 		t.Errorf("second import writes %d", d.Writes())
 	}
 }
+
+func TestMemKeep(t *testing.T) {
+	s, _ := newMem(t)
+	s.AddRule(ctx, rule("/srv/dev/a", "keep me", "q?"))
+	s.AddLearning(ctx, memory.Learning{Repo: "/srv/dev/a", Text: "learnt"})
+	for _, ref := range []string{"K1", "A1"} {
+		if short, err := s.KeepMemory(ctx, ref); err != nil || short != ref {
+			t.Fatalf("keep %s: %q %v", ref, short, err)
+		}
+	}
+	if rs, _ := s.Rules(ctx, "/srv/dev/a"); len(rs) != 1 || rs[0].KeptAt == 0 {
+		t.Errorf("rule not kept: %+v", rs)
+	}
+	if ls, _ := s.Learnings(ctx, "/srv/dev/a"); len(ls) != 1 || ls[0].KeptAt == 0 {
+		t.Errorf("learning not kept: %+v", ls)
+	}
+	if _, err := s.KeepMemory(ctx, "K9"); err == nil {
+		t.Error("keeping an unknown ref must fail")
+	}
+}

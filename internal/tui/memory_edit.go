@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"regexp"
 	"strings"
 	"time"
 
@@ -70,6 +71,108 @@ func (st *state) memOpenEdit(it *memItem) {
 	m.focusField(0)
 }
 
+var placeholderRe = regexp.MustCompile(`\{([a-z]+)\}`)
+
+// memOpenForm opens one single-line field per placeholder of the action, in order of
+// appearance. Enter fills them in and runs the action; esc runs nothing.
+func (st *state) memOpenForm(label string, a views.Action, after func()) {
+	m := st.memUI()
+	var keys []string
+	seen := map[string]bool{}
+	for _, x := range a.Argv {
+		for _, g := range placeholderRe.FindAllStringSubmatch(x, -1) {
+			if !seen[g[1]] {
+				seen[g[1]] = true
+				keys = append(keys, g[1])
+			}
+		}
+	}
+	if len(keys) == 0 {
+		return
+	}
+	a.Confirm = "" // the form is the question
+	m.edit, m.eform, m.elabel, m.eact, m.eafter, m.eid = true, true, label, a, after, ""
+	m.ekeys = keys
+	m.efields = make([]textinput.Model, len(keys))
+	for i := range keys {
+		m.efields[i] = newInput("")
+	}
+	st.editing = true
+	m.focusField(0)
+}
+
+// substitute replaces every `{name}` of argv with its value in one pass, so a value that
+// itself carries `{algo}` stays literal. It reports whether a placeholder had no value.
+func substitute(argv []string, vals map[string]string, trim bool) ([]string, bool) {
+	out := make([]string, len(argv))
+	unfilled := false
+	for i, x := range argv {
+		out[i] = placeholderRe.ReplaceAllStringFunc(x, func(m string) string {
+			v, ok := vals[m[1:len(m)-1]]
+			if !ok {
+				unfilled = true
+				return m
+			}
+			if trim {
+				v = strings.TrimSpace(v)
+			}
+			return v
+		})
+	}
+	return out, unfilled
+}
+
+// fillForm substitutes the values into argv. An optional flag (--paths, --roles) whose value
+// is left empty is dropped together with its flag. It reports whether a placeholder was left
+// without a value.
+func fillForm(argv []string, vals map[string]string) ([]string, bool) {
+	kept := make([]string, 0, len(argv))
+	for i := 0; i < len(argv); i++ {
+		x := argv[i]
+		if strings.HasPrefix(x, "--") && i+1 < len(argv) {
+			if g := placeholderRe.FindStringSubmatch(argv[i+1]); g != nil && g[0] == argv[i+1] &&
+				(g[1] == "paths" || g[1] == "roles") && strings.TrimSpace(vals[g[1]]) == "" {
+				i++
+				continue
+			}
+		}
+		kept = append(kept, x)
+	}
+	return substitute(kept, vals, true)
+}
+
+// memFormEnter runs the form; a required field left empty keeps it open.
+func (st *state) memFormEnter() intent {
+	m := st.memUI()
+	vals := map[string]string{}
+	for i, f := range m.efields {
+		k := m.ekeys[i]
+		if strings.TrimSpace(f.Value()) == "" && k != "paths" && k != "roles" {
+			return intent{toast: "Falta " + fieldLabels[k] + "."}
+		}
+		vals[k] = f.Value()
+	}
+	a, label, after := m.eact, m.elabel, m.eafter
+	st.memCloseEdit()
+	var unfilled bool
+	a.Argv, unfilled = fillForm(a.Argv, vals)
+	return intent{toast: st.runAction(actionReq{label: label, a: a, after: after, filled: !unfilled})}
+}
+
+// memFormLines is the right side while a form is open.
+func (st *state) memFormLines(ri int) []line {
+	m := st.memUI()
+	out := []line{lr(L(B(m.elabel, tAc)), nil, ri), nil}
+	for i, f := range m.efields {
+		out = append(out, L(T(fieldLabels[m.ekeys[i]], tSb)))
+		out = append(out, fieldLines(f, i == m.efield, ri)...)
+		if i < len(m.efields)-1 {
+			out = append(out, nil)
+		}
+	}
+	return append(out, nil, L(T("enter la crea · esc cancela · aplica a y roles pueden quedar vacíos", tSb)))
+}
+
 func (m *memUI) focusField(i int) {
 	m.efield = i
 	for j := range m.efields {
@@ -83,12 +186,12 @@ func (m *memUI) focusField(i int) {
 
 func (st *state) memCloseEdit() {
 	m := st.memUI()
-	m.edit = false
+	m.edit, m.eform, m.eafter = false, false, nil
 	m.efields, m.ekeys = nil, nil
 	st.editing = m.search
 }
 
-var fieldLabels = map[string]string{"text": "texto", "question": "pregunta", "paths": "aplica a"}
+var fieldLabels = map[string]string{"text": "texto", "question": "pregunta", "paths": "aplica a", "roles": "roles"}
 
 // fieldLines draws a field: the value wrapped, with the cursor in the focused one.
 func fieldLines(ti textinput.Model, focus bool, w int) []line {
@@ -139,6 +242,9 @@ func (st *state) memEditKey(k string) intent {
 	case "shift+tab":
 		m.focusField((m.efield + n - 1) % n)
 	case "enter":
+		if m.eform {
+			return st.memFormEnter()
+		}
 		it := st.memFindItem(m.eid)
 		vals := map[string]string{}
 		for i, f := range m.efields {
@@ -152,15 +258,9 @@ func (st *state) memEditKey(k string) intent {
 		if !ok {
 			return intent{toast: "Guardada " + it.id + " · el comando todavía no existe"}
 		}
-		argv := make([]string, len(a.Argv))
-		for i, x := range a.Argv {
-			for key, v := range vals {
-				x = strings.ReplaceAll(x, "{"+key+"}", v)
-			}
-			argv[i] = x
-		}
+		argv, unfilled := substitute(a.Argv, vals, false)
 		a.Argv = argv
-		return intent{toast: st.runAction(actionReq{label: "Guardar " + it.id, a: a})}
+		return intent{toast: st.runAction(actionReq{label: "Guardar " + it.id, a: a, filled: !unfilled})}
 	default:
 		if msg := keyMsg(k); msg != nil {
 			m.efields[m.efield], _ = m.efields[m.efield].Update(msg)

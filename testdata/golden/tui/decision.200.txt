@@ -11,7 +11,7 @@
       Trabajando     Exportar facturas a CSV   FEAT-B               2  Change      Write what to change; nxy re-plans                                                               3h 00m    $0.18   
                      Esperando lotes 2 y 3                          3  Ver completoOpen the full plan in your editor                                                       ━━━━━━──────  lote 2/4     
                                                                                                                                          
-  Listo hoy  1                                                    Si no contestás acá, la pregunta vuelve a Claude Code.                 
+  Listo hoy  1                                                    No espera a la TUI: contestá en la terminal de Claude Code.            
       Listo          Corregir el redondeo de IVA   FEAT-C · hac                                                                                                                               $0.03   
 
   worktrees  1 pausado · 1 huérfano   w ver todos

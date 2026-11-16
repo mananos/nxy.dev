@@ -1,8 +1,7 @@
 package views
 
 import (
-	"fmt"
-
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
@@ -11,6 +10,8 @@ import (
 type EngineerIn struct {
 	FeatureIn
 	Draw func(src string) Diagram
+	// Waiting are the questions the hook holds in the TUI; the one of the current fork gives AskID.
+	Waiting []domain.PendingAsk
 }
 
 // BuildEngineer builds the engineer mode screen; false when the feature has no design.
@@ -63,6 +64,10 @@ func BuildEngineer(in EngineerIn) (Engineer, bool) {
 	if out.Question == "" {
 		out.Question = cur.Title
 	}
+	row := waitingRow(in.Feature, in.Waiting, []string{design.ForkQuestion(in.Feature.ID, cur.ID)})
+	if row != nil {
+		out.AskID = row.ID
+	}
 	for i, o := range cur.Options {
 		key := o.Key
 		if key == "" {
@@ -71,10 +76,7 @@ func BuildEngineer(in EngineerIn) (Engineer, bool) {
 		out.Options = append(out.Options, EngOption{
 			Key: key, Label: o.Label, Summary: o.Summary, Pros: nonNilStrings(o.Pros), Cons: nonNilStrings(o.Cons),
 			Touches: o.Touches, Diagram: draw(o.D2),
-			Action: Action{
-				ID: "decide-" + key, Label: o.Label, Planned: true,
-				Argv: []string{"nxy", "action", "decide", "--feature", in.Feature.ID, "--option", fmt.Sprint(i + 1)},
-			},
+			Action:  Action{ID: "decide-" + key, Label: o.Label, Argv: decideArgv(row, o.Label)},
 		})
 	}
 	return out, true

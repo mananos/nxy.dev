@@ -32,7 +32,7 @@ type guideData struct {
 func Guide(f domain.Feature, exe string) string {
 	d := guideData{Feature: f, Exe: strings.ReplaceAll(exe, `\`, "/")}
 	if f.Design != nil {
-		d.Agenda = Agenda(f.Design) + pendingState(f.Design)
+		d.Agenda = Agenda(f.Design) + pendingState(f.ID, f.Design)
 	}
 	var b bytes.Buffer
 	if err := engineerTmpl.Execute(&b, d); err != nil {
@@ -43,7 +43,7 @@ func Guide(f domain.Feature, exe string) string {
 
 // pendingState lists the saved decisions and what waits for the user's answer,
 // so the guide still carries them after a /clear.
-func pendingState(d *domain.Design) string {
+func pendingState(id string, d *domain.Design) string {
 	var b strings.Builder
 	if len(d.Decisions) > 0 {
 		b.WriteString("\n\nDecisiones guardadas")
@@ -73,6 +73,7 @@ func pendingState(d *domain.Design) string {
 		for _, o := range OptionKeys(f.Options) {
 			fmt.Fprintf(&b, "\n- %s %s", o.Key, o.Label)
 		}
+		fmt.Fprintf(&b, "\nSi el usuario quiere elegir, hacé con AskUserQuestion esta pregunta exacta: %q; las opciones van con las etiquetas de arriba tal cual (sin la letra).", ForkQuestion(id, f.ID))
 	}
 	if d.Pending != nil {
 		b.WriteString("\n\nPropuesta esperando respuesta del usuario\n" + Proposal(d))

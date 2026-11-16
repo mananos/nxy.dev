@@ -19,6 +19,12 @@ type actionReq struct {
 	busy  string // the running line; default label + "…"
 	a     views.Action
 	after func() // runs only when the command worked
+	// reloadOnErr reloads the views when the command fails: a decide that came late ("ya contestada")
+	// leaves the screen showing a question nobody waits for.
+	reloadOnErr bool
+	// filled says every placeholder of the argv got a value: a `{x}` inside a value the user
+	// typed is not a placeholder nobody filled in.
+	filled bool
 }
 
 // actionDoneMsg is the end of a command run in the background.
@@ -35,10 +41,10 @@ type actionDoneMsg struct {
 func (st *state) runAction(q actionReq) string {
 	switch {
 	case q.a.Planned:
-		return "llega en F5.4"
+		return "todavía no existe"
 	case st.stale:
 		return staleText
-	case hasPlaceholder(q.a.Argv):
+	case !q.filled && hasPlaceholder(q.a.Argv):
 		st.errNext = true
 		return q.label + ": falta el formulario, no se corrió nada"
 	case len(q.a.Argv) == 0:
@@ -67,14 +73,6 @@ func hasPlaceholder(argv []string) bool {
 		}
 	}
 	return false
-}
-
-// planIfForm marks as Planned (F5.4) an action whose argv needs a form to be filled in.
-func planIfForm(a views.Action) views.Action {
-	if hasPlaceholder(a.Argv) {
-		a.Planned = true
-	}
-	return a
 }
 
 func (st *state) startAction(q actionReq) {
@@ -125,6 +123,9 @@ func (st *state) onActionDone(m actionDoneMsg) tea.Cmd {
 	}
 	if m.err != nil {
 		st.toast, st.toastErr = firstLine(m.out, m.err.Error()), true
+		if m.q.reloadOnErr {
+			return st.reload()
+		}
 		return nil
 	}
 	st.toast, st.toastErr = m.q.label+" · listo", false

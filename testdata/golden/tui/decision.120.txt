@@ -11,7 +11,7 @@
       Trabajando     Ex     2  Change      Write what to change; nxy re-plans                       3h 00m    $0.18   
                      Es     3  Ver completoOpen the full plan in your editor                     ──────  lote 2/4     
                                                                                                  
-  Listo hoy  1            Si no contestás acá, la pregunta vuelve a Claude Code.                 
+  Listo hoy  1            No espera a la TUI: contestá en la terminal de Claude Code.            
       Listo          Co                                                                                       $0.03   
 
   worktrees  1 pausado · 1 huérfano   w ver todos

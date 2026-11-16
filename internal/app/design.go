@@ -168,7 +168,28 @@ func (h Hooks) answerDesign(ctx context.Context, f domain.Feature, answers map[s
 			return h.answerClose(ctx, f, a)
 		}
 	}
+	if fork := f.Design.Current; fork != "" {
+		if a, ok := answers[design.ForkQuestion(f.ID, fork)]; ok {
+			return answerFork(f.Design, fork, a)
+		}
+	}
 	return HookResponse{}
+}
+
+// answerFork tells the main thread which option of the fork the user picked, or what they said.
+func answerFork(d *domain.Design, fork, answer string) HookResponse {
+	a := strings.TrimSpace(answer)
+	for _, f := range d.Agenda {
+		if f.ID != fork {
+			continue
+		}
+		for _, o := range f.Options {
+			if o.Label == a {
+				return HookResponse{Context: fmt.Sprintf("El usuario eligió %s para %s: proponé la decisión con design propose.", a, fork)}
+			}
+		}
+	}
+	return HookResponse{Context: "El usuario dijo: " + a + "; seguí el debate."}
 }
 
 // freeText is the user's own words in an answer, or "" when it is one of the options.

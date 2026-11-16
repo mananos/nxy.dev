@@ -50,6 +50,7 @@ func (f *memFake) DeleteMemory(_ context.Context, ref string) (string, error) {
 	f.deleted = append(f.deleted, ref)
 	return ref, nil
 }
+func (f *memFake) KeepMemory(_ context.Context, ref string) (string, error) { return ref, nil }
 func (f *memFake) MemoryKind(_ context.Context, ref string) (string, error) {
 	if strings.HasPrefix(strings.ToUpper(ref), "A") {
 		return "learning", nil

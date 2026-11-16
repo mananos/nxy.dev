@@ -32,4 +32,4 @@
      − Una pieza más                                                          
      toca src/billing/                                                        
                                                                               
-  ↑↓  opción     enter  elegir     h  cómo es hoy     ?  ayuda                  
+  ↑↓  opción     enter  contesta cuando Claude pregunte     ?  ayuda            

@@ -45,11 +45,14 @@ func TestBuildCockpit(t *testing.T) {
 		t.Errorf("totals = %+v", c.Totals)
 	}
 	a := c.Features[0]
-	if a.Decision == nil || a.Decision.Header != "Plan" || a.LastEvent != "Te necesita: aprobar plan" || len(a.Actions) != 4 || a.Actions[3].ID != "pause" {
+	if a.Decision == nil || a.Decision.Header != "Plan" || a.LastEvent != "Te necesita: aprobar plan" || len(a.Actions) != 1 || a.Actions[0].ID != "pause" {
 		t.Errorf("approval card = %+v", a)
 	}
-	if a.Actions[3].Planned || a.Actions[0].Planned != true {
-		t.Errorf("actions = %+v", a.Actions)
+	// with its question waiting in the TUI the options come first, each with its decide argv
+	appr.Waiting = waitingOf(t, appr.Feature, "A1")
+	wc := BuildCockpit(CockpitIn{Now: testNow, Features: []CockpitItem{appr}}).Features[0]
+	if len(wc.Actions) != 4 || wc.Actions[3].ID != "pause" || wc.Actions[0].Argv[4] != "A1" {
+		t.Errorf("waiting card actions = %+v", wc.Actions)
 	}
 	b := c.Features[1]
 	if b.LastEvent != "Te necesita: decidir, el lote 2 falló" {

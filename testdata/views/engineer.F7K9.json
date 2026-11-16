@@ -23,6 +23,7 @@
     { "id": "last", "title": "Último intento", "status": "pending", "choice": "" }
   ],
   "current": "backoff",
+  "ask_id": "ASK-F7K9",
   "question": "¿Dónde vive el backoff de los reintentos de pago?",
   "options": [
     {
@@ -45,7 +46,7 @@
         ],
         "renderer": "demo"
       },
-      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true }
+      "action": { "id": "pick_a", "label": "A", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "En PagosClient, con sleep"], "confirm": "", "planned": false }
     },
     {
       "key": "B",
@@ -67,7 +68,7 @@
         ],
         "renderer": "demo"
       },
-      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true }
+      "action": { "id": "pick_b", "label": "B", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "Reencolar con delay"], "confirm": "", "planned": false }
     },
     {
       "key": "C",
@@ -87,7 +88,7 @@
         ],
         "renderer": "demo"
       },
-      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+      "action": { "id": "pick_c", "label": "C", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "Cola con TTL del broker"], "confirm": "", "planned": false }
     }
   ],
   "opinion": "elegiría B, salvo que fallen menos de 10 pagos por minuto.",

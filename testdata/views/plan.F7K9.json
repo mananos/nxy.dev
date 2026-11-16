@@ -64,8 +64,8 @@
     ]
   },
   "actions": [
-    { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "1"], "confirm": "", "planned": true },
-    { "id": "change", "label": "Cambiar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "2"], "confirm": "", "planned": true },
-    { "id": "stop", "label": "Parar", "argv": ["nxy", "action", "decide", "--feature", "F7K9", "--option", "3"], "confirm": "", "planned": true }
+    { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Approve"], "confirm": "", "planned": false },
+    { "id": "change", "label": "Cambiar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Change"], "confirm": "", "planned": false },
+    { "id": "stop", "label": "Parar", "argv": ["nxy", "feature", "stop", "--feature", "F7K9"], "confirm": "Termina la feature y suelta la pregunta", "planned": false }
   ]
 }

@@ -16,6 +16,21 @@
   "multi_select": false,
   "asked_at": "2026-11-11T11:00:00Z",
   "fork": null,
+  "ask_id": "ASK-A",
+  "release": {
+    "id": "release",
+    "label": "Contestar en la terminal",
+    "argv": [
+      "nxy",
+      "action",
+      "decide",
+      "--ask",
+      "ASK-A",
+      "--release"
+    ],
+    "confirm": "",
+    "planned": false
+  },
   "options": [
     {
       "label": "Reintentar",
@@ -28,15 +43,13 @@
           "nxy",
           "action",
           "decide",
-          "--feature",
-          "FEAT-A",
-          "--question",
-          "1",
-          "--option",
-          "1"
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Reintentar"
         ],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     },
     {
@@ -50,15 +63,13 @@
           "nxy",
           "action",
           "decide",
-          "--feature",
-          "FEAT-A",
-          "--question",
-          "1",
-          "--option",
-          "2"
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Seguir"
         ],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     },
     {
@@ -72,15 +83,13 @@
           "nxy",
           "action",
           "decide",
-          "--feature",
-          "FEAT-A",
-          "--question",
-          "1",
-          "--option",
-          "3"
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Parar"
         ],
         "confirm": "Termina la feature",
-        "planned": true
+        "planned": false
       }
     }
   ],

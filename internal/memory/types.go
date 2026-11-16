@@ -57,6 +57,7 @@ type Rule struct {
 	Deliveries  int      `json:"deliveries,omitempty"`
 	Citations   int      `json:"citations,omitempty"`
 	LastCitedAt int64    `json:"last_cited_at,omitempty"`
+	KeptAt      int64    `json:"-"` // local to the machine: "Dejarla" in the TUI
 }
 
 // GlobalRepo is the repo of a global rule or learning (G<n>).
@@ -131,6 +132,7 @@ type Learning struct {
 	LastSeenAt int64    `json:"last_seen_at,omitempty"`
 	ObsoleteAt int64    `json:"obsolete_at,omitempty"`
 	PromotedTo string   `json:"promoted_to,omitempty"` // ULID of the rule
+	KeptAt     int64    `json:"-"`                     // local to the machine: "Dejarla" in the TUI
 }
 
 // Hit is a search result.

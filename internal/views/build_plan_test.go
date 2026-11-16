@@ -1,6 +1,7 @@
 package views
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mananos/nxy.dev/internal/domain"
@@ -79,9 +80,21 @@ func TestBuildPlanStatesAndImpact(t *testing.T) {
 	if p.Impact.Source != "name" || p.Goal != "Export command" {
 		t.Errorf("source %q goal %q", p.Impact.Source, p.Goal)
 	}
-	if len(p.Actions) != 1 {
-		t.Errorf("actions = %d, want the life action", len(p.Actions))
+	if len(p.Actions) != 4 || p.Actions[1].ID != "approve" || p.Actions[2].ID != "change" || p.Actions[3].ID != "stop" {
+		t.Fatalf("actions = %+v, want life, approve, change, stop", p.Actions)
 	}
+	if st := p.Actions[3]; strings.Join(st.Argv, " ") != "nxy feature stop --feature "+f.ID || st.Confirm == "" || len(p.Actions[1].Argv) != 0 {
+		t.Errorf("stop %+v, approve %+v", st, p.Actions[1])
+	}
+	// with the approval question waiting, approve and change answer it
+	f.Next = domain.Action{Kind: domain.AskApproval}
+	in.Feature = f
+	in.Waiting = waitingOf(t, f, "A1")
+	if wp, _ := BuildPlan(in); strings.Join(wp.Actions[1].Argv, " ") != "nxy action decide --ask A1 --answer Approve" ||
+		strings.Join(wp.Actions[2].Argv, " ") != "nxy action decide --ask A1 --answer Change" {
+		t.Errorf("waiting actions = %+v", wp.Actions)
+	}
+	in.Waiting = nil
 	if len(p.Decisions) != 2 || p.Decisions[0].FromDesign || !p.Decisions[1].FromDesign {
 		t.Errorf("decisions = %+v", p.Decisions)
 	}

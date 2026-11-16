@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/filter"
@@ -60,12 +61,19 @@ func (h Hooks) broadShellSearch(ev HookEvent) bool {
 	return ev.AgentID == "" && h.Gate != nil && searchscope.IsBroadMainSearch(ev.Tool, map[string]any{"command": ev.Command})
 }
 
+// decideCommand matches a command that runs `nxy … action decide`, in Bash or PowerShell (the binary
+// may carry a path, an extension or quotes). Strict on purpose: the answer is the user's, not the model's.
+var decideCommand = regexp.MustCompile(`(?i)\bnxy(?:\.exe|\.cmd)?['"]?(?:\s+\S+)*?\s+action\s+decide\b`)
+
 // preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs: while a feature is active the
 // main thread does not write the repo through the shell either (an implementer's writes are
 // counted), then the command goes through the engine, keeping the approval the original would have had.
 func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	if !ev.HasCommand {
 		return HookResponse{}
+	}
+	if decideCommand.MatchString(ev.Command) {
+		return HookResponse{Deny: "nxy action decide es la respuesta del usuario desde la TUI; preguntá con AskUserQuestion"}
 	}
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r

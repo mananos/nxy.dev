@@ -87,6 +87,12 @@ func TestMemGlobalEditRemoveRestore(t *testing.T) {
 	if show := memShow(t); !strings.Contains(show, "K1 · Keep tabs") {
 		t.Fatalf("K1 not back after restore: %s", show)
 	}
+	if code, out, errb := runCmd(t, "", "mem", "keep", "K1"); code != 0 || !strings.Contains(out, "kept K1: nxy no la vuelve a proponer") {
+		t.Fatalf("keep K1: code %d, out %q, err %q", code, out, errb)
+	}
+	if code, _, _ := runCmd(t, "", "mem", "keep", "K99"); code == 0 {
+		t.Fatal("keep of an unknown ref must fail")
+	}
 
 	if code, _, _ := runCmd(t, "", "mem", "note", "a learning", "--files", "/srv/dev/a.go"); code != 0 {
 		t.Fatal("note failed")

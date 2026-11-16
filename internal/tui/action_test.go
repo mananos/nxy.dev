@@ -59,6 +59,8 @@ func key(s string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 	case "enter":
 		return tea.KeyPressMsg{Code: tea.KeyEnter}
+	case "down":
+		return tea.KeyPressMsg{Code: tea.KeyDown}
 	}
 	return tea.KeyPressMsg{Code: rune(s[0]), Text: s}
 }
@@ -184,10 +186,9 @@ func TestActionSpacePausesAndResumes(t *testing.T) {
 func TestActionPlannedRunsNothing(t *testing.T) {
 	f := &fakeRun{}
 	m := withRun(testModel(t), f)
-	m.st.stack = m.st.targetStack("plan", "F7K9")
-	send(m, key("a"))
-	if len(f.calls) != 0 || m.st.toast != "llega en F5.4" {
-		t.Fatalf("planned ran %v, toast %q", f.calls, m.st.toast)
+	got := m.st.runAction(actionReq{label: "x", a: views.Action{Argv: []string{"nxy", "x"}, Planned: true}})
+	if len(f.calls) != 0 || got != "todavía no existe" {
+		t.Fatalf("planned ran %v, toast %q", f.calls, got)
 	}
 }
 
@@ -238,5 +239,171 @@ func TestActionInstallShowsRunning(t *testing.T) {
 	_, _ = m.Update(key("y"))
 	if got := m.st.frame(false); !strings.Contains(got, "instalando rtk…") {
 		t.Fatalf("no running line:\n%s", got)
+	}
+}
+
+// decModel is a model with only d pending and its window open.
+func decModel(t *testing.T, f *fakeRun, d *views.Decision) *model {
+	t.Helper()
+	m := withRun(testModel(t), f)
+	m.st.data.Decisions = map[string]*views.Decision{d.FeatureID: d}
+	m.st.openDecision("")
+	if !m.st.decOpen {
+		t.Fatal("the window did not open")
+	}
+	return m
+}
+
+func opts(labels ...string) []views.Option {
+	var out []views.Option
+	for _, l := range labels {
+		out = append(out, views.Option{Label: l})
+	}
+	return out
+}
+
+func TestDecisionMultiQuestionBuildsOneDecide(t *testing.T) {
+	f := &fakeRun{}
+	d := &views.Decision{FeatureID: "FX", AskID: "ASK-1", Header: "h", Question: "q1", Options: opts("A", "B"),
+		Rest: []views.DecisionQuestion{
+			{Header: "h2", Question: "q2", MultiSelect: true, Options: opts("X", "Y", "Z")},
+			{Header: "h3", Question: "q3", Options: opts("P", "Q")},
+		}}
+	m := decModel(t, f, d)
+	send(m, key("2"))
+	send(m, key("enter"))
+	if len(f.calls) != 0 || !strings.Contains(m.st.frame(false), "pregunta 2 de 3") {
+		t.Fatalf("ran %v early:\n%s", f.calls, m.st.frame(false))
+	}
+	// multiSelect: mark X and Z with space
+	send(m, key("space"))
+	send(m, key("down"))
+	send(m, key("down"))
+	send(m, key("space"))
+	send(m, key("enter"))
+	send(m, key("enter"))
+	want := [][]string{{"nxy", "action", "decide", "--ask", "ASK-1", "--answer", "B", "--answer", "X, Z", "--answer", "P"}}
+	if !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+	if !m.st.answered["FX"] {
+		t.Error("not marked as answered")
+	}
+}
+
+func TestDecisionProgressResetsWhenAskIDChanges(t *testing.T) {
+	f := &fakeRun{}
+	mk := func(ask string) *views.Decision {
+		return &views.Decision{FeatureID: "FX", AskID: ask, Question: "q1", Options: opts("A", "B"),
+			Rest: []views.DecisionQuestion{{Question: "q2", Options: opts("X", "Y")}}}
+	}
+	m := decModel(t, f, mk("ASK-1"))
+	send(m, key("2"))
+	send(m, key("enter"))
+	if !strings.Contains(m.st.frame(false), "pregunta 2 de 2") {
+		t.Fatalf("did not advance:\n%s", m.st.frame(false))
+	}
+	m.st.data.Decisions = map[string]*views.Decision{"FX": mk("ASK-2")}
+	if got := m.st.frame(false); !strings.Contains(got, "pregunta 1 de 2") {
+		t.Fatalf("progress kept for another ask:\n%s", got)
+	}
+	send(m, key("1"))
+	send(m, key("enter"))
+	send(m, key("1"))
+	send(m, key("enter"))
+	want := [][]string{{"nxy", "action", "decide", "--ask", "ASK-2", "--answer", "A", "--answer", "X"}}
+	if !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+}
+
+func TestDecisionReleaseWithT(t *testing.T) {
+	f := &fakeRun{}
+	rel := views.Action{ID: "release", Argv: []string{"nxy", "action", "decide", "--ask", "ASK-1", "--release"}}
+	m := decModel(t, f, &views.Decision{FeatureID: "FX", AskID: "ASK-1", Question: "q", Options: opts("A"), Release: rel})
+	send(m, key("t"))
+	if want := [][]string{rel.Argv}; !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+}
+
+func TestDecisionWithoutAskIDRunsNothing(t *testing.T) {
+	f := &fakeRun{}
+	m := decModel(t, f, &views.Decision{FeatureID: "FX", Question: "q", Options: opts("A", "B")})
+	send(m, key("enter"))
+	if len(f.calls) != 0 || m.st.toast != terminalText || m.st.answered["FX"] {
+		t.Fatalf("ran %v, toast %q, answered %v", f.calls, m.st.toast, m.st.answered)
+	}
+	send(m, key("t"))
+	if len(f.calls) != 0 || m.st.toast != terminalText {
+		t.Fatalf("t ran %v, toast %q", f.calls, m.st.toast)
+	}
+}
+
+func TestDecisionLateAnswerReloadsInRed(t *testing.T) {
+	f := &fakeRun{out: "ya contestada\n", err: errors.New("exit status 1")}
+	m := decModel(t, f, &views.Decision{FeatureID: "FX", AskID: "ASK-1", Question: "q", Options: opts("A")})
+	send(m, key("enter"))
+	if !m.st.toastErr || m.st.toast != "ya contestada" || m.st.answered["FX"] {
+		t.Fatalf("toast %q red=%v answered=%v", m.st.toast, m.st.toastErr, m.st.answered)
+	}
+}
+
+func TestPlanApprovalActions(t *testing.T) {
+	f := &fakeRun{}
+	m := withRun(testModel(t), f)
+	m.st.stack = m.st.targetStack("plan", "F7K9")
+	send(m, key("a"))
+	send(m, key("c"))
+	send(m, key("x"))
+	if m.st.confirm == nil {
+		t.Fatal("x should ask y/n first")
+	}
+	if len(f.calls) != 2 {
+		t.Fatalf("ran %v before the confirmation", f.calls)
+	}
+	send(m, key("y"))
+	want := [][]string{
+		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Approve"},
+		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Change"},
+		{"nxy", "feature", "stop", "--feature", "F7K9"},
+	}
+	if !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+	if m.st.toast != "feature parada" {
+		t.Errorf("toast %q", m.st.toast)
+	}
+
+	// without a waiting hook a and c only say where to answer
+	f2 := &fakeRun{}
+	m = withRun(testModel(t), f2)
+	m.st.stack = m.st.targetStack("plan", "F7K9")
+	p := m.st.data.Plans["F7K9"]
+	for i := range p.Actions {
+		if p.Actions[i].ID != "stop" {
+			p.Actions[i].Argv = nil
+		}
+	}
+	send(m, key("a"))
+	if len(f2.calls) != 0 || m.st.toast != terminalText {
+		t.Fatalf("a ran %v, toast %q", f2.calls, m.st.toast)
+	}
+}
+
+func TestEngineerEnterNeedsAskID(t *testing.T) {
+	f := &fakeRun{}
+	m := withRun(testModel(t), f)
+	m.st.stack = m.st.targetStack("ingeniero", "F7K9")
+	e := m.st.data.Engineer["F7K9"]
+	send(m, key("enter"))
+	if len(f.calls) != 1 || !reflect.DeepEqual(f.calls[0][:5], []string{"nxy", "action", "decide", "--ask", "ASK-F7K9"}) {
+		t.Fatalf("enter with AskID ran %v", f.calls)
+	}
+	e = m.st.data.Engineer["F7K9"]
+	e.AskID = ""
+	send(m, key("enter"))
+	if len(f.calls) != 1 || !strings.Contains(m.st.toast, "elegí en el chat") {
+		t.Fatalf("enter without AskID ran %v, toast %q", f.calls, m.st.toast)
 	}
 }

@@ -16,6 +16,7 @@ type CockpitItem struct {
 	TokensIn  int64
 	TokensOut int64
 	Tool      *ToolUse
+	Waiting   []domain.PendingAsk // the questions of the feature the hook holds in the TUI
 }
 
 // CockpitIn is the data of Inicio.
@@ -76,10 +77,12 @@ func BuildCockpit(in CockpitIn) Cockpit {
 		if cf.Status == StatusNeedsYou {
 			c.Totals.NeedsYou++
 		}
-		if d, ok := BuildDecision(it.Feature, 0); ok {
+		if d, ok := BuildDecision(it.Feature, 0, it.Waiting); ok {
 			cf.Decision = &DecisionRef{FeatureID: d.FeatureID, Header: d.Header, Question: d.Question}
 			for _, o := range d.Options {
-				cf.Actions = append(cf.Actions, o.Action)
+				if d.AskID != "" {
+					cf.Actions = append(cf.Actions, o.Action)
+				}
 			}
 		}
 		if cf.Status != StatusDone {

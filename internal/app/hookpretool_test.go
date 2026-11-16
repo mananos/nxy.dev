@@ -77,6 +77,36 @@ func TestPreToolBash(t *testing.T) {
 	}
 }
 
+func TestPreToolBashDeniesActionDecide(t *testing.T) {
+	cmds := map[string]string{
+		"Bash":       "nxy action decide --ask 01J --answer Aprobar",
+		"PowerShell": "& 'C:\\Users\\x\\.nxy\\bin\\nxy.cmd' action decide --ask 01J --release",
+	}
+	more := []string{
+		`"/home/u/.nxy/bin/nxy" action decide --ask X --answer A`,
+		"cd /p && nxy.exe action decide --ask X --answer A",
+	}
+	for tool, cmd := range cmds {
+		for _, agent := range []string{"", "a1"} {
+			h := Hooks{Config: fakeConfig{on}, Engine: fakeEngine{}, Permissions: fakeRules{}}
+			r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: tool, Command: cmd, HasCommand: true, AgentID: agent})
+			if !strings.Contains(r.Deny, "action decide") {
+				t.Errorf("%s agent=%q: %+v", tool, agent, r)
+			}
+		}
+	}
+	for _, cmd := range more {
+		h := Hooks{Config: fakeConfig{on}, Engine: fakeEngine{}, Permissions: fakeRules{}}
+		if r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Bash", Command: cmd, HasCommand: true}); r.Deny == "" {
+			t.Errorf("%q not denied", cmd)
+		}
+	}
+	h := Hooks{Config: fakeConfig{on}, Engine: fakeEngine{}, Permissions: fakeRules{}}
+	if r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Bash", Command: "nxy feature list", HasCommand: true}); r.Deny != "" {
+		t.Errorf("other nxy command denied: %+v", r)
+	}
+}
+
 // noStore panics on any call: a hook that must not open the DB.
 type noStore struct{ Store }
 

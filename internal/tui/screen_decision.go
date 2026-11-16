@@ -89,12 +89,48 @@ func (st *state) currentDecision() (d *views.Decision, i, n int) {
 
 func isFork(d *views.Decision) bool { return d.Kind == "fork" }
 
-// decOption is the option under the cursor: the recommended one until the user moves.
-func (st *state) decOption(d *views.Decision) int {
-	if v, ok := st.cur["decision/"+d.FeatureID]; ok {
-		return min(max(v, 0), max(len(d.Options)-1, 0))
+// decQ is one question of a Decision: the first one and the ones in Rest.
+type decQ struct {
+	header, question string
+	multi            bool
+	opts             []views.Option
+}
+
+// decQuestions is every question of d, in the order they are asked.
+func decQuestions(d *views.Decision) []decQ {
+	qs := []decQ{{d.Header, d.Question, d.MultiSelect, d.Options}}
+	for _, r := range d.Rest {
+		qs = append(qs, decQ{r.Header, r.Question, r.MultiSelect, r.Options})
 	}
-	for i, o := range d.Options {
+	return qs
+}
+
+// decCurrent is the question the window is on for d, and its place: 0-based index and total.
+func (st *state) decCurrent(d *views.Decision) (q decQ, idx, total int) {
+	if old, ok := st.decAsk[d.FeatureID]; ok && old != d.AskID {
+		st.decReset(d.FeatureID)
+	}
+	st.decAsk[d.FeatureID] = d.AskID
+	qs := decQuestions(d)
+	idx = min(max(st.decIdx[d.FeatureID], 0), len(qs)-1)
+	return qs[idx], idx, len(qs)
+}
+
+// decReset forgets the progress of d: the answers given, the marks and the cursor.
+func (st *state) decReset(feature string) {
+	delete(st.decIdx, feature)
+	delete(st.decAsk, feature)
+	delete(st.decAns, feature)
+	delete(st.decMark, feature)
+	delete(st.cur, "decision/"+feature)
+}
+
+// decOption is the option under the cursor: the recommended one until the user moves.
+func (st *state) decOption(d *views.Decision, opts []views.Option) int {
+	if v, ok := st.cur["decision/"+d.FeatureID]; ok {
+		return min(max(v, 0), max(len(opts)-1, 0))
+	}
+	for i, o := range opts {
 		if o.Recommended {
 			return i
 		}
@@ -110,12 +146,68 @@ func (st *state) decHints() []hint {
 	case isFork(d):
 		h = append(h, hint{"enter", "abrir Ingeniero"})
 	default:
-		h = append(h, hint{fmt.Sprintf("1-%d", len(d.Options)), "elegir"}, hint{"enter", "confirmar"})
+		q, _, _ := st.decCurrent(d)
+		if q.multi {
+			h = append(h, hint{"space", "marcar"})
+		}
+		h = append(h, hint{fmt.Sprintf("1-%d", len(q.opts)), "elegir"}, hint{"enter", "confirmar"})
+		if d.AskID != "" {
+			h = append(h, hint{"t", "en la terminal"})
+		}
 	}
 	if n > 1 {
 		h = append(h, hint{"tab", "la otra"})
 	}
 	return append(h, hint{"esc", "después"})
+}
+
+// terminalText is what the window says when no hook is waiting for the answer.
+const terminalText = "contestá en la terminal de Claude Code"
+
+// decAnswer takes the choice of the current question; with the last one it runs the decide.
+func (st *state) decAnswer(d *views.Decision) {
+	q, idx, total := st.decCurrent(d)
+	if len(q.opts) == 0 {
+		return
+	}
+	if d.AskID == "" {
+		st.toast, st.toastErr = terminalText, false
+		return
+	}
+	feat := d.FeatureID
+	sel := st.decOption(d, q.opts)
+	label := q.opts[sel].Label
+	if q.multi {
+		var ls []string
+		for i, o := range q.opts {
+			if st.decMark[feat][i] {
+				ls = append(ls, o.Label)
+			}
+		}
+		if len(ls) > 0 {
+			label = strings.Join(ls, ", ")
+		}
+	}
+	confirm := q.opts[sel].Action.Confirm
+	st.decAns[feat] = append(st.decAns[feat], label)
+	if idx+1 < total {
+		st.decIdx[feat] = idx + 1
+		delete(st.decMark, feat)
+		delete(st.cur, "decision/"+feat)
+		return
+	}
+	argv := []string{"nxy", "action", "decide", "--ask", d.AskID}
+	for _, a := range st.decAns[feat] {
+		argv = append(argv, "--answer", a)
+	}
+	st.decReset(feat)
+	a := views.Action{ID: "decide", Label: label, Argv: argv, Confirm: confirm}
+	if t := st.runAction(actionReq{label: "decidir", a: a, reloadOnErr: true, after: func() {
+		st.answered[feat] = true
+		st.decNext()
+	}}); t != "" {
+		st.toast, st.toastErr = t, false
+	}
 }
 
 // decKey handles a key while the window is open and tells whether it was taken. A few keys go
@@ -150,13 +242,40 @@ func (st *state) decKey(k string) bool {
 		if isFork(d) {
 			break
 		}
-		sel := st.decOption(d)
+		q, _, _ := st.decCurrent(d)
+		sel := st.decOption(d, q.opts)
 		if k == "up" || k == "k" {
 			sel--
 		} else {
 			sel++
 		}
-		st.cur["decision/"+d.FeatureID] = min(max(sel, 0), len(d.Options)-1)
+		st.cur["decision/"+d.FeatureID] = min(max(sel, 0), max(len(q.opts)-1, 0))
+	case "space":
+		q, _, _ := st.decCurrent(d)
+		if isFork(d) || !q.multi || len(q.opts) == 0 {
+			break
+		}
+		sel := st.decOption(d, q.opts)
+		if st.decMark[d.FeatureID] == nil {
+			st.decMark[d.FeatureID] = map[int]bool{}
+		}
+		st.decMark[d.FeatureID][sel] = !st.decMark[d.FeatureID][sel]
+	case "t":
+		if isFork(d) {
+			break
+		}
+		if d.AskID == "" {
+			st.toast, st.toastErr = terminalText, false
+			break
+		}
+		feat := d.FeatureID
+		if t := st.runAction(actionReq{label: "contestar en la terminal", a: d.Release, reloadOnErr: true, after: func() {
+			st.decReset(feat)
+			st.answered[feat] = true
+			st.decNext()
+		}}); t != "" {
+			st.toast, st.toastErr = t, false
+		}
 	case "enter":
 		if isFork(d) {
 			// a fork is answered in Ingeniero, not here
@@ -165,20 +284,11 @@ func (st *state) decKey(k string) bool {
 			st.stack = append(st.stack, route{screen: "ingeniero", key: d.FeatureID})
 			break
 		}
-		if len(d.Options) == 0 {
-			break
-		}
-		o := d.Options[st.decOption(d)]
-		feat := d.FeatureID
-		if t := st.runAction(actionReq{label: "decidir", a: o.Action, after: func() {
-			st.answered[feat] = true
-			st.decNext()
-		}}); t != "" {
-			st.toast, st.toastErr = t, false
-		}
+		st.decAnswer(d)
 	default:
 		if len(k) == 1 && k[0] >= '1' && k[0] <= '9' && !isFork(d) {
-			if v := int(k[0] - '1'); v < len(d.Options) {
+			q, _, _ := st.decCurrent(d)
+			if v := int(k[0] - '1'); v < len(q.opts) {
 				st.cur["decision/"+d.FeatureID] = v
 			}
 		}
@@ -228,14 +338,18 @@ func (st *state) decWindow(cw int) []line {
 	if d == nil {
 		return nil
 	}
+	dq, qi, qn := st.decCurrent(d)
 	ww := min(decisionWidth, cw-6)
 	iw := ww - 6
 	head := lr(
-		L(chip("Te necesita", tNeed, chipW), "   ", B(d.Header, "")),
+		L(chip("Te necesita", tNeed, chipW), "   ", B(dq.header, "")),
 		L(T(d.FeatureID+" · "+d.Repo, tSb), "  ", S(fmt.Sprintf(" %d de %d ", i+1, n), "ch-mute")), iw)
 
 	top := []line{nil, head, nil}
-	for _, s := range wrap(d.Question, iw) {
+	if qn > 1 {
+		top = append(top, L(T(fmt.Sprintf("pregunta %d de %d", qi+1, qn), tSb)))
+	}
+	for _, s := range wrap(dq.question, iw) {
 		top = append(top, L(s))
 	}
 	top = append(top, nil)
@@ -250,8 +364,8 @@ func (st *state) decWindow(cw int) []line {
 	top = append(top, nil)
 	out := block(top, ww, tBg2, 3)
 
-	sel := st.decOption(d)
-	for k, o := range d.Options {
+	sel := st.decOption(d, dq.opts)
+	for k, o := range dq.opts {
 		var row line
 		bg := tBg2
 		if isFork(d) {
@@ -261,6 +375,9 @@ func (st *state) decWindow(cw int) []line {
 			if k == sel {
 				marker, num, bg = T("▸ ", tAc), B(fmt.Sprint(k+1), tAc), tSel
 			}
+			if dq.multi && st.decMark[d.FeatureID][k] {
+				marker = T("✓ ", tDone)
+			}
 			row = L(marker, num, "  ", col(B(o.Label, ""), 12), T(o.Description, tMu))
 			if o.Recommended {
 				row = append(row, spaces(3, ""), T("recomendada", tDone))
@@ -269,7 +386,10 @@ func (st *state) decWindow(cw int) []line {
 		out = append(out, block([]line{row}, ww, bg, 3)...)
 	}
 
-	note := "Si no contestás acá, la pregunta vuelve a Claude Code."
+	note := "No espera a la TUI: " + terminalText + "."
+	if d.AskID != "" {
+		note = "t contesta en la terminal."
+	}
 	if isFork(d) {
 		note = "Se contesta en Ingeniero: enter la abre."
 	}

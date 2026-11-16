@@ -419,6 +419,72 @@ func (l *lazyStore) RecordAgentRun(ctx context.Context, r domain.AgentRun) error
 	return s.RecordAgentRun(ctx, r)
 }
 
+var _ app.PendingAsks = (*lazyStore)(nil)
+
+func (l *lazyStore) CreatePendingAsk(ctx context.Context, a domain.PendingAsk) (domain.PendingAsk, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return a, err
+	}
+	return s.CreatePendingAsk(ctx, a)
+}
+
+func (l *lazyStore) PendingAsk(ctx context.Context, id string) (domain.PendingAsk, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return domain.PendingAsk{}, err
+	}
+	return s.PendingAsk(ctx, id)
+}
+
+func (l *lazyStore) TouchPendingAsk(ctx context.Context, id string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.TouchPendingAsk(ctx, id)
+}
+
+func (l *lazyStore) OpenPendingAsks(ctx context.Context) ([]domain.PendingAsk, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.OpenPendingAsks(ctx)
+}
+
+func (l *lazyStore) AnswerPendingAsk(ctx context.Context, id string, answers []string, by string) (bool, error) {
+	s, err := l.open(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.AnswerPendingAsk(ctx, id, answers, by)
+}
+
+func (l *lazyStore) ReleaseFeatureAsks(ctx context.Context, featureID, by string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.ReleaseFeatureAsks(ctx, featureID, by)
+}
+
+func (l *lazyStore) DeletePendingAsk(ctx context.Context, id string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.DeletePendingAsk(ctx, id)
+}
+
+// tuiLive reads the heartbeat marks of the open TUIs.
+type tuiLive struct{}
+
+func (tuiLive) Alive() bool {
+	dir, err := platform.RunDir()
+	return err == nil && platform.TUIAlive(dir, time.Now())
+}
+
 var _ app.Bootstrap = (*lazyStore)(nil)
 
 func (l *lazyStore) Bootstrap(ctx context.Context, repo string) (app.BootstrapState, bool, error) {
@@ -779,5 +845,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 		LegacyData: legacyFiles{}, LegacyStore: st,
 		AgentFiles: claudecode.AgentFile{}, Runs: st,
+		Asks: st, TUI: tuiLive{},
 	}, st
 }

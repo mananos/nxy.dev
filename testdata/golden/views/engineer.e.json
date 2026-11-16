@@ -49,6 +49,7 @@
     }
   ],
   "current": "B2",
+  "ask_id": "",
   "question": "¿Cómo se reintenta un cobro fallido?",
   "options": [
     {
@@ -72,17 +73,9 @@
       "action": {
         "id": "decide-A",
         "label": "Cola de reintentos",
-        "argv": [
-          "nxy",
-          "action",
-          "decide",
-          "--feature",
-          "FEAT-E",
-          "--option",
-          "1"
-        ],
+        "argv": [],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     },
     {
@@ -102,17 +95,9 @@
       "action": {
         "id": "decide-B",
         "label": "Reintento en línea",
-        "argv": [
-          "nxy",
-          "action",
-          "decide",
-          "--feature",
-          "FEAT-E",
-          "--option",
-          "2"
-        ],
+        "argv": [],
         "confirm": "",
-        "planned": true
+        "planned": false
       }
     }
   ],

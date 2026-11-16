@@ -26,6 +26,12 @@ type memUI struct {
 	ekeys   []string // text|question|paths of each field
 	efield  int
 
+	// a form opened from an action with placeholders (+, Hacerla regla): enter fills the argv
+	eform  bool
+	elabel string
+	eact   views.Action
+	eafter func()
+
 	confirm string          // scope/id waiting for y/n
 	deleted map[string]bool // scope/id hidden by a delete
 	undo    *memUndo        // the last delete, until its command would run

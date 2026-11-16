@@ -80,6 +80,11 @@ func (m Memory) Remove(ctx context.Context, ref string) (string, error) {
 	return m.Store.DeleteMemory(ctx, ref)
 }
 
+// Keep marks a rule or learning as kept: nxy no longer proposes to delete or promote it.
+func (m Memory) Keep(ctx context.Context, ref string) (string, error) {
+	return m.Store.KeepMemory(ctx, ref)
+}
+
 // Restore undoes Remove.
 func (m Memory) Restore(ctx context.Context, ref string) (string, error) {
 	return m.Store.RestoreMemory(ctx, ref)

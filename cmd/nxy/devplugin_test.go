@@ -117,6 +117,16 @@ func TestDevHooksManifestF21(t *testing.T) {
 			t.Errorf("dev hooks miss %s with the shim line", k)
 		}
 	}
+	for _, e := range dev.Hooks["PreToolUse"] {
+		if e.Matcher != "AskUserQuestion" {
+			continue
+		}
+		for _, h := range e.Hooks {
+			if h.Timeout != 1800 || h.StatusMessage != "nxy: si tenés la TUI abierta, contestá ahí" {
+				t.Errorf("PreToolUse AskUserQuestion needs timeout 1800 and the statusMessage, got %d %q", h.Timeout, h.StatusMessage)
+			}
+		}
+	}
 }
 
 func TestDevPluginNoPersonalPaths(t *testing.T) {

@@ -22,6 +22,12 @@ func CloseQuestion(id string) string {
 	return fmt.Sprintf("nxy feature %s: ¿cerrar el diseño y planificar?", id)
 }
 
+// ForkQuestion is the AskUserQuestion text that picks one option of the open fork. Its options are
+// the labels saved by design fork, verbatim.
+func ForkQuestion(id, fork string) string {
+	return fmt.Sprintf("nxy feature %s: ¿qué opción elegís para %s?", id, fork)
+}
+
 // OfferQuestion is the AskUserQuestion text of the offer to move to engineer.
 func OfferQuestion(id string) string {
 	return fmt.Sprintf("nxy feature %s: ¿pasar a engineer para decidir esto con vos?", id)

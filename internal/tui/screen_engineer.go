@@ -15,8 +15,12 @@ func (engineerScreen) id() string                     { return "ingeniero" }
 func (engineerScreen) section() string                { return "inicio" }
 func (engineerScreen) crumb(_ *state, r route) string { return r.key + " › Ingeniero" }
 
-func (engineerScreen) keys(*state, route) []hint {
-	return []hint{{"↑↓", "opción"}, {"enter", "elegir"}, {"h", "cómo es hoy"}, {"c", "qué elegiría Claude"}}
+func (engineerScreen) keys(st *state, r route) []hint {
+	enter := hint{"enter", "contesta cuando Claude pregunte"}
+	if e := st.data.Engineer[r.key]; e != nil && e.AskID != "" {
+		enter = hint{"enter", "elegir"}
+	}
+	return []hint{{"↑↓", "opción"}, enter, {"h", "cómo es hoy"}, {"c", "qué elegiría Claude"}}
 }
 
 // engFlag is a toggle of the screen kept in the cursor map ("#h" today, "#c" Claude's opinion).
@@ -215,7 +219,11 @@ func (engineerScreen) key(st *state, r route, k string) intent {
 		st.engToggle(r, "c")
 	case "enter":
 		if cur < len(e.Options) {
-			return intent{toast: st.runAction(actionReq{label: "Elegir " + e.Options[cur].Key, a: e.Options[cur].Action})}
+			a := e.Options[cur].Action
+			if e.AskID == "" || len(a.Argv) == 0 {
+				return intent{toast: "elegí en el chat; enter contesta cuando Claude haga la pregunta de la bifurcación"}
+			}
+			return intent{toast: st.runAction(actionReq{label: "Elegir " + e.Options[cur].Key, a: a, reloadOnErr: true})}
 		}
 	}
 	return intent{}

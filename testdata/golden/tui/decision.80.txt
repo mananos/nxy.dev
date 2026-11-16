@@ -11,7 +11,7 @@
         2  Change      Write what to change; nxy re-plans                     
         3  Ver completoOpen the full plan in your editor                      
                                                                              
-  L   Si no contestás acá, la pregunta vuelve a Claude Code.                 
+  L   No espera a la TUI: contestá en la terminal de Claude Code.            
                                                                               
 
   worktrees  1 pausado · 1 huérfano   w ver todos

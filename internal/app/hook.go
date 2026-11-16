@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"time"
 
+	"github.com/mananos/nxy.dev/internal/ask"
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
@@ -43,6 +45,8 @@ type HookEvent struct {
 	// the tool_input already carries answers put there by the model.
 	Questions       []string
 	InputHasAnswers bool
+	// Asked are the questions of the AskUserQuestion call with their options' labels (PreToolUse).
+	Asked []domain.AskedQuestion
 	// Answers maps question to the user's answer (PostToolUse AskUserQuestion).
 	Answers map[string]string
 	// AgentAsync is true on PostToolUse Agent/Task when the agent was launched in the background.
@@ -109,6 +113,48 @@ type HookResponse struct {
 	Ask *AskSpec
 	// Block keeps the main thread from stopping (Stop), with this instruction as the reason.
 	Block string
+	// Answers answers an AskUserQuestion call from the TUI (PreToolUse); the call then runs with them
+	// and shows no dialog. A pointer so a HookResponse stays comparable.
+	Answers *AskAnswers
+	// Title sets the terminal title: a decision of nxy is pending, or the title goes back to the host's.
+	Title Title
+}
+
+// Title is a change of the terminal title the host is asked to make.
+type Title int
+
+const (
+	TitleNone Title = iota
+	// TitlePending says a question of nxy is waiting for the user.
+	TitlePending
+	// TitleRestore gives the title back to the host.
+	TitleRestore
+)
+
+// AskAnswers maps each question of an AskUserQuestion call to the chosen label (a multiSelect one
+// joins its labels with ", ").
+type AskAnswers struct {
+	ByQuestion map[string]string
+}
+
+// AskWait sets how the hook waits for the TUI to answer a question; zero values mean 300 ms and 25 min.
+type AskWait struct {
+	Every time.Duration
+	Max   time.Duration
+}
+
+func (w AskWait) every() time.Duration {
+	if w.Every <= 0 {
+		return 300 * time.Millisecond
+	}
+	return w.Every
+}
+
+func (w AskWait) max() time.Duration {
+	if w.Max <= 0 {
+		return 25 * time.Minute
+	}
+	return w.Max
 }
 
 // Hooks answers hook events with the ports it was given.
@@ -163,15 +209,45 @@ type Hooks struct {
 	// AgentFiles and Runs record what each subagent cost at SubagentStop; either nil means no record.
 	AgentFiles AgentFiles
 	Runs       AgentRuns
+	// Asks and TUI let a live TUI answer nxy's questions; either nil means the hook never waits.
+	Asks    PendingAsks
+	TUI     TUILiveness
+	AskWait AskWait
 }
 
 // Handle answers a hook event, one use case per event/tool.
 func (h Hooks) Handle(ctx context.Context, ev HookEvent) HookResponse {
+	answeredNxy := ev.Name == "PostToolUse" && ev.Tool == toolAskUser && h.askedByNxy(ctx, ev)
 	resp := h.handle(ctx, ev)
 	if resp.Next != nil {
 		resp.Next.Exe = h.Exe
 	}
+	if ev.Name != "PreToolUse" && resp.Next != nil {
+		if a, ok := ask.For(resp.Next.Feature); ok && len(a.Questions) > 0 {
+			resp.Title = TitlePending
+		}
+	}
+	if answeredNxy && resp.Title == TitleNone {
+		resp.Title = TitleRestore
+	}
 	return resp
+}
+
+// askedByNxy is true when some question of the AskUserQuestion call is one of the active feature's.
+func (h Hooks) askedByNxy(ctx context.Context, ev HookEvent) bool {
+	if ev.AgentID != "" || h.Store == nil {
+		return false
+	}
+	f, ok := h.activeFeature(ctx, ev)
+	if !ok {
+		return false
+	}
+	for _, q := range ev.Questions {
+		if isNxyQuestion(f, q) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {

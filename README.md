@@ -107,7 +107,7 @@ La escribe en `~/.claude/settings.json` (con backup) y se actualiza sola con cad
 
 ### 4. La TUI (opcional)
 
-`/nxy:tui` imprime el comando para abrir la TUI (inicio de features, agentes, plan, memoria, gasto y config) en otra terminal. Para que alcance con escribir `nxy tui`, corré `/nxy:setup` y aceptá la fila «nxy en el PATH»: en Windows suma `~/.nxy/bin` al PATH del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (esa carpeta tiene que estar en tu PATH). Para sacarlo, quitá esa carpeta del PATH o borrá ese archivo. Detalle en [dev/plugin/README.md](dev/plugin/README.md#la-tui).
+`/nxy:tui` imprime el comando para abrir la TUI (inicio de features, agentes, plan, memoria, gasto y config) en otra terminal. Para que alcance con escribir `nxy tui`, corré `/nxy:setup` y aceptá la fila «nxy en el PATH»: en Windows suma `~/.nxy/bin` al PATH del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (esa carpeta tiene que estar en tu PATH). Para sacarlo, quitá esa carpeta del PATH o borrá ese archivo. Cuando Claude te hace una pregunta de nxy y la TUI está abierta, la terminal de Claude Code dice «nxy: si tenés la TUI abierta, contestá ahí», el título pasa a «● nxy: decisión pendiente» y la TUI muestra la ventana de decisión: elegí ahí y Claude sigue. Con `t` (o cerrando la TUI, o pasados 25 min) la pregunta vuelve al diálogo normal de la terminal. Detalle en [dev/plugin/README.md](dev/plugin/README.md#la-tui).
 
 ### 5. Verificá
 

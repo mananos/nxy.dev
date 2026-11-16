@@ -173,6 +173,22 @@ func TestCursorFollowsID(t *testing.T) {
 	}
 }
 
+func TestSchemaNewerCallsOnStale(t *testing.T) {
+	src := newLiveSource(t)
+	m := liveModel(t, src, 5)
+	calls := 0
+	m.st.onStale = func() { calls++ }
+	m.Update(pollMsg{ver: 1, schema: 5})
+	if calls != 0 {
+		t.Fatal("same schema must not call OnStale")
+	}
+	m.Update(pollMsg{ver: 2, schema: 6})
+	m.Update(pollMsg{ver: 3, schema: 6})
+	if calls != 1 {
+		t.Fatalf("OnStale called %d times, want 1", calls)
+	}
+}
+
 func TestSchemaNewer(t *testing.T) {
 	src := newLiveSource(t)
 	m := liveModel(t, src, 5)

@@ -696,6 +696,9 @@ func (memoryScreen) view(st *state, r route, w int) ([]line, int) {
 	if selRow >= 0 {
 		right = block(append(st.memDetail(rows[selRow], scope, m.search, rwid-6), nil), rwid, tBg1, 3)
 	}
+	if m.edit && m.eform {
+		right = block(append(st.memFormLines(rwid-6), nil), rwid, tBg1, 3)
+	}
 	if two {
 		for _, l := range hcat([][]line{left, right}, []int{lwid, rwid}, 2) {
 			out = append(out, L("  ", l))
@@ -753,10 +756,8 @@ func (memoryScreen) key(st *state, r route, k string) intent {
 		if mem == nil {
 			return intent{}
 		}
-		// no form until F5.4: the action still has its placeholders
-		a := mem.Create
-		a.Planned = true
-		return intent{toast: st.runAction(actionReq{label: "Nueva regla", a: a})}
+		st.memOpenForm(mem.Create.Label, mem.Create, nil)
+		return intent{}
 	case "u":
 		return st.memUndo()
 	case "e":
@@ -778,7 +779,11 @@ func (memoryScreen) key(st *state, r route, k string) intent {
 		pk := scope + "/" + p.ID
 		after := func() { m.answered[pk] = true }
 		if k == "y" {
-			return intent{toast: st.runAction(actionReq{label: p.Accept.Label, a: planIfForm(p.Accept), after: after})}
+			if hasPlaceholder(p.Accept.Argv) {
+				st.memOpenForm(p.Accept.Label, p.Accept, after)
+				return intent{}
+			}
+			return intent{toast: st.runAction(actionReq{label: p.Accept.Label, a: p.Accept, after: after})}
 		}
 		return intent{toast: st.runAction(actionReq{label: "Se queda " + p.Target, a: p.Reject, after: after})}
 	case "enter":

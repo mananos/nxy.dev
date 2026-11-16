@@ -21,9 +21,29 @@ func (h Hooks) StopFeature(ctx context.Context, dir string) (f domain.Feature, w
 	if !ok {
 		return domain.Feature{}, nil, ErrNoActiveFeature
 	}
-	nf, _, err := h.advance(ctx, f.ID, flow.Event{Kind: flow.Stop})
+	return h.stopFeature(ctx, f)
+}
+
+// StopFeatureByID ends the feature with that id (the TUI's stop). Stopping also lets go of the
+// questions the hook holds for it: a hook waiting for the answer sees it was stopped and refuses it.
+func (h Hooks) StopFeatureByID(ctx context.Context, id string) (f domain.Feature, warning error, err error) {
+	if h.Store == nil {
+		return domain.Feature{}, nil, ErrNoActiveFeature
+	}
+	f, err = h.Store.Feature(ctx, id)
 	if err != nil {
 		return domain.Feature{}, nil, err
+	}
+	return h.stopFeature(ctx, f)
+}
+
+func (h Hooks) stopFeature(ctx context.Context, f domain.Feature) (nf domain.Feature, warning error, err error) {
+	nf, _, err = h.advance(ctx, f.ID, flow.Event{Kind: flow.Stop})
+	if err != nil {
+		return domain.Feature{}, nil, err
+	}
+	if h.Asks != nil {
+		_ = h.Asks.ReleaseFeatureAsks(ctx, f.ID, answeredByStopped)
 	}
 	h.deleteFeatureNotes(ctx, f.ID)
 	if h.Viewer != nil {

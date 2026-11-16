@@ -80,6 +80,9 @@ func (st *state) onPoll(m pollMsg) tea.Cmd {
 	}
 	if m.schema > st.schema {
 		// a newer nxy migrated the db: load nothing else
+		if !st.stale && st.onStale != nil {
+			st.onStale()
+		}
 		st.stale = true
 		return nil
 	}

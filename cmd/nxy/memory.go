@@ -20,7 +20,7 @@ import (
 // app cannot import adapters: the store meets the port here.
 var _ app.MemoryStore = (*sqlite.Store)(nil)
 
-const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] [--global [--roles planner,implementer,reviewer,main]] | edit <K3|G2|A7> [--text "<t>"] [--question "<q>"] [--paths g1,g2] [--roles a,b] [--files a,b] | rm <ref> | restore <ref> | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
+const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] [--global [--roles planner,implementer,reviewer,main]] | edit <K3|G2|A7> [--text "<t>"] [--question "<q>"] [--paths g1,g2] [--roles a,b] [--files a,b] | rm <ref> | restore <ref> | keep <ref> | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
 
 const noteUsage = `usage: nxy note <save "<title>" [--id N2] [--feature id] [--session id: folder and chain of that session] (body on stdin) | list [--all] | done <id>>`
 
@@ -123,7 +123,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 	cwd := memCwd(opts)
 	ctx := context.Background()
 	switch sub {
-	case "rule", "show", "search", "promote", "related", "export", "import", "note", "bootstrap", "edit", "rm", "restore":
+	case "rule", "show", "search", "promote", "related", "export", "import", "note", "bootstrap", "edit", "rm", "restore", "keep":
 	default:
 		fmt.Fprintln(stderr, memUsage)
 		return 1
@@ -170,6 +170,16 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			return memFail(stderr, err)
 		}
 		fmt.Fprintf(stdout, "edited %s\n", short)
+	case "keep":
+		if len(pos) != 1 {
+			fmt.Fprintln(stderr, memUsage)
+			return 1
+		}
+		short, err := m.Keep(ctx, pos[0])
+		if err != nil {
+			return memFail(stderr, err)
+		}
+		fmt.Fprintf(stdout, "kept %s: nxy no la vuelve a proponer\n", short)
 	case "rm", "restore":
 		if len(pos) != 1 {
 			fmt.Fprintln(stderr, memUsage)

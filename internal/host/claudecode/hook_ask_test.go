@@ -21,6 +21,63 @@ func TestEncodeAskWritesTheAskUserQuestionInput(t *testing.T) {
 	}
 }
 
+func TestDecodeAskedQuestions(t *testing.T) {
+	in := `{"hook_event_name":"PreToolUse","tool_name":"AskUserQuestion","cwd":"/p","tool_input":{"questions":[
+	  {"question":"¿Uno?","header":"H","multiSelect":true,"options":[{"label":"A","description":"da"},{"label":"B"}]}]}}`
+	ev, err := Decode(strings.NewReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ev.Asked) != 1 || ev.Asked[0].Question != "¿Uno?" || ev.Asked[0].Header != "H" || !ev.Asked[0].MultiSelect ||
+		len(ev.Asked[0].Options) != 2 || ev.Asked[0].Options[1] != "B" || len(ev.Questions) != 1 {
+		t.Errorf("asked = %+v", ev.Asked)
+	}
+}
+
+func TestEncodeAnswersKeepTheOriginalQuestions(t *testing.T) {
+	input := `{"questions":[{"question":"¿Uno?","options":[{"label":"A","description":"da"}]}]}`
+	ev := app.HookEvent{Name: "PreToolUse", Tool: "AskUserQuestion", ToolInput: []byte(input)}
+	m := encode(t, ev, app.HookResponse{Answers: &app.AskAnswers{ByQuestion: map[string]string{"¿Uno?": "A"}}})
+	h := m["hookSpecificOutput"].(map[string]any)
+	if h["permissionDecision"] != "allow" || h["permissionDecisionReason"] != "nxy: contestada en la TUI" {
+		t.Errorf("out = %v", h)
+	}
+	upd := h["updatedInput"].(map[string]any)
+	if upd["answers"].(map[string]any)["¿Uno?"] != "A" {
+		t.Errorf("answers = %v", upd["answers"])
+	}
+	qs := upd["questions"].([]any)
+	opt := qs[0].(map[string]any)["options"].([]any)[0].(map[string]any)
+	if opt["description"] != "da" {
+		t.Errorf("questions lost their descriptions: %v", qs)
+	}
+}
+
+func TestEncodeTitleIsATerminalSequenceEvenAlone(t *testing.T) {
+	m := encode(t, app.HookEvent{Name: "PostToolUse", Tool: "AskUserQuestion"}, app.HookResponse{Title: app.TitlePending})
+	if m["terminalSequence"] != "\x1b]2;● nxy: decisión pendiente\x07" {
+		t.Errorf("pending = %q", m["terminalSequence"])
+	}
+	m = encode(t, app.HookEvent{Name: "PostToolUse", Tool: "AskUserQuestion"}, app.HookResponse{Title: app.TitleRestore})
+	if m["terminalSequence"] != "\x1b]2;\x07" {
+		t.Errorf("restore = %q", m["terminalSequence"])
+	}
+}
+
+func TestEncodeTitleRidesWithTheContext(t *testing.T) {
+	m := encode(t, app.HookEvent{Name: "PostToolUse", Tool: "AskUserQuestion"}, app.HookResponse{Context: "x", Title: app.TitleRestore})
+	if m["terminalSequence"] == nil || m["hookSpecificOutput"] == nil {
+		t.Errorf("out = %v", m)
+	}
+}
+
+func TestEncodeNoTitleNoOutput(t *testing.T) {
+	var b strings.Builder
+	if err := Encode(&b, app.HookEvent{Name: "PostToolUse"}, app.HookResponse{}); err != nil || b.Len() != 0 {
+		t.Errorf("out = %q, err = %v", b.String(), err)
+	}
+}
+
 func TestEncodeStopBlockIsADecisionBlock(t *testing.T) {
 	m := encode(t, app.HookEvent{Name: "Stop"}, app.HookResponse{Block: "save a note"})
 	if m["decision"] != "block" || m["reason"] != "save a note" {

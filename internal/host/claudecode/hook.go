@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/internal/platform"
 )
@@ -63,7 +64,12 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		FilePath     string          `json:"file_path"`
 		NotebookPath string          `json:"notebook_path"`
 		Questions    []struct {
-			Question string `json:"question"`
+			Question    string `json:"question"`
+			Header      string `json:"header"`
+			MultiSelect bool   `json:"multiSelect"`
+			Options     []struct {
+				Label string `json:"label"`
+			} `json:"options"`
 		} `json:"questions"`
 		Answers map[string]any `json:"answers"`
 	}
@@ -81,6 +87,11 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		ev.FilePath = platform.NativePath(ev.FilePath)
 		for _, q := range ti.Questions {
 			ev.Questions = append(ev.Questions, q.Question)
+			aq := domain.AskedQuestion{Question: q.Question, Header: q.Header, MultiSelect: q.MultiSelect}
+			for _, o := range q.Options {
+				aq.Options = append(aq.Options, o.Label)
+			}
+			ev.Asked = append(ev.Asked, aq)
 		}
 		ev.InputHasAnswers = len(ti.Answers) > 0
 	}
@@ -144,6 +155,21 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 		}}
 	case ev.Name == "UserPromptSubmit" && resp.Deny != "":
 		out = map[string]any{"decision": "block", "reason": resp.Deny}
+	case ev.Name == "PreToolUse" && resp.Answers != nil && len(resp.Answers.ByQuestion) > 0:
+		// The original tool_input stays whole (descriptions of the options included); answers is added.
+		fields := map[string]json.RawMessage{}
+		_ = json.Unmarshal(ev.ToolInput, &fields)
+		b, err := marshal(resp.Answers.ByQuestion)
+		if err != nil {
+			return err
+		}
+		fields["answers"] = b
+		out = map[string]any{"hookSpecificOutput": map[string]any{
+			"hookEventName":            "PreToolUse",
+			"permissionDecision":       "allow",
+			"permissionDecisionReason": "nxy: contestada en la TUI",
+			"updatedInput":             fields,
+		}}
 	case resp.Rewrite != nil:
 		return encodeRewrite(w, ev, resp)
 	case ev.Name == "PreToolUse" && (resp.Prompt != "" || resp.Model != "" || resp.Effort != ""):
@@ -202,7 +228,16 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			out["systemMessage"] = resp.Notice
 		}
 	default:
-		return nil
+		if resp.Title == app.TitleNone {
+			return nil
+		}
+		out = map[string]any{}
+	}
+	switch resp.Title {
+	case app.TitlePending:
+		out["terminalSequence"] = "\x1b]2;● nxy: decisión pendiente\x07"
+	case app.TitleRestore:
+		out["terminalSequence"] = "\x1b]2;\x07"
 	}
 	b, err := marshal(out)
 	if err != nil {

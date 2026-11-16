@@ -55,15 +55,13 @@
             "nxy",
             "action",
             "decide",
-            "--feature",
-            "FEAT-A",
-            "--question",
-            "1",
-            "--option",
-            "1"
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Reintentar"
           ],
           "confirm": "",
-          "planned": true
+          "planned": false
         },
         {
           "id": "seguir",
@@ -72,15 +70,13 @@
             "nxy",
             "action",
             "decide",
-            "--feature",
-            "FEAT-A",
-            "--question",
-            "1",
-            "--option",
-            "2"
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Seguir"
           ],
           "confirm": "",
-          "planned": true
+          "planned": false
         },
         {
           "id": "parar",
@@ -89,15 +85,13 @@
             "nxy",
             "action",
             "decide",
-            "--feature",
-            "FEAT-A",
-            "--question",
-            "1",
-            "--option",
-            "3"
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Parar"
           ],
           "confirm": "Termina la feature",
-          "planned": true
+          "planned": false
         },
         {
           "id": "pause",
@@ -147,57 +141,6 @@
         "question": "Approve nxy plan FEAT-D r2?"
       },
       "actions": [
-        {
-          "id": "approve",
-          "label": "Approve",
-          "argv": [
-            "nxy",
-            "action",
-            "decide",
-            "--feature",
-            "FEAT-D",
-            "--question",
-            "1",
-            "--option",
-            "1"
-          ],
-          "confirm": "",
-          "planned": true
-        },
-        {
-          "id": "change",
-          "label": "Change",
-          "argv": [
-            "nxy",
-            "action",
-            "decide",
-            "--feature",
-            "FEAT-D",
-            "--question",
-            "1",
-            "--option",
-            "2"
-          ],
-          "confirm": "",
-          "planned": true
-        },
-        {
-          "id": "ver_completo",
-          "label": "Ver completo",
-          "argv": [
-            "nxy",
-            "action",
-            "decide",
-            "--feature",
-            "FEAT-D",
-            "--question",
-            "1",
-            "--option",
-            "3"
-          ],
-          "confirm": "",
-          "planned": true
-        },
         {
           "id": "resume",
           "label": "Reanudar",

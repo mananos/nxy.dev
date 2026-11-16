@@ -1,8 +1,10 @@
 package views
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/mananos/nxy.dev/internal/design"
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
@@ -63,11 +65,22 @@ func TestBuildEngineerAgendaAndOptions(t *testing.T) {
 		t.Fatalf("options = %+v", e.Options)
 	}
 	o := e.Options[0]
-	if len(o.Diagram.Lines) != 1 || o.Cons == nil || len(o.Pros) != 1 || !o.Action.Planned {
+	if len(o.Diagram.Lines) != 1 || o.Cons == nil || len(o.Pros) != 1 || o.Action.Planned {
 		t.Errorf("option 0 = %+v", o)
 	}
-	if got := o.Action.Argv; len(got) != 7 || got[2] != "decide" || got[4] != "F1" || got[6] != "1" {
-		t.Errorf("argv = %v", got)
+	if e.AskID != "" || len(o.Action.Argv) != 0 {
+		t.Errorf("nothing waiting: ask %q argv %v", e.AskID, o.Action.Argv)
+	}
+	// with the fork question waiting, enter answers with the label
+	w, _ := BuildEngineer(EngineerIn{
+		FeatureIn: FeatureIn{Feature: engFeature(), Now: testNow},
+		Waiting: []domain.PendingAsk{
+			{ID: "A9", FeatureID: "F1", Questions: []domain.AskedQuestion{{Question: design.ForkQuestion("F1", "B2")}}},
+			{ID: "A8", FeatureID: "F1", Questions: []domain.AskedQuestion{{Question: "otra"}}},
+		},
+	})
+	if got := strings.Join(w.Options[0].Action.Argv, " "); w.AskID != "A9" || got != "nxy action decide --ask A9 --answer json" {
+		t.Errorf("waiting: ask %q argv %q", w.AskID, got)
 	}
 	if e.Options[1].Diagram.Lines == nil || len(e.Options[1].Diagram.Lines) != 0 {
 		t.Errorf("empty d2 must give empty lines: %+v", e.Options[1].Diagram)

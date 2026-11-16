@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/memory"
 )
 
@@ -130,18 +131,29 @@ func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	if action == "rule" {
 		return featureRule(args, stdout, stderr)
 	}
+	byID := ""
+	if action == "stop" && len(args) == 2 && args[0] == "--feature" && args[1] != "" {
+		byID, args = args[1], nil
+	}
 	if action != "stop" || len(args) != 0 {
 		fmt.Fprintln(stderr, featureUsage)
 		return 1
 	}
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Fprintf(stderr, "nxy feature stop: %v\n", err)
-		return 1
-	}
 	h, st := newHooksStore()
 	defer st.Close()
-	f, warning, err := h.StopFeature(context.Background(), dir)
+	var f domain.Feature
+	var warning error
+	var err error
+	if byID != "" {
+		f, warning, err = h.StopFeatureByID(context.Background(), byID)
+	} else {
+		var dir string
+		if dir, err = os.Getwd(); err != nil {
+			fmt.Fprintf(stderr, "nxy feature stop: %v\n", err)
+			return 1
+		}
+		f, warning, err = h.StopFeature(context.Background(), dir)
+	}
 	if errors.Is(err, app.ErrNoActiveFeature) {
 		fmt.Fprintln(stderr, "nxy: no active feature in this repo")
 		return 1

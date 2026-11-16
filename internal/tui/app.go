@@ -35,6 +35,9 @@ type Options struct {
 	HaveVer bool
 	// Schema is the newest schema this binary knows; a db above it means nxy was updated.
 	Schema int
+	// OnStale is called once when the TUI goes stale (the db is from a newer nxy); the caller stops
+	// the live-TUI heartbeat there so the hooks fall back to the normal dialog.
+	OnStale func()
 	// Run runs a command of nxy (argv[0] is "nxy") and returns what it printed. Nil (demo): the
 	// buttons only say what they would run.
 	Run func(ctx context.Context, argv []string) (out string, err error)
@@ -122,15 +125,19 @@ type state struct {
 	height    int
 	editing   bool // a text box is open: the decision window does not jump in
 	postponed map[string]bool
-	answered  map[string]bool   // decisions answered in this run (the demo only shows the command)
-	decOpen   bool              // the decision window is on top
-	decCur    string            // feature of the question the window shows
-	folded    map[string]bool   // agents folded in the tree
-	mem       *memUI            // the memory screen (see memory_search.go)
-	cmd       tea.Cmd           // what a key leaves for the program to run (the undo timer)
-	cfgKind   string            // model or effort: what `r` saves in the repo
-	ld        *loader           // where the views come from
-	cheapBusy bool              // a cheap load is in flight
+	answered  map[string]bool         // decisions answered in this run (the demo only shows the command)
+	decOpen   bool                    // the decision window is on top
+	decCur    string                  // feature of the question the window shows
+	decIdx    map[string]int          // feature: question of a multi-question ask the window is on
+	decAns    map[string][]string     // feature: answers already given to the earlier questions
+	decAsk    map[string]string       // feature: the AskID that progress (decIdx, decAns, decMark) belongs to
+	decMark   map[string]map[int]bool // feature: options marked with space in a multiSelect question
+	folded    map[string]bool         // agents folded in the tree
+	mem       *memUI                  // the memory screen (see memory_search.go)
+	cmd       tea.Cmd                 // what a key leaves for the program to run (the undo timer)
+	cfgKind   string                  // model or effort: what `r` saves in the repo
+	ld        *loader                 // where the views come from
+	cheapBusy bool                    // a cheap load is in flight
 	demo      bool
 	dumpFeat  string // the feature of the file a dump shows
 
@@ -139,6 +146,7 @@ type state struct {
 	haveVer    bool  // lastVer is the first reading
 	lastVer    int64 // last data_version seen
 	stale      bool  // the db is from a newer nxy
+	onStale    func()
 	cheapDirty bool  // a refresh came while a cheap load was in flight
 	liveOn     bool  // the one-second tick is armed
 
@@ -157,9 +165,10 @@ type state struct {
 func newState(o Options) *state {
 	st := &state{data: newData(), dark: o.Dark, nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
 		stack: []route{{screen: "inicio"}}, cur: map[string]int{}, postponed: map[string]bool{},
-		answered: map[string]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
+		answered: map[string]bool{}, decIdx: map[string]int{}, decAns: map[string][]string{}, decAsk: map[string]string{},decMark: map[string]map[int]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
 		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, cfgPend: map[string]string{}}
 	st.haveVer, st.lastVer = o.HaveVer, o.Ver
+	st.onStale = o.OnStale
 	st.getenv, st.goos, st.lookPath = o.Getenv, o.GOOS, o.LookPath
 	if st.getenv == nil {
 		st.getenv = os.Getenv
@@ -220,6 +229,17 @@ func (st *state) pop() {
 }
 
 func (st *state) decisionCount() int { return len(st.pending()) }
+
+// waitingCount is the open questions a hook is holding for the TUI: the ones the title announces.
+func (st *state) waitingCount() int {
+	n := 0
+	for _, d := range st.pending() {
+		if d.AskID != "" {
+			n++
+		}
+	}
+	return n
+}
 
 func (st *state) apply(in intent) {
 	if in.toast != "" {
@@ -551,7 +571,7 @@ func (m *model) View() tea.View {
 	v.AltScreen = true
 	v.BackgroundColor = m.st.th.bgColor()
 	v.WindowTitle = "nxy"
-	if n := m.st.decisionCount(); n > 0 {
+	if n := m.st.waitingCount(); n > 0 {
 		v.WindowTitle = fmt.Sprintf("● nxy: %s", decisionsText(n))
 	}
 	return v

@@ -103,8 +103,17 @@ func TestBuildMemoryLearnings(t *testing.T) {
 	if got := m.Proposals[0].Accept.Argv; !reflect.DeepEqual(got, []string{"nxy", "mem", "promote", "A2", "--question", "{question}"}) || m.Proposals[0].Accept.Planned {
 		t.Errorf("accept %+v", m.Proposals[0].Accept)
 	}
-	if !m.Proposals[0].Reject.Planned {
-		t.Error("reject has no command yet")
+	if m.Proposals[0].Reject.Planned || !reflect.DeepEqual(m.Proposals[0].Reject.Argv, []string{"nxy", "mem", "keep", "A2"}) {
+		t.Errorf("reject %+v", m.Proposals[0].Reject)
+	}
+}
+
+func TestBuildMemoryKeptHidesProposal(t *testing.T) {
+	ls := []memory.Learning{{Short: "A2", Repo: "repo", Seen: SeenFeatures, Text: "x", KeptAt: 5}}
+	rs := []memory.Rule{{Short: "K1", Repo: "repo", Deliveries: UncitedDeliveries, Text: "r", KeptAt: 5}}
+	m := BuildMemory(MemoryIn{Scope: ScopeRepo, Repo: RepoRef{Name: "repo"}, Learnings: ls, Rules: rs})
+	if len(m.Proposals) != 0 {
+		t.Errorf("proposals %+v", m.Proposals)
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/mananos/nxy.dev/internal/ask"
 	"github.com/mananos/nxy.dev/internal/domain"
 	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/internal/memory"
@@ -347,8 +348,28 @@ func TestViewGolden(t *testing.T) {
 	src := newViewSource(st, os.Getenv, cwd, func() time.Time { return now }, loc)
 	defer src.Close()
 
+	// the hook holds the question of A in the TUI; D's is not held (its decision has no ask_id)
+	rowA, err := src.row(ctx, idA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	askA, _ := ask.For(rowA.Feature)
+	waitA := domain.PendingAsk{SessionID: "sess-a", FeatureID: idA, ToolUseID: "toolu_a"}
+	for _, q := range askA.Questions {
+		aq := domain.AskedQuestion{Question: q.Question, Header: q.Header, MultiSelect: q.MultiSelect}
+		for _, o := range q.Options {
+			aq.Options = append(aq.Options, o.Label)
+		}
+		waitA.Questions = append(waitA.Questions, aq)
+	}
+	clk = vgAt(t, "2026-11-11T11:00:00Z")
+	waitA, err = st.CreatePendingAsk(ctx, waitA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var pairs []string
-	pairs = append(pairs, idA, "FEAT-A", idB, "FEAT-B", idC, "FEAT-C", idD, "FEAT-D")
+	pairs = append(pairs, idA, "FEAT-A", idB, "FEAT-B", idC, "FEAT-C", idD, "FEAT-D", waitA.ID, "ASK-A")
 	pairs = append(pairs, transcript.ProjectSlug(cwd), transcript.ProjectSlug(vgRoot+"/app"))
 	check := vgChecker(t, root, pairs)
 
