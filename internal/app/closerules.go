@@ -212,7 +212,7 @@ func (h Hooks) AddRuleCandidate(ctx context.Context, dir, text, question, origin
 
 // errRulesClosed: the feature is already asking (or past) the closing question, so a new candidate
 // can no longer be offered.
-var errRulesClosed = errors.New("the closing question is already open: use nxy mem rule")
+var errRulesClosed = errors.New("la pregunta de cierre ya está abierta: usá nxy mem rule")
 
 func (h Hooks) addRuleCandidate(ctx context.Context, dir, text, question, origin, lens string) (domain.Feature, error) {
 	f, ok, err := h.activeIn(ctx, dir)

@@ -41,7 +41,7 @@ Cómo probar: `claude --plugin-dir dev/plugin` con la 1.x desactivada (ambas se 
 Qué ves:
 
 1. Escribís `/nxy:feature <pedido>`. nxy guarda el pedido literal y le da al hilo principal una instrucción que empieza con `nxy:` (despachar al planner). El planner arma el plan y lo guarda con `nxy plan save`; si el plan no valida, ve los problemas y lo corrige.
-2. El hilo principal copia el checkpoint tal cual (criterios con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta: **Approve**, **Change** o **Ver completo**. Ver completo abre el plan entero en tu editor y Claude te confirma en el chat que lo abrió, con la ruta. Change te pide una nota y el planner replanifica con ella.
+2. El hilo principal copia el checkpoint tal cual (criterios con su tipo de prueba y lotes con qué cubren, qué cambian y riesgo) y te pregunta «¿Aprobás el plan <id> r<rev> de nxy?» con **Aprobar**, **Cambiar** o **Ver completo**. Ver completo abre el plan entero en tu editor y Claude te confirma en el chat que lo abrió, con la ruta. Cambiar te pide una nota y el planner replanifica con ella.
 3. Si el planner tiene preguntas, las respondés antes del checkpoint.
 
 Estados públicos (los de `nxy status`):

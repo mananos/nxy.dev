@@ -80,7 +80,32 @@ func scope(d TrendData) string {
 	if d.Here {
 		return d.Cwd
 	}
-	return "all projects"
+	return "todos los proyectos"
+}
+
+// nxyCell is the text-table reading of NxyLabel; the JSON keeps "yes".
+func nxyCell(label string) string {
+	if label == "yes" {
+		return "sí"
+	}
+	return label
+}
+
+// byLabel is how a --by value reads in the text output; the JSON keeps the value as typed.
+func byLabel(by string) string {
+	switch by {
+	case "day":
+		return "día"
+	case "week":
+		return "semana"
+	case "session":
+		return "sesión"
+	case "model":
+		return "modelo"
+	case "agent":
+		return "agente"
+	}
+	return by
 }
 
 func jsonOut(v any) Output {
@@ -142,7 +167,7 @@ func sumUsd(rows []usdPart) usdSum {
 func unknownNote(t usdSum) string {
 	s := ""
 	if t.USDPartial {
-		s += "\n(no pricing for: " + strings.Join(t.UnknownModels, ", ") + " — USD shown as $…+? where affected)"
+		s += "\n(sin precios para: " + strings.Join(t.UnknownModels, ", ") + " — USD se muestra como $…+? donde afecta)"
 	}
 	if t.USDEstimated {
 		s += "\n" + format.EstimatedNote(t.EstimatedModels)
@@ -257,7 +282,7 @@ func Trend(d TrendData) Output {
 			}{d.Since, d.By, summary})
 		}
 		out := []string{
-			"nxy trend — " + scope(d) + " · since " + format.FmtDate(sinceFloat(d.Since), d.Loc, true) + " · by agent · " + count(d.AgentSessions) + " sessions · " + count(len(d.AgentRuns)) + " runs",
+			"nxy trend — " + scope(d) + " · desde " + format.FmtDate(sinceFloat(d.Since), d.Loc, true) + " · por agente · " + count(d.AgentSessions) + " sesiones · " + count(len(d.AgentRuns)) + " corridas",
 			"",
 		}
 		out = append(out, FormatAgentTiming(&summary)...)
@@ -279,7 +304,7 @@ func Trend(d TrendData) Output {
 		usdLabel = "USD~"
 	}
 	head := func(by string) string {
-		return "nxy trend — " + scope(d) + " · since " + format.FmtDate(sinceFloat(d.Since), d.Loc, true) + " · by " + by + " · " + count(len(sessions)) + " sessions"
+		return "nxy trend — " + scope(d) + " · desde " + format.FmtDate(sinceFloat(d.Since), d.Loc, true) + " · por " + byLabel(by) + " · " + count(len(sessions)) + " sesiones"
 	}
 	usdCol := func() format.Col { return format.Col{Label: usdLabel, Right: true} }
 
@@ -402,11 +427,11 @@ func Trend(d TrendData) Output {
 	var cols []format.Col
 	bySession := d.By == "session"
 	if bySession {
-		cols = append(cols, format.Col{Label: "session"}, format.Col{Label: "started"}, format.Col{Label: "first prompt"})
+		cols = append(cols, format.Col{Label: "sesión"}, format.Col{Label: "inicio"}, format.Col{Label: "primer prompt"})
 	} else {
-		cols = append(cols, format.Col{Label: d.By}, format.Col{Label: "sess", Right: true})
+		cols = append(cols, format.Col{Label: byLabel(d.By)}, format.Col{Label: "ses", Right: true})
 	}
-	for _, l := range []string{"turns", "tokens", "uncached", "cache-r", "output", "hit", "agents", "tok/turn", "calls/turn", "ctx/call", "main edits", "bash lines", "rtk", "rtk saved"} {
+	for _, l := range []string{"turnos", "tokens", "sin caché", "cache-r", "salida", "hit", "agentes", "tok/turno", "llam/turno", "ctx/llam", "ediciones", "líneas bash", "rtk", "rtk ahorró"} {
 		cols = append(cols, format.Col{Label: l, Right: true})
 	}
 	cols = append(cols, usdCol(), format.Col{Label: "nxy", Right: true})
@@ -423,36 +448,36 @@ func Trend(d TrendData) Output {
 			format.FmtPct(NaNOr(r.Hit), 0), format.FmtPct(NaNOr(r.AgentPct), 0),
 			tokens(NaNOr(r.PerTurn)), format.FmtRatio(NaNOr(r.CallsPerTurn)), tokens(NaNOr(r.CtxPerCall)),
 			jscompat.String(r.MainEdits), tokens(r.BashLines), jscompat.String(r.RtkCalls), tokens(NaNOr(r.RtkSaved)),
-			usdCell(r.USD, r.USDPartial, r.USDEstimated), r.NxyLabel,
+			usdCell(r.USD, r.USDPartial, r.USDEstimated), nxyCell(r.NxyLabel),
 		)
 		cells[i] = c
 	}
 	out = append(out, format.Table(cols, cells), "")
 
-	here := "all projects"
+	here := "todos los proyectos"
 	if d.Here {
-		here = "this project"
+		here = "este proyecto"
 	}
 	var rtkNote string
 	switch {
 	case d.LedgerOK:
-		rtkNote = "rtk saved = tokens rtk cut from Bash output, from its own ledger"
+		rtkNote = "rtk ahorró = tokens que rtk le sacó a la salida de Bash, según su propio registro"
 	case d.HasGain:
-		rtkNote = "rtk saved = rtk's daily total (" + here + ", from rtk gain, booked by UTC day; install Node ≥ 22.13 for per-session figures)"
+		rtkNote = "rtk ahorró = total diario de rtk (" + here + ", de rtk gain, por día UTC; instalá Node ≥ 22.13 para cifras por sesión)"
 	default:
-		rtkNote = "rtk saved = ? (rtk ledger not readable)"
+		rtkNote = "rtk ahorró = ? (no se puede leer el registro de rtk)"
 	}
 	sub := ""
 	if d.Settings.Subscription {
-		sub = " · USD~ = equivalent at API prices (subscription)"
+		sub = " · USD~ = equivalente a precios de API (suscripción)"
 	}
-	out = append(out, "legend: tokens = all input (uncached + cache) + output · hit = cache reads / all input · agents = share of tokens spent by subagents · calls/turn = API calls per prompt · ctx/call = average context carried by each main-agent call · main edits = files the main agent edited itself (Edit/Write) · rtk = Bash calls filtered by nxy · "+rtkNote+" · nxy = sessions that ran with the plugin"+sub+unknownNote(total))
+	out = append(out, "leyenda: tokens = toda la entrada (sin caché + caché) + salida · hit = lecturas de caché / toda la entrada · agentes = parte de los tokens gastada por subagentes · llam/turno = llamadas a la API por prompt · ctx/llam = contexto promedio que arrastra cada llamada del agente principal · ediciones = archivos que editó el agente principal (Edit/Write) · rtk = llamadas a Bash filtradas por nxy · "+rtkNote+" · nxy = sesiones que corrieron con el plugin"+sub+unknownNote(total))
 	var sumTok, sumWall float64
 	for _, r := range rows {
 		sumTok += r.TotalTokens
 		sumWall += r.WallMs
 	}
-	out = append(out, "total: "+tokens(sumTok)+" tokens · "+usdCell(total.USD, total.USDPartial, total.USDEstimated)+" · "+format.FmtDuration(sumWall)+" wall")
+	out = append(out, "total: "+tokens(sumTok)+" tokens · "+usdCell(total.USD, total.USDPartial, total.USDEstimated)+" · "+format.FmtDuration(sumWall)+" de reloj")
 	out = append(out, FormatBreaks(rebuilds, total.USD)...)
 	if line, ok := FormatTTLWhatIf(ttl); ok {
 		out = append(out, line)
@@ -536,8 +561,8 @@ func trendByModel(d TrendData, sessions []TrendSession, head string, usdCol form
 		}{d.Since, d.By, rows, total})
 	}
 	cols := []format.Col{
-		{Label: "model"}, {Label: "sess", Right: true}, {Label: "calls", Right: true}, {Label: "tokens", Right: true}, {Label: "share", Right: true},
-		{Label: "uncached", Right: true}, {Label: "cache-r", Right: true}, {Label: "output", Right: true}, {Label: "thinking", Right: true},
+		{Label: "modelo"}, {Label: "ses", Right: true}, {Label: "llamadas", Right: true}, {Label: "tokens", Right: true}, {Label: "parte", Right: true},
+		{Label: "sin caché", Right: true}, {Label: "cache-r", Right: true}, {Label: "salida", Right: true}, {Label: "razonam.", Right: true},
 		{Label: "hit", Right: true}, usdCol,
 	}
 	cells := make([][]string, len(rows))
@@ -555,7 +580,7 @@ func trendByModel(d TrendData, sessions []TrendSession, head string, usdCol form
 	out := []string{
 		head, "",
 		format.Table(cols, cells), "",
-		"legend: share = share of all tokens in the range · thinking is a subset of output" + unknownNote(total),
+		"leyenda: parte = parte de todos los tokens del rango · razonam. es un subconjunto de la salida" + unknownNote(total),
 		"total: " + tokens(all) + " tokens · " + usdCell(total.USD, total.USDPartial, total.USDEstimated),
 	}
 	return Output{Stdout: strings.Join(out, "\n") + "\n"}

@@ -310,7 +310,7 @@ func TestPlanApproval(t *testing.T) {
 		t.Fatalf("the cursor starts on %d, want 0", got)
 	}
 	press(m, "a")
-	if !strings.Contains(m.st.toast, "nxy action decide --ask ASK-F7K9-PLAN --answer Approve") {
+	if !strings.Contains(m.st.toast, "nxy action decide --ask ASK-F7K9-PLAN --answer Aprobar") {
 		t.Errorf("toast %q", m.st.toast)
 	}
 

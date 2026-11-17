@@ -9,7 +9,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/flow"
 )
 
-const legacyNotice = "nxy 1.x is still enabled: disable it while testing the v2 (both answer the same hooks)"
+const legacyNotice = "la 1.x de nxy sigue activada: desactivala mientras probás la v2 (las dos responden a los mismos hooks)"
 
 // shortError is the first line of err, cut to 80 runes.
 func shortError(err error) string {
@@ -139,7 +139,7 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 			}
 			if fresh || ev.Source == "clear" {
 				if reviewing {
-					r.Notice = "nxy: feature " + f.ID + " — the reviewers are still running; their result arrives when they end"
+					r.Notice = "nxy: feature " + f.ID + " — los reviewers siguen corriendo; su resultado llega cuando terminan"
 				} else if batchesRunning {
 					w := "el lote " + domain.JoinInts(waiting, "y") + " sigue"
 					if len(waiting) > 1 {
@@ -147,7 +147,7 @@ func (h Hooks) sessionStart(ctx context.Context, ev HookEvent) HookResponse {
 					}
 					r.Notice = "nxy: feature " + f.ID + " — " + w + " corriendo; su resultado llega cuando terminan"
 				} else if running {
-					r.Notice = "nxy: feature " + f.ID + " — the " + strings.TrimPrefix(f.Background, "nxy:") + " is still running; its result arrives when it ends"
+					r.Notice = "nxy: feature " + f.ID + " — el " + strings.TrimPrefix(f.Background, "nxy:") + " sigue corriendo; su resultado llega cuando termina"
 				} else {
 					r.Notice = "nxy: feature " + f.ID + " pendiente (" + f.Next.Label() + ") — escribí cualquier cosa para seguir"
 				}

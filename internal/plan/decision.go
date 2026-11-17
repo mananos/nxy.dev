@@ -111,25 +111,25 @@ const (
 
 // DecisionQuestion is the exact text asked when a batch failed twice.
 func DecisionQuestion(featureID string, batch int) string {
-	return fmt.Sprintf("nxy feature %s: batch %d failed twice — what now?", featureID, batch)
+	return fmt.Sprintf("nxy feature %s: el lote %d falló dos veces — ¿qué hacemos?", featureID, batch)
 }
 
 // AffectedFailedQuestion is the exact text asked when the affected tests failed twice.
 func AffectedFailedQuestion(featureID string) string {
-	return fmt.Sprintf("nxy feature %s: the affected tests failed twice — what now?", featureID)
+	return fmt.Sprintf("nxy feature %s: los tests afectados fallaron dos veces — ¿qué hacemos?", featureID)
 }
 
 // UnverifiedQuestion is the exact text asked when the affected tests could not be verified.
 func UnverifiedQuestion(featureID string) string {
-	return fmt.Sprintf("nxy feature %s: the affected tests could not be verified — what now?", featureID)
+	return fmt.Sprintf("nxy feature %s: no se pudieron verificar los tests afectados — ¿qué hacemos?", featureID)
 }
 
 // FixesFailedQuestion is the exact text asked when the review fixes could not be verified.
 func FixesFailedQuestion(featureID string) string {
-	return fmt.Sprintf("nxy feature %s: the review fixes failed — what now?", featureID)
+	return fmt.Sprintf("nxy feature %s: fallaron los arreglos de la review — ¿qué hacemos?", featureID)
 }
 
 // PlannerFailedQuestion is the exact text asked when the planner ended without saving a plan.
 func PlannerFailedQuestion(featureID string) string {
-	return fmt.Sprintf("nxy feature %s: the planner did not save a plan — what now?", featureID)
+	return fmt.Sprintf("nxy feature %s: el planner no guardó un plan — ¿qué hacemos?", featureID)
 }

@@ -53,7 +53,7 @@ func TestMemEditLearning(t *testing.T) {
 	s, _ := newMem(t)
 	a, _ := s.AddLearning(ctx, memory.Learning{Repo: "/srv/dev/a", Text: "one"})
 	s.AddLearning(ctx, memory.Learning{Repo: "/srv/dev/a", Text: "two"})
-	if _, err := s.EditLearning(ctx, a.Short, memory.LearningEdit{Text: strp("two")}); err == nil || !strings.Contains(err.Error(), "same text and files as A2") {
+	if _, err := s.EditLearning(ctx, a.Short, memory.LearningEdit{Text: strp("two")}); err == nil || !strings.Contains(err.Error(), "mismo texto y archivos que A2") {
 		t.Fatalf("collision not refused: %v", err)
 	}
 	e, err := s.EditLearning(ctx, a.Short, memory.LearningEdit{Text: strp("three"), Files: listp("x.go")})
@@ -66,7 +66,7 @@ func TestMemEditLearning(t *testing.T) {
 	if _, err := s.Promote(ctx, "A2", "when?", nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.EditLearning(ctx, "A2", memory.LearningEdit{Text: strp("x")}); err == nil || !strings.Contains(err.Error(), "already rule K1") {
+	if _, err := s.EditLearning(ctx, "A2", memory.LearningEdit{Text: strp("x")}); err == nil || !strings.Contains(err.Error(), "ya es la regla K1") {
 		t.Errorf("promoted edit: %v", err)
 	}
 }
@@ -112,7 +112,7 @@ func TestMemDeleteRestore(t *testing.T) {
 	l, _ := s.AddLearning(ctx, memory.Learning{Repo: "/srv/dev/a", Text: "same"})
 	s.DeleteMemory(ctx, l.Short)
 	s.AddLearning(ctx, memory.Learning{Repo: "/srv/dev/a", Text: "same"})
-	if _, err := s.RestoreMemory(ctx, "A1"); err == nil || !strings.Contains(err.Error(), "A2 holds the same learning") {
+	if _, err := s.RestoreMemory(ctx, "A1"); err == nil || !strings.Contains(err.Error(), "A2 tiene el mismo aprendizaje") {
 		t.Errorf("restore collision: %v", err)
 	}
 }

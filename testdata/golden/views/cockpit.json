@@ -44,8 +44,8 @@
       "tokens_out": 6500,
       "decision": {
         "feature_id": "FEAT-A",
-        "header": "Batch",
-        "question": "nxy feature FEAT-A: batch 3 failed twice — what now?"
+        "header": "Lote",
+        "question": "nxy feature FEAT-A: el lote 3 falló dos veces — ¿qué hacemos?"
       },
       "actions": [
         {
@@ -138,7 +138,7 @@
       "decision": {
         "feature_id": "FEAT-D",
         "header": "Plan",
-        "question": "Approve nxy plan FEAT-D r2?"
+        "question": "¿Aprobás el plan FEAT-D r2 de nxy?"
       },
       "actions": [
         {

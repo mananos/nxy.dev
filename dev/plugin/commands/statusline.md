@@ -1,5 +1,5 @@
 ---
-description: Show, install or remove the nxy statusline (tokens, cost, context, cache) (nxy dev)
+description: Mirá, instalá o sacá la statusline de nxy (tokens, costo, contexto, cache) (nxy dev)
 argument-hint: [install | remove]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" statusline setup:*)
 ---

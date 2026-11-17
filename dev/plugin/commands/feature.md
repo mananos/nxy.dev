@@ -1,5 +1,5 @@
 ---
-description: Start a feature the nxy way — the binary drives the flow (nxy dev)
+description: Empezá una feature a la manera de nxy — el binario conduce el flujo (nxy dev)
 argument-hint: <what to build or change>
 ---
 

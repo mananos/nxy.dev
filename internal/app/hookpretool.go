@@ -74,7 +74,7 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	if decideCommand.MatchString(ev.Command) {
-		return HookResponse{Deny: "nxy action decide es la respuesta del usuario desde la TUI; preguntá con AskUserQuestion"}
+		return HookResponse{Deny: "nxy action decide is the user's answer from the TUI; ask with AskUserQuestion"}
 	}
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r

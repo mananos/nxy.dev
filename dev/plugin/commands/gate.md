@@ -1,5 +1,5 @@
 ---
-description: nxy gate — status, once [search], reads on|off (nxy dev)
+description: Gate de nxy — status, once [búsqueda], reads on|off (nxy dev)
 argument-hint: status | once [search] | reads on|off [--repo]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" gate:*)
 ---

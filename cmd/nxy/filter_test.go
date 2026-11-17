@@ -23,8 +23,8 @@ func TestFilterOnOffKeepsOtherKeys(t *testing.T) {
 	before, _ := os.ReadFile(cfgPath)
 
 	code, out, _ := runCmd(t, "", "filter", "--cwd", repo)
-	if code != 0 || !strings.Contains(out, "filter module: enabled (metrics module: disabled)") ||
-		!strings.Contains(out, "engine:") || !strings.Contains(out, "escape hatch:") {
+	if code != 0 || !strings.Contains(out, "módulo de filtros: activado (módulo de métricas: desactivado)") ||
+		!strings.Contains(out, "motor:") || !strings.Contains(out, "salida de emergencia:") {
 		t.Fatalf("status (%d):\n%s", code, out)
 	}
 	if after, _ := os.ReadFile(cfgPath); string(after) != string(before) {
@@ -32,7 +32,7 @@ func TestFilterOnOffKeepsOtherKeys(t *testing.T) {
 	}
 
 	code, out, _ = runCmd(t, "", "filter", "off", "--repo", "--cwd", repo)
-	if code != 0 || !strings.HasPrefix(out, "filter module: OFF (written to ") || !strings.Contains(out, "filter module: DISABLED") {
+	if code != 0 || !strings.HasPrefix(out, "módulo de filtros: OFF (escrito en ") || !strings.Contains(out, "módulo de filtros: DESACTIVADO") {
 		t.Fatalf("off (%d):\n%s", code, out)
 	}
 	got, _ := os.ReadFile(cfgPath)
@@ -43,7 +43,7 @@ func TestFilterOnOffKeepsOtherKeys(t *testing.T) {
 	}
 
 	code, out, _ = runCmd(t, "", "filter", "on", "--repo", "--cwd", repo)
-	if code != 0 || !strings.Contains(out, "filter module: ON") || !strings.Contains(out, "filter module: enabled") {
+	if code != 0 || !strings.Contains(out, "módulo de filtros: ON") || !strings.Contains(out, "módulo de filtros: activado") {
 		t.Fatalf("on (%d):\n%s", code, out)
 	}
 	if got, _ := os.ReadFile(cfgPath); !strings.Contains(string(got), `"filter": true`) {
@@ -59,7 +59,7 @@ func TestFilterOnOffWritesUserConfigByDefault(t *testing.T) {
 	}
 	userCfg := filepath.Join(os.Getenv("NXY_HOME"), "config.json")
 	code, out, _ := runCmd(t, "", "filter", "off", "--cwd", repo)
-	if code != 0 || !strings.HasPrefix(out, "filter module: OFF (written to ") {
+	if code != 0 || !strings.HasPrefix(out, "módulo de filtros: OFF (escrito en ") {
 		t.Fatalf("off (%d):\n%s", code, out)
 	}
 	got, err := os.ReadFile(userCfg)
@@ -122,7 +122,7 @@ func TestFilterWritesAtGitRootAndUnknownAction(t *testing.T) {
 	}
 
 	_, out, _ := runCmd(t, "", "filter", "bogus", "--cwd", repo)
-	if !strings.HasPrefix(out, `unknown action "bogus". Use: status | on | off`+"\n") {
+	if !strings.HasPrefix(out, `no conozco la acción "bogus". Usá: status | on | off`+"\n") {
 		t.Fatalf("unknown action:\n%s", out)
 	}
 }

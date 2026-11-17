@@ -266,7 +266,7 @@ func BaseChoices(branches []string, defaultBranch string) []string {
 }
 
 // ErrNoBase is what AddArgv returns for a new branch without an explicit base.
-var ErrNoBase = errors.New("addArgv: create needs an explicit base")
+var ErrNoBase = errors.New("para crear una rama nueva hace falta una base explícita")
 
 // AddArgv is the `git worktree add` argv. A new branch needs an explicit base.
 func AddArgv(branch, path string, create bool, base string) ([]string, error) {

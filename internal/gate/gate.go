@@ -232,7 +232,7 @@ func Summary(rows []Row) []string {
 			}
 		}
 		pct := jscompat.Round(float64(blocked) / float64(len(edits)) * 100)
-		out = append(out, "decisions:       "+strconv.Itoa(blocked)+" blocked of "+strconv.Itoa(len(edits))+" edits ("+num(pct)+"%)")
+		out = append(out, "decisiones:         "+strconv.Itoa(blocked)+" de "+strconv.Itoa(len(edits))+" ediciones bloqueadas ("+num(pct)+"%)")
 		if len(ctx) > 0 {
 			sort.Float64s(ctx)
 			q := func(p float64) float64 {
@@ -243,10 +243,10 @@ func Summary(rows []Row) []string {
 				return ctx[i]
 			}
 			kk := func(n float64) string { return num(jscompat.Round(n/1000)) + "k" }
-			out = append(out, "context at edit: p10 "+kk(q(0.1))+" - p50 "+kk(q(0.5))+" - p90 "+kk(q(0.9))+" - max "+kk(ctx[len(ctx)-1]))
+			out = append(out, "contexto al editar: p10 "+kk(q(0.1))+" - p50 "+kk(q(0.5))+" - p90 "+kk(q(0.9))+" - max "+kk(ctx[len(ctx)-1]))
 		}
 	} else {
-		out = append(out, "decisions:       no edit has gone through the gate in this repo yet")
+		out = append(out, "decisiones:         todavía no pasó ninguna edición por el gate en este repo")
 	}
 	stopped, escaped := 0, 0
 	for _, r := range searches {
@@ -256,7 +256,7 @@ func Summary(rows []Row) []string {
 			stopped++
 		}
 	}
-	out = append(out, "searches:        "+strconv.Itoa(stopped)+" stopped, "+strconv.Itoa(escaped)+" let through by `/nxy:gate once search`")
+	out = append(out, "búsquedas:          "+strconv.Itoa(stopped)+" frenadas, "+strconv.Itoa(escaped)+" dejadas pasar con `/nxy:gate once search`")
 	return out
 }
 
@@ -273,22 +273,22 @@ type Status struct {
 func StatusHead(s Status) []string {
 	left := func(t int64) string {
 		if t > s.NowMs {
-			return "armed, " + strconv.FormatInt((t-s.NowMs+59999)/60000, 10) + " min left"
+			return "armado, quedan " + strconv.FormatInt((t-s.NowMs+59999)/60000, 10) + " min"
 		}
 		return "no"
 	}
-	write := "on (without a feature, the main thread does not edit code files; docs and text go through)"
-	read := "off (broad searches are not stopped)"
+	write := "activo (sin una feature, el hilo principal no edita archivos de código; docs y texto pasan)"
+	read := "apagado (no se frenan las búsquedas amplias)"
 	if !s.Cfg.Enabled {
-		write = "DISABLED"
-		read = "off (the gate is disabled)"
+		write = "DESACTIVADO"
+		read = "apagado (el gate está desactivado)"
 	} else if s.Cfg.Reads {
-		read = "on (a broad grep/glob/find is stopped above " + k(s.Cfg.ContextTokens) + " tokens of main-thread context)"
+		read = "activo (se frena un grep/glob/find amplio con más de " + k(s.Cfg.ContextTokens) + " tokens de contexto en el hilo principal)"
 	}
 	return []string{
-		"write gate:     " + write,
-		"read gate:      " + read,
-		"one-shot edit:  " + left(s.EscapeUntil),
-		"search escape:  " + left(s.SearchEscapeUntil),
+		"gate de escritura:  " + write,
+		"gate de lectura:    " + read,
+		"edición única:      " + left(s.EscapeUntil),
+		"escape de búsqueda: " + left(s.SearchEscapeUntil),
 	}
 }

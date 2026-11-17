@@ -1,5 +1,5 @@
 ---
-description: Repo memory — rules, learnings, search, promote, export and import (nxy dev)
+description: Memoria del repo — reglas, aprendizajes, búsqueda, promover, exportar e importar (nxy dev)
 argument-hint: [show | rule "<text>" --question "<q>" | note "<text>" --files a,b | promote <A7> --question "<q>" | search <text> | related <files> | export [--notes] | import <file> [--apply] | bootstrap]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" mem:*)
 ---

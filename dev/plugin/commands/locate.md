@@ -1,5 +1,5 @@
 ---
-description: Find where something lives in the repo without reading files (nxy dev)
+description: Encontrá dónde vive algo en el repo sin leer archivos (nxy dev)
 argument-hint: <question: "where is it decided whether a command goes through rtk">
 allowed-tools: Task
 ---

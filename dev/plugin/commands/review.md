@@ -1,5 +1,5 @@
 ---
-description: Review — show the last review, lens stats, or report a problem it missed (nxy dev)
+description: Review — mirá la última review, las stats de los lentes o reportá un problema que se le escapó (nxy dev)
 argument-hint: [show | status | escape "<text>" --question "<q>" [--lens base]]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" review:*)
 ---

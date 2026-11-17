@@ -4,12 +4,12 @@
   ›   Te necesita    No                                                                            21h 00m    $0.46   
                      Te    Te necesita    Plan                   FEAT-D · acme/pagos   1 de 2    ━━━───  lote 3/4     
                                                                                                  
-      Te necesita    Mi   Approve nxy plan FEAT-D r2?                                               1d 22h    $0.00   
+      Te necesita    Mi   ¿Aprobás el plan FEAT-D r2 de nxy?                                        1d 22h    $0.00   
                      Te                                                                          ──────  plan         
                                                                                                  
-  En curso  1          ›  ▸ 1  Approve     Start executing batch 1                               
-      Trabajando     Ex     2  Change      Write what to change; nxy re-plans                       3h 00m    $0.18   
-                     Es     3  Ver completoOpen the full plan in your editor                     ──────  lote 2/4     
+  En curso  1          ›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
+      Trabajando     Ex     2  Cambiar     Escribí qué cambiar; nxy vuelve a planificar             3h 00m    $0.18   
+                     Es     3  Ver completoAbrir el plan completo en tu editor                   ──────  lote 2/4     
                                                                                                  
   Listo hoy  1            No espera a la TUI: contestá en la terminal de Claude Code.            
       Listo          Co                                                                                       $0.03   

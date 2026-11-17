@@ -109,7 +109,7 @@ func TestMultiRepoOneRepoBranchInTheFolder(t *testing.T) {
 	p := strings.Replace(batchPlan("test -f done.txt"), `"risk":"low"}]}`, `"risk":"low"}],"suite":"test -f done.txt"}`, 1)
 	id := mrStart(t, repo, p)
 	agentPost(t, repo, "nxy:planner", nil)
-	out := answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	out := answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 	if !strings.Contains(out, "¿en qué rama trabajamos?") {
 		t.Fatalf("no branch question: %s", out)
 	}
@@ -259,7 +259,7 @@ func TestMultiRepoParentFolderWorktreesEndToEnd(t *testing.T) {
 	if !strings.Contains(out, "api") || !strings.Contains(out, "web") || !strings.Contains(out, "backend") {
 		t.Fatalf("checkpoint without the repos: %s", out)
 	}
-	out = mrAnswersAs(t, "s1", parent, map[string]any{"Approve nxy plan " + id + " r1?": "Approve"})
+	out = mrAnswersAs(t, "s1", parent, map[string]any{"¿Aprobás el plan " + id + " r1 de nxy?": "Aprobar"})
 	if !strings.Contains(out, "¿en qué rama trabajamos?") || !strings.Contains(out, "¿desde qué base se crea la rama en api?") || !strings.Contains(out, "web?") {
 		t.Fatalf("no branch and base questions: %s", out)
 	}
@@ -293,7 +293,7 @@ func TestMultiRepoParentFolderWorktreesEndToEnd(t *testing.T) {
 	if second == id {
 		t.Fatalf("the second feature was not created: status still shows %s", id)
 	}
-	if code, o, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(o, "stopped") {
+	if code, o, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(o, "paré la feature") {
 		t.Fatalf("stop of the second: code %d, out %q", code, o)
 	}
 
@@ -410,7 +410,7 @@ func TestMultiRepoBusyReposPauseTheOtherFeature(t *testing.T) {
 	}
 	// Pausing frees the repos and the waiting plan goes to the approval, with no other planner.
 	out = mrAnswersAs(t, "s2", parent, map[string]any{plan.ClashQuestion(id): "Pausar la feature " + first})
-	if !strings.Contains(out, "Approve nxy plan "+id) || strings.Contains(out, "nxy:planner") {
+	if !strings.Contains(out, "¿Aprobás el plan "+id) || strings.Contains(out, "nxy:planner") {
 		t.Fatalf("the waiting plan did not reach the approval: %s", out)
 	}
 	mrIn(t, api, func() {
@@ -445,10 +445,10 @@ func TestMultiRepoBusyCheckoutOpensAWorktree(t *testing.T) {
 		t.Fatalf("no repo-busy question: %s", out)
 	}
 	out = mrAnswersAs(t, "s2", repo, map[string]any{plan.ClashQuestion(id): plan.ClashWorktree})
-	if !strings.Contains(out, "Approve nxy plan "+id) {
+	if !strings.Contains(out, "¿Aprobás el plan "+id) {
 		t.Fatalf("the waiting plan did not reach the approval: %s", out)
 	}
-	out = mrAnswersAs(t, "s2", repo, map[string]any{"Approve nxy plan " + id + " r1?": "Approve"})
+	out = mrAnswersAs(t, "s2", repo, map[string]any{"¿Aprobás el plan " + id + " r1 de nxy?": "Aprobar"})
 	if !strings.Contains(out, "¿en qué rama trabajamos?") {
 		t.Fatalf("no branch question: %s", out)
 	}
@@ -486,7 +486,7 @@ func mrApprove(t *testing.T, parent, planJSON string) (id, wtAPI, wtWeb string) 
 		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
 	}
 	mrAgentPost(t, "s1", parent, "nxy:planner")
-	mrAnswersAs(t, "s1", parent, map[string]any{"Approve nxy plan " + id + " r1?": "Approve"})
+	mrAnswersAs(t, "s1", parent, map[string]any{"¿Aprobás el plan " + id + " r1 de nxy?": "Aprobar"})
 	mrAnswersAs(t, "s1", parent, map[string]any{
 		plan.BranchQuestion(id): "feature/par", plan.BaseQuestion(id, "api"): "main", plan.BaseQuestion(id, "web"): "main"})
 	return id, mrWorktree(t, filepath.Join(parent, "api")), mrWorktree(t, filepath.Join(parent, "web"))

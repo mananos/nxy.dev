@@ -1,5 +1,5 @@
 ---
-description: nxy output filter — status, on, off (nxy dev)
+description: Filtro de salida de nxy — status, on, off (nxy dev)
 argument-hint: status | on | off [--repo]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" filter:*)
 ---

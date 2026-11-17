@@ -16,7 +16,7 @@ import (
 var migrationsFS embed.FS
 
 // ErrSchemaNewer means the database was written by a newer nxy; this binary must not touch it.
-var ErrSchemaNewer = errors.New("sqlite: database schema is newer than this binary")
+var ErrSchemaNewer = errors.New("la base de datos es de un nxy más nuevo que este binario")
 
 type migration struct {
 	version int
@@ -35,7 +35,7 @@ func embeddedMigrations() ([]migration, error) {
 		prefix, _, _ := strings.Cut(name, "_")
 		v, err := strconv.Atoi(prefix)
 		if err != nil {
-			return nil, fmt.Errorf("sqlite: bad migration name %q", name)
+			return nil, fmt.Errorf("nombre de migración inválido: %q", name)
 		}
 		b, err := migrationsFS.ReadFile("migrations/" + name)
 		if err != nil {
@@ -67,7 +67,7 @@ func migrate(ctx context.Context, db *sql.DB, path string, migs []migration) err
 	// Fast path without a write lock; an error here just means the table does not exist yet.
 	if cur, err := currentVersion(ctx, db); err == nil {
 		if cur > latest {
-			return fmt.Errorf("%w (db %d, binary %d)", ErrSchemaNewer, cur, latest)
+			return fmt.Errorf("%w (base %d, binario %d)", ErrSchemaNewer, cur, latest)
 		}
 		if cur == latest {
 			return nil
@@ -86,7 +86,7 @@ func migrate(ctx context.Context, db *sql.DB, path string, migs []migration) err
 		return err
 	}
 	if cur > latest {
-		return fmt.Errorf("%w (db %d, binary %d)", ErrSchemaNewer, cur, latest)
+		return fmt.Errorf("%w (base %d, binario %d)", ErrSchemaNewer, cur, latest)
 	}
 	if cur == latest {
 		return nil // another process migrated while we waited; its .bak stays untouched
@@ -97,7 +97,7 @@ func migrate(ctx context.Context, db *sql.DB, path string, migs []migration) err
 		bak := path + ".bak"
 		_ = os.Remove(bak)
 		if _, err := db.ExecContext(ctx, `VACUUM INTO `+quote(bak)); err != nil {
-			return fmt.Errorf("sqlite: backup: %w", err)
+			return fmt.Errorf("no pude hacer el backup de la base antes de migrar: %w", err)
 		}
 	}
 	for _, m := range migs {
@@ -105,7 +105,7 @@ func migrate(ctx context.Context, db *sql.DB, path string, migs []migration) err
 			continue
 		}
 		if _, err := tx.ExecContext(ctx, m.sql); err != nil {
-			return fmt.Errorf("sqlite: migration %d: %w", m.version, err)
+			return fmt.Errorf("no pude aplicar la migración %d: %w", m.version, err)
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_version (version) VALUES (?)`, m.version); err != nil {
 			return err

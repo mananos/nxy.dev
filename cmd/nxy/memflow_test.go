@@ -38,7 +38,7 @@ func TestMemoryFlowEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if code, out, errb := runCmd(t, "", "mem", "rule", "Prefer table tests", "--question", "How do we write tests?"); code != 0 || !strings.Contains(out, "saved rule K1") {
+	if code, out, errb := runCmd(t, "", "mem", "rule", "Prefer table tests", "--question", "How do we write tests?"); code != 0 || !strings.Contains(out, "guardé la regla K1") {
 		t.Fatalf("mem rule: code %d, out %q, err %q", code, out, errb)
 	}
 
@@ -51,7 +51,7 @@ func TestMemoryFlowEndToEnd(t *testing.T) {
 		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
 	}
 	agentPost(t, repo, "nxy:planner", nil)
-	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 
 	if out := agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1"); !strings.Contains(out, "K1: Prefer table tests") {
 		t.Fatalf("implementer prompt without K1: %s", out)
@@ -99,17 +99,17 @@ func TestMemoryFlowEndToEnd(t *testing.T) {
 		t.Fatalf("no closing question: %s", out)
 	}
 	answer(t, repo, plan.RulesQuestion(id, 1, 1), "S1 Flags are parsed in one place")
-	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no active feature") {
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no hay una feature activa") {
 		t.Fatalf("feature still active: %q", st)
 	}
 
 	show := memShow(t)
-	for _, want := range []string{"K2 · Flags are parsed in one place", "settles: Where do flags get parsed? · plan", "A2 · the flag parser panics"} {
+	for _, want := range []string{"K2 · Flags are parsed in one place", "resuelve: Where do flags get parsed? · plan", "A2 · the flag parser panics"} {
 		if !strings.Contains(show, want) {
 			t.Fatalf("mem show misses %q: %s", want, show)
 		}
 	}
-	m := regexp.MustCompile(`K1 · Prefer table tests\n.*delivered (\d+) · cited (\d+)`).FindStringSubmatch(show)
+	m := regexp.MustCompile(`K1 · Prefer table tests\n.*entregada (\d+) · citada (\d+)`).FindStringSubmatch(show)
 	if m == nil || m[1] == "0" || m[1] == "1" || m[2] != "1" {
 		t.Fatalf("K1 counters: %v in %s", m, show)
 	}
@@ -124,7 +124,7 @@ func TestMemoryFlowEndToEnd(t *testing.T) {
 	if code, out, errb := runCmd(t, strings.Replace(memPlan(), "Flags are parsed in one place", "Errors are wrapped", 1), "plan", "save", "--feature", id2); code != 0 {
 		t.Fatalf("plan save 2: code %d, out %q, err %q", code, out, errb)
 	}
-	if code, out, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(out, "stopped") {
+	if code, out, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(out, "paré la feature") {
 		t.Fatalf("stop: code %d, out %q", code, out)
 	}
 	if after := memShow(t); strings.Contains(after, "Errors are wrapped") || strings.Contains(after, "K3") {

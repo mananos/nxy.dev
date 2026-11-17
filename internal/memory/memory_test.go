@@ -26,7 +26,7 @@ func TestValidateRule(t *testing.T) {
 	}
 	r := goodRule()
 	r.Question = ""
-	if err := ValidateRule(r); err == nil || !strings.Contains(err.Error(), "the question it settles") {
+	if err := ValidateRule(r); err == nil || !strings.Contains(err.Error(), "la pregunta que resuelve") {
 		t.Errorf("err = %v", err)
 	}
 	r = goodRule()
@@ -128,7 +128,7 @@ func TestPathMatches(t *testing.T) {
 func TestDecodeBundle(t *testing.T) {
 	for _, in := range []string{`{"version":2}`, `{}`} {
 		_, err := DecodeBundle([]byte(in))
-		if err == nil || !strings.Contains(err.Error(), "unsupported export version") || !strings.Contains(err.Error(), "this nxy reads 1") {
+		if err == nil || !strings.Contains(err.Error(), "versión de exportación") || !strings.Contains(err.Error(), "este nxy lee la 1") {
 			t.Errorf("%s: err = %v", in, err)
 		}
 	}
@@ -181,7 +181,7 @@ func TestValidateRuleRoles(t *testing.T) {
 	}
 	k := goodRule()
 	k.Roles = []string{RolePlanner}
-	if err := ValidateRule(k); err == nil || !strings.Contains(err.Error(), "only applies to global rules") {
+	if err := ValidateRule(k); err == nil || !strings.Contains(err.Error(), "sólo se aplica a reglas globales") {
 		t.Errorf("roles on a K: %v", err)
 	}
 	got := CleanRoles([]string{" Reviewer", "planner", "reviewer", ""})

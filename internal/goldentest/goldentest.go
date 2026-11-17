@@ -1,20 +1,35 @@
-// Package goldentest loads and compares the golden files the 1.x JS generates
-// (testdata/golden/<area>/*.json). It is a test helper: only _test.go files import it.
+// Package goldentest loads and compares the golden files (testdata/golden/<area>/*.json). Go
+// writes them now: with NXY_WRITE_GOLDEN=1 Check does not compare, it keeps what the code computes
+// and Load rewrites the `output` of the cases that changed. It is a test helper: only _test.go
+// files import it.
 package goldentest
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
+)
+
+// Writing reports whether the golden files are being rewritten (NXY_WRITE_GOLDEN=1).
+func Writing() bool { return os.Getenv("NXY_WRITE_GOLDEN") == "1" }
+
+// saved holds, in write mode, the computed outputs: file path -> case name -> output.
+var (
+	savedMu sync.Mutex
+	saved   = map[string]map[string]any{}
 )
 
 // Case is one golden case: {name, input, output}.
 type Case struct {
+	Area   string
 	File   string
 	Name   string                     `json:"name"`
 	Input  map[string]json.RawMessage `json:"input"`
@@ -48,6 +63,18 @@ func Load(t testing.TB, area string) []Case {
 		t.Fatalf("no golden files for %s (err=%v)", area, err)
 	}
 	sort.Strings(files)
+	if Writing() {
+		t.Cleanup(func() {
+			savedMu.Lock()
+			defer savedMu.Unlock()
+			for _, f := range files {
+				if outs, ok := saved[f]; ok {
+					RewriteOutputs(t, f, outs)
+					delete(saved, f)
+				}
+			}
+		})
+	}
 	var all []Case
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
@@ -59,6 +86,7 @@ func Load(t testing.TB, area string) []Case {
 			t.Fatalf("%s: %v", f, err)
 		}
 		for i := range cases {
+			cases[i].Area = area
 			cases[i].File = filepath.Base(f)
 		}
 		all = append(all, cases...)
@@ -102,6 +130,20 @@ func Norm(t testing.TB, v any) any {
 // computed key must be in the output.
 func Check(t testing.TB, c Case, got map[string]any) {
 	t.Helper()
+	if Writing() {
+		path := filepath.Join(Root(t), "testdata", "golden", c.Area, c.File)
+		out := map[string]any{}
+		for k, v := range got {
+			out[k] = Norm(t, v)
+		}
+		savedMu.Lock()
+		if saved[path] == nil {
+			saved[path] = map[string]any{}
+		}
+		saved[path][c.Name] = out
+		savedMu.Unlock()
+		return
+	}
 	for key, raw := range c.Output {
 		var want any
 		if err := json.Unmarshal(raw, &want); err != nil {
@@ -123,6 +165,78 @@ func Check(t testing.TB, c Case, got map[string]any) {
 			t.Errorf("%s/%s: port computes %q the golden does not have", c.File, c.Name, key)
 		}
 	}
+}
+
+// RewriteOutputs rewrites the golden file at path, which is `[\n{case},\n...\n]` with one case per
+// line. For each case named in outputs whose decoded `output` differs from the new value, only the
+// `output` is replaced (compact JSON, no HTML escaping); every other line stays byte for byte and
+// `name` and `input` never change.
+func RewriteOutputs(t testing.TB, path string, outputs map[string]any) {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(raw), "\n")
+	changed := false
+	for i, line := range lines {
+		body := strings.TrimSuffix(line, ",")
+		if !strings.HasPrefix(body, "{") {
+			continue
+		}
+		var c struct {
+			Name   json.RawMessage `json:"name"`
+			Input  json.RawMessage `json:"input"`
+			Output json.RawMessage `json:"output"`
+		}
+		if err := json.Unmarshal([]byte(body), &c); err != nil {
+			t.Fatalf("%s line %d: %v", path, i+1, err)
+		}
+		var name string
+		if err := json.Unmarshal(c.Name, &name); err != nil {
+			t.Fatalf("%s line %d: %v", path, i+1, err)
+		}
+		newOut, ok := outputs[name]
+		if !ok {
+			continue
+		}
+		var old any
+		if err := json.Unmarshal(c.Output, &old); err != nil {
+			t.Fatalf("%s/%s: %v", path, name, err)
+		}
+		if reflect.DeepEqual(old, Norm(t, newOut)) {
+			continue
+		}
+		enc, err := compact(newOut)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := string(c.Input)
+		if c.Input == nil {
+			in = "null"
+		}
+		lines[i] = fmt.Sprintf(`{"name":%s,"input":%s,"output":%s}`, c.Name, in, enc)
+		if strings.HasSuffix(line, ",") {
+			lines[i] += ","
+		}
+		changed = true
+	}
+	if !changed {
+		return
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func compact(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
 // NormRootText is normRootText of scripts/golden/fixtures.mjs: the root, raw or as embedded in a

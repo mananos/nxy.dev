@@ -32,7 +32,7 @@ func TestMemRuleNeedsQuestion(t *testing.T) {
 	isolate(t)
 	work := t.TempDir()
 	code, _, errs := runCLI(t, "", "mem", "rule", "never edit generated files", "--cwd", work)
-	if code != 1 || !strings.Contains(errs, "question") {
+	if code != 1 || !strings.Contains(errs, "pregunta") {
 		t.Fatalf("exit %d, stderr %q", code, errs)
 	}
 	if code, _, _ := runCLI(t, "", "mem", "bogus"); code != 1 {
@@ -54,10 +54,10 @@ func TestMemRuleShowSearchPromote(t *testing.T) {
 
 	mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
 	out := mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
-	if !strings.Contains(out, "seen 2") {
+	if !strings.Contains(out, "visto 2") {
 		t.Fatalf("second note: %q", out)
 	}
-	if show := mustCLI(t, "", "mem", "show", "--cwd", work); !strings.Contains(show, "seen 2 times") {
+	if show := mustCLI(t, "", "mem", "show", "--cwd", work); !strings.Contains(show, "visto 2 veces") {
 		t.Fatalf("show: %q", show)
 	}
 	if code, _, _ := runCLI(t, "", "mem", "promote", "A1", "--cwd", work); code != 1 {
@@ -76,7 +76,7 @@ func TestMemNoteOnPromotedExitsZero(t *testing.T) {
 	mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
 	mustCLI(t, "", "mem", "promote", "A1", "--question", "what does the test need?", "--cwd", work)
 	out := mustCLI(t, "", "mem", "note", "tests need the sqlite driver", "--cwd", work)
-	if !strings.Contains(out, "already rule K1") {
+	if !strings.Contains(out, "ya es la regla K1") {
 		t.Fatalf("note on promoted: %q", out)
 	}
 }
@@ -106,20 +106,20 @@ func TestMemExportImport(t *testing.T) {
 	t.Setenv("HOME", other)
 	t.Setenv("USERPROFILE", other)
 	dry := mustCLI(t, "", "mem", "import", file)
-	if !strings.Contains(dry, "dry run") {
+	if !strings.Contains(dry, "simulacro") {
 		t.Fatalf("dry run: %q", dry)
 	}
 	if show := mustCLI(t, "", "mem", "show", "--cwd", work); strings.Contains(show, "keep handlers thin") {
 		t.Fatalf("dry run wrote: %q", show)
 	}
 	applied := mustCLI(t, "", "mem", "import", "--apply", file)
-	if !strings.Contains(applied, "imported") {
+	if !strings.Contains(applied, "importé") {
 		t.Fatalf("apply: %q", applied)
 	}
 	if show := mustCLI(t, "", "mem", "show", "--cwd", work); !strings.Contains(show, "keep handlers thin") {
 		t.Fatalf("after apply: %q", show)
 	}
-	if again := mustCLI(t, "", "mem", "import", file, "--apply"); !strings.Contains(again, "nothing to import") {
+	if again := mustCLI(t, "", "mem", "import", file, "--apply"); !strings.Contains(again, "no hay nada para importar") {
 		t.Fatalf("second apply: %q", again)
 	}
 
@@ -127,7 +127,7 @@ func TestMemExportImport(t *testing.T) {
 	if err := os.WriteFile(bad, []byte(`{"version":2}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if code, _, errs := runCLI(t, "", "mem", "import", bad); code != 1 || !strings.Contains(errs, "unsupported export version") {
+	if code, _, errs := runCLI(t, "", "mem", "import", bad); code != 1 || !strings.Contains(errs, "versión de exportación") {
 		t.Fatalf("bad version: exit %d, %q", code, errs)
 	}
 }

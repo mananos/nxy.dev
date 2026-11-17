@@ -233,7 +233,7 @@ func Groups(offered []domain.Finding) (groups []Group, left int) {
 
 // FixQuestionPrefix starts the text of every findings question of a feature.
 func FixQuestionPrefix(id string) string {
-	return fmt.Sprintf("nxy feature %s: which findings should be fixed?", id)
+	return fmt.Sprintf("nxy feature %s: ¿qué hallazgos arreglamos?", id)
 }
 
 // FixQuestion is the exact text of one findings question (part of parts).

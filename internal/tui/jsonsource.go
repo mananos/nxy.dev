@@ -36,7 +36,7 @@ func newJSONSource(fsys fs.FS, dir string) (*jsonSource, error) {
 		id, _, _ := strings.Cut(name, ".")
 		v := views.New(id)
 		if v == nil {
-			return nil, fmt.Errorf("%s: unknown view %q", name, id)
+			return nil, fmt.Errorf("%s: view desconocida %q", name, id)
 		}
 		data, err := fs.ReadFile(fsys, path.Join(dir, name))
 		if err != nil {
@@ -69,12 +69,12 @@ func newJSONSource(fsys fs.FS, dir string) (*jsonSource, error) {
 		}
 	}
 	if d.Cockpit == nil {
-		return nil, fmt.Errorf("%s: cockpit.json is missing", dir)
+		return nil, fmt.Errorf("%s: falta cockpit.json", dir)
 	}
 	return &jsonSource{d: d}, nil
 }
 
-var errNoView = errors.New("no view for it in the data")
+var errNoView = errors.New("no hay una view para eso en los datos")
 
 func (s *jsonSource) Cockpit(context.Context) (views.Cockpit, error) { return *s.d.Cockpit, nil }
 

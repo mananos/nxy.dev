@@ -16,7 +16,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/store/sqlite"
 )
 
-const legacyUsage = `usage: nxy legacy <import [--dir <d>] (copy what the 1.x knows of the repo; what was already imported says so) | status (what was imported, per repo and checkout)>`
+const legacyUsage = `uso: nxy legacy <import [--dir <d>] (copia lo que la 1.x sabe del repo; lo que ya se importó lo avisa) | status (qué se importó, por repo y checkout)>`
 
 // legacyFiles reads what the 1.x left on disk: memory.db on a copy, the jsonl files as they are.
 type legacyFiles struct{}

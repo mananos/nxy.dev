@@ -44,7 +44,7 @@ func ms(d time.Duration) string { return fmt.Sprintf("%.1f", float64(d.Microseco
 
 func runBench(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 || args[0] != "hook" {
-		fmt.Fprintln(stderr, "usage: nxy bench hook [-n 20] [-command \"git status\"] [-shim <path to bin/nxy.cmd>] [-bin <nxy binary>]")
+		fmt.Fprintln(stderr, "uso: nxy bench hook [-n 20] [-command \"git status\"] [-shim <ruta a bin/nxy.cmd>] [-bin <binario de nxy>]")
 		return 1
 	}
 	fs := flag.NewFlagSet("bench hook", flag.ContinueOnError)
@@ -100,7 +100,7 @@ func runBench(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 			sh, err = exec.LookPath("sh")
 		}
 		if err != nil {
-			fmt.Fprintln(stderr, "nxy bench: no bash or sh on PATH, skipping `via shim`")
+			fmt.Fprintln(stderr, "nxy bench: no hay bash ni sh en el PATH, salteo `via shim`")
 		} else {
 			abs, _ := filepath.Abs(*shim)
 			viaShim := func(env ...string) func() *exec.Cmd {
@@ -125,13 +125,13 @@ func runBench(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		return time.Since(t), err
 	}
 
-	fmt.Fprintf(stdout, "nxy bench hook: %q, %d timed runs per row (ms)\n\n", *command, *n)
-	fmt.Fprintf(stdout, "| row | first run | min | median | p90 | max | threshold 50 ms (14.20) |\n")
+	fmt.Fprintf(stdout, "nxy bench hook: %q, %d corridas medidas por fila (ms)\n\n", *command, *n)
+	fmt.Fprintf(stdout, "| fila | primera corrida | mín | mediana | p90 | máx | umbral 50 ms (14.20) |\n")
 	fmt.Fprintf(stdout, "|---|---|---|---|---|---|---|\n")
 	for _, r := range rows {
 		first, err := once(r)
 		if err != nil {
-			fmt.Fprintf(stdout, "| %s | failed: %v | | | | | |\n", r.name, err)
+			fmt.Fprintf(stdout, "| %s | falló: %v | | | | | |\n", r.name, err)
 			continue
 		}
 		samples := make([]time.Duration, 0, *n)

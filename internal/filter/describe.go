@@ -13,38 +13,38 @@ type RgState struct {
 // (core/filter/engine.mjs). Unlike the 1.x it also treats a backslash in the rtk path as "found in
 // a known install dir" (the 1.x regex only looks for a slash).
 func DescribeEngine(info EngineInfo, rg RgState, s Settings) string {
-	rtk := "not found on PATH nor in known install dirs"
+	rtk := "no está en el PATH ni en las carpetas de instalación conocidas"
 	if info.RtkPath != "" {
 		rtk = info.RtkPath + " v" + info.RtkVersion
 		if strings.ContainsAny(info.RtkPath, `/\`) {
-			rtk += "  (not on this process PATH — found in a known install dir; a new terminal will have it on PATH)"
+			rtk += "  (no está en el PATH de este proceso — está en una carpeta de instalación conocida; una terminal nueva lo va a tener en el PATH)"
 		}
 	}
-	rgLine := "not found (RTK needs it for some filters)"
+	rgLine := "no está (RTK lo necesita para algunos filtros)"
 	switch {
 	case rg.Available:
-		rgLine = "available"
+		rgLine = "disponible"
 	case rg.InstalledAt != "":
-		rgLine = "installed at " + rg.InstalledAt + " but not on this process PATH — open a new terminal (RTK spawns rg itself for some filters)"
+		rgLine = "instalado en " + rg.InstalledAt + " pero no está en el PATH de este proceso — abrí una terminal nueva (RTK lanza rg él mismo para algunos filtros)"
 	}
-	hook := "not installed (good)"
+	hook := "no instalado (bien)"
 	if info.RtkHookDetected {
-		hook = "INSTALLED — nxy yields the rewrite to it; run `rtk init --uninstall` (or remove the hook) to let nxy manage it"
+		hook = "INSTALADO — nxy le cede la reescritura; corré `rtk init --uninstall` (o sacá el hook) para que la maneje nxy"
 	}
 	lines := []string{
-		"engine:        " + info.Engine + " (" + info.Reason + "; config=" + s.Engine + ")",
+		"motor:         " + info.Engine + " (" + info.Reason + "; config=" + s.Engine + ")",
 		"rtk:           " + rtk,
 		"ripgrep (rg):  " + rgLine,
-		"rtk own hook:  " + hook,
+		"hook de rtk:   " + hook,
 	}
 	if info.RtkPath == "" {
 		lines = append(lines,
-			"install:       run /nxy:setup (shows the exact command, runs it after you confirm)   |   Windows → winget install rtk-ai.rtk   |   Linux/macOS → see https://github.com/rtk-ai/rtk#installation",
-			"               Do NOT run `rtk init -g` — nxy installs its own hook.",
+			"instalar:      corré /nxy:setup (muestra el comando exacto y lo corre cuando confirmás)   |   Windows → winget install rtk-ai.rtk   |   Linux/macOS → mirá https://github.com/rtk-ai/rtk#installation",
+			"               NO corras `rtk init -g`: nxy instala su propio hook.",
 		)
 	}
 	if !rg.Available && rg.InstalledAt == "" {
-		lines = append(lines, "install rg:    run /nxy:setup   |   Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep")
+		lines = append(lines, "instalar rg:   corré /nxy:setup   |   Windows → winget install BurntSushi.ripgrep.MSVC   |   Linux → apt/dnf install ripgrep")
 	}
 	return strings.Join(lines, "\n")
 }

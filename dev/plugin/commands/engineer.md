@@ -1,5 +1,5 @@
 ---
-description: Design a feature with nxy in engineer mode — debate each decision before planning (nxy dev)
+description: Diseñá una feature con nxy en modo ingeniero — debatí cada decisión antes de planificar (nxy dev)
 argument-hint: <what to build or change>
 ---
 

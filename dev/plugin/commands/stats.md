@@ -1,5 +1,5 @@
 ---
-description: Real token/cost metrics of a session (nxy dev)
+description: Métricas reales de tokens y costo de una sesión (nxy dev)
 argument-hint: [current | last | <id>] [--all] [--json]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" stats:*)
 ---

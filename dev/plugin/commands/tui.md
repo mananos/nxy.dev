@@ -1,5 +1,5 @@
 ---
-description: Show the command that opens the nxy TUI in another terminal (nxy dev)
+description: Muestra el comando que abre la TUI de nxy en otra terminal (nxy dev)
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" tui where:*)
 ---
 

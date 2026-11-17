@@ -47,11 +47,11 @@ func runTui(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		nerd = true
 	case "unicode":
 	default:
-		fmt.Fprintf(stderr, "nxy tui: --icons %q: use auto, nerd or unicode\n", *icons)
+		fmt.Fprintf(stderr, "nxy tui: --icons %q: usá auto, nerd o unicode\n", *icons)
 		return 1
 	}
 	if *theme != "dark" && *theme != "light" {
-		fmt.Fprintf(stderr, "nxy tui: --theme %q: use dark or light\n", *theme)
+		fmt.Fprintf(stderr, "nxy tui: --theme %q: usá dark o light\n", *theme)
 		return 1
 	}
 	o := tui.Options{Width: *width, Dark: *theme == "dark", Nerd: nerd, Plain: *plain}

@@ -21,7 +21,7 @@ import (
 // any error. Nothing here commits or pushes, and pause only leaves a mark: the handoff comes with the
 // v2 memory.
 
-const featureUsage = "usage: nxy feature list | new --name <n> --base <rama> [--issue <n>] | new --branch <b> | pause|resume --path <wt> | pause|resume --feature <id> | close --path <wt> [--force] | close [--feature <id>] [--force] | rule \"<text>\" --question \"<q>\" | stop [--feature <id>]"
+const featureUsage = "uso: nxy feature list | new --name <n> --base <rama> [--issue <n>] | new --branch <b> | pause|resume --path <wt> | pause|resume --feature <id> | close --path <wt> [--force] | close [--feature <id>] [--force] | rule \"<text>\" --question \"<q>\" | stop [--feature <id>]"
 
 const maxListedBases = 20
 
@@ -59,7 +59,7 @@ func featureWorktrees(action string, args []string, stdout, stderr io.Writer) (c
 	given := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { given[f.Name] = true })
 	if fs.NArg() > 0 {
-		fmt.Fprintf(stderr, "nxy feature %s: unexpected argument %q\n%s\n", action, fs.Arg(0), featureUsage)
+		fmt.Fprintf(stderr, "nxy feature %s: argumento inesperado %q\n%s\n", action, fs.Arg(0), featureUsage)
 		return 1, true
 	}
 	shell := currentShell()

@@ -170,7 +170,7 @@ func GitChanged(ctx context.Context, dir, base string) ([]string, error) {
 // when the revision has no such file; err is for a bad revision or a failing git.
 func GitFileAt(ctx context.Context, dir, rev, path string) (content string, exists bool, err error) {
 	if _, err := gitOut(ctx, dir, "rev-parse", "--verify", "--quiet", rev+"^{commit}"); err != nil {
-		return "", false, fmt.Errorf("git: revision %q not found", rev)
+		return "", false, fmt.Errorf("git: no encontré la revisión %q", rev)
 	}
 	spec := rev + ":" + filepath.ToSlash(path)
 	if _, err := gitOut(ctx, dir, "cat-file", "-e", spec); err != nil {
@@ -317,7 +317,7 @@ func GitExcludeLocal(ctx context.Context, dir, pattern string) error {
 	}
 	p := strings.TrimSpace(out)
 	if p == "" {
-		return fmt.Errorf("git rev-parse --git-path: empty")
+		return fmt.Errorf("git rev-parse --git-path devolvió vacío")
 	}
 	p = filepath.FromSlash(p)
 	if !filepath.IsAbs(p) {

@@ -47,7 +47,7 @@ func StatsNoCalls(s transcript.Session) Output {
 	if s.Turns == 1 {
 		plural = ""
 	}
-	return Output{Stdout: fmt.Sprintf("nxy stats — session %s: no API calls recorded yet (%d prompt%s sent). Numbers appear from the next turn on.\n", id8(s), s.Turns, plural)}
+	return Output{Stdout: fmt.Sprintf("nxy stats — sesión %s: todavía no hay llamadas a la API registradas (%d prompt%s enviado%s). Los números aparecen desde el próximo turno.\n", id8(s), s.Turns, plural, plural)}
 }
 
 type shape struct {
@@ -130,8 +130,8 @@ func bucketCells(r bucketRow) []string {
 
 func bucketCols(usdLabel string) []format.Col {
 	return []format.Col{
-		{Label: "calls", Right: true}, {Label: "input", Right: true}, {Label: "cache-w", Right: true}, {Label: "cache-r", Right: true},
-		{Label: "output", Right: true}, {Label: "hit", Right: true}, {Label: usdLabel, Right: true},
+		{Label: "llamadas", Right: true}, {Label: "entrada", Right: true}, {Label: "cache-w", Right: true}, {Label: "cache-r", Right: true},
+		{Label: "salida", Right: true}, {Label: "hit", Right: true}, {Label: usdLabel, Right: true},
 	}
 }
 
@@ -175,7 +175,7 @@ func Stats(d StatsData) Output {
 		usdLabel = "USD-equiv"
 	}
 	var out []string
-	head := "nxy stats — session " + id8(s) + " · " + s.Project
+	head := "nxy stats — sesión " + id8(s) + " · " + s.Project
 	if jscompat.Truthy(s.GitBranch) {
 		head += " · " + jscompat.String(s.GitBranch)
 	}
@@ -183,10 +183,10 @@ func Stats(d StatsData) Output {
 		head += " · Claude Code " + jscompat.String(s.Version)
 	}
 	out = append(out, head)
-	out = append(out, "started "+format.FmtDate(tsFloat(s.FirstTs), d.Loc, true)+" · wall "+format.FmtDuration(float64(s.WallMs))+" · active "+format.FmtDuration(float64(s.ActiveMs))+
-		" · turns "+count(s.Turns)+" · API calls "+count(s.Usage.Calls)+" (main "+count(s.Main.Calls)+", subagents "+count(s.Subagents.Calls)+" in "+count(len(s.Agents))+" agents)")
-	out = append(out, "shape: "+format.FmtRatio(NaNOr(sh.CallsPerTurn))+" calls/turn (main "+format.FmtRatio(NaNOr(sh.MainCallsPerTurn))+") · main context avg "+tokens(NaNOr(sh.MainCtxAvg))+
-		"/call · peak "+tokens(s.Main.ContextPeak)+" · subagents "+format.FmtPct(NaNOr(sh.SubagentSharePct), 0)+" of tokens")
+	out = append(out, "inicio "+format.FmtDate(tsFloat(s.FirstTs), d.Loc, true)+" · reloj "+format.FmtDuration(float64(s.WallMs))+" · activo "+format.FmtDuration(float64(s.ActiveMs))+
+		" · turnos "+count(s.Turns)+" · llamadas a la API "+count(s.Usage.Calls)+" (principal "+count(s.Main.Calls)+", subagentes "+count(s.Subagents.Calls)+" en "+count(len(s.Agents))+" agentes)")
+	out = append(out, "forma: "+format.FmtRatio(NaNOr(sh.CallsPerTurn))+" llamadas/turno (principal "+format.FmtRatio(NaNOr(sh.MainCallsPerTurn))+") · contexto promedio del principal "+tokens(NaNOr(sh.MainCtxAvg))+
+		"/llamada · pico "+tokens(s.Main.ContextPeak)+" · subagentes "+format.FmtPct(NaNOr(sh.SubagentSharePct), 0)+" de los tokens")
 	out = append(out, "")
 
 	u, m, a := s.Usage.Usage, s.Main.Usage, s.Subagents.Usage
@@ -194,21 +194,21 @@ func Stats(d StatsData) Output {
 		return []string{label, tokens(t), tokens(mm), tokens(aa)}
 	}
 	out = append(out, format.Table(
-		[]format.Col{{Label: "TOKENS"}, {Label: "total", Right: true}, {Label: "main", Right: true}, {Label: "subagents", Right: true}},
+		[]format.Col{{Label: "TOKENS"}, {Label: "total", Right: true}, {Label: "principal", Right: true}, {Label: "subagentes", Right: true}},
 		[][]string{
-			tok("input (uncached)", u.Input, m.Input, a.Input),
-			tok("cache write 5m", u.CacheWrite5m, m.CacheWrite5m, a.CacheWrite5m),
-			tok("cache write 1h", u.CacheWrite1h, m.CacheWrite1h, a.CacheWrite1h),
-			tok("cache read", u.CacheRead, m.CacheRead, a.CacheRead),
-			tok("output", u.Output, m.Output, a.Output),
-			tok("  of which thinking", u.Thinking, m.Thinking, a.Thinking),
-			{"cache hit", format.FmtPct(NaNOr(s.Usage.CacheHitPct), 0), format.FmtPct(NaNOr(s.Main.CacheHitPct), 0), format.FmtPct(NaNOr(s.Subagents.CacheHitPct), 0)},
-			tok("context peak", s.Usage.ContextPeak, s.Main.ContextPeak, s.Subagents.ContextPeak),
+			tok("entrada (sin caché)", u.Input, m.Input, a.Input),
+			tok("escritura de caché 5m", u.CacheWrite5m, m.CacheWrite5m, a.CacheWrite5m),
+			tok("escritura de caché 1h", u.CacheWrite1h, m.CacheWrite1h, a.CacheWrite1h),
+			tok("lectura de caché", u.CacheRead, m.CacheRead, a.CacheRead),
+			tok("salida", u.Output, m.Output, a.Output),
+			tok("  de la cual razonamiento", u.Thinking, m.Thinking, a.Thinking),
+			{"aciertos de caché", format.FmtPct(NaNOr(s.Usage.CacheHitPct), 0), format.FmtPct(NaNOr(s.Main.CacheHitPct), 0), format.FmtPct(NaNOr(s.Subagents.CacheHitPct), 0)},
+			tok("pico de contexto", s.Usage.ContextPeak, s.Main.ContextPeak, s.Subagents.ContextPeak),
 			{usdLabel, bucketUsd(s.Usage), bucketUsd(s.Main), bucketUsd(s.Subagents)},
 		},
 	))
 	if len(s.UnknownModels) > 0 {
-		out = append(out, "(no pricing for: "+strings.Join(s.UnknownModels, ", ")+" — "+usdLabel+" shown as $…+? where affected)")
+		out = append(out, "(sin precios para: "+strings.Join(s.UnknownModels, ", ")+" — "+usdLabel+" se muestra como $…+? donde afecta)")
 	}
 	if s.Usage.USDEstimated {
 		out = append(out, format.EstimatedNote(s.Usage.EstimatedModels))
@@ -216,26 +216,26 @@ func Stats(d StatsData) Output {
 	out = append(out, "")
 
 	nameLead := func(r bucketRow) []string { return []string{r.name} }
-	out = append(out, "BY MODEL")
+	out = append(out, "POR MODELO")
 	var rows []bucketRow
 	for _, k := range s.ByModel.Keys {
 		rows = append(rows, bucketRow{name: k, b: s.ByModel.Values[k]})
 	}
 	sortByUsd(rows)
-	out = append(out, bucketTable(rows, []format.Col{{Label: "model"}}, nameLead, usdLabel))
+	out = append(out, bucketTable(rows, []format.Col{{Label: "modelo"}}, nameLead, usdLabel))
 	out = append(out, "")
 
 	if len(s.ByAgentType.Keys) > 0 {
-		out = append(out, "BY AGENT TYPE")
+		out = append(out, "POR TIPO DE AGENTE")
 		rows = nil
 		for _, k := range s.ByAgentType.Keys {
 			t := s.ByAgentType.Values[k]
 			rows = append(rows, bucketRow{name: k, b: t.Finished, agents: t.Agents})
 		}
 		sortByUsd(rows)
-		out = append(out, bucketTable(rows, []format.Col{{Label: "type"}, {Label: "agents", Right: true}}, func(r bucketRow) []string { return []string{r.name, count(r.agents)} }, usdLabel))
+		out = append(out, bucketTable(rows, []format.Col{{Label: "tipo"}, {Label: "agentes", Right: true}}, func(r bucketRow) []string { return []string{r.name, count(r.agents)} }, usdLabel))
 		out = append(out, "")
-		out = append(out, "AGENTS")
+		out = append(out, "AGENTES")
 		n := len(s.Agents)
 		if n > 20 {
 			n = 20
@@ -255,21 +255,21 @@ func Stats(d StatsData) Output {
 				tokens(ag.TotalInput + ag.Usage.Output), format.FmtUsdPartial(ag.USD, ag.USDPartial, ag.USDEstimated), format.FmtDuration(dur),
 			})
 		}
-		out = append(out, format.Table([]format.Col{{Label: "type"}, {Label: "description"}, {Label: "model"}, {Label: "tokens", Right: true}, {Label: usdLabel, Right: true}, {Label: "time", Right: true}}, cells))
+		out = append(out, format.Table([]format.Col{{Label: "tipo"}, {Label: "descripción"}, {Label: "modelo"}, {Label: "tokens", Right: true}, {Label: usdLabel, Right: true}, {Label: "tiempo", Right: true}}, cells))
 		out = append(out, "")
-		out = append(out, "SUBAGENT TIME")
+		out = append(out, "TIEMPO DE SUBAGENTES")
 		out = append(out, FormatAgentTiming(s.AgentTiming)...)
 		out = append(out, "")
 	}
 
 	if len(s.BySkill.Keys) > 0 {
-		out = append(out, "BY SKILL / COMMAND")
+		out = append(out, "POR SKILL / COMANDO")
 		rows = nil
 		for _, k := range s.BySkill.Keys {
 			rows = append(rows, bucketRow{name: k, b: s.BySkill.Values[k]})
 		}
 		sortByUsd(rows)
-		out = append(out, bucketTable(rows, []format.Col{{Label: "skill"}}, nameLead, usdLabel))
+		out = append(out, bucketTable(rows, []format.Col{{Label: "skill / comando"}}, nameLead, usdLabel))
 		out = append(out, "")
 	}
 
@@ -288,16 +288,16 @@ func Stats(d StatsData) Output {
 	}
 	toolList := strings.Join(parts, " · ")
 	if toolList == "" {
-		toolList = "none"
+		toolList = "ninguna"
 	}
-	out = append(out, "TOOLS: "+toolList)
+	out = append(out, "HERRAMIENTAS: "+toolList)
 	b := s.Tools.Bash
 	interrupted := ""
 	if b.Interrupted != 0 {
-		interrupted = " · " + count(b.Interrupted) + " interrupted"
+		interrupted = " · " + count(b.Interrupted) + " interrumpidas"
 	}
-	out = append(out, "  files read (distinct): "+count(len(s.Tools.FilesRead))+" · files edited: "+count(len(s.Tools.FilesEdited))+" (by main "+count(len(s.Tools.FilesEditedMain))+") · Bash calls "+count(b.Calls)+
-		" → "+tokens(float64(b.ResultLines))+" lines / "+tokens(float64(b.ResultChars))+" chars back"+interrupted)
+	out = append(out, "  archivos leídos (distintos): "+count(len(s.Tools.FilesRead))+" · archivos editados: "+count(len(s.Tools.FilesEdited))+" (por el principal "+count(len(s.Tools.FilesEditedMain))+") · llamadas a Bash "+count(b.Calls)+
+		" → vuelven "+tokens(float64(b.ResultLines))+" líneas / "+tokens(float64(b.ResultChars))+" caracteres"+interrupted)
 	if d.Broad.Count > 0 {
 		var kinds []string
 		for _, k := range d.Broad.ByKind.Keys() {
@@ -307,38 +307,38 @@ func Stats(d StatsData) Output {
 		if d.Broad.Threshold != nil {
 			th = *d.Broad.Threshold
 		}
-		out = append(out, "  broad searches in the main thread (above "+tokens(th)+" context): "+count(d.Broad.Count)+" — "+strings.Join(kinds, " · ")+
-			" · context carried at those searches "+tokens(d.Broad.ContextTokens)+" tokens (sum of context size, an upper bound)")
+		out = append(out, "  búsquedas amplias en el hilo principal (con más de "+tokens(th)+" de contexto): "+count(d.Broad.Count)+" — "+strings.Join(kinds, " · ")+
+			" · contexto arrastrado en esas búsquedas "+tokens(d.Broad.ContextTokens)+" tokens (suma del tamaño de contexto, una cota superior)")
 	}
 	out = append(out, "")
 
 	f := d.Filter
-	out = append(out, "FILTER (nxy hook rows for this session): "+count(f.Rows))
+	out = append(out, "FILTRO (filas del hook de nxy de esta sesión): "+count(f.Rows))
 	if f.Rows != 0 {
 		var engines []string
 		for _, k := range f.ByEngine.Keys() {
 			engines = append(engines, k+" "+jscompat.String(f.ByEngine.Get(k)))
 		}
-		out = append(out, "  engine: "+strings.Join(engines, " · ")+" · Bash output seen by the model: "+tokens(f.FilteredChars)+" chars (~"+tokens(f.EstTokens)+" tokens)")
+		out = append(out, "  motor: "+strings.Join(engines, " · ")+" · salida de Bash que vio el modelo: "+tokens(f.FilteredChars)+" caracteres (~"+tokens(f.EstTokens)+" tokens)")
 		if len(f.SkipReasons) > 0 {
 			var sr []string
 			for _, r := range f.SkipReasons {
 				sr = append(sr, r.Reason+" "+jscompat.String(r.Count))
 			}
-			out = append(out, "  skip reasons: "+strings.Join(sr, " · "))
+			out = append(out, "  motivos de salto: "+strings.Join(sr, " · "))
 		}
 		if f.ByEngine.Get("rtk") != 0 {
 			switch rs := d.RtkSavings; {
 			case rs != nil && rs.Commands != 0:
-				out = append(out, "  rtk saved: "+tokens(rs.Saved)+" tokens ("+format.FmtPct(SavedPct(*rs), 0)+") — "+jscompat.String(rs.Commands)+" filtered commands printed "+tokens(rs.Input)+", the model read "+tokens(rs.Output)+" (rtk's own ledger)")
+				out = append(out, "  rtk ahorró: "+tokens(rs.Saved)+" tokens ("+format.FmtPct(SavedPct(*rs), 0)+") — "+jscompat.String(rs.Commands)+" comandos filtrados imprimían "+tokens(rs.Input)+", el modelo leyó "+tokens(rs.Output)+" (según el registro de rtk)")
 			case rs != nil:
-				out = append(out, "  rtk saved: no ledger rows for this session window (rtk tracking off, or another cwd)")
+				out = append(out, "  rtk ahorró: no hay filas del registro en la ventana de esta sesión (rtk sin tracking, o otra carpeta)")
 			default:
-				cause := "rtk ledger not readable (locked?)"
+				cause := "no se puede leer el registro de rtk (¿bloqueado?)"
 				if d.LedgerWhy == "no-db" {
-					cause = "no rtk ledger at " + d.LedgerPath + " (rtk tracking off, RTK_DB_PATH wrong, or rtk installed on another OS)"
+					cause = "no hay registro de rtk en " + d.LedgerPath + " (rtk sin tracking, RTK_DB_PATH mal puesto, o rtk instalado en otro sistema)"
 				}
-				out = append(out, "  rtk saved: n/a — "+cause+"; rtk gain still has the global totals")
+				out = append(out, "  rtk ahorró: n/d — "+cause+"; rtk gain todavía tiene los totales globales")
 			}
 		}
 		n := len(f.ByKind)
@@ -349,12 +349,12 @@ func Stats(d StatsData) Output {
 		for _, k := range f.ByKind[:n] {
 			cells = append(cells, []string{text(k.Kind), count(k.Rows), count(k.RTK), tokens(k.Chars), tokens(k.Tokens)})
 		}
-		out = append(out, format.Table([]format.Col{{Label: "command kind"}, {Label: "calls", Right: true}, {Label: "via rtk", Right: true}, {Label: "chars", Right: true}, {Label: "~tokens", Right: true}}, cells))
+		out = append(out, format.Table([]format.Col{{Label: "tipo de comando"}, {Label: "llamadas", Right: true}, {Label: "vía rtk", Right: true}, {Label: "caracteres", Right: true}, {Label: "~tokens", Right: true}}, cells))
 	}
 	out = append(out, "")
 
 	if len(s.CacheBreaks) > 0 {
-		out = append(out, "CACHE BREAKS (> "+tokens(d.Settings.CacheBreakThreshold)+" uncached in one call): "+count(len(s.CacheBreaks)))
+		out = append(out, "QUIEBRES DE CACHE (> "+tokens(d.Settings.CacheBreakThreshold)+" sin cachear en una llamada): "+count(len(s.CacheBreaks)))
 		usd := s.Usage.USD
 		if math.IsNaN(usd) {
 			usd = 0
@@ -369,12 +369,12 @@ func Stats(d StatsData) Output {
 		for _, cb := range s.CacheBreaks[:n] {
 			agent := ""
 			if cb.AgentType != nil && *cb.AgentType != "" {
-				agent = " · agent " + *cb.AgentType
+				agent = " · agente " + *cb.AgentType
 			}
-			out = append(out, "  "+format.FmtDate(float64(cb.Ts), d.Loc, true)+" · "+cb.Cause+" · "+tokens(cb.Uncached)+" uncached of "+tokens(cb.Total)+" · ttl "+cb.TTL+agent)
+			out = append(out, "  "+format.FmtDate(float64(cb.Ts), d.Loc, true)+" · "+cb.Cause+" · "+tokens(cb.Uncached)+" sin cachear de "+tokens(cb.Total)+" · ttl "+cb.TTL+agent)
 		}
 	} else {
-		out = append(out, "CACHE BREAKS: none")
+		out = append(out, "QUIEBRES DE CACHE: ninguno")
 	}
 	if line, ok := FormatTTLWhatIf(s.TTLWhatIf); ok {
 		out = append(out, "  "+line)

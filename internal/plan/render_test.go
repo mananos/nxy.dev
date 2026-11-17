@@ -174,7 +174,7 @@ func TestRiskLineShowsWhyNxyRaisedIt(t *testing.T) {
 }
 
 func TestApprovalQuestion(t *testing.T) {
-	if got := ApprovalQuestion("abc", 2); got != "Approve nxy plan abc r2?" {
+	if got := ApprovalQuestion("abc", 2); got != "¿Aprobás el plan abc r2 de nxy?" {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -251,7 +251,7 @@ func TestImplementerPrompt(t *testing.T) {
 }
 
 func TestDecisionQuestions(t *testing.T) {
-	if got := DecisionQuestion("abc", 2); got != "nxy feature abc: batch 2 failed twice — what now?" {
+	if got := DecisionQuestion("abc", 2); got != "nxy feature abc: el lote 2 falló dos veces — ¿qué hacemos?" {
 		t.Fatalf("got %q", got)
 	}
 	if PlannerFailedQuestion("abc") == "" {

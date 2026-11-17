@@ -163,7 +163,7 @@ func TestStartFeatureEmptyIsDenied(t *testing.T) {
 	for _, p := range []string{"/nxy:feature", "/nxy:feature ", "/nxy:feature  \n "} {
 		h, st := flowHooks(false)
 		r := h.Handle(context.Background(), prompt(p))
-		if !strings.Contains(r.Deny, "usage: /nxy:feature") || r.Next != nil {
+		if !strings.Contains(r.Deny, "uso: /nxy:feature") || r.Next != nil {
 			t.Errorf("%q: response = %+v", p, r)
 		}
 		if len(st.feats) != 0 {
@@ -262,7 +262,7 @@ func TestSessionStartReinjectsStep(t *testing.T) {
 func TestSessionStartLegacyNotice(t *testing.T) {
 	h, _ := flowHooks(true)
 	r := h.Handle(context.Background(), HookEvent{Name: "SessionStart", ProjectDir: "/p"})
-	if !strings.Contains(r.Notice, "nxy 1.x is still enabled") {
+	if !strings.Contains(r.Notice, "la 1.x de nxy sigue activada") {
 		t.Errorf("notice = %q", r.Notice)
 	}
 	h, _ = flowHooks(false)
@@ -289,7 +289,7 @@ func TestSessionStartBackgroundPlannerWaits(t *testing.T) {
 	f.Background = rolePlanner
 	st.feats[id] = f
 	r := h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "clear", ProjectDir: "/p", Cwd: "/p"})
-	if r.Next != nil || !strings.HasPrefix(r.Context, backgroundWait(id, rolePlanner)) || !strings.Contains(r.Context, "para retomar") || !strings.Contains(r.Notice, "planner is still running") || strings.Contains(r.Notice, "pendiente") {
+	if r.Next != nil || !strings.HasPrefix(r.Context, backgroundWait(id, rolePlanner)) || !strings.Contains(r.Context, "para retomar") || !strings.Contains(r.Notice, "planner sigue corriendo") || strings.Contains(r.Notice, "pendiente") {
 		t.Errorf("response = %+v", r)
 	}
 	r = h.Handle(context.Background(), HookEvent{Name: "SessionStart", Source: "resume", ProjectDir: "/p", Cwd: "/p"})

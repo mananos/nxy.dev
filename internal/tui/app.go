@@ -423,10 +423,10 @@ func (d *Data) validKeys(target string) []string {
 // the memory scope or the file; empty is the default of the target.
 func Render(o Options, target, key string) (string, error) {
 	if o.Source == nil {
-		return "", fmt.Errorf("tui: no data")
+		return "", fmt.Errorf("tui: no hay datos")
 	}
 	if o.Width < 40 {
-		return "", fmt.Errorf("tui: width %d is too small", o.Width)
+		return "", fmt.Errorf("tui: el ancho %d es demasiado chico", o.Width)
 	}
 	found := false
 	var defaults []string
@@ -439,7 +439,7 @@ func Render(o Options, target, key string) (string, error) {
 		}
 	}
 	if !found {
-		return "", fmt.Errorf("tui: unknown target %q", target)
+		return "", fmt.Errorf("tui: pantalla desconocida %q", target)
 	}
 	st := newState(o)
 	st.onLoad(cheapMsg{r: st.ld.cheap()})
@@ -470,10 +470,10 @@ func Render(o Options, target, key string) (string, error) {
 				key = valid[0]
 			}
 			if key == "" {
-				return "", fmt.Errorf("tui: nothing to show for %q", target)
+				return "", fmt.Errorf("tui: no hay nada para mostrar en %q", target)
 			}
 		case !isFile && !has(key) && !st.loadsKey(target, key):
-			return "", fmt.Errorf("tui: %q is not a valid key for %q; valid: %s", key, target, strings.Join(valid, ", "))
+			return "", fmt.Errorf("tui: %q no es una clave válida para %q; válidas: %s", key, target, strings.Join(valid, ", "))
 		}
 	}
 	if target == "decision" {
@@ -505,7 +505,7 @@ type model struct{ st *state }
 // Run opens the interactive TUI.
 func Run(o Options) error {
 	if o.Source == nil {
-		return fmt.Errorf("tui: no data")
+		return fmt.Errorf("tui: no hay datos")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

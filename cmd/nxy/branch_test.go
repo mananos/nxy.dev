@@ -51,7 +51,7 @@ func TestBranchStepEndToEnd(t *testing.T) {
 		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
 	}
 	agentPost(t, repo, "nxy:planner", nil)
-	out := answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	out := answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 	if !strings.Contains(out, "¿en qué rama trabajamos?") || !strings.Contains(out, "¿desde qué base") {
 		t.Fatalf("no branch question after approve: %s", out)
 	}

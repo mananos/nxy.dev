@@ -1,5 +1,5 @@
 ---
-description: Show or change nxy's config — filter, engine, model and effort per role, prompt cache TTL (nxy dev)
+description: Mirá o cambiá la config de nxy — filtro, motor, modelo y esfuerzo por rol, TTL del prompt cache (nxy dev)
 argument-hint: [show | set <key> <value|default> [--repo] | cache-ttl 1h|off]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" config:*)
 ---

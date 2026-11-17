@@ -31,9 +31,9 @@ func For(f domain.Feature) (Ask, bool) {
 			Question: plan.ApprovalQuestion(f.ID, f.PlanRev),
 			Header:   "Plan",
 			Options: []Option{
-				{Label: plan.Approve, Description: "Start executing batch 1"},
-				{Label: plan.Change, Description: "Write what to change; nxy re-plans"},
-				{Label: plan.ViewFull, Description: "Open the full plan in your editor"},
+				{Label: plan.Approve, Description: "Empezar a ejecutar el lote 1"},
+				{Label: plan.Change, Description: "Escribí qué cambiar; nxy vuelve a planificar"},
+				{Label: plan.ViewFull, Description: "Abrir el plan completo en tu editor"},
 			},
 		}}
 	case domain.AskChangeNote:
@@ -132,10 +132,10 @@ func decision(f domain.Feature, a *Ask) bool {
 		a.Kind = KindBatchFailed
 		a.Title = fmt.Sprintf("Lote %d fallido", f.State.Batch)
 		a.Body = f.ProofOf(f.State.Batch).Failure
-		a.Questions = one(plan.DecisionQuestion(f.ID, f.State.Batch), "Batch",
-			Option{Label: plan.Retry, Description: "Run the batch again"},
-			Option{Label: plan.Continue, Description: "Accept it as is and go to the next batch"},
-			Option{Label: plan.Stop, Description: "End the feature"})
+		a.Questions = one(plan.DecisionQuestion(f.ID, f.State.Batch), "Lote",
+			Option{Label: plan.Retry, Description: "Correr el lote de nuevo"},
+			Option{Label: plan.Continue, Description: "Aceptarlo como está y pasar al lote siguiente"},
+			Option{Label: plan.Stop, Description: "Terminar la feature"})
 	case domain.PhaseAffectedFailed:
 		a.Kind = KindAffectedFailed
 		a.Title = "Afectados fallidos"
@@ -143,9 +143,9 @@ func decision(f domain.Feature, a *Ask) bool {
 			a.Body = f.Affected.Failure
 		}
 		a.Questions = one(plan.AffectedFailedQuestion(f.ID), "Afectados",
-			Option{Label: plan.Retry, Description: "Dispatch the implementer to fix them again"},
-			Option{Label: plan.Continue, Description: "Accept them failing and go on to review"},
-			Option{Label: plan.Stop, Description: "End the feature"})
+			Option{Label: plan.Retry, Description: "Mandar de nuevo al implementer a arreglarlos"},
+			Option{Label: plan.Continue, Description: "Aceptar que fallen y pasar a la review"},
+			Option{Label: plan.Stop, Description: "Terminar la feature"})
 	case domain.PhaseAffectedUnverified:
 		a.Kind = KindAffectedUnverified
 		a.Title = "Afectados sin verificar"
@@ -153,9 +153,9 @@ func decision(f domain.Feature, a *Ask) bool {
 			a.Body = strings.TrimSpace(f.Affected.Reason + "\n" + f.Affected.Note)
 		}
 		a.Questions = one(plan.UnverifiedQuestion(f.ID), "Afectados",
-			Option{Label: plan.Retry, Description: "Run nxy affected again (e.g. after adding .nxy/runners.json or suite)"},
-			Option{Label: plan.Continue, Description: "Go on without verifying"},
-			Option{Label: plan.Stop, Description: "End the feature"})
+			Option{Label: plan.Retry, Description: "Correr nxy affected de nuevo (p. ej. después de agregar .nxy/runners.json o una suite)"},
+			Option{Label: plan.Continue, Description: "Seguir sin verificar"},
+			Option{Label: plan.Stop, Description: "Terminar la feature"})
 	case domain.PhaseFixesFailed:
 		a.Kind = KindFixesFailed
 		a.Title = "Arreglos fallidos"
@@ -163,14 +163,14 @@ func decision(f domain.Feature, a *Ask) bool {
 			a.Body = strings.TrimSpace(f.Affected.Failure + "\n" + f.Affected.Reason + "\n" + f.Affected.Note)
 		}
 		a.Questions = one(plan.FixesFailedQuestion(f.ID), "Arreglos",
-			Option{Label: plan.Retry, Description: "Dispatch the implementer to fix them again"},
-			Option{Label: plan.Continue, Description: "Accept it as is and finish"},
-			Option{Label: plan.Stop, Description: "End the feature"})
+			Option{Label: plan.Retry, Description: "Mandar de nuevo al implementer a arreglarlos"},
+			Option{Label: plan.Continue, Description: "Aceptarlo como está y terminar"},
+			Option{Label: plan.Stop, Description: "Terminar la feature"})
 	case domain.PhasePlannerFailed:
 		a.Kind = KindPlannerFailed
 		a.Questions = one(plan.PlannerFailedQuestion(f.ID), "Planner",
-			Option{Label: plan.Retry, Description: "Plan again"},
-			Option{Label: plan.Stop, Description: "End the feature"})
+			Option{Label: plan.Retry, Description: "Planificar de nuevo"},
+			Option{Label: plan.Stop, Description: "Terminar la feature"})
 	default:
 		return false
 	}
@@ -198,8 +198,8 @@ func questions(f domain.Feature) []Question {
 			Question: design.OfferQuestion(f.ID),
 			Header:   "Engineer",
 			Options: []Option{
-				{Label: design.LabelToEngineer, Description: "Decide these with Claude, fork by fork, before planning"},
-				{Label: design.LabelAnswerHere, Description: "Answer the questions here"},
+				{Label: design.LabelToEngineer, Description: "Decidirlas con Claude, bifurcación por bifurcación, antes de planificar"},
+				{Label: design.LabelAnswerHere, Description: "Contestar las preguntas acá"},
 			},
 		})
 	}
@@ -234,11 +234,11 @@ func DesignProposal(f domain.Feature) Ask {
 	return Ask{
 		Kind:      KindDesignProposal,
 		FeatureID: f.ID,
-		Title:     "decision",
+		Title:     "decisión",
 		Body:      design.Proposal(f.Design),
 		Questions: one(design.ProposeQuestion(f.ID, n), "Diseño",
-			Option{Label: design.LabelSave, Description: "Save the decision in the design"},
-			Option{Label: design.LabelKeepDebating, Description: "Do not save it; keep debating"}),
+			Option{Label: design.LabelSave, Description: "Guardar la decisión en el diseño"},
+			Option{Label: design.LabelKeepDebating, Description: "No guardarla; seguir debatiendo"}),
 	}
 }
 
@@ -247,10 +247,10 @@ func DesignClose(f domain.Feature) Ask {
 	return Ask{
 		Kind:      KindDesignClose,
 		FeatureID: f.ID,
-		Title:     "design summary",
+		Title:     "resumen del diseño",
 		Body:      design.CloseSummary(f),
 		Questions: one(design.CloseQuestion(f.ID), "Diseño",
-			Option{Label: design.LabelClose, Description: "Approve the rules and plan the batches"},
-			Option{Label: design.LabelKeepDesigning, Description: "Do not close; keep designing"}),
+			Option{Label: design.LabelClose, Description: "Aprobar las reglas y planificar los lotes"},
+			Option{Label: design.LabelKeepDesigning, Description: "No cerrar; seguir diseñando"}),
 	}
 }

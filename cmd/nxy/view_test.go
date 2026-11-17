@@ -39,11 +39,11 @@ func TestViewArgs(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"no id", []string{"view"}, "usage: nxy view"},
-		{"missing --json", []string{"view", "cockpit"}, "usage: nxy view"},
-		{"unknown id", []string{"view", "nope", "--json"}, "usage: nxy view"},
-		{"bad scope", []string{"view", "memory", "--json", "--scope", "x"}, "usage: nxy view"},
-		{"file without path", []string{"view", "file", "--json", "--feature", "x"}, "usage: nxy view"},
+		{"no id", []string{"view"}, "uso: nxy view"},
+		{"missing --json", []string{"view", "cockpit"}, "uso: nxy view"},
+		{"unknown id", []string{"view", "nope", "--json"}, "uso: nxy view"},
+		{"bad scope", []string{"view", "memory", "--json", "--scope", "x"}, "uso: nxy view"},
+		{"file without path", []string{"view", "file", "--json", "--feature", "x"}, "uso: nxy view"},
 		{"plan without feature", []string{"view", "plan", "--json"}, "no hay una feature activa"},
 		{"engineer without feature", []string{"view", "engineer", "--json"}, "no hay una feature activa"},
 		{"file without feature", []string{"view", "file", "--json", "--path", "a.go"}, "no hay una feature activa"},

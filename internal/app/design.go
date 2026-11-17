@@ -185,11 +185,11 @@ func answerFork(d *domain.Design, fork, answer string) HookResponse {
 		}
 		for _, o := range f.Options {
 			if o.Label == a {
-				return HookResponse{Context: fmt.Sprintf("El usuario eligió %s para %s: proponé la decisión con design propose.", a, fork)}
+				return HookResponse{Context: fmt.Sprintf("The user chose %s for %s: propose the decision with design propose.", a, fork)}
 			}
 		}
 	}
-	return HookResponse{Context: "El usuario dijo: " + a + "; seguí el debate."}
+	return HookResponse{Context: "The user said: " + a + "; keep debating."}
 }
 
 // freeText is the user's own words in an answer, or "" when it is one of the options.
@@ -221,11 +221,11 @@ func (h Hooks) answerProposal(ctx context.Context, f domain.Feature, answer stri
 		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 	}
 	if save && saved {
-		return HookResponse{Context: "La decisión quedó guardada. " + design.Status(nf)}
+		return HookResponse{Context: "The decision is saved. " + design.Status(nf)}
 	}
-	ctxLine := "La propuesta no se guardó: seguí debatiendo."
+	ctxLine := "The proposal was not saved: keep debating."
 	if t := freeText(answer, design.LabelSave, design.LabelKeepDebating); t != "" {
-		ctxLine += " El usuario dijo: " + t
+		ctxLine += " The user said: " + t
 	}
 	return HookResponse{Context: ctxLine + " " + design.Status(nf)}
 }
@@ -242,9 +242,9 @@ func (h Hooks) answerClose(ctx context.Context, f domain.Feature, answer string)
 		if err != nil {
 			return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 		}
-		ctxLine := "El diseño sigue abierto: seguí diseñando."
+		ctxLine := "The design stays open: keep designing."
 		if t := freeText(answer, design.LabelKeepDesigning); t != "" {
-			ctxLine += " El usuario dijo: " + t
+			ctxLine += " The user said: " + t
 		}
 		return HookResponse{Context: ctxLine + " " + design.Status(nf)}
 	}
@@ -260,5 +260,5 @@ func (h Hooks) answerClose(ctx context.Context, f domain.Feature, answer string)
 	if err != nil {
 		return HookResponse{Next: &Next{Feature: f, Note: "nxy could not record your answer; ask again"}}
 	}
-	return HookResponse{Next: &Next{Feature: nf, Note: "el diseño quedó en la db: /clear es seguro"}}
+	return HookResponse{Next: &Next{Feature: nf, Note: "the design is in the db: /clear is safe"}}
 }

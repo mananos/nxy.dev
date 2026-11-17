@@ -125,7 +125,7 @@ func (m Memory) Show(ctx context.Context, cwd string) ([]memory.Rule, []memory.L
 // Search looks text up in the repo's memory (all: in every repo).
 func (m Memory) Search(ctx context.Context, cwd, text string, all bool) ([]memory.Hit, error) {
 	if strings.TrimSpace(text) == "" {
-		return nil, errors.New("nothing to search for")
+		return nil, errors.New("no hay nada para buscar")
 	}
 	return m.Store.Search(ctx, m.repo(cwd), all, text, memory.SearchLimit)
 }
@@ -152,7 +152,7 @@ func (m Memory) ImportPreview(ctx context.Context, r io.Reader) (memory.Diff, er
 		return memory.Diff{}, err
 	}
 	if len(data) > maxImportBytes {
-		return memory.Diff{}, errors.New("export file too large")
+		return memory.Diff{}, errors.New("el archivo de exportación es demasiado grande")
 	}
 	b, err := memory.DecodeBundle(data)
 	if err != nil {

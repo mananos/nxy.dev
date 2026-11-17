@@ -364,8 +364,8 @@ func TestPlanApprovalActions(t *testing.T) {
 	}
 	send(m, key("y"))
 	want := [][]string{
-		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Approve"},
-		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Change"},
+		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Aprobar"},
+		{"nxy", "action", "decide", "--ask", "ASK-F7K9-PLAN", "--answer", "Cambiar"},
 		{"nxy", "feature", "stop", "--feature", "F7K9"},
 	}
 	if !reflect.DeepEqual(f.calls, want) {

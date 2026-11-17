@@ -91,7 +91,7 @@ func (h Hooks) waitInTUI(ctx context.Context, ev HookEvent, f domain.Feature) Ho
 		if got.Answers != nil {
 			switch {
 			case got.AnsweredBy == answeredByStopped:
-				return HookResponse{Deny: "nxy: el usuario paró la feature " + f.ID + " desde la TUI"}
+				return HookResponse{Deny: "nxy: the user stopped feature " + f.ID + " from the TUI"}
 			case got.AnsweredBy == answeredByTerminal, len(got.Answers) != len(ev.Asked):
 				return HookResponse{}
 			}

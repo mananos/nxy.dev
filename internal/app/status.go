@@ -72,9 +72,9 @@ func nextSituation(f domain.Feature) string {
 		return l
 	}
 	if l := f.State.Phase.Label(); l != "" {
-		return "nothing for the main thread (" + l + ")"
+		return "nada para el hilo principal (" + l + ")"
 	}
-	return "nothing for the main thread"
+	return "nada para el hilo principal"
 }
 
 // activeIn is the active feature of the repo dir belongs to.

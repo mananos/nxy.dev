@@ -41,7 +41,7 @@ func affectedFeatureWith(t *testing.T, suite, changed string, files map[string]s
 		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
 	}
 	agentPost(t, repo, "nxy:planner", nil)
-	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 	agentPre(t, repo, "nxy:implementer", "feature "+id+" batch 1")
 	if code, out, errb := runCmd(t, "", "batch", "red", "--feature", id); code != 0 {
 		t.Fatalf("red: code %d, out %q, err %q", code, out, errb)
@@ -73,7 +73,7 @@ func TestAffectedUnverifiedWithoutSuite(t *testing.T) {
 	if code != 0 || !strings.Contains(out, "sin verificar") || !strings.Contains(out, "Afectados sin verificar") {
 		t.Fatalf("affected: code %d, out %q, err %q", code, out, errb)
 	}
-	out = answer(t, repo, "nxy feature "+id+": the affected tests could not be verified — what now?", "Seguir")
+	out = answer(t, repo, "nxy feature "+id+": no se pudieron verificar los tests afectados — ¿qué hacemos?", "Seguir")
 	if !strings.Contains(out, "nxy:reviewer-quick") {
 		t.Fatalf("Seguir does not go to review: %s", out)
 	}

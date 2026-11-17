@@ -25,7 +25,7 @@ func reviewUser(sub string, args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 		if !ok {
-			fmt.Fprintln(stdout, "no review yet")
+			fmt.Fprintln(stdout, "todavía no hay review")
 			return 0
 		}
 		fmt.Fprintln(stdout, strings.TrimRight(md, "\n"))
@@ -36,17 +36,17 @@ func reviewUser(sub string, args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 		if len(stats) == 0 {
-			fmt.Fprintf(stdout, "no review activity in the last %d days\n", app.ReviewStatsDays)
+			fmt.Fprintf(stdout, "no hubo actividad de review en los últimos %d días\n", app.ReviewStatsDays)
 			return 0
 		}
-		fmt.Fprintf(stdout, "review by lens, last %d days\n", app.ReviewStatsDays)
+		fmt.Fprintf(stdout, "review por lente, últimos %d días\n", app.ReviewStatsDays)
 		for _, s := range stats {
-			fmt.Fprintf(stdout, "%s: %d chosen, %d ignored, %d escapes\n", s.Lens, s.Chosen, s.Ignored, s.Escapes)
+			fmt.Fprintf(stdout, "%s: %d elegidos, %d ignorados, %d escapes\n", s.Lens, s.Chosen, s.Ignored, s.Escapes)
 		}
 	case "escape":
 		question := optVal(opts, "question")
 		if len(pos) == 0 || question == "" {
-			fmt.Fprintln(stderr, `usage: nxy review escape "<text>" --question "<what it settles>" [--lens base]`)
+			fmt.Fprintln(stderr, `uso: nxy review escape "<texto>" --question "<qué resuelve>" [--lens base]`)
 			return 1
 		}
 		res, err := h.ReviewEscape(ctx, dir, strings.Join(pos, " "), question, optVal(opts, "lens"))
@@ -55,12 +55,12 @@ func reviewUser(sub string, args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 		if res.Candidate {
-			fmt.Fprintf(stdout, "escape noted for feature %s: nxy asks about it as a rule when the feature closes\n", res.FeatureID)
+			fmt.Fprintf(stdout, "anoté el escape de la feature %s: nxy lo pregunta como regla al cerrar la feature\n", res.FeatureID)
 			return 0
 		}
-		fmt.Fprintf(stdout, "escape saved as rule %s\n", res.Rule.Short)
+		fmt.Fprintf(stdout, "guardé el escape como la regla %s\n", res.Rule.Short)
 		if res.Similar != nil {
-			fmt.Fprintf(stdout, "similar to %s: %s\n", res.Similar.Short, res.Similar.Text)
+			fmt.Fprintf(stdout, "parecida a %s: %s\n", res.Similar.Short, res.Similar.Text)
 		}
 	}
 	return 0
@@ -69,7 +69,7 @@ func reviewUser(sub string, args []string, stdout, stderr io.Writer) int {
 // runReview is `nxy review save --feature <id> --lens <name>` and `nxy review refute --feature <id>`:
 // the JSON of the reviewer or the refuter comes on stdin.
 func runReview(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	const usage = "usage: nxy review save --feature <id> --lens <name> | nxy review refute --feature <id>  (JSON on stdin) | nxy review docs --feature <id> | nxy review show | nxy review status | nxy review escape \"<text>\" --question \"<q>\" [--lens base]"
+	const usage = "uso: nxy review save --feature <id> --lens <name> | nxy review refute --feature <id>  (JSON on stdin) | nxy review docs --feature <id> | nxy review show | nxy review status | nxy review escape \"<text>\" --question \"<q>\" [--lens base]"
 	if len(args) > 0 && (args[0] == "show" || args[0] == "status" || args[0] == "escape") {
 		return reviewUser(args[0], args[1:], stdout, stderr)
 	}

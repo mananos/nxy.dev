@@ -38,7 +38,7 @@ func TestEngineerStartsDesigning(t *testing.T) {
 		t.Errorf("second feature: %+v", r)
 	}
 	r = h.Handle(context.Background(), prompt("/nxy:engineer "))
-	if !strings.Contains(r.Deny, "usage: /nxy:engineer") {
+	if !strings.Contains(r.Deny, "uso: /nxy:engineer") {
 		t.Errorf("empty: %+v", r)
 	}
 }
@@ -124,11 +124,11 @@ func TestDesignForkQuestionAnswer(t *testing.T) {
 	}
 	q := design.ForkQuestion(id, "B1")
 	r := answer(h, q, "En disco")
-	if !strings.Contains(r.Context, "eligió En disco para B1") || !strings.Contains(r.Context, "design propose") {
+	if !strings.Contains(r.Context, "chose En disco for B1") || !strings.Contains(r.Context, "design propose") {
 		t.Errorf("picked: %+v", r)
 	}
 	r = answer(h, q, "mejor redis")
-	if !strings.Contains(r.Context, "El usuario dijo: mejor redis") || !strings.Contains(r.Context, "seguí el debate") {
+	if !strings.Contains(r.Context, "The user said: mejor redis") || !strings.Contains(r.Context, "keep debating") {
 		t.Errorf("free: %+v", r)
 	}
 	if st.feats[id].State.Phase != domain.PhaseDesigning {
@@ -161,7 +161,7 @@ func TestDesignCloseGoesToPlanning(t *testing.T) {
 	if f.State.Phase != domain.PhasePlanning || !f.Design.Closed || f.Design.D2 != "a -> b" || f.Design.Agenda[0].Status != domain.ForkDelegated {
 		t.Errorf("feature = %+v", f)
 	}
-	if r.Next == nil || !strings.Contains(r.Next.Note, "/clear es seguro") {
+	if r.Next == nil || !strings.Contains(r.Next.Note, "/clear is safe") {
 		t.Errorf("response = %+v", r)
 	}
 	if _, err := h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["b"]}`)); err == nil {

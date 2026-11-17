@@ -15,7 +15,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/views"
 )
 
-const viewUsage = "usage: nxy view <cockpit|agents|decision|memory|stats|trend|config|plan|file|engineer> --json [--feature id] [--path ruta] [--scope repo|global] [--session id] [--cwd dir]"
+const viewUsage = "uso: nxy view <cockpit|agents|decision|memory|stats|trend|config|plan|file|engineer> --json [--feature id] [--path ruta] [--scope repo|global] [--session id] [--cwd dir]"
 
 // runView is `nxy view <id> --json`: it prints a view built from the real data of the repo in the
 // shape of internal/views.

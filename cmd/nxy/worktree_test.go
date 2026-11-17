@@ -195,8 +195,8 @@ func TestFeatureNewRejections(t *testing.T) {
 		{[]string{"close"}, "falta --path"},
 		{[]string{"pause", "--path", "nowhere"}, "no está en la lista"},
 		{[]string{"close", "--path", "nowhere"}, "no está en la lista"},
-		{[]string{"bogus"}, "usage: nxy feature"},
-		{[]string{"list", "extra"}, "unexpected argument"},
+		{[]string{"bogus"}, "uso: nxy feature"},
+		{[]string{"list", "extra"}, "argumento inesperado"},
 	} {
 		code, out, errb := runCmd(t, "", append([]string{"feature"}, c.args...)...)
 		if code != 1 || out != "" || !strings.Contains(errb, c.want) {

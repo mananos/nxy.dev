@@ -397,7 +397,7 @@ func (v *viewSource) row(ctx context.Context, id string) (sqlite.FeatureRow, err
 			return r, nil
 		}
 	}
-	return sqlite.FeatureRow{}, fmt.Errorf("feature %s: not found", id)
+	return sqlite.FeatureRow{}, fmt.Errorf("no hay una feature %s", id)
 }
 
 // Cockpit is Inicio.

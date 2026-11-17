@@ -23,8 +23,8 @@ import (
 	"github.com/mananos/nxy.dev/internal/jscompat"
 )
 
-// The usage-cli golden (scripts/golden/usage-cli.mjs documents the case format): the 1.x ran each
-// case in a child node process; here the Go use case runs over the same world.
+// The usage-cli golden (scripts/golden/usage-cli.mjs documents the case format): each case runs the
+// Go use case over a materialized world; NXY_WRITE_GOLDEN=1 rewrites the outputs that changed.
 
 const defaultGoldenNow = "2026-09-10T12:00:00Z"
 
@@ -421,8 +421,33 @@ func diffAt(want, got string) string {
 	return "first difference at byte " + strconv.Itoa(i) + "\n want: ..." + strconv.Quote(cut(want)) + "\n  got: ..." + strconv.Quote(cut(got))
 }
 
-func checkUsageOutput(t *testing.T, c *usageCase, w *usageWorld, stdout, stderr string, code int) {
+// usageRecorder collects the computed outputs of a usage-cli golden file and, when the parent test
+// ends, rewrites the cases that changed (NXY_WRITE_GOLDEN=1 only).
+func usageRecorder(t *testing.T, file string) func(name string, out map[string]any) {
+	outs := map[string]any{}
+	var mu sync.Mutex
+	t.Cleanup(func() {
+		mu.Lock()
+		defer mu.Unlock()
+		goldentest.RewriteOutputs(t, filepath.Join(goldentest.Root(t), "testdata", "golden", "usage-cli", file), outs)
+	})
+	return func(name string, out map[string]any) {
+		mu.Lock()
+		outs[name] = out
+		mu.Unlock()
+	}
+}
+
+func checkUsageOutput(t *testing.T, c *usageCase, w *usageWorld, rec func(string, map[string]any), stdout, stderr string, code int) {
 	t.Helper()
+	if goldentest.Writing() {
+		rec(c.Name, map[string]any{
+			"stdout": goldentest.NormRootText(stdout, w.root),
+			"stderr": goldentest.NormRootText(stderr, w.root),
+			"code":   code,
+		})
+		return
+	}
 	if got := goldentest.NormRootText(stdout, w.root); got != c.Output.Stdout {
 		t.Errorf("stdout differs: %s", diffAt(c.Output.Stdout, got))
 	}
@@ -441,6 +466,7 @@ func TestGoldenStats(t *testing.T) {
 	if len(cases) == 0 {
 		t.Fatal("no stats cases")
 	}
+	rec := usageRecorder(t, "stats.json")
 	for i := range cases {
 		c := &cases[i]
 		t.Run(c.Name, func(t *testing.T) {
@@ -448,7 +474,7 @@ func TestGoldenStats(t *testing.T) {
 			u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
 			t.Cleanup(done)
 			out := u.Stats(w.expandArgs(c.Input.Args))
-			checkUsageOutput(t, c, w, out.Stdout, out.Stderr, out.Code)
+			checkUsageOutput(t, c, w, rec, out.Stdout, out.Stderr, out.Code)
 		})
 	}
 }
@@ -460,6 +486,7 @@ func TestGoldenTrend(t *testing.T) {
 	if len(cases) == 0 {
 		t.Fatal("no trend cases")
 	}
+	rec := usageRecorder(t, "trend.json")
 	for i := range cases {
 		c := &cases[i]
 		t.Run(c.Name, func(t *testing.T) {
@@ -467,7 +494,7 @@ func TestGoldenTrend(t *testing.T) {
 			u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
 			t.Cleanup(done)
 			out := u.Trend(w.expandArgs(c.Input.Args))
-			checkUsageOutput(t, c, w, out.Stdout, out.Stderr, out.Code)
+			checkUsageOutput(t, c, w, rec, out.Stdout, out.Stderr, out.Code)
 		})
 	}
 }
@@ -509,6 +536,7 @@ func TestGoldenStatusline(t *testing.T) {
 	if len(raws) == 0 {
 		t.Fatal("no statusline cases")
 	}
+	rec := usageRecorder(t, "statusline.json")
 	for _, raw := range raws {
 		var c usageCase
 		var golden struct {
@@ -531,9 +559,10 @@ func TestGoldenStatusline(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			w := materializeUsage(t, &c, texts)
 			sl := newStatusline(w.getenv, func() string { return w.proj }, func() time.Time { return w.now })
-			if len(c.Input.Steps) != len(golden.Output.Steps) {
+			if !goldentest.Writing() && len(c.Input.Steps) != len(golden.Output.Steps) {
 				t.Fatalf("%d steps, golden has %d", len(c.Input.Steps), len(golden.Output.Steps))
 			}
+			var gotSteps []map[string]any
 			for i, s := range c.Input.Steps {
 				w.writeSpecs(t, s.Write, texts, false)
 				w.writeSpecs(t, s.Append, texts, true)
@@ -542,6 +571,14 @@ func TestGoldenStatusline(t *testing.T) {
 					stdin = compactJSON(t, s.Stdin)
 				}
 				out := sl.Run([]byte(w.fill(stdin)))
+				if goldentest.Writing() {
+					gotSteps = append(gotSteps, map[string]any{
+						"stdout": goldentest.NormRootText(out.Stdout, w.root),
+						"stderr": goldentest.NormRootText(out.Stderr, w.root),
+						"code":   out.Code,
+					})
+					continue
+				}
 				want := golden.Output.Steps[i]
 				if got := goldentest.NormRootText(out.Stdout, w.root); got != want.Stdout {
 					t.Errorf("step %d stdout differs: %s", i, diffAt(want.Stdout, got))
@@ -580,6 +617,14 @@ func TestGoldenStatusline(t *testing.T) {
 					}
 					state[strings.TrimSuffix(e.Name(), ".json")] = offsetRe.ReplaceAllString(goldentest.NormRootText(string(b), w.root), `"offset":0`)
 				}
+			}
+			if goldentest.Writing() {
+				var gotInput any
+				if b, err := os.ReadFile(filepath.Join(cache, "statusline-v2-input.json")); err == nil {
+					gotInput = goldentest.NormRootText(string(b), w.root)
+				}
+				rec(c.Name, map[string]any{"steps": gotSteps, "state": state, "input": gotInput})
+				return
 			}
 			if len(state) != len(golden.Output.State) {
 				t.Errorf("state files %d, golden has %d", len(state), len(golden.Output.State))

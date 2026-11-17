@@ -45,7 +45,7 @@ func TestAffectedFixPrompt(t *testing.T) {
 }
 
 func TestAffectedQuestions(t *testing.T) {
-	if !strings.Contains(AffectedFailedQuestion("f1"), "failed twice") || !strings.Contains(UnverifiedQuestion("f1"), "could not be verified") {
+	if !strings.Contains(AffectedFailedQuestion("f1"), "fallaron dos veces") || !strings.Contains(UnverifiedQuestion("f1"), "no se pudieron verificar") {
 		t.Fatal("questions changed")
 	}
 }

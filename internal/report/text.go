@@ -18,7 +18,7 @@ func usd2(n float64) string { return "$" + jscompat.ToFixed(n, 2) }
 func FormatBreaks(s metrics.BreakSummary, totalUsd float64) []string {
 	pct := func(n float64) string {
 		if totalUsd > 0 {
-			return " (" + jscompat.ToFixed(float64(100*n)/totalUsd, 1) + "% of cost)"
+			return " (" + jscompat.ToFixed(float64(100*n)/totalUsd, 1) + "% del costo)"
 		}
 		return ""
 	}
@@ -32,11 +32,11 @@ func FormatBreaks(s metrics.BreakSummary, totalUsd float64) []string {
 	}
 	joined := strings.Join(parts, "  |  ")
 	if joined == "" {
-		joined = "none"
+		joined = "ninguno"
 	}
 	return []string{
-		"cache rebuilds by cause: " + joined,
-		fmt.Sprintf("cache TTL written: 5m ×%d · 1h ×%d  ·  avoidable by warming (idle + subagent): %s%s", s.TTL.FiveMin, s.TTL.Hour, usd2(s.AvoidableUSD), pct(s.AvoidableUSD)),
+		"reconstrucciones de cache por causa: " + joined,
+		fmt.Sprintf("TTL de cache escrito: 5m ×%d · 1h ×%d  ·  evitable calentando (inactividad + subagente): %s%s", s.TTL.FiveMin, s.TTL.Hour, usd2(s.AvoidableUSD), pct(s.AvoidableUSD)),
 	}
 }
 
@@ -51,28 +51,27 @@ func FormatTTLWhatIf(w metrics.TTLWhatIf) (string, bool) {
 	if pct > 0 {
 		sign = "+"
 	}
-	head := fmt.Sprintf("cache TTL 1h what-if (main thread): %s → %s (%s%s%%)", usd2(w.ActualUSD), usd2(w.HourUSD), sign, jscompat.ToFixed(pct, 1))
+	head := fmt.Sprintf("cache TTL 1h, ¿y si…? (hilo principal): %s → %s (%s%s%%)", usd2(w.ActualUSD), usd2(w.HourUSD), sign, jscompat.ToFixed(pct, 1))
 	rebuilds := ""
 	if w.RebuildsAvoided != 0 {
-		plural := "s"
+		rebuilds = fmt.Sprintf(", %d reconstrucción(es) habrían sido lecturas", w.RebuildsAvoided)
 		if w.RebuildsAvoided == 1 {
-			plural = ""
+			rebuilds = ", 1 reconstrucción habría sido una lectura"
 		}
-		rebuilds = fmt.Sprintf(", %d rebuild%s would have been reads", w.RebuildsAvoided, plural)
 	}
 	switch {
 	case pct <= -1:
-		return head + rebuilds + ` · worth it: set "promptCacheTtl": "1h" in ~/.claude/settings.json (Claude Code ≥ 2.1.242)`, true
+		return head + rebuilds + ` · conviene: poné "promptCacheTtl": "1h" en ~/.claude/settings.json (Claude Code ≥ 2.1.242)`, true
 	case pct >= 0:
-		return head + " · not worth it here: keep the 5-minute cache", true
+		return head + " · acá no conviene: dejá el cache de 5 minutos", true
 	}
-	return head + rebuilds + " · about the same: no need to change", true
+	return head + rebuilds + " · da casi igual: no hace falta cambiar", true
 }
 
 // FormatAgentTiming is formatAgentTiming of core/metrics/timing.mjs: the SUBAGENT TIME lines.
 func FormatAgentTiming(summary *metrics.TimingSummary) []string {
 	if summary == nil || len(summary.Types) == 0 {
-		return []string{"no subagent runs"}
+		return []string{"no hubo corridas de subagentes"}
 	}
 	pctOf := func(v, tot int64) string {
 		if tot > 0 {
@@ -81,9 +80,9 @@ func FormatAgentTiming(summary *metrics.TimingSummary) []string {
 		return format.FmtPct(math.NaN(), 0)
 	}
 	cols := []format.Col{
-		{Label: "agent"}, {Label: "runs", Right: true},
-		{Label: "median", Right: true}, {Label: "p90", Right: true}, {Label: "max", Right: true},
-		{Label: "model", Right: true}, {Label: "bash", Right: true}, {Label: "tools", Right: true}, {Label: "waiting", Right: true},
+		{Label: "agente"}, {Label: "corridas", Right: true},
+		{Label: "mediana", Right: true}, {Label: "p90", Right: true}, {Label: "máx", Right: true},
+		{Label: "modelo", Right: true}, {Label: "bash", Right: true}, {Label: "herram.", Right: true}, {Label: "espera", Right: true},
 		{Label: "locate", Right: true},
 	}
 	cells := make([][]string, 0, len(summary.Types))
@@ -98,13 +97,13 @@ func FormatAgentTiming(summary *metrics.TimingSummary) []string {
 	}
 	out := strings.Split(format.Table(cols, cells), "\n")
 	if len(summary.Slowest) > 0 {
-		out = append(out, "", "slowest commands")
+		out = append(out, "", "comandos más lentos")
 		for _, s := range summary.Slowest {
 			out = append(out, "  "+jscompat.PadStart(format.FmtDuration(float64(s.Ms)), 6, " ")+"  "+s.AgentType+"  "+format.Clip(jscompat.CollapseSpace(s.Text), 70))
 		}
 	}
 	if summary.LimitStops > 0 {
-		out = append(out, "", fmt.Sprintf("usage-limit stops excluded: %d", summary.LimitStops))
+		out = append(out, "", fmt.Sprintf("cortes por límite de uso excluidos: %d", summary.LimitStops))
 	}
 	return out
 }

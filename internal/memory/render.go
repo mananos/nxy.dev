@@ -23,13 +23,14 @@ func age(now time.Time, at int64) string {
 	days := int(d.Hours() / 24)
 	switch {
 	case days <= 0:
-		return "today"
+		return "hoy"
 	case days == 1:
-		return "1 day ago"
+		return "hace 1 día"
 	}
-	return fmt.Sprintf("%d days ago", days)
+	return fmt.Sprintf("hace %d días", days)
 }
 
+// times is for what the planner reads (RenderRelated); vecesES is the same count for a person.
 func times(n int) string {
 	if n == 1 {
 		return "1 time"
@@ -37,36 +38,43 @@ func times(n int) string {
 	return fmt.Sprintf("%d times", n)
 }
 
+func vecesES(n int) string {
+	if n == 1 {
+		return "1 vez"
+	}
+	return fmt.Sprintf("%d veces", n)
+}
+
 // RenderShow lists the rules of a repo and the learnings not yet promoted. Learnings
 // seen more than once come first: they are the candidates for `nxy mem promote`.
 func RenderShow(rules []Rule, learnings []Learning, now time.Time) string {
 	var b strings.Builder
 	if len(rules) == 0 {
-		b.WriteString("no rules for this repo yet\n")
+		b.WriteString("todavía no hay reglas para este repo\n")
 	} else {
-		fmt.Fprintf(&b, "Rules (%d)\n", len(rules))
+		fmt.Fprintf(&b, "Reglas (%d)\n", len(rules))
 		total := 0
 		for _, r := range rules {
 			total += len([]rune(r.Text))
 			fmt.Fprintf(&b, "%s · %s\n", r.Short, oneLine(r.Text))
-			fmt.Fprintf(&b, "   settles: %s · %s · delivered %d · cited %d", oneLine(r.Question), r.Origin, r.Deliveries, r.Citations)
+			fmt.Fprintf(&b, "   resuelve: %s · %s · entregada %d · citada %d", oneLine(r.Question), r.Origin, r.Deliveries, r.Citations)
 			if NeedsReview(r, now) {
-				b.WriteString(" · to review")
+				b.WriteString(" · para revisar")
 			}
 			b.WriteString("\n")
 		}
 		if total > DispatchBudget {
-			fmt.Fprintf(&b, "too many rules for one dispatch (%d chars > %d): review them\n", total, DispatchBudget)
+			fmt.Fprintf(&b, "demasiadas reglas para un despacho (%d caracteres > %d): revisalas\n", total, DispatchBudget)
 		}
 	}
 	if len(learnings) > 0 {
 		ls := append([]Learning(nil), learnings...)
 		sort.SliceStable(ls, func(i, j int) bool { return ls[i].Seen > ls[j].Seen })
-		fmt.Fprintf(&b, "\nLearnings (%d)\n", len(ls))
+		fmt.Fprintf(&b, "\nAprendizajes (%d)\n", len(ls))
 		for _, l := range ls {
-			fmt.Fprintf(&b, "%s · %s · seen %s", l.Short, oneLine(l.Text), times(l.Seen))
+			fmt.Fprintf(&b, "%s · %s · visto %s", l.Short, oneLine(l.Text), vecesES(l.Seen))
 			if l.Seen > 1 {
-				fmt.Fprintf(&b, " · candidate: nxy mem promote %s --question \"...\"", l.Short)
+				fmt.Fprintf(&b, " · candidato: nxy mem promote %s --question \"...\"", l.Short)
 			}
 			b.WriteString("\n")
 		}
@@ -101,7 +109,7 @@ func RenderRelated(features []ClosedFeature, learnings []Learning) string {
 // RenderSearch lists search hits.
 func RenderSearch(hits []Hit) string {
 	if len(hits) == 0 {
-		return "no results\n"
+		return "sin resultados\n"
 	}
 	var b strings.Builder
 	for _, h := range hits {
@@ -125,16 +133,16 @@ func RenderGlobal(rules []Rule, learnings []Learning, now time.Time) string {
 	}
 	var b strings.Builder
 	if len(rules) > 0 {
-		fmt.Fprintf(&b, "Global rules (%d)\n", len(rules))
+		fmt.Fprintf(&b, "Reglas globales (%d)\n", len(rules))
 		for _, r := range rules {
-			roles := "all"
+			roles := "todos"
 			if len(r.Roles) > 0 {
 				roles = strings.Join(r.Roles, ", ")
 			}
 			fmt.Fprintf(&b, "%s · %s\n", r.Short, oneLine(r.Text))
-			fmt.Fprintf(&b, "   settles: %s · roles: %s · delivered %d · cited %d", oneLine(r.Question), roles, r.Deliveries, r.Citations)
+			fmt.Fprintf(&b, "   resuelve: %s · roles: %s · entregada %d · citada %d", oneLine(r.Question), roles, r.Deliveries, r.Citations)
 			if NeedsReview(r, now) {
-				b.WriteString(" · to review")
+				b.WriteString(" · para revisar")
 			}
 			b.WriteString("\n")
 		}
@@ -143,23 +151,42 @@ func RenderGlobal(rules []Rule, learnings []Learning, now time.Time) string {
 		if len(rules) > 0 {
 			b.WriteString("\n")
 		}
-		fmt.Fprintf(&b, "Global learnings (%d)\n", len(learnings))
+		fmt.Fprintf(&b, "Aprendizajes globales (%d)\n", len(learnings))
 		for _, l := range learnings {
-			fmt.Fprintf(&b, "%s · %s · promote: nxy mem promote %s --question \"...\"\n", l.Short, oneLine(l.Text), l.Short)
+			fmt.Fprintf(&b, "%s · %s · promover: nxy mem promote %s --question \"...\"\n", l.Short, oneLine(l.Text), l.Short)
 		}
 	}
 	return b.String()
 }
 
 func diffLine(b *strings.Builder, label string, counts [6]int) {
-	fmt.Fprintf(b, "%s: %d new, %d changed, %d deleted, %d folded, %d skipped", label, counts[0], counts[1], counts[2], counts[3], counts[4])
+	fmt.Fprintf(b, "%s: nuevos %d, cambiados %d, borrados %d, unificados %d, salteados %d", label, counts[0], counts[1], counts[2], counts[3], counts[4])
 	if counts[5] > 0 {
-		fmt.Fprintf(b, ", %d counters updated", counts[5])
+		fmt.Fprintf(b, ", contadores actualizados %d", counts[5])
 	}
 	b.WriteString("\n")
 }
 
-func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun string) [6]int {
+// kindES says what an import does to a row, in the gender of its noun.
+func kindES(k ChangeKind, fem bool) string {
+	var w string
+	switch k {
+	case New:
+		w = "nuev"
+	case Changed:
+		w = "cambiad"
+	case Folded:
+		w = "unificad"
+	default:
+		return string(k)
+	}
+	if fem {
+		return w + "a"
+	}
+	return w + "o"
+}
+
+func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun string, fem bool) [6]int {
 	var c [6]int
 	for _, ch := range cs {
 		switch {
@@ -178,13 +205,17 @@ func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun str
 		case ch.Kind == Changed:
 			c[1]++
 		}
-		what := string(ch.Kind)
+		what := kindES(ch.Kind, fem)
 		if ch.Deleted && ch.Kind != Folded {
-			what += " (deleted)"
+			if fem {
+				what += " (borrada)"
+			} else {
+				what += " (borrado)"
+			}
 		}
-		line := fmt.Sprintf("  %s %s: %s", what, noun, oneLine(text(ch.Row)))
+		line := fmt.Sprintf("  %s %s: %s", noun, what, oneLine(text(ch.Row)))
 		if ch.ReassignShort {
-			line += " (short reference reassigned)"
+			line += " (referencia corta reasignada)"
 		}
 		*lines = append(*lines, line)
 	}
@@ -195,21 +226,21 @@ func tally[T any](cs []Change[T], text func(T) string, lines *[]string, noun str
 func RenderDiff(d Diff, apply bool) string {
 	var b strings.Builder
 	var lines []string
-	diffLine(&b, "rules", tally(d.Rules, func(r Rule) string { return r.Text }, &lines, "rule"))
-	diffLine(&b, "features", tally(d.Features, func(f ClosedFeature) string { return f.Title }, &lines, "feature"))
-	diffLine(&b, "learnings", tally(d.Learnings, func(l Learning) string { return l.Text }, &lines, "learning"))
-	diffLine(&b, "notes", tally(d.Notes, func(n Note) string { return n.Title }, &lines, "note"))
+	diffLine(&b, "reglas", tally(d.Rules, func(r Rule) string { return r.Text }, &lines, "regla", true))
+	diffLine(&b, "features", tally(d.Features, func(f ClosedFeature) string { return f.Title }, &lines, "feature", true))
+	diffLine(&b, "aprendizajes", tally(d.Learnings, func(l Learning) string { return l.Text }, &lines, "aprendizaje", false))
+	diffLine(&b, "notas", tally(d.Notes, func(n Note) string { return n.Title }, &lines, "nota", true))
 	if len(lines) > 0 {
 		b.WriteString(strings.Join(lines, "\n"))
 		b.WriteString("\n")
 	}
 	switch {
 	case d.Writes() == 0:
-		b.WriteString("nothing to import\n")
+		b.WriteString("no hay nada para importar\n")
 	case !apply:
-		b.WriteString("dry run: nothing written, run with --apply\n")
+		b.WriteString("simulacro: no escribí nada, corré con --apply\n")
 	default:
-		fmt.Fprintf(&b, "imported %d changes\n", d.Writes())
+		fmt.Fprintf(&b, "importé %d cambios\n", d.Writes())
 	}
 	return b.String()
 }
@@ -217,7 +248,7 @@ func RenderDiff(d Diff, apply bool) string {
 // RenderNotes lists temporary notes with their age and reference.
 func RenderNotes(notes []Note, now time.Time) string {
 	if len(notes) == 0 {
-		return "no notes for this folder\n"
+		return "no hay notas para esta carpeta\n"
 	}
 	var b strings.Builder
 	for _, n := range notes {

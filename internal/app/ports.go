@@ -73,7 +73,7 @@ type Ledger interface {
 }
 
 // ErrActiveFeature is what CreateFeature returns when the repo already has a feature that is not done.
-var ErrActiveFeature = errors.New("repo already has an active feature")
+var ErrActiveFeature = errors.New("el repo ya tiene una feature activa")
 
 // FeatureFilter narrows Store.Features: Home is a folder key (empty = any); with neither Active nor
 // Paused every feature matches.

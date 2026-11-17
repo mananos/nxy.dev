@@ -34,18 +34,18 @@ func (u Usage) Trend(args []string) report.Output {
 	switch by {
 	case "day", "week", "session", "model", "agent":
 	default:
-		return report.Output{Stderr: "nxy: --by must be day | week | session | model | agent\n", Code: 1}
+		return report.Output{Stderr: "nxy: --by tiene que ser day | week | session | model | agent\n", Code: 1}
 	}
 
 	here := a.Flag("here")
 	d := report.TrendData{Since: since, By: by, Here: here, Cwd: cwd, JSON: a.Flag("json"), Settings: settings, Loc: u.Loc}
 	nrefs := u.readTrend(&d, cwd, since)
 	if nrefs == 0 {
-		where := "any project"
+		where := "cualquier proyecto"
 		if here {
 			where = cwd
 		}
-		return report.Output{Stdout: "nxy trend: no sessions since " + format.FmtDate(tsOrNaN(since), u.Loc, true) + " for " + where + ". Try a longer --since.\n"}
+		return report.Output{Stdout: "nxy trend: no hay sesiones desde " + format.FmtDate(tsOrNaN(since), u.Loc, true) + " para " + where + ". Probá con un --since más largo.\n"}
 	}
 	if !d.LedgerOK && by == "day" && u.Gain != nil {
 		if gain, ok := u.Gain(here, cwd); ok && jscompat.Truthy(gain) {

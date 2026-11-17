@@ -25,10 +25,10 @@ const (
 // ValidateRule checks a rule can be stored: a rule needs the question it settles.
 func ValidateRule(r Rule) error {
 	if strings.TrimSpace(r.Text) == "" {
-		return errors.New("a rule needs a text")
+		return errors.New("una regla necesita un texto")
 	}
 	if strings.TrimSpace(r.Question) == "" {
-		return errors.New("a rule needs the question it settles")
+		return errors.New("una regla necesita la pregunta que resuelve")
 	}
 	valid := false
 	for _, o := range Origins {
@@ -37,19 +37,19 @@ func ValidateRule(r Rule) error {
 		}
 	}
 	if !valid {
-		return fmt.Errorf("unknown rule origin %q (one of %s)", r.Origin, strings.Join(Origins, ", "))
+		return fmt.Errorf("origen de regla desconocido %q (uno de %s)", r.Origin, strings.Join(Origins, ", "))
 	}
 	for _, g := range r.Paths {
 		if _, err := path.Match(g, ""); err != nil {
-			return fmt.Errorf("bad path glob %q: %v", g, err)
+			return fmt.Errorf("glob de ruta inválido %q: %v", g, err)
 		}
 	}
 	if len(r.Roles) > 0 && r.Repo != GlobalRepo {
-		return errors.New("--roles only applies to global rules (G<n>)")
+		return errors.New("--roles sólo se aplica a reglas globales (G<n>)")
 	}
 	for _, role := range r.Roles {
 		if !slices.Contains(RuleRoles, role) {
-			return fmt.Errorf("unknown role %q (one of %s)", role, strings.Join(RuleRoles, ", "))
+			return fmt.Errorf("rol desconocido %q (uno de %s)", role, strings.Join(RuleRoles, ", "))
 		}
 	}
 	return nil
@@ -71,10 +71,10 @@ func CleanRoles(in []string) []string {
 // ValidateNote checks a note; an oversized body is rejected, not truncated.
 func ValidateNote(n Note) error {
 	if strings.TrimSpace(n.Title) == "" {
-		return errors.New("a note needs a title")
+		return errors.New("una nota necesita un título")
 	}
 	if len(n.Body) > NoteMaxBytes {
-		return fmt.Errorf("note body is %d bytes, the limit is %d", len(n.Body), NoteMaxBytes)
+		return fmt.Errorf("el cuerpo de la nota pesa %d bytes y el tope es %d", len(n.Body), NoteMaxBytes)
 	}
 	return nil
 }

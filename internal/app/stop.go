@@ -9,7 +9,7 @@ import (
 )
 
 // ErrNoActiveFeature means there is no feature to act on in the repo.
-var ErrNoActiveFeature = errors.New("no active feature")
+var ErrNoActiveFeature = errors.New("no hay una feature activa")
 
 // StopFeature ends the active feature of the repo dir belongs to and discards its plan file.
 // A failed discard is returned as warning: the stop itself was applied.

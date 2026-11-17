@@ -20,9 +20,9 @@ import (
 // app cannot import adapters: the store meets the port here.
 var _ app.MemoryStore = (*sqlite.Store)(nil)
 
-const memUsage = `usage: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] [--global [--roles planner,implementer,reviewer,main]] | edit <K3|G2|A7> [--text "<t>"] [--question "<q>"] [--paths g1,g2] [--roles a,b] [--files a,b] | rm <ref> | restore <ref> | keep <ref> | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (the first rules of a repo; save reads the scout's JSON on stdin)>`
+const memUsage = `uso: nxy mem <rule "<text>" --question "<q>" [--paths g1,g2] [--origin chat] [--feature id] [--supersedes K3] [--global [--roles planner,implementer,reviewer,main]] | edit <K3|G2|A7> [--text "<t>"] [--question "<q>"] [--paths g1,g2] [--roles a,b] [--files a,b] | rm <ref> | restore <ref> | keep <ref> | show | search <text> [--all] | promote <A7> --question "<q>" [--paths g1,g2] | related <files...> | export [--out file] [--notes] | import <file> [--apply] | note "<text>" [--files a,b] | bootstrap [save] (a repo's first rules; save reads the scout JSON on stdin)>`
 
-const noteUsage = `usage: nxy note <save "<title>" [--id N2] [--feature id] [--session id: folder and chain of that session] (body on stdin) | list [--all] | done <id>>`
+const noteUsage = `uso: nxy note <save "<title>" [--id N2] [--feature id] [--session id: carpeta y cadena de esa sesión] (el cuerpo por stdin) | list [--all] | done <id>>`
 
 // openMemory opens the global database and wires the memory use cases.
 func openMemory(ctx context.Context) (app.Memory, *sqlite.Store, error) {
@@ -148,18 +148,18 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			if err != nil {
 				return memFail(stderr, err)
 			}
-			fmt.Fprintf(stdout, "saved global rule %s\n", r.Short)
+			fmt.Fprintf(stdout, "guardé la regla global %s\n", r.Short)
 			return 0
 		}
 		if _, ok := opts["roles"]; ok {
-			return memFail(stderr, errors.New("--roles only applies to global rules (G<n>): add --global"))
+			return memFail(stderr, errors.New("--roles sólo va con reglas globales (G<n>): agregá --global"))
 		}
 		r, err := m.AddRule(ctx, cwd, strings.Join(pos, " "), optVal(opts, "question"), optVal(opts, "origin"),
 			splitList(optVal(opts, "paths")), optVal(opts, "feature"), optVal(opts, "supersedes"))
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "saved rule %s\n", r.Short)
+		fmt.Fprintf(stdout, "guardé la regla %s\n", r.Short)
 	case "edit":
 		if len(pos) != 1 {
 			fmt.Fprintln(stderr, memUsage)
@@ -169,7 +169,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "edited %s\n", short)
+		fmt.Fprintf(stdout, "edité %s\n", short)
 	case "keep":
 		if len(pos) != 1 {
 			fmt.Fprintln(stderr, memUsage)
@@ -179,7 +179,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "kept %s: nxy no la vuelve a proponer\n", short)
+		fmt.Fprintf(stdout, "conservé %s: nxy no la vuelve a proponer\n", short)
 	case "rm", "restore":
 		if len(pos) != 1 {
 			fmt.Fprintln(stderr, memUsage)
@@ -190,13 +190,13 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			if err != nil {
 				return memFail(stderr, err)
 			}
-			fmt.Fprintf(stdout, "deleted %s (nxy mem restore %s brings it back)\n", short, short)
+			fmt.Fprintf(stdout, "borré %s (nxy mem restore %s lo recupera)\n", short, short)
 		} else {
 			short, err := m.Restore(ctx, pos[0])
 			if err != nil {
 				return memFail(stderr, err)
 			}
-			fmt.Fprintf(stdout, "restored %s\n", short)
+			fmt.Fprintf(stdout, "recuperé %s\n", short)
 		}
 	case "show":
 		rules, learnings, err := m.Show(ctx, cwd)
@@ -224,7 +224,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "promoted %s to rule %s\n", pos[0], r.Short)
+		fmt.Fprintf(stdout, "promoví %s a la regla %s\n", pos[0], r.Short)
 	case "related":
 		fs, ls, err := m.Related(ctx, cwd, repoRelative(cwd, pos))
 		if err != nil {
@@ -244,7 +244,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 			if err := platform.WriteAtomic(platform.NativePath(out), data); err != nil {
 				return memFail(stderr, err)
 			}
-			fmt.Fprintf(stdout, "exported to %s\n", out)
+			fmt.Fprintf(stdout, "exporté a %s\n", out)
 		} else {
 			stdout.Write(data)
 			fmt.Fprintln(stdout)
@@ -287,7 +287,7 @@ func runMem(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int)
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "saved learning %s (seen %d)\n", l.Short, l.Seen)
+		fmt.Fprintf(stdout, "guardé el aprendizaje %s (visto %d)\n", l.Short, l.Seen)
 	}
 	return 0
 }
@@ -298,7 +298,7 @@ func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[str
 	val := func(k string) (string, bool, error) {
 		v, ok := opts[k]
 		if ok && v == "true" {
-			return "", true, fmt.Errorf("--%s needs a value", k)
+			return "", true, fmt.Errorf("--%s necesita un valor", k)
 		}
 		return v, ok, nil
 	}
@@ -322,7 +322,7 @@ func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[str
 	}
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
-		return "", errors.New("edit needs a reference (K3, G2 or A7)")
+		return "", errors.New("edit necesita una referencia (K3, G2 o A7)")
 	}
 	learning, err := m.IsLearning(ctx, ref)
 	if err != nil {
@@ -331,7 +331,7 @@ func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[str
 	if learning {
 		for _, k := range []string{"question", "paths", "roles"} {
 			if _, ok := opts[k]; ok {
-				return "", fmt.Errorf("--%s does not apply to a learning (A<n>): use --text or --files", k)
+				return "", fmt.Errorf("--%s no va con un aprendizaje (A<n>): usá --text o --files", k)
 			}
 		}
 		text, err := str("text")
@@ -348,13 +348,13 @@ func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[str
 		}
 		e := memory.LearningEdit{Text: text, Files: files}
 		if e.Empty() {
-			return "", errors.New("nothing to change: give --text or --files")
+			return "", errors.New("no hay nada que cambiar: pasá --text o --files")
 		}
 		l, err := m.EditLearning(ctx, ref, e)
 		return l.Short, err
 	}
 	if _, ok := opts["files"]; ok {
-		return "", errors.New("--files only applies to a learning (A<n>): a rule takes --paths")
+		return "", errors.New("--files sólo va con un aprendizaje (A<n>): una regla usa --paths")
 	}
 	text, err := str("text")
 	if err != nil {
@@ -374,7 +374,7 @@ func runMemEdit(ctx context.Context, m app.Memory, cwd, ref string, opts map[str
 	}
 	e := memory.RuleEdit{Text: text, Question: question, Paths: paths, Roles: roles}
 	if e.Empty() {
-		return "", errors.New("nothing to change: give --text, --question, --paths or --roles")
+		return "", errors.New("no hay nada que cambiar: pasá --text, --question, --paths o --roles")
 	}
 	r, err := m.EditRule(ctx, ref, e)
 	return r.Short, err
@@ -476,7 +476,7 @@ func runNote(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int
 		if err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "saved note %s\n", n.Short)
+		fmt.Fprintf(stdout, "guardé la nota %s\n", n.Short)
 	case "list":
 		notes, err := m.NoteList(ctx, cwd, flags["all"])
 		if err != nil {
@@ -491,7 +491,7 @@ func runNote(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int
 		if err := m.NoteDone(ctx, pos[0]); err != nil {
 			return memFail(stderr, err)
 		}
-		fmt.Fprintf(stdout, "note %s done\n", pos[0])
+		fmt.Fprintf(stdout, "nota %s hecha\n", pos[0])
 	}
 	return 0
 }

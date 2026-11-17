@@ -87,7 +87,7 @@ func ReadLegacyMemory(ctx context.Context, dbPath, project string) ([]legacy.Mem
 		`SELECT id, scope, COALESCE(project,''), COALESCE(area,''), type, title, body, private, created, updated
 		 FROM memories WHERE project=? OR scope='global' ORDER BY created, id`, project)
 	if err != nil {
-		return nil, nil, fmt.Errorf("legacy memory.db: %w", err)
+		return nil, nil, fmt.Errorf("no pude leer el memory.db de la 1.x: %w", err)
 	}
 	var mems []legacy.Memory
 	for rows.Next() {
@@ -106,7 +106,7 @@ func ReadLegacyMemory(ctx context.Context, dbPath, project string) ([]legacy.Mem
 	erows, err := db.QueryContext(ctx,
 		`SELECT src, dst, kind FROM edges WHERE src IN (SELECT id FROM memories WHERE project=? OR scope='global') ORDER BY src, dst, kind`, project)
 	if err != nil {
-		return nil, nil, fmt.Errorf("legacy memory.db: %w", err)
+		return nil, nil, fmt.Errorf("no pude leer el memory.db de la 1.x: %w", err)
 	}
 	defer erows.Close()
 	var edges []legacy.Edge

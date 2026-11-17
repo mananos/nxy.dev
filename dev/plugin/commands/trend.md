@@ -1,5 +1,5 @@
 ---
-description: Token/cost trend across sessions (nxy dev)
+description: Tendencia de tokens y costo entre sesiones (nxy dev)
 argument-hint: [--days N] [--by day|session|project] [--here] [--json]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" trend:*)
 ---

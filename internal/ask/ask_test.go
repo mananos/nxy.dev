@@ -104,7 +104,7 @@ func TestForDecisions(t *testing.T) {
 		header string
 		title  string
 	}{
-		{domain.PhaseBatchFailed, KindBatchFailed, "Batch", "Lote 0 fallido"},
+		{domain.PhaseBatchFailed, KindBatchFailed, "Lote", "Lote 0 fallido"},
 		{domain.PhaseAffectedFailed, KindAffectedFailed, "Afectados", "Afectados fallidos"},
 		{domain.PhaseAffectedUnverified, KindAffectedUnverified, "Afectados", "Afectados sin verificar"},
 		{domain.PhaseFixesFailed, KindFixesFailed, "Arreglos", "Arreglos fallidos"},
@@ -162,11 +162,11 @@ func TestDesign(t *testing.T) {
 	f := feat(domain.DesignDebate, domain.PhaseApproval)
 	f.Design = &domain.Design{}
 	p := DesignProposal(f)
-	if p.Kind != KindDesignProposal || p.Title != "decision" || p.Questions[0].Header != "Diseño" || len(p.Questions[0].Options) != 2 {
+	if p.Kind != KindDesignProposal || p.Title != "decisión" || p.Questions[0].Header != "Diseño" || len(p.Questions[0].Options) != 2 {
 		t.Errorf("proposal = %+v", p)
 	}
 	c := DesignClose(f)
-	if c.Kind != KindDesignClose || c.Title != "design summary" || len(c.Questions[0].Options) != 2 {
+	if c.Kind != KindDesignClose || c.Title != "resumen del diseño" || len(c.Questions[0].Options) != 2 {
 		t.Errorf("close = %+v", c)
 	}
 	if got := labels(c.Questions[0]); len(got) != 2 {

@@ -10,8 +10,8 @@
     "FAIL",
     "FAIL\tacme/billing\t0.012s"
   ],
-  "header": "Batch",
-  "question": "nxy feature FEAT-A: batch 3 failed twice — what now?",
+  "header": "Lote",
+  "question": "nxy feature FEAT-A: el lote 3 falló dos veces — ¿qué hacemos?",
   "context": [],
   "multi_select": false,
   "asked_at": "2026-11-11T11:00:00Z",
@@ -34,7 +34,7 @@
   "options": [
     {
       "label": "Reintentar",
-      "description": "Run the batch again",
+      "description": "Correr el lote de nuevo",
       "recommended": false,
       "action": {
         "id": "reintentar",
@@ -54,7 +54,7 @@
     },
     {
       "label": "Seguir",
-      "description": "Accept it as is and go to the next batch",
+      "description": "Aceptarlo como está y pasar al lote siguiente",
       "recommended": false,
       "action": {
         "id": "seguir",
@@ -74,7 +74,7 @@
     },
     {
       "label": "Parar",
-      "description": "End the feature",
+      "description": "Terminar la feature",
       "recommended": false,
       "action": {
         "id": "parar",

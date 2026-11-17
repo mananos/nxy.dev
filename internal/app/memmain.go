@@ -28,10 +28,10 @@ func (h Hooks) withRuleHint(ctx context.Context, ev HookEvent, resp HookResponse
 	if _, ok := h.activeFeature(ctx, ev); !ok {
 		return resp
 	}
-	hint := "nxy: ese mensaje suena a una regla del repo. Preguntale al usuario si quiere guardarla; " +
-		"si dice que sí, `nxy mem rule \"<texto>\" --question \"<qué resuelve>\"`, o " +
-		"`nxy feature rule \"<texto>\" --question \"<qué resuelve>\"` para la pregunta del cierre. " +
-		"No la guardes si no lo pide."
+	hint := "nxy: that message sounds like a repo rule. Ask the user whether to save it; " +
+		"if yes, `nxy mem rule \"<text>\" --question \"<what it solves>\"`, or " +
+		"`nxy feature rule \"<text>\" --question \"<what it solves>\"` for the closing question. " +
+		"Do not save it unless asked."
 	if resp.Context != "" {
 		resp.Context += "\n" + hint
 	} else {

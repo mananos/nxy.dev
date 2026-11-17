@@ -58,60 +58,60 @@ func sortedByID[T any](in []T, id func(T) string) []T {
 func DecodeBundle(data []byte) (Bundle, error) {
 	var b Bundle
 	if err := json.Unmarshal(data, &b); err != nil {
-		return Bundle{}, fmt.Errorf("not a nxy memory export: %v", err)
+		return Bundle{}, fmt.Errorf("no es una exportación de memoria de nxy: %v", err)
 	}
 	if b.Version != BundleVersion {
-		return Bundle{}, fmt.Errorf("unsupported export version %d (this nxy reads %d)", b.Version, BundleVersion)
+		return Bundle{}, fmt.Errorf("versión de exportación %d no soportada (este nxy lee la %d)", b.Version, BundleVersion)
 	}
 	for i, r := range b.Rules {
 		if r.ID == "" {
-			return Bundle{}, fmt.Errorf("rule without id")
+			return Bundle{}, fmt.Errorf("regla sin id")
 		}
 		if r.Repo != "" && strings.TrimSpace(r.Repo) == "" {
-			return Bundle{}, fmt.Errorf("rule %s: blank repo", r.ID)
+			return Bundle{}, fmt.Errorf("regla %s: repo vacío", r.ID)
 		}
 		b.Rules[i].Short = cleanShort(r.Short, RuleLetter(r.Repo))
 		if r.Deleted() {
 			continue
 		}
 		if err := ValidateRule(r); err != nil {
-			return Bundle{}, fmt.Errorf("rule %s: %v", r.ID, err)
+			return Bundle{}, fmt.Errorf("regla %s: %v", r.ID, err)
 		}
 	}
 	for _, f := range b.Features {
 		if f.ID == "" {
-			return Bundle{}, fmt.Errorf("feature without id")
+			return Bundle{}, fmt.Errorf("feature sin id")
 		}
 		if !f.Deleted() && strings.TrimSpace(f.Title) == "" {
-			return Bundle{}, fmt.Errorf("feature %s: a feature needs a title", f.ID)
+			return Bundle{}, fmt.Errorf("feature %s: una feature necesita un título", f.ID)
 		}
 	}
 	for i, l := range b.Learnings {
 		if l.ID == "" {
-			return Bundle{}, fmt.Errorf("learning without id")
+			return Bundle{}, fmt.Errorf("aprendizaje sin id")
 		}
 		if l.Repo != "" && strings.TrimSpace(l.Repo) == "" {
-			return Bundle{}, fmt.Errorf("learning %s: blank repo", l.ID)
+			return Bundle{}, fmt.Errorf("aprendizaje %s: repo vacío", l.ID)
 		}
 		b.Learnings[i].Short = cleanShort(l.Short, 'A')
 		if l.Deleted() {
 			continue
 		}
 		if strings.TrimSpace(l.Text) == "" {
-			return Bundle{}, fmt.Errorf("learning %s: a learning needs a text", l.ID)
+			return Bundle{}, fmt.Errorf("aprendizaje %s: un aprendizaje necesita un texto", l.ID)
 		}
 		b.Learnings[i].Hash = LearningHash(l.Text, l.Files)
 	}
 	for i, n := range b.Notes {
 		if n.ID == "" {
-			return Bundle{}, fmt.Errorf("note without id")
+			return Bundle{}, fmt.Errorf("nota sin id")
 		}
 		b.Notes[i].Short = cleanShort(n.Short, 'N')
 		if n.Deleted() {
 			continue
 		}
 		if err := ValidateNote(n); err != nil {
-			return Bundle{}, fmt.Errorf("note %s: %v", n.ID, err)
+			return Bundle{}, fmt.Errorf("nota %s: %v", n.ID, err)
 		}
 	}
 	return b, nil

@@ -20,11 +20,11 @@ import (
 
 var (
 	// ErrConflict means Transition lost the version race on every attempt.
-	ErrConflict = errors.New("sqlite: feature changed concurrently")
+	ErrConflict = errors.New("la feature cambió al mismo tiempo desde otro lado")
 	// ErrNotFound means no feature has that id.
-	ErrNotFound = errors.New("sqlite: feature not found")
+	ErrNotFound = errors.New("no existe esa feature")
 	// ErrActiveFeature means the repo already has a feature that is not done.
-	ErrActiveFeature = errors.New("sqlite: repo already has an active feature")
+	ErrActiveFeature = errors.New("el repo ya tiene una feature activa")
 )
 
 // sqliteConstraintUnique is the extended result code SQLITE_CONSTRAINT_UNIQUE.
@@ -300,7 +300,7 @@ func (s *Store) FeatureRows(ctx context.Context, flt FeatureFilter, doneSince in
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(state), &r.Feature); err != nil {
-			return nil, fmt.Errorf("sqlite: decode feature: %w", err)
+			return nil, fmt.Errorf("no pude leer la feature: %w", err)
 		}
 		if (flt.Active || flt.Paused) && done == 0 && r.Feature.Paused != flt.Paused {
 			continue
@@ -344,7 +344,7 @@ func (s *Store) readOne(ctx context.Context, query string, args ...any) (domain.
 	}
 	var f domain.Feature
 	if err := json.Unmarshal([]byte(state), &f); err != nil {
-		return domain.Feature{}, fmt.Errorf("sqlite: decode feature: %w", err)
+		return domain.Feature{}, fmt.Errorf("no pude leer la feature: %w", err)
 	}
 	return f, nil
 }
@@ -374,7 +374,7 @@ func (s *Store) Transition(ctx context.Context, id string, fn func(domain.Featur
 		}
 		var f domain.Feature
 		if err := json.Unmarshal([]byte(state), &f); err != nil {
-			return fmt.Errorf("sqlite: decode feature %s: %w", id, err)
+			return fmt.Errorf("no pude leer la feature %s: %w", id, err)
 		}
 		nf, err := fn(f)
 		if err != nil {

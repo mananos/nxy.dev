@@ -88,7 +88,7 @@ func TestRuleHintOnlyWithActiveFeatureAndWord(t *testing.T) {
 		t.Errorf("hint without word: %q", r.Context)
 	}
 	r := h.Handle(ctx, prompt("de ahora en adelante usá tabs"))
-	if !strings.Contains(r.Context, "regla del repo") || !strings.Contains(r.Context, "nxy feature rule") {
+	if !strings.Contains(r.Context, "repo rule") || !strings.Contains(r.Context, "nxy feature rule") {
 		t.Errorf("hint = %q", r.Context)
 	}
 }

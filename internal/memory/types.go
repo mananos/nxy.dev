@@ -5,15 +5,15 @@ import "errors"
 // ErrNotFound and ErrAmbiguous are returned when a reference (K3, A7, N2, a
 // ULID or a ULID prefix) matches no row or more than one.
 var (
-	ErrNotFound  = errors.New("memory: not found")
-	ErrAmbiguous = errors.New("memory: ambiguous reference")
+	ErrNotFound  = errors.New("no existe en la memoria")
+	ErrAmbiguous = errors.New("la referencia es ambigua")
 )
 
 // AlreadyRuleError is returned when a learning that was already promoted is noted again.
 type AlreadyRuleError struct{ Learning, Rule string }
 
 func (e *AlreadyRuleError) Error() string {
-	return e.Learning + " is already rule " + e.Rule + ": nothing saved"
+	return e.Learning + " ya es la regla " + e.Rule + ": no guardé nada"
 }
 
 // Origins of a rule.

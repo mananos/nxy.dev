@@ -56,7 +56,7 @@ func TestReviewFindingsFixAndDone(t *testing.T) {
 	if code != 0 || !strings.Contains(out, "Listo") || !strings.Contains(out, "R1 ✔") {
 		t.Fatalf("no Listo after verified fixes: code %d, out %q, err %q", code, out, errb)
 	}
-	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no active feature") {
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no hay una feature activa") {
 		t.Fatalf("feature still active: %q", st)
 	}
 	if out := hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "sigo"}); out != "" {
@@ -126,7 +126,7 @@ func TestReviewWithDocsAsksAndTheDocumenterFinishes(t *testing.T) {
 	if !strings.Contains(out, "Listo") {
 		t.Fatalf("no Listo after the documenter: %s", out)
 	}
-	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no active feature") {
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no hay una feature activa") {
 		t.Fatalf("feature still active: %q", st)
 	}
 }
@@ -159,10 +159,10 @@ func TestReviewDocsWithoutDocsSaysSo(t *testing.T) {
 
 func TestReviewShowAndStatus(t *testing.T) {
 	flowRepo(t)
-	if code, out, errb := runCmd(t, "", "review", "show"); code != 0 || !strings.Contains(out, "no review yet") {
+	if code, out, errb := runCmd(t, "", "review", "show"); code != 0 || !strings.Contains(out, "todavía no hay review") {
 		t.Fatalf("show without feature: code %d, out %q, err %q", code, out, errb)
 	}
-	if code, out, errb := runCmd(t, "", "review", "status"); code != 0 || !strings.Contains(out, "no review activity") {
+	if code, out, errb := runCmd(t, "", "review", "status"); code != 0 || !strings.Contains(out, "no hubo actividad de review") {
 		t.Fatalf("status empty: code %d, out %q, err %q", code, out, errb)
 	}
 }
@@ -177,17 +177,17 @@ func TestReviewShowLastReview(t *testing.T) {
 
 func TestReviewEscapeWithoutFeatureSavesRule(t *testing.T) {
 	flowRepo(t)
-	if code, _, errb := runCmd(t, "", "review", "escape", "validate the flag"); code != 1 || !strings.Contains(errb, "usage") {
+	if code, _, errb := runCmd(t, "", "review", "escape", "validate the flag"); code != 1 || !strings.Contains(errb, "uso") {
 		t.Fatalf("escape without --question: code %d, err %q", code, errb)
 	}
 	code, out, errb := runCmd(t, "", "review", "escape", "validate every flag", "--question", "Where are flags checked?")
-	if code != 0 || !strings.Contains(out, "escape saved as rule K1") {
+	if code != 0 || !strings.Contains(out, "guardé el escape como la regla K1") {
 		t.Fatalf("escape: code %d, out %q, err %q", code, out, errb)
 	}
 	if _, out, _ := runCmd(t, "", "mem", "show"); !strings.Contains(out, "validate every flag") {
 		t.Fatalf("rule not saved: %q", out)
 	}
-	if _, out, _ := runCmd(t, "", "review", "status"); !strings.Contains(out, "base: 0 chosen, 0 ignored, 1 escapes") {
+	if _, out, _ := runCmd(t, "", "review", "status"); !strings.Contains(out, "base: 0 elegidos, 0 ignorados, 1 escapes") {
 		t.Fatalf("escape not counted: %q", out)
 	}
 }
@@ -197,7 +197,7 @@ func TestReviewEscapeWithFeatureIsACandidate(t *testing.T) {
 	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
 	id := featureID(t)
 	code, out, errb := runCmd(t, "", "review", "escape", "validate every flag", "--question", "Where are flags checked?")
-	if code != 0 || !strings.Contains(out, "escape noted for feature "+id) {
+	if code != 0 || !strings.Contains(out, "anoté el escape de la feature "+id) {
 		t.Fatalf("escape: code %d, out %q, err %q", code, out, errb)
 	}
 	if _, out, _ := runCmd(t, "", "mem", "show"); strings.Contains(out, "validate every flag") {
@@ -210,24 +210,24 @@ func TestReviewEscapeWithFeatureIsACandidate(t *testing.T) {
 
 func TestFeatureRule(t *testing.T) {
 	repo := flowRepo(t)
-	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 1 || !strings.Contains(errb, "no active feature") {
+	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 1 || !strings.Contains(errb, "no hay una feature activa") {
 		t.Fatalf("without feature: code %d, err %q", code, errb)
 	}
 	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:feature add a flag"})
-	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog"); code != 1 || !strings.Contains(errb, "usage") {
+	if code, _, errb := runCmd(t, "", "feature", "rule", "use slog"); code != 1 || !strings.Contains(errb, "uso") {
 		t.Fatalf("without question: code %d, err %q", code, errb)
 	}
-	if code, out, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 0 || !strings.Contains(out, "rule candidate noted") {
+	if code, out, errb := runCmd(t, "", "feature", "rule", "use slog", "--question", "Which logger?"); code != 0 || !strings.Contains(out, "anoté la regla candidata") {
 		t.Fatalf("with feature: code %d, out %q, err %q", code, out, errb)
 	}
 }
 
 func TestReviewSaveUsage(t *testing.T) {
 	flowRepo(t)
-	if code, _, errb := runCmd(t, "", "review"); code != 1 || !strings.Contains(errb, "usage") {
+	if code, _, errb := runCmd(t, "", "review"); code != 1 || !strings.Contains(errb, "uso") {
 		t.Fatalf("review without subcommand: code %d, err %q", code, errb)
 	}
-	if code, _, errb := runCmd(t, "{}", "review", "save", "--feature", "x"); code != 1 || !strings.Contains(errb, "usage") {
+	if code, _, errb := runCmd(t, "{}", "review", "save", "--feature", "x"); code != 1 || !strings.Contains(errb, "uso") {
 		t.Fatalf("save without --lens: code %d, err %q", code, errb)
 	}
 }

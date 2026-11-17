@@ -55,16 +55,16 @@ func runGate(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 			fmt.Fprintf(stdout, "error: %v\n", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "gate: the next broad main-thread search goes through unstopped (expires in %d min, %s).\n", mins, time.UnixMilli(until).Format("15:04:05"))
-		fmt.Fprintln(stdout, "Single use: the search after that is subject to the gate again. Edits are unaffected.")
+		fmt.Fprintf(stdout, "gate: la próxima búsqueda amplia del hilo principal pasa sin frenarse (vence en %d min, %s).\n", mins, time.UnixMilli(until).Format("15:04:05"))
+		fmt.Fprintln(stdout, "Se usa una sola vez: la búsqueda siguiente vuelve a pasar por el gate. Las ediciones no cambian.")
 	case action == "once":
 		until, err := g.Arm(cwd, app.GateEscapeEdit)
 		if err != nil {
 			fmt.Fprintf(stdout, "error: %v\n", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "gate: the next main-thread edit of a code file goes through unblocked (expires in %d min, %s).\n", mins, time.UnixMilli(until).Format("15:04:05"))
-		fmt.Fprintln(stdout, "Single use: the edit after that is subject to the gate again.")
+		fmt.Fprintf(stdout, "gate: la próxima edición de un archivo de código del hilo principal pasa sin bloquearse (vence en %d min, %s).\n", mins, time.UnixMilli(until).Format("15:04:05"))
+		fmt.Fprintln(stdout, "Se usa una sola vez: la edición siguiente vuelve a pasar por el gate.")
 	case action == "reads" && (sub == "on" || sub == "off"):
 		userPath, repoPath, err := configFilePaths(cwd)
 		if err != nil {
@@ -88,14 +88,14 @@ func runGate(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 			fmt.Fprintf(stdout, "error: %v\n", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "gate reads: %s (written to %s)\n", strings.ToUpper(sub), p)
+		fmt.Fprintf(stdout, "gate reads: %s (escrito en %s)\n", strings.ToUpper(sub), p)
 		if sub == "on" {
-			fmt.Fprintln(stdout, "Broad main-thread searches are stopped past the threshold again.")
+			fmt.Fprintln(stdout, "Las búsquedas amplias del hilo principal vuelven a frenarse pasado el umbral.")
 		} else {
-			fmt.Fprintln(stdout, "Broad searches are observed only: nothing is stopped.")
+			fmt.Fprintln(stdout, "Las búsquedas amplias sólo se observan: no se frena nada.")
 		}
 	case action != "status":
-		fmt.Fprintf(stdout, "unknown action %q. Use: status | once [search] | reads on|off [--repo]\n", action)
+		fmt.Fprintf(stdout, "no conozco la acción %q. Usá: status | once [search] | reads on|off [--repo]\n", action)
 	}
 
 	now := time.Now()
@@ -124,7 +124,7 @@ func runGate(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 	settings := report.SettingsFrom(platform.LoadConfig(cwd, os.Getenv))
 	b := claudecode.ProjectBroadSearches(cwd, settings.ProjectsDir, since, settings.GateContextTokens)
 	if b.Count == 0 {
-		fmt.Fprintf(stdout, "broad searches:  none recorded (since %s)\n", date)
+		fmt.Fprintf(stdout, "búsquedas amplias:  ninguna registrada (desde %s)\n", date)
 		return 0
 	}
 	order := []string{"Grep", "Glob", "Bash", "Read"}
@@ -143,7 +143,7 @@ func runGate(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 	if b.Threshold != nil && *b.Threshold != 0 {
 		thr = format.FmtTokens(*b.Threshold)
 	}
-	fmt.Fprintf(stdout, "broad searches that ran above %s context (since %s): %d — %s · context carried at those searches %s tokens (sum of main-thread context size: an upper bound of what each call cost, not what a scout would have saved)\n",
+	fmt.Fprintf(stdout, "búsquedas amplias con más de %s de contexto (desde %s): %d — %s · contexto que cargaban esas búsquedas: %s tokens (suma del tamaño del contexto del hilo principal: un tope de lo que costó cada llamada, no de lo que habría ahorrado un scout)\n",
 		thr, date, b.Count, strings.Join(kinds, " · "), format.FmtTokens(b.ContextTokens))
 	return 0
 }

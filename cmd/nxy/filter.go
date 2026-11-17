@@ -65,10 +65,10 @@ func runFilter(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 			fmt.Fprintf(stdout, "error: %v\n", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "filter module: %s (written to %s)\n", strings.ToUpper(action), p)
+		fmt.Fprintf(stdout, "módulo de filtros: %s (escrito en %s)\n", strings.ToUpper(action), p)
 	case "status":
 	default:
-		fmt.Fprintf(stdout, "unknown action %q. Use: status | on | off\n", action)
+		fmt.Fprintf(stdout, "no conozco la acción %q. Usá: status | on | off\n", action)
 	}
 
 	cfg := platform.LoadConfig(cwd, os.Getenv)
@@ -83,22 +83,22 @@ func runFilter(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 	}
 
 	modules, _ := cfg["modules"].(map[string]any)
-	on := "DISABLED"
+	on := "DESACTIVADO"
 	if s.Enabled {
-		on = "enabled"
+		on = "activado"
 	}
-	metrics := "disabled"
+	metrics := "desactivado"
 	if v, present := modules["metrics"]; !present || v == true {
-		metrics = "enabled"
+		metrics = "activado"
 	}
-	fmt.Fprintf(stdout, "filter module: %s (metrics module: %s)\n", on, metrics)
+	fmt.Fprintf(stdout, "módulo de filtros: %s (módulo de métricas: %s)\n", on, metrics)
 	fmt.Fprintln(stdout, filter.DescribeEngine(info, rg, s))
 	if len(s.ExcludeCommands) > 0 {
-		fmt.Fprintf(stdout, "excluded:      %s\n", strings.Join(s.ExcludeCommands, ", "))
+		fmt.Fprintf(stdout, "excluidos:     %s\n", strings.Join(s.ExcludeCommands, ", "))
 	}
 	if len(s.OnlyCommands) > 0 {
-		fmt.Fprintf(stdout, "only:          %s\n", strings.Join(s.OnlyCommands, ", "))
+		fmt.Fprintf(stdout, "solo:          %s\n", strings.Join(s.OnlyCommands, ", "))
 	}
-	fmt.Fprintln(stdout, `escape hatch:  prefix a command with NXY_RAW=1 (or append "# raw") to run it unfiltered`)
+	fmt.Fprintln(stdout, `salida de emergencia: poné NXY_RAW=1 antes de un comando (o agregale "# raw") para correrlo sin filtrar`)
 	return 0
 }

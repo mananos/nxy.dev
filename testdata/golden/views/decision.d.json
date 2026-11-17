@@ -29,7 +29,7 @@
     ""
   ],
   "header": "Plan",
-  "question": "Approve nxy plan FEAT-D r2?",
+  "question": "¿Aprobás el plan FEAT-D r2 de nxy?",
   "context": [],
   "multi_select": false,
   "asked_at": "2026-11-10T14:00:00Z",
@@ -44,24 +44,24 @@
   },
   "options": [
     {
-      "label": "Approve",
-      "description": "Start executing batch 1",
+      "label": "Aprobar",
+      "description": "Empezar a ejecutar el lote 1",
       "recommended": false,
       "action": {
-        "id": "approve",
-        "label": "Approve",
+        "id": "aprobar",
+        "label": "Aprobar",
         "argv": [],
         "confirm": "",
         "planned": false
       }
     },
     {
-      "label": "Change",
-      "description": "Write what to change; nxy re-plans",
+      "label": "Cambiar",
+      "description": "Escribí qué cambiar; nxy vuelve a planificar",
       "recommended": false,
       "action": {
-        "id": "change",
-        "label": "Change",
+        "id": "cambiar",
+        "label": "Cambiar",
         "argv": [],
         "confirm": "",
         "planned": false
@@ -69,7 +69,7 @@
     },
     {
       "label": "Ver completo",
-      "description": "Open the full plan in your editor",
+      "description": "Abrir el plan completo en tu editor",
       "recommended": false,
       "action": {
         "id": "ver_completo",

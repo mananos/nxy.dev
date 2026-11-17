@@ -1,5 +1,5 @@
 ---
-description: Parallel features as git worktrees — list, new, pause, resume, close (nxy dev)
+description: Features en paralelo como worktrees de git — list, new, pause, resume, close (nxy dev)
 argument-hint: list | new --name <n> --base <branch> [--issue <n>] | new --branch <b> | pause|resume --path <worktree> | pause|resume --feature <id> | close --path <worktree> [--force] | close [--feature <id>] [--force]
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" feature:*)
 ---

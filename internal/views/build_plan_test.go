@@ -90,8 +90,8 @@ func TestBuildPlanStatesAndImpact(t *testing.T) {
 	f.Next = domain.Action{Kind: domain.AskApproval}
 	in.Feature = f
 	in.Waiting = waitingOf(t, f, "A1")
-	if wp, _ := BuildPlan(in); strings.Join(wp.Actions[1].Argv, " ") != "nxy action decide --ask A1 --answer Approve" ||
-		strings.Join(wp.Actions[2].Argv, " ") != "nxy action decide --ask A1 --answer Change" {
+	if wp, _ := BuildPlan(in); strings.Join(wp.Actions[1].Argv, " ") != "nxy action decide --ask A1 --answer Aprobar" ||
+		strings.Join(wp.Actions[2].Argv, " ") != "nxy action decide --ask A1 --answer Cambiar" {
 		t.Errorf("waiting actions = %+v", wp.Actions)
 	}
 	in.Waiting = nil

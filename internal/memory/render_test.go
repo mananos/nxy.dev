@@ -19,12 +19,12 @@ func TestRenderShowRulesAndLearnings(t *testing.T) {
 		{Short: "A1", Text: "a", Seen: 1},
 		{Short: "A2", Text: "b", Seen: 3},
 	}
-	want := "Rules (2)\n" +
-		"K1 · use tabs\n   settles: indent? · manual · delivered 2 · cited 1 · to review\n" +
-		"K2 · no globals\n   settles: state? · plan · delivered 0 · cited 0\n" +
-		"\nLearnings (2)\n" +
-		"A2 · b · seen 3 times · candidate: nxy mem promote A2 --question \"...\"\n" +
-		"A1 · a · seen 1 time\n"
+	want := "Reglas (2)\n" +
+		"K1 · use tabs\n   resuelve: indent? · manual · entregada 2 · citada 1 · para revisar\n" +
+		"K2 · no globals\n   resuelve: state? · plan · entregada 0 · citada 0\n" +
+		"\nAprendizajes (2)\n" +
+		"A2 · b · visto 3 veces · candidato: nxy mem promote A2 --question \"...\"\n" +
+		"A1 · a · visto 1 vez\n"
 	if got := RenderShow(rules, learnings, renderNow); got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
@@ -39,7 +39,7 @@ func TestRenderGlobal(t *testing.T) {
 		{Meta: Meta{ID: "g2", CreatedAt: daysAgo(1)}, Short: "G2", Text: "no emojis", Question: "emojis?"},
 	}
 	out := RenderGlobal(rules, []Learning{{Meta: Meta{ID: "l1"}, Short: "A9", Text: "prefer tabs"}}, renderNow)
-	for _, want := range []string{"Global rules (2)", "G1 · answer short", "settles: how long? · roles: planner, reviewer · delivered 3 · cited 1", "roles: all", "Global learnings (1)", `promote: nxy mem promote A9 --question "..."`} {
+	for _, want := range []string{"Reglas globales (2)", "G1 · answer short", "resuelve: how long? · roles: planner, reviewer · entregada 3 · citada 1", "roles: todos", "Aprendizajes globales (1)", `promover: nxy mem promote A9 --question "..."`} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
@@ -50,7 +50,7 @@ func TestRenderGlobal(t *testing.T) {
 }
 
 func TestRenderShowEmptyAndBudget(t *testing.T) {
-	if got := RenderShow(nil, nil, renderNow); got != "no rules for this repo yet\n" {
+	if got := RenderShow(nil, nil, renderNow); got != "todavía no hay reglas para este repo\n" {
 		t.Fatalf("empty: %q", got)
 	}
 	long := strings.Repeat("x", 1600)
@@ -59,7 +59,7 @@ func TestRenderShowEmptyAndBudget(t *testing.T) {
 		{Meta: Meta{CreatedAt: daysAgo(1)}, Short: "K2", Text: long, Question: "q", Origin: "manual"},
 	}
 	got := RenderShow(rules, nil, renderNow)
-	if !strings.Contains(got, "too many rules for one dispatch (3200 chars > 3000): review them\n") {
+	if !strings.Contains(got, "demasiadas reglas para un despacho (3200 caracteres > 3000): revisalas\n") {
 		t.Fatalf("no budget warning:\n%s", got)
 	}
 	if strings.Contains(RenderShow(rules[:1], nil, renderNow), "too many rules") {
@@ -76,7 +76,7 @@ func TestRenderRelatedSearchNotes(t *testing.T) {
 	if got != want {
 		t.Fatalf("related: %q", got)
 	}
-	if got := RenderSearch(nil); got != "no results\n" {
+	if got := RenderSearch(nil); got != "sin resultados\n" {
 		t.Fatalf("search empty: %q", got)
 	}
 	got = RenderSearch([]Hit{{Kind: "rule", Short: "K1", Repo: "r", Text: "a  b"}, {Kind: "feature", ID: "F9", Text: "t"}})
@@ -84,10 +84,10 @@ func TestRenderRelatedSearchNotes(t *testing.T) {
 		t.Fatalf("search: %q", got)
 	}
 	notes := []Note{{Short: "N1", Title: "wip", Meta: Meta{UpdatedAt: daysAgo(0)}}, {Short: "N2", Title: "old", Meta: Meta{UpdatedAt: daysAgo(3)}}}
-	if got := RenderNotes(notes, renderNow); got != "N1 · wip · today\nN2 · old · 3 days ago\n" {
+	if got := RenderNotes(notes, renderNow); got != "N1 · wip · hoy\nN2 · old · hace 3 días\n" {
 		t.Fatalf("notes: %q", got)
 	}
-	if got := RenderNotes(nil, renderNow); got != "no notes for this folder\n" {
+	if got := RenderNotes(nil, renderNow); got != "no hay notas para esta carpeta\n" {
 		t.Fatalf("notes empty: %q", got)
 	}
 }
@@ -103,21 +103,21 @@ func TestRenderDiff(t *testing.T) {
 			{Kind: Folded, Row: Learning{Text: "l2"}},
 		},
 	}
-	want := "rules: 1 new, 0 changed, 0 deleted, 0 folded, 1 skipped\n" +
-		"features: 0 new, 0 changed, 0 deleted, 0 folded, 0 skipped\n" +
-		"learnings: 0 new, 0 changed, 1 deleted, 1 folded, 0 skipped\n" +
-		"notes: 0 new, 0 changed, 0 deleted, 0 folded, 0 skipped\n" +
-		"  new rule: r1 (short reference reassigned)\n" +
-		"  changed (deleted) learning: l1\n" +
-		"  folded learning: l2\n" +
-		"dry run: nothing written, run with --apply\n"
+	want := "reglas: nuevos 1, cambiados 0, borrados 0, unificados 0, salteados 1\n" +
+		"features: nuevos 0, cambiados 0, borrados 0, unificados 0, salteados 0\n" +
+		"aprendizajes: nuevos 0, cambiados 0, borrados 1, unificados 1, salteados 0\n" +
+		"notas: nuevos 0, cambiados 0, borrados 0, unificados 0, salteados 0\n" +
+		"  regla nueva: r1 (referencia corta reasignada)\n" +
+		"  aprendizaje cambiado (borrado): l1\n" +
+		"  aprendizaje unificado: l2\n" +
+		"simulacro: no escribí nada, corré con --apply\n"
 	if got := RenderDiff(d, false); got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
-	if got := RenderDiff(d, true); !strings.HasSuffix(got, "imported 3 changes\n") {
+	if got := RenderDiff(d, true); !strings.HasSuffix(got, "importé 3 cambios\n") {
 		t.Fatalf("apply: %q", got)
 	}
-	if got := RenderDiff(Diff{}, false); !strings.HasSuffix(got, "nothing to import\n") {
+	if got := RenderDiff(Diff{}, false); !strings.HasSuffix(got, "no hay nada para importar\n") {
 		t.Fatalf("empty: %q", got)
 	}
 }

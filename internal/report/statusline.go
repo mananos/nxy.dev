@@ -210,14 +210,14 @@ func RenderStatusline(input any, c transcript.SessionCache, ctx StatusCtx, s Set
 		if ctx.AgentCount > 1 {
 			plural = "s"
 		}
-		agents = ps.dot() + ps.label("+"+jscompat.String(float64(ctx.AgentCount))+" agent"+plural)
+		agents = ps.dot() + ps.label("+"+jscompat.String(float64(ctx.AgentCount))+" agente"+plural)
 	}
 	var sessionSeg string
 	if haveData {
 		sessionSeg = wrap("session", ps.label("sesión")+ps.raw(" ")+ps.value(format.FmtUsdPartial(usdSum, usdPartial, usdEstimated)+sub, "")+ps.dot()+
 			ps.value(format.FmtTokens(tokensIn)+"→"+format.FmtTokens(tokensOut), "")+agents)
 	} else {
-		sessionSeg = wrap("session", ps.label("no calls yet"))
+		sessionSeg = wrap("session", ps.label("sin llamadas"))
 	}
 
 	// prompt cache

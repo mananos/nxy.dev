@@ -12,7 +12,7 @@ import (
 // take them. Pausing a paused feature changes nothing; a finished one cannot be paused.
 func (h Hooks) PauseFeature(ctx context.Context, id string) (domain.Feature, error) {
 	if h.Store == nil {
-		return domain.Feature{}, fmt.Errorf("no store")
+		return domain.Feature{}, fmt.Errorf("no hay base de datos")
 	}
 	var finished bool
 	f, _, err := h.mutate(ctx, id, func(g *domain.Feature) bool {
@@ -30,7 +30,7 @@ func (h Hooks) PauseFeature(ctx context.Context, id string) (domain.Feature, err
 		return domain.Feature{}, err
 	}
 	if finished {
-		return f, fmt.Errorf("feature %s is already done", id)
+		return f, fmt.Errorf("la feature %s ya está terminada", id)
 	}
 	return f, nil
 }
@@ -39,7 +39,7 @@ func (h Hooks) PauseFeature(ctx context.Context, id string) (domain.Feature, err
 // says which, and the feature stays paused.
 func (h Hooks) ResumeFeature(ctx context.Context, id string) (domain.Feature, error) {
 	if h.Store == nil {
-		return domain.Feature{}, fmt.Errorf("no store")
+		return domain.Feature{}, fmt.Errorf("no hay base de datos")
 	}
 	var finished bool
 	f, _, err := h.mutate(ctx, id, func(g *domain.Feature) bool {
@@ -60,7 +60,7 @@ func (h Hooks) ResumeFeature(ctx context.Context, id string) (domain.Feature, er
 		return domain.Feature{}, err
 	}
 	if finished {
-		return f, fmt.Errorf("feature %s is already done", id)
+		return f, fmt.Errorf("la feature %s ya está terminada", id)
 	}
 	return f, nil
 }

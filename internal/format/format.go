@@ -80,9 +80,9 @@ func EstimatedNote(models metrics.ModelBasis) string {
 	}
 	parts := make([]string, len(order))
 	for i, b := range order {
-		parts[i] = "estimated with " + b + " rates: " + strings.Join(by[b], ", ")
+		parts[i] = "estimado con tarifas de " + b + ": " + strings.Join(by[b], ", ")
 	}
-	return "(" + strings.Join(parts, "; ") + " — not in core/pricing.json)"
+	return "(" + strings.Join(parts, "; ") + " — no están en core/pricing.json)"
 }
 
 // FmtPct: v with digits decimals and a percent sign. NaN -> "?".

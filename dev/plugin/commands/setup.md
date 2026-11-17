@@ -1,5 +1,5 @@
 ---
-description: Detect and install rtk, ripgrep, codegraph and d2 — shows the exact command, runs only after you say yes (nxy dev)
+description: Detectá e instalá rtk, ripgrep, codegraph y d2 — muestra el comando exacto y corre sólo después de que digas que sí (nxy dev)
 allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd" setup status:*)
 ---
 

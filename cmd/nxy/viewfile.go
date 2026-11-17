@@ -24,11 +24,11 @@ var maxFileView = 1 << 20
 // drive, or going up with "..".
 func confinedPath(p string) (string, error) {
 	if p == "" || strings.HasPrefix(p, "/") || filepath.IsAbs(p) || filepath.VolumeName(p) != "" {
-		return "", fmt.Errorf("file: %q is not a path inside the repo", p)
+		return "", fmt.Errorf("file: %q no es una ruta dentro del repo", p)
 	}
 	c := path.Clean(p)
 	if c == "." || c == ".." || strings.HasPrefix(c, "../") {
-		return "", fmt.Errorf("file: %q is not a path inside the repo", p)
+		return "", fmt.Errorf("file: %q no es una ruta dentro del repo", p)
 	}
 	return c, nil
 }
@@ -51,11 +51,11 @@ func insideDir(dir, file string) bool {
 // repos, else relative to the only one. Without a prefix it is the repo whose batch changes it.
 func resolveFile(f domain.Feature, arg string, ts []repoTarget) (repoTarget, string, error) {
 	if len(ts) == 0 {
-		return repoTarget{}, "", fmt.Errorf("feature %s: no repo", f.ID)
+		return repoTarget{}, "", fmt.Errorf("feature %s: sin repo", f.ID)
 	}
 	name, p, _, _ := views.ParseAt(arg, views.RepoNames(f))
 	if p == "" {
-		return repoTarget{}, "", fmt.Errorf("file: empty path")
+		return repoTarget{}, "", fmt.Errorf("file: la ruta está vacía")
 	}
 	p, err := confinedPath(p)
 	if err != nil {
@@ -82,7 +82,7 @@ func resolveFile(f domain.Feature, arg string, ts []repoTarget) (repoTarget, str
 			return t, p, nil
 		}
 	}
-	return repoTarget{}, "", fmt.Errorf("feature %s: no repo %q", f.ID, name)
+	return repoTarget{}, "", fmt.Errorf("feature %s: no hay un repo %q", f.ID, name)
 }
 
 // readCapped reads at most maxFileView bytes of a file; nil when it does not exist. cut says the file
@@ -136,7 +136,7 @@ func (v *viewSource) File(ctx context.Context, featureID, pathArg string) (views
 	}
 	full := filepath.Join(t.dir, filepath.FromSlash(p))
 	if !insideDir(t.dir, full) {
-		return views.File{}, fmt.Errorf("file: %q is not a path inside the repo", pathArg)
+		return views.File{}, fmt.Errorf("file: %q no es una ruta dentro del repo", pathArg)
 	}
 	if b, cut := readCapped(full); b != nil {
 		s := string(*b)
@@ -145,7 +145,7 @@ func (v *viewSource) File(ctx context.Context, featureID, pathArg string) (views
 		in.TooBig = in.TooBig || cut
 	}
 	if in.Before == nil && in.After == nil && !slices.Contains(planFiles(f, repoTargets(f))[t.name], p) {
-		return views.File{}, fmt.Errorf("file: %q is not in the plan, at the base or in the tree", pathArg)
+		return views.File{}, fmt.Errorf("file: %q no está en el plan, ni en la base ni en el árbol", pathArg)
 	}
 
 	src := v.repoSource(t.dir)

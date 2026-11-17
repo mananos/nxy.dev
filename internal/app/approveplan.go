@@ -19,7 +19,7 @@ const toolAskUser = "AskUserQuestion"
 // isNxyQuestion is true for the approval question of the feature (any revision) and for the
 // questions of its plan.
 func isNxyQuestion(f domain.Feature, q string) bool {
-	if strings.HasPrefix(q, "Approve nxy plan "+f.ID+" r") {
+	if _, ok := plan.ApprovalRev(f.ID, q); ok {
 		return true
 	}
 	if q == plan.DecisionQuestion(f.ID, f.State.Batch) || q == plan.PlannerFailedQuestion(f.ID) ||
@@ -266,14 +266,9 @@ func (h Hooks) answerFindings(ctx context.Context, f domain.Feature, answers map
 
 // approvalAnswer finds the answer to an approval question of this feature and its revision.
 func approvalAnswer(f domain.Feature, answers map[string]string) (string, int, bool) {
-	prefix := "Approve nxy plan " + f.ID + " r"
 	for q, a := range answers {
-		rest, ok := strings.CutPrefix(q, prefix)
+		rev, ok := plan.ApprovalRev(f.ID, q)
 		if !ok {
-			continue
-		}
-		rev, err := strconv.Atoi(strings.TrimSuffix(rest, "?"))
-		if err != nil {
 			continue
 		}
 		return a, rev, true

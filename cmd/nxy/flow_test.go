@@ -135,9 +135,9 @@ func TestFeatureFlowEndToEnd(t *testing.T) {
 		t.Fatalf("no checkpoint to show: %s", out)
 	}
 
-	question := "Approve nxy plan " + id + " r1?"
+	question := "¿Aprobás el plan " + id + " r1 de nxy?"
 	hookCall(t, map[string]any{"hook_event_name": "PostToolUse", "tool_name": "AskUserQuestion", "cwd": repo,
-		"tool_response": map[string]any{"answers": map[string]any{question: "Approve"}}})
+		"tool_response": map[string]any{"answers": map[string]any{question: "Aprobar"}}})
 	if _, out, _ := runCmd(t, "", "status"); !strings.Contains(out, "Lote 1") {
 		t.Fatalf("status after approve: %q", out)
 	}
@@ -155,13 +155,13 @@ func TestFeatureFlowEndToEnd(t *testing.T) {
 	if err := os.WriteFile(planFile, []byte("# plan"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if code, out, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(out, "stopped") {
+	if code, out, _ := runCmd(t, "", "feature", "stop"); code != 0 || !strings.Contains(out, "paré la feature") {
 		t.Fatalf("stop: code %d, out %q", code, out)
 	}
 	if _, err := os.Stat(planFile); !os.IsNotExist(err) {
 		t.Fatalf("plan file not deleted: %v", err)
 	}
-	if _, out, _ := runCmd(t, "", "status"); !strings.Contains(out, "no active feature") {
+	if _, out, _ := runCmd(t, "", "status"); !strings.Contains(out, "no hay una feature activa") {
 		t.Fatalf("status after stop: %q", out)
 	}
 	// Without a feature the frame is gone: text passes, code is the write gate's (by file type).
@@ -191,7 +191,7 @@ func TestBackgroundPlannerEndToEnd(t *testing.T) {
 	if !strings.Contains(out, "background") {
 		t.Fatalf("launch does not say wait: %q", out)
 	}
-	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "state: Trabajando\nstep: Planificando\n") {
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "estado: Trabajando\npaso: Planificando\n") {
 		t.Fatalf("status after launch: %q", st)
 	}
 
@@ -302,7 +302,7 @@ func approvedBatchFeature(t *testing.T, repo, accept string) string {
 		t.Fatalf("plan save: code %d, out %q, err %q", code, out, errb)
 	}
 	agentPost(t, repo, "nxy:planner", nil)
-	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 	return id
 }
 
@@ -375,8 +375,8 @@ func TestBatchRetryAndDecision(t *testing.T) {
 	if !strings.Contains(out, "Lote 1 fallido") {
 		t.Fatalf("no batch_failed question: %s", out)
 	}
-	answer(t, repo, "nxy feature "+id+": batch 1 failed twice — what now?", "Parar")
-	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no active feature") {
+	answer(t, repo, "nxy feature "+id+": el lote 1 falló dos veces — ¿qué hacemos?", "Parar")
+	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "no hay una feature activa") {
 		t.Fatalf("status after Parar: %q", st)
 	}
 }
@@ -557,10 +557,10 @@ func TestEngineerFlowEndToEnd(t *testing.T) {
 		t.Fatalf("plan save: code %d, out %q, err %q", code, so, errb)
 	}
 	out := agentPost(t, repo, "nxy:planner", nil)
-	if !strings.Contains(out, "Approve nxy plan "+id) {
+	if !strings.Contains(out, "¿Aprobás el plan "+id) {
 		t.Fatalf("no checkpoint to approve: %s", out)
 	}
-	answer(t, repo, "Approve nxy plan "+id+" r1?", "Approve")
+	answer(t, repo, "¿Aprobás el plan "+id+" r1 de nxy?", "Aprobar")
 	if _, st, _ := runCmd(t, "", "status"); !strings.Contains(st, "Lote 1") {
 		t.Fatalf("status after approve: %q", st)
 	}

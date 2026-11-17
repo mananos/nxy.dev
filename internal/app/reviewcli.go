@@ -53,7 +53,7 @@ type EscapeResult struct {
 // ReviewEscape records a problem the review missed. The question is required: a rule needs it.
 func (h Hooks) ReviewEscape(ctx context.Context, dir, text, question, lens string) (EscapeResult, error) {
 	if h.Memory == nil || h.Repos == nil {
-		return EscapeResult{}, errors.New("no memory available")
+		return EscapeResult{}, errors.New("no hay memoria disponible")
 	}
 	if lens == "" {
 		lens = "base"

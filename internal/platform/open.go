@@ -10,7 +10,7 @@ import (
 func OpenFile(path string) error {
 	argv := openCommand(runtime.GOOS, path)
 	if len(argv) == 0 || path == "" {
-		return errors.New("nothing to open")
+		return errors.New("no hay nada para abrir")
 	}
 	c := exec.Command(argv[0], argv[1:]...)
 	hideWindow(c)

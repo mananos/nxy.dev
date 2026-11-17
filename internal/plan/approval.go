@@ -2,21 +2,40 @@ package plan
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/mananos/nxy.dev/internal/domain"
 )
 
 // Labels of the approval question's options.
 const (
-	Approve  = "Approve"
-	Change   = "Change"
+	Approve  = "Aprobar"
+	Change   = "Cambiar"
 	ViewFull = "Ver completo"
 )
 
 // ApprovalQuestion is the exact text of the approval question. It carries the
 // feature id and plan revision so an old answer cannot approve a newer plan.
 func ApprovalQuestion(featureID string, rev int) string {
-	return fmt.Sprintf("Approve nxy plan %s r%d?", featureID, rev)
+	return fmt.Sprintf("¿Aprobás el plan %s r%d de nxy?", featureID, rev)
+}
+
+// ApprovalRev is the plan revision of q when q is an approval question of the feature (any revision).
+func ApprovalRev(featureID, q string) (int, bool) {
+	rest, ok := strings.CutPrefix(q, "¿Aprobás el plan "+featureID+" r")
+	if !ok {
+		return 0, false
+	}
+	rest, ok = strings.CutSuffix(rest, " de nxy?")
+	if !ok {
+		return 0, false
+	}
+	rev, err := strconv.Atoi(rest)
+	if err != nil {
+		return 0, false
+	}
+	return rev, true
 }
 
 // BranchQuestion is the exact text of the question for the branch of the feature.

@@ -50,7 +50,7 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	if strings.TrimSpace(request) == "" {
-		return HookResponse{Deny: "usage: " + cmd + " <what you want>"}
+		return HookResponse{Deny: "uso: " + cmd + " <lo que querés hacer>"}
 	}
 	engineer := cmd == engineerCommand
 	dir := ev.ProjectDir

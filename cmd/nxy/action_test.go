@@ -106,7 +106,7 @@ func TestActionDecide(t *testing.T) {
 	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id, "--answer", "Quizás"); code != 1 || !strings.Contains(errb, "no es una opción") {
 		t.Fatalf("bad label: code %d, err %q", code, errb)
 	}
-	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id); code != 1 || !strings.Contains(errb, "usage") {
+	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id); code != 1 || !strings.Contains(errb, "uso") {
 		t.Fatalf("no answer: code %d, err %q", code, errb)
 	}
 	code, out, errb := runCmd(t, "", "action", "decide", "--ask", id, "--answer", "Sí")
@@ -138,7 +138,7 @@ func TestActionDecideRelease(t *testing.T) {
 func TestFeatureStopByIDReleasesTheAsk(t *testing.T) {
 	fid, id := seedAsk(t)
 	code, out, errb := runCmd(t, "", "feature", "stop", "--feature", fid)
-	if code != 0 || !strings.Contains(out, "stopped") {
+	if code != 0 || !strings.Contains(out, "paré la feature") {
 		t.Fatalf("stop: code %d, out %q, err %q", code, out, errb)
 	}
 	if row := readAsk(t, id); row.Answers == nil || row.AnsweredBy != "stopped" {

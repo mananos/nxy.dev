@@ -60,31 +60,31 @@ func Parse(data []byte) ([]Runner, error) {
 	}
 	for i, r := range rows {
 		if r.Name == "" {
-			return nil, fmt.Errorf("row %d: name is empty", i+1)
+			return nil, fmt.Errorf("fila %d: name está vacío", i+1)
 		}
 		if len(r.Detect) == 0 {
-			return nil, fmt.Errorf("%s: detect is empty", r.Name)
+			return nil, fmt.Errorf("%s: detect está vacío", r.Name)
 		}
 		for _, d := range r.Detect {
 			if d.File == "" {
-				return nil, fmt.Errorf("%s: detect.file is empty", r.Name)
+				return nil, fmt.Errorf("%s: detect.file está vacío", r.Name)
 			}
 		}
 		if len(r.Tests) == 0 {
-			return nil, fmt.Errorf("%s: tests is empty", r.Name)
+			return nil, fmt.Errorf("%s: tests está vacío", r.Name)
 		}
 		for _, g := range r.Tests {
 			if _, err := path.Match(g, "x"); err != nil {
-				return nil, fmt.Errorf("%s: bad glob %q", r.Name, g)
+				return nil, fmt.Errorf("%s: glob inválido %q", r.Name, g)
 			}
 		}
 		if !strings.Contains(r.Command, "{tests}") {
-			return nil, fmt.Errorf("%s: command has no {tests}", r.Name)
+			return nil, fmt.Errorf("%s: command no tiene {tests}", r.Name)
 		}
 		switch r.Item {
 		case "path", "dir", "class":
 		default:
-			return nil, fmt.Errorf("%s: item must be path, dir or class", r.Name)
+			return nil, fmt.Errorf("%s: item tiene que ser path, dir o class", r.Name)
 		}
 	}
 	return rows, nil

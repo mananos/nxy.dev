@@ -137,7 +137,7 @@ func resolveRefState(ctx context.Context, q queryer, kind, ref string, deleted b
 	}
 	k, ok := kindInfo[kind]
 	if !ok {
-		return "", fmt.Errorf("sqlite: unknown memory kind %q", kind)
+		return "", fmt.Errorf("tipo de memoria desconocido: %q", kind)
 	}
 	ref = strings.ToUpper(strings.TrimSpace(ref))
 	notFound := fmt.Errorf("%w: %s", memory.ErrNotFound, ref)
@@ -249,7 +249,7 @@ func upsertRule(ctx context.Context, q queryer, r memory.Rule) error {
 // AddRule stores a new rule of a repo. Supersedes may be a reference (K3) or a ULID.
 func (s *Store) AddRule(ctx context.Context, r memory.Rule) (memory.Rule, error) {
 	if strings.TrimSpace(r.Repo) == "" {
-		return memory.Rule{}, errors.New("a rule needs a repo")
+		return memory.Rule{}, errors.New("una regla necesita un repo")
 	}
 	return s.addRule(ctx, r, "K")
 }
@@ -279,7 +279,7 @@ func (s *Store) addRule(ctx context.Context, r memory.Rule, letter string) (memo
 			return memory.Rule{}, errors.Join(err, memory.ErrNotFound)
 		}
 		if !strings.HasPrefix(old[0].Short, letter) {
-			return memory.Rule{}, fmt.Errorf("%s cannot replace %s: a %s rule only replaces a %s rule",
+			return memory.Rule{}, fmt.Errorf("%s no puede reemplazar a %s: una regla %s sólo reemplaza a una regla %s",
 				letter, old[0].Short, letter, letter)
 		}
 	}
@@ -369,7 +369,7 @@ func upsertLearning(ctx context.Context, q queryer, l memory.Learning) error {
 // (text and files), counts it as seen once more instead of adding a row.
 func (s *Store) AddLearning(ctx context.Context, l memory.Learning) (memory.Learning, error) {
 	if strings.TrimSpace(l.Text) == "" || strings.TrimSpace(l.Repo) == "" {
-		return memory.Learning{}, errors.New("a learning needs a repo and a text")
+		return memory.Learning{}, errors.New("un aprendizaje necesita un repo y un texto")
 	}
 	l.Files = cleanPaths(l.Files)
 	l.Hash = memory.LearningHash(l.Text, l.Files)
@@ -451,7 +451,7 @@ func (s *Store) Promote(ctx context.Context, ref, question string, paths []strin
 	l := ls[0]
 	// a global learning (empty repo) becomes a G rule, a repo learning a K rule
 	if l.PromotedTo != "" {
-		return memory.Rule{}, fmt.Errorf("%s is already a rule", l.Short)
+		return memory.Rule{}, fmt.Errorf("%s ya es una regla", l.Short)
 	}
 	t := s.now()
 	r := memory.Rule{
@@ -480,7 +480,7 @@ func (s *Store) Promote(ctx context.Context, ref, question string, paths []strin
 // and counters; updated_at moves so the edit travels in export/import.
 func (s *Store) EditRule(ctx context.Context, ref string, e memory.RuleEdit) (memory.Rule, error) {
 	if e.Empty() {
-		return memory.Rule{}, errors.New("nothing to change: give --text, --question, --paths or --roles")
+		return memory.Rule{}, errors.New("no hay nada para cambiar: pasá --text, --question, --paths o --roles")
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -497,7 +497,7 @@ func (s *Store) EditRule(ctx context.Context, ref string, e memory.RuleEdit) (me
 	}
 	r := rs[0]
 	if e.Roles != nil && r.Repo != memory.GlobalRepo {
-		return memory.Rule{}, errors.New("--roles only applies to global rules (G<n>)")
+		return memory.Rule{}, errors.New("--roles sólo se aplica a reglas globales (G<n>)")
 	}
 	if e.Text != nil {
 		r.Text = *e.Text
@@ -526,7 +526,7 @@ func (s *Store) EditRule(ctx context.Context, ref string, e memory.RuleEdit) (me
 // and must not clash with another live learning of the repo.
 func (s *Store) EditLearning(ctx context.Context, ref string, e memory.LearningEdit) (memory.Learning, error) {
 	if e.Empty() {
-		return memory.Learning{}, errors.New("nothing to change: give --text or --files")
+		return memory.Learning{}, errors.New("no hay nada para cambiar: pasá --text o --files")
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -547,7 +547,7 @@ func (s *Store) EditLearning(ctx context.Context, ref string, e memory.LearningE
 		if err := tx.QueryRowContext(ctx, `SELECT short FROM mem_rules WHERE id=?`, l.PromotedTo).Scan(&short); err != nil {
 			short = l.PromotedTo
 		}
-		return memory.Learning{}, fmt.Errorf("%s is already rule %s: edit the rule", l.Short, short)
+		return memory.Learning{}, fmt.Errorf("%s ya es la regla %s: editá la regla", l.Short, short)
 	}
 	if e.Text != nil {
 		l.Text = *e.Text
@@ -557,14 +557,14 @@ func (s *Store) EditLearning(ctx context.Context, ref string, e memory.LearningE
 	}
 	l.Files = cleanPaths(l.Files)
 	if strings.TrimSpace(l.Text) == "" {
-		return memory.Learning{}, errors.New("a learning needs a text")
+		return memory.Learning{}, errors.New("un aprendizaje necesita un texto")
 	}
 	l.Hash = memory.LearningHash(l.Text, l.Files)
 	var other string
 	err = tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0 AND id<>?`,
 		l.Repo, l.Hash, l.ID).Scan(&other)
 	if err == nil {
-		return memory.Learning{}, fmt.Errorf("same text and files as %s", other)
+		return memory.Learning{}, fmt.Errorf("mismo texto y archivos que %s", other)
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return memory.Learning{}, err
@@ -592,7 +592,7 @@ func memoryKindOf(ctx context.Context, q queryer, ref string, deleted bool) (kin
 		case 'A':
 			kind = KindLearning
 		default:
-			return "", "", errors.New("notes: nxy note done")
+			return "", "", errors.New("las notas se cierran con nxy note done")
 		}
 		id, err = find(ctx, q, kind, up)
 		return kind, id, err
@@ -721,7 +721,7 @@ func (s *Store) RestoreMemory(ctx context.Context, ref string) (string, error) {
 		err = tx.QueryRowContext(ctx, `SELECT short FROM mem_learnings WHERE repo=? AND hash=? AND deleted_at=0 AND id<>?`,
 			l.Repo, l.Hash, l.ID).Scan(&other)
 		if err == nil {
-			return "", fmt.Errorf("%s holds the same learning: edit or rm it first", other)
+			return "", fmt.Errorf("%s tiene el mismo aprendizaje: editalo o borralo primero", other)
 		}
 		if !errors.Is(err, sql.ErrNoRows) {
 			return "", err
@@ -832,7 +832,7 @@ func upsertFeature(ctx context.Context, q queryer, f memory.ClosedFeature) error
 // existing ID is updated in place (the feature id of the v2 flow can be used as is).
 func (s *Store) SaveClosedFeature(ctx context.Context, f memory.ClosedFeature) (memory.ClosedFeature, error) {
 	if strings.TrimSpace(f.Title) == "" {
-		return memory.ClosedFeature{}, errors.New("a closed feature needs a title")
+		return memory.ClosedFeature{}, errors.New("una feature cerrada necesita un título")
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -1086,7 +1086,7 @@ func (s *Store) SaveNote(ctx context.Context, n memory.Note) (memory.Note, error
 		return old, tx.Commit()
 	}
 	if strings.TrimSpace(n.Folder) == "" {
-		return memory.Note{}, errors.New("a note needs a folder")
+		return memory.Note{}, errors.New("una nota necesita una carpeta")
 	}
 	n.ID, n.Machine = newULID(t, rand.Reader), s.machineID
 	n.CreatedAt, n.UpdatedAt, n.DeletedAt = now, now, 0

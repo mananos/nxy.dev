@@ -94,9 +94,9 @@ func (u Usage) statsData(args []string) (report.StatsData, *transcript.SessionRe
 	if ref == nil {
 		if wantsCurrent || (currentID != "" && selector == currentID) {
 			// Brand-new session: Claude Code creates the transcript with the first API response.
-			return exit(report.Output{Stdout: "nxy stats: this session has no API calls yet — the first one is the answer to this command. Run /nxy:stats again on the next turn, or `/nxy:stats last` for the previous session.\n"})
+			return exit(report.Output{Stdout: "nxy stats: esta sesión todavía no tiene llamadas a la API — la primera es la respuesta a este comando. Corré /nxy:stats de nuevo en el próximo turno, o `/nxy:stats last` para la sesión anterior.\n"})
 		}
-		return exit(report.Output{Stderr: "nxy: no session found (" + selector + ") for " + cwd + ". Try --all or --session <id>.\n", Code: 1})
+		return exit(report.Output{Stderr: "nxy: no encontré la sesión (" + selector + ") para " + cwd + ". Probá con --all o --session <id>.\n", Code: 1})
 	}
 	include := !a.Flag("no-agents")
 	threshold := settings.CacheBreakThreshold

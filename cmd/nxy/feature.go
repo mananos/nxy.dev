@@ -70,30 +70,30 @@ func runStatus(_ []string, _ io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if v.FeatureID == "" {
-		fmt.Fprintln(stdout, "no active feature")
+		fmt.Fprintln(stdout, "no hay una feature activa")
 		return 0
 	}
-	fmt.Fprintf(stdout, "feature: %s\nrequest: %s\nstate: %s\nstep: %s\nnext: %s\n",
+	fmt.Fprintf(stdout, "feature: %s\npedido: %s\nestado: %s\npaso: %s\nsigue: %s\n",
 		v.FeatureID, v.Request, v.Public, v.Phase, v.Next)
 	if v.Paused {
-		fmt.Fprintln(stdout, "paused: yes")
+		fmt.Fprintln(stdout, "en pausa: sí")
 	}
 	for _, r := range v.Repos {
 		fmt.Fprintf(stdout, "repo: %s\n", r)
 	}
 	if v.Progress != "" {
-		fmt.Fprintf(stdout, "batch: %s\n", v.Progress)
+		fmt.Fprintf(stdout, "lote: %s\n", v.Progress)
 	}
 	if v.Failure != "" {
-		fmt.Fprintf(stdout, "last failure: %s\n", v.Failure)
+		fmt.Fprintf(stdout, "última falla: %s\n", v.Failure)
 	}
 	for _, d := range v.Decisions {
-		fmt.Fprintf(stdout, "decision: %s\n", d)
+		fmt.Fprintf(stdout, "decisión: %s\n", d)
 	}
 	return 0
 }
 
-const featureRuleUsage = `usage: nxy feature rule "<text>" --question "<what it settles>"`
+const featureRuleUsage = `uso: nxy feature rule "<texto>" --question "<qué resuelve>"`
 
 // featureRule is `nxy feature rule`: it raises a rule candidate (origin chat) on the active feature;
 // the closing question offers it, nothing is saved now.
@@ -107,14 +107,14 @@ func featureRule(args []string, stdout, stderr io.Writer) int {
 	defer st.Close()
 	f, err := h.AddRuleCandidate(context.Background(), memCwd(opts), strings.Join(pos, " "), optVal(opts, "question"), memory.OriginChat)
 	if errors.Is(err, app.ErrNoActiveFeature) {
-		fmt.Fprintln(stderr, "no active feature: use nxy mem rule")
+		fmt.Fprintln(stderr, "no hay una feature activa: usá nxy mem rule")
 		return 1
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "nxy feature rule: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "rule candidate noted for feature %s: nxy asks about it when the feature closes\n", f.ID)
+	fmt.Fprintf(stdout, "anoté la regla candidata de la feature %s: nxy la pregunta al cerrar la feature\n", f.ID)
 	return 0
 }
 
@@ -155,7 +155,7 @@ func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		f, warning, err = h.StopFeature(context.Background(), dir)
 	}
 	if errors.Is(err, app.ErrNoActiveFeature) {
-		fmt.Fprintln(stderr, "nxy: no active feature in this repo")
+		fmt.Fprintln(stderr, "nxy: no hay una feature activa en este repo")
 		return 1
 	}
 	if err != nil {
@@ -163,8 +163,8 @@ func runFeature(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if warning != nil {
-		fmt.Fprintf(stderr, "nxy feature stop: warning: could not delete the plan file: %v\n", warning)
+		fmt.Fprintf(stderr, "nxy feature stop: aviso: no pude borrar el archivo del plan: %v\n", warning)
 	}
-	fmt.Fprintf(stdout, "feature %s stopped\n", f.ID)
+	fmt.Fprintf(stdout, "paré la feature %s\n", f.ID)
 	return 0
 }
