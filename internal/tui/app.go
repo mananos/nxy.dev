@@ -147,8 +147,8 @@ type state struct {
 	lastVer    int64 // last data_version seen
 	stale      bool  // the db is from a newer nxy
 	onStale    func()
-	cheapDirty bool  // a refresh came while a cheap load was in flight
-	liveOn     bool  // the one-second tick is armed
+	cheapDirty bool // a refresh came while a cheap load was in flight
+	liveOn     bool // the one-second tick is armed
 
 	run      func(ctx context.Context, argv []string) (string, error)
 	confirm  *actionReq        // an action waits for y/n
@@ -165,7 +165,7 @@ type state struct {
 func newState(o Options) *state {
 	st := &state{data: newData(), dark: o.Dark, nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
 		stack: []route{{screen: "inicio"}}, cur: map[string]int{}, postponed: map[string]bool{},
-		answered: map[string]bool{}, decIdx: map[string]int{}, decAns: map[string][]string{}, decAsk: map[string]string{},decMark: map[string]map[int]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
+		answered: map[string]bool{}, decIdx: map[string]int{}, decAns: map[string][]string{}, decAsk: map[string]string{}, decMark: map[string]map[int]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
 		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, cfgPend: map[string]string{}}
 	st.haveVer, st.lastVer = o.HaveVer, o.Ver
 	st.onStale = o.OnStale

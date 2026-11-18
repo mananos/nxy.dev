@@ -1,10 +1,10 @@
 ---
-description: Find where something lives in the repo without reading files (nxy)
+description: Encontrá dónde vive algo en el repo sin leer archivos
 argument-hint: <question: "where is it decided whether a command goes through rtk">
 allowed-tools: Task
 ---
 
-Dispatch the **`scout`** subagent (type `scout`) with this question, exactly as it was given:
+Dispatch the **`nxy:scout`** subagent with this question, exactly as it was given:
 
 $ARGUMENTS
 

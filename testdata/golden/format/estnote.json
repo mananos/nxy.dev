@@ -1,7 +1,7 @@
 [
 {"name":"estnote:000","input":{"pairs":[]},"output":{"s":""}},
-{"name":"estnote:001","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"]]},"output":{"s":"(estimado con tarifas de claude-sonnet-5: claude-sonnet-5-5 — no están en core/pricing.json)"}},
-{"name":"estnote:002","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"],["claude-opus-9","claude-opus-4"],["claude-sonnet-5-6","claude-sonnet-5"]]},"output":{"s":"(estimado con tarifas de claude-sonnet-5: claude-sonnet-5-5, claude-sonnet-5-6; estimado con tarifas de claude-opus-4: claude-opus-9 — no están en core/pricing.json)"}},
-{"name":"estnote:003","input":{"pairs":[["a","x"],["b","y"],["c","x"],["d","z"],["e","y"]]},"output":{"s":"(estimado con tarifas de x: a, c; estimado con tarifas de y: b, e; estimado con tarifas de z: d — no están en core/pricing.json)"}},
-{"name":"estnote:004","input":{"pairs":[["only","só-ñ"]]},"output":{"s":"(estimado con tarifas de só-ñ: only — no están en core/pricing.json)"}}
+{"name":"estnote:001","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"]]},"output":{"s":"(estimado con tarifas de claude-sonnet-5: claude-sonnet-5-5 — no están en la tabla de precios de nxy)"}},
+{"name":"estnote:002","input":{"pairs":[["claude-sonnet-5-5","claude-sonnet-5"],["claude-opus-9","claude-opus-4"],["claude-sonnet-5-6","claude-sonnet-5"]]},"output":{"s":"(estimado con tarifas de claude-sonnet-5: claude-sonnet-5-5, claude-sonnet-5-6; estimado con tarifas de claude-opus-4: claude-opus-9 — no están en la tabla de precios de nxy)"}},
+{"name":"estnote:003","input":{"pairs":[["a","x"],["b","y"],["c","x"],["d","z"],["e","y"]]},"output":{"s":"(estimado con tarifas de x: a, c; estimado con tarifas de y: b, e; estimado con tarifas de z: d — no están en la tabla de precios de nxy)"}},
+{"name":"estnote:004","input":{"pairs":[["only","só-ñ"]]},"output":{"s":"(estimado con tarifas de só-ñ: only — no están en la tabla de precios de nxy)"}}
 ]

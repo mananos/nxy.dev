@@ -28,7 +28,7 @@ func writeTree(t *testing.T, root string, tree map[string]string) {
 var msInText = regexp.MustCompile(`_\d+ ms`)
 
 // TestGoldenLocateReport runs `nxy locate` end to end over the trees of the 1.x golden, with rg and
-// codegraph replaced by scripts/golden/locatestub, and compares text, hits, terms and degraded.
+// codegraph replaced by internal/goldentest/locatestub, and compares text, hits, terms and degraded.
 func TestGoldenLocateReport(t *testing.T) {
 	isolate(t)
 	stubs := goldentest.LocateStubs(t)

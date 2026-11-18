@@ -76,7 +76,7 @@ func BuildEngineer(in EngineerIn) (Engineer, bool) {
 		out.Options = append(out.Options, EngOption{
 			Key: key, Label: o.Label, Summary: o.Summary, Pros: nonNilStrings(o.Pros), Cons: nonNilStrings(o.Cons),
 			Touches: o.Touches, Diagram: draw(o.D2),
-			Action:  Action{ID: "decide-" + key, Label: o.Label, Argv: decideArgv(row, o.Label)},
+			Action: Action{ID: "decide-" + key, Label: o.Label, Argv: decideArgv(row, o.Label)},
 		})
 	}
 	return out, true

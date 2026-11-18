@@ -204,7 +204,7 @@ func TestSchemaNewer(t *testing.T) {
 	if !m.st.stale {
 		t.Fatal("a newer schema must mark the db stale")
 	}
-	if out := m.st.frame(false); !strings.Contains(out,"nxy se actualizó") {
+	if out := m.st.frame(false); !strings.Contains(out, "nxy se actualizó") {
 		t.Fatalf("no notice in the frame:\n%s", out)
 	}
 	_, cmd = m.Update(pollMsg{ver: 3, schema: 6})

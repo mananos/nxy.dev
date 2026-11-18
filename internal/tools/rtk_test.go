@@ -21,7 +21,7 @@ var (
 	stubDir  string
 )
 
-// buildStub builds scripts/golden/rtkstub once per test run.
+// buildStub builds internal/goldentest/rtkstub once per test run.
 func buildStub(t *testing.T) string {
 	t.Helper()
 	stubOnce.Do(func() {
@@ -36,7 +36,7 @@ func buildStub(t *testing.T) string {
 			name = "rtk.exe"
 		}
 		stubPath = filepath.Join(dir, name)
-		out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/scripts/golden/rtkstub").CombinedOutput()
+		out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/internal/goldentest/rtkstub").CombinedOutput()
 		if err != nil {
 			stubErr = &buildError{err, string(out)}
 		}

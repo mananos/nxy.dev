@@ -15,8 +15,14 @@ const LocateNudgeMark = "nxy locate nudge:"
 // skip stopped searches.
 const ReadGateMark = "nxy read gate:"
 
-// IsLocateCommand is true when the command runs the locate entry.
-func IsLocateCommand(cmd string) bool { return strings.Contains(cmd, "locate.mjs") }
+// v2LocateRe is `nxy locate`, `nxy.exe locate` or `<root>/bin/nxy.cmd" locate` (the shim, quoted or not).
+var v2LocateRe = regexp.MustCompile(`(?:^|[\s"'/\\])nxy(?:\.exe|\.cmd)?["']?\s+locate(?:[\s"';|&]|$)`)
+
+// IsLocateCommand is true when the command runs locate: the v2 `nxy locate` (binary or shim) or the
+// 1.x locate.mjs entry, which old transcripts still carry.
+func IsLocateCommand(cmd string) bool {
+	return strings.Contains(cmd, "locate.mjs") || v2LocateRe.MatchString(cmd)
+}
 
 // Class is the SearchClass of the 1.x. Kind is "grep", "glob", "find", "read" or nil. Target and
 // Pattern keep the raw input values (a numeric pattern stays a number). HasPath is only set where

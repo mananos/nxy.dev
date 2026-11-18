@@ -1,11 +1,11 @@
 ---
-description: Memory that survives /clear — save, search and share decisions (nxy)
-argument-hint: [status | save "<title>" --body "<text>" | search "<query>" | get <id> | list | handoff [show|save|plan|next|done] | export | import]
-allowed-tools: Bash(node:*)
+description: Memoria del repo — reglas, aprendizajes, búsqueda, promover, exportar e importar
+argument-hint: [show | rule "<text>" --question "<q>" | note "<text>" --files a,b | promote <A7> --question "<q>" | search <text> | related <files> | export [--notes] | import <file> [--apply] | bootstrap]
+allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" mem:*)
 ---
 
-Below is the output of a script. Reproduce it in one fenced code block, character for character, without reformatting or summarizing. Only after the block, and only if the user asked something, answer it from what it shows.
+```
+!`. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" mem $ARGUMENTS`
+```
 
-```
-!`node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/mem.mjs" $ARGUMENTS`
-```
+Show the block above to the user verbatim. A rule always needs the question it settles (`--question`): without it the command fails, so ask the user for it instead of inventing one. Never save a rule or a learning on your own: only when the user asked for it with this command. `import` without `--apply` only shows what would change. `bootstrap` starts the proposal of the repo's first rules: the output tells you to dispatch the `nxy:scout` agent with the prompt `nxy bootstrap` in the foreground; do exactly that and nothing else, nxy asks the user which rules to keep. Never edit nxy's database or export files yourself.

@@ -1,11 +1,11 @@
 ---
-description: Print or install the nxy statusline (tokens, cost, context, cache)
-argument-hint: [--apply]
-allowed-tools: Bash(node:*)
+description: Mirá, instalá o sacá la statusline de nxy (tokens, costo, contexto, cache)
+argument-hint: [install | remove]
+allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" statusline setup:*)
 ---
 
 ```
-!`node "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/statusline-setup.mjs" $ARGUMENTS`
+!`. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" statusline setup $ARGUMENTS`
 ```
 
-Show the block above to the user verbatim. If it printed a snippet (no `--apply`), tell the user they can either paste it into `~/.claude/settings.json` themselves or run `/nxy:statusline --apply` to have it merged with a backup. Never edit settings yourself; `--apply` is the only path that writes, and only when the user chose it.
+Show the block above to the user verbatim. Without arguments it only shows the snippet and the current state: tell the user they can run `/nxy:statusline install` (merges it into `~/.claude/settings.json` with a backup) or paste it themselves. Never edit settings yourself; `install` and `remove` are the only paths that write, and only when the user typed them.

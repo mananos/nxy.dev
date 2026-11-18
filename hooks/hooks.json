@@ -1,13 +1,12 @@
 {
-  "description": "nxy: resolves the filter engine per session, rewrites Bash commands through it, records per-command metrics, gates writes from the main thread when its context is already expensive, keeps a live handoff per branch, points at relevant memories per prompt, verifies each plan batch against its acceptance command, and keeps the handoff from going stale at the end of a turn",
-  "modules": ["./register.tsx"],
+  "description": "nxy: every hook event goes through the Go binary via the polyglot shim (bin/nxy.cmd): the /nxy:feature and /nxy:engineer flow, the Bash filter, the write and read gate, memory, review and the one-time import of 1.x data",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/sessionstart.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -19,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-bash.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -29,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-edit.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -39,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-search.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -49,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-agent.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -59,8 +58,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-ask.mjs\"",
-            "timeout": 10
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
+            "timeout": 1800,
+            "statusMessage": "nxy: si tenés la TUI abierta, contestá ahí"
           }
         ]
       }
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/posttooluse-bash.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -81,7 +81,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/posttooluse-agent.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -92,7 +102,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/userpromptsubmit.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -103,7 +113,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node --disable-warning=ExperimentalWarning \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/subagentstop.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -114,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/stop.mjs\"",
+            "command": ". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]

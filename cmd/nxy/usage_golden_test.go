@@ -23,7 +23,7 @@ import (
 	"github.com/mananos/nxy.dev/internal/jscompat"
 )
 
-// The usage-cli golden (scripts/golden/usage-cli.mjs documents the case format): each case runs the
+// The usage-cli golden (this file and internal/goldentest document the case format): each case runs the
 // Go use case over a materialized world; NXY_WRITE_GOLDEN=1 rewrites the outputs that changed.
 
 const defaultGoldenNow = "2026-09-10T12:00:00Z"
@@ -101,7 +101,7 @@ var (
 	stubErr  error
 )
 
-// buildRtkStub builds scripts/golden/rtkstub once per test run (before PATH is emptied).
+// buildRtkStub builds internal/goldentest/rtkstub once per test run (before PATH is emptied).
 func buildRtkStub(t *testing.T) string {
 	t.Helper()
 	stubOnce.Do(func() {
@@ -116,7 +116,7 @@ func buildRtkStub(t *testing.T) string {
 			name = "rtk.exe"
 		}
 		stubPath = filepath.Join(dir, name)
-		if out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/scripts/golden/rtkstub").CombinedOutput(); err != nil {
+		if out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/internal/goldentest/rtkstub").CombinedOutput(); err != nil {
 			stubErr = fmt.Errorf("go build rtkstub: %v: %s", err, out)
 		}
 	})

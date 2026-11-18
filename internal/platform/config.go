@@ -29,7 +29,7 @@ func GitRoot(dir string) (string, bool) {
 	return "", false
 }
 
-// defaultsJSON holds the keys of nxy.config.json that the v2 reads (a test keeps them equal).
+// defaultsJSON is the v2's default config, embedded in the binary; it is the only source.
 //
 //go:embed defaults.json
 var defaultsJSON []byte

@@ -68,7 +68,7 @@ var (
 	defaultTable Table
 )
 
-// Default is the table embedded in the binary (a copy of core/pricing.json).
+// Default is the table embedded in the binary (pricing.json).
 func Default() Table {
 	defaultOnce.Do(func() {
 		t, err := ParseFile(embedded)

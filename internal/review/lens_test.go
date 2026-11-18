@@ -1,8 +1,6 @@
 package review
 
 import (
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -121,26 +119,5 @@ func TestRaiseNeverLowers(t *testing.T) {
 	}
 	if Max(domain.RiskLow, domain.RiskHigh, domain.RiskMedium) != domain.RiskHigh || Max() != domain.RiskLow {
 		t.Fatal("Max")
-	}
-}
-
-// Until F6 the embedded lenses and the 1.x ones must stay identical.
-func TestBuiltinMatchesLegacyLenses(t *testing.T) {
-	legacy, err := filepath.Glob(filepath.Join("..", "..", "lenses", "*.md"))
-	if err != nil || len(legacy) == 0 {
-		t.Skip("no 1.x lenses directory")
-	}
-	for _, p := range legacy {
-		want, err := os.ReadFile(p)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := builtinFS.ReadFile("lenses/" + filepath.Base(p))
-		if err != nil {
-			t.Fatalf("%s is not embedded", filepath.Base(p))
-		}
-		if string(got) != string(want) {
-			t.Errorf("%s differs from lenses/%s", filepath.Base(p), filepath.Base(p))
-		}
 	}
 }

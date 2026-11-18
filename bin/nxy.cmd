@@ -3,7 +3,7 @@
 rem nxy shim, batch half (PowerShell / cmd on Windows). No labels, no goto: cmd mis-parses them in LF files.
 rem Delayed expansion stays off until a failure echo (a ! in a path would be eaten).
 setlocal DisableDelayedExpansion
-set "NXY_VERSION=2.0.0-dev"
+set "NXY_VERSION=2.0.0-rc.1"
 set "NXY_FAIL="
 set "NXY_NEED="
 set "NXY_GOT="
@@ -100,7 +100,7 @@ exit /b %NXY_CODE%
 BATCH
 
 # nxy shim, sh half (Linux, macOS, Git Bash). Sourced with `.`: the last line exits the shell.
-NXY_VERSION=2.0.0-dev
+NXY_VERSION=2.0.0-rc.1
 
 # A failure must be visible: the stdout JSON is shown to the user by Claude Code, stderr is not.
 nxy_say() {

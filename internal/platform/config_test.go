@@ -1,7 +1,6 @@
 package platform
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -110,42 +109,6 @@ func TestGitRootFromSubdir(t *testing.T) {
 	if s := LoadFilterSettings(sub, noEnv); s.Engine != "off" {
 		t.Fatalf("config at git root not read from subdir: %+v", s)
 	}
-}
-
-func TestDefaultsMatchPluginConfig(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "..", "nxy.config.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var plugin map[string]any
-	if err := json.Unmarshal(data, &plugin); err != nil {
-		t.Fatal(err)
-	}
-	var check func(path string, def, plug any)
-	check = func(path string, def, plug any) {
-		if dm, ok := def.(map[string]any); ok && len(dm) > 0 {
-			pm, ok := plug.(map[string]any)
-			if !ok {
-				t.Errorf("%s: not an object in nxy.config.json", path)
-				return
-			}
-			for k, v := range dm {
-				pv, present := pm[k]
-				if !present {
-					t.Errorf("%s.%s: missing in nxy.config.json", path, k)
-					continue
-				}
-				check(path+"."+k, v, pv)
-			}
-			return
-		}
-		a, _ := json.Marshal(def)
-		b, _ := json.Marshal(plug)
-		if string(a) != string(b) {
-			t.Errorf("%s: go default %s, nxy.config.json %s", path, a, b)
-		}
-	}
-	check("", defaultConfig(), plugin)
 }
 
 func TestLoadConfigMetricsGateLayering(t *testing.T) {

@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	hookLine    = `. "%s"; exit $LASTEXITCODE`
-	devHookLine = `. "${CLAUDE_PLUGIN_ROOT}/../../bin/nxy.cmd"; exit $LASTEXITCODE`
-	hookJSON    = `{"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"s1","cwd":"."}`
+	hookLine       = `. "%s"; exit $LASTEXITCODE`
+	pluginHookLine = `. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd"; exit $LASTEXITCODE`
+	hookJSON       = `{"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"s1","cwd":"."}`
 )
 
 // fakeSrc stands in for the nxy binary: it records its args and stdin in $NXY_MARK
@@ -770,33 +770,4 @@ func loadHooks(t *testing.T, path string) (hooksFile, string) {
 		t.Fatal(err)
 	}
 	return h, string(b)
-}
-
-func TestDevHooksManifest(t *testing.T) {
-	root := repoRoot(t)
-	src, _ := loadHooks(t, filepath.Join(root, "hooks", "hooks.json"))
-	dev, raw := loadHooks(t, filepath.Join(root, "dev", "plugin", "hooks", "hooks.json"))
-	have := map[string]bool{}
-	for ev, entries := range dev.Hooks {
-		for _, e := range entries {
-			have[ev+"|"+e.Matcher] = true
-			for _, h := range e.Hooks {
-				if h.Command != devHookLine {
-					t.Errorf("%s %q: command %q is not the shim line", ev, e.Matcher, h.Command)
-				}
-			}
-		}
-	}
-	for ev, entries := range src.Hooks {
-		for _, e := range entries {
-			if !have[ev+"|"+e.Matcher] {
-				t.Errorf("dev hooks miss %s with matcher %q", ev, e.Matcher)
-			}
-		}
-	}
-	for _, bad := range []string{`C:\\`, `C:/`, `/Users/`, `/home/`, `/c/`} {
-		if strings.Contains(raw, bad) {
-			t.Errorf("dev hooks carry a personal path (%s)", bad)
-		}
-	}
 }
