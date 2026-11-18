@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // bashResponseText is the output of a Bash call: stdout and stderr when not empty, joined by a

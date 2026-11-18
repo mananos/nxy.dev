@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 
 	_ "modernc.org/sqlite"
 )

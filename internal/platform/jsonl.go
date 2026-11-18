@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // ReadJSONL reads every parseable line of a JSONL file as decoded JSON (core/jsonl.mjs readJsonl).

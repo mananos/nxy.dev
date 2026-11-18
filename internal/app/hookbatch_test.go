@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // runningFeature stores a feature in running_batch (batch 1 of n, all TDD) and returns its id.

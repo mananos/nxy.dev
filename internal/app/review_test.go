@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 func savedRisk(t *testing.T, at string) domain.Batch {

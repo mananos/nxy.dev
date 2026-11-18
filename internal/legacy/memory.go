@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 const (

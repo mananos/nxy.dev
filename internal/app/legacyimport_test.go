@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/legacy"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // fakeLegacyData is a 1.x folder: a memory.db with rows, a review.jsonl and a filter.jsonl whose

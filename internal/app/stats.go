@@ -4,11 +4,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/format"
-	"github.com/mananos/nxy.dev/internal/gate"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/gate"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // Usage runs the read-only usage reports (`nxy stats`, `nxy trend`). Nothing here writes.

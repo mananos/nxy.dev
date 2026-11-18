@@ -3,7 +3,7 @@ package flow
 import (
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func at(k EventKind, n int, t int64) Event { return Event{Kind: k, Batch: n, At: t} }

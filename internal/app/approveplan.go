@@ -5,13 +5,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/docs"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
-	"github.com/mananos/nxy.dev/internal/plan"
-	"github.com/mananos/nxy.dev/internal/repos"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/docs"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/repos"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 const toolAskUser = "AskUserQuestion"

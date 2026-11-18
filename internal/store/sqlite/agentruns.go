@@ -3,7 +3,7 @@ package sqlite
 import (
 	"context"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // RecordAgentRun stores the totals of one subagent. A repeated SubagentStop (or a resumed agent

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 // acceptTailLines is how many trailing output lines of an Accept run are kept.

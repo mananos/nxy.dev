@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // countSrc counts the calls to the views that load on demand and can fail the plan.

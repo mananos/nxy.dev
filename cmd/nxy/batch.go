@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/app"
 )
 
 // runBatch is `nxy batch red|green --feature <id>`: nxy runs the Accept of the current batch.

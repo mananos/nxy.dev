@@ -3,7 +3,7 @@ package views
 import (
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/configedit"
+	"github.com/mananos/nxy.dev/v2/internal/configedit"
 )
 
 // RoleIn is what the caller read for one role: the model and effort in force ("" when none is

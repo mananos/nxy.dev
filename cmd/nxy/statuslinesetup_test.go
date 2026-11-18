@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	nxydev "github.com/mananos/nxy.dev"
+	nxydev "github.com/mananos/nxy.dev/v2"
 )
 
 func testSetup(t *testing.T, goos string) statuslineSetup {

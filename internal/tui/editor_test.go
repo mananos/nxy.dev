@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 func envOf(m map[string]string) func(string) string { return func(k string) string { return m[k] } }

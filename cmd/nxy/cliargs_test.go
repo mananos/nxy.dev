@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 func TestResolveCwdPrecedence(t *testing.T) {

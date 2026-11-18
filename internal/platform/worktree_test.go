@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/worktree"
+	"github.com/mananos/nxy.dev/v2/internal/worktree"
 )
 
 // worktreeRepo makes <tmp>/repo with one commit on main plus the local branches dev and exist.

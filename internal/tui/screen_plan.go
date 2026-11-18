@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 func init() { register(planScreen{}) }

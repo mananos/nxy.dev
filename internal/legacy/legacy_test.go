@@ -5,7 +5,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 func TestConvertMemoryPrivate(t *testing.T) {

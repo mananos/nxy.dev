@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 )
 
 // materialize writes the golden texts under a temp dir and sets the discovery mtimes.

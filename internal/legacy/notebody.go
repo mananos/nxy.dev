@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // CutMark closes a note body that did not fit.

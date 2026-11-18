@@ -11,7 +11,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/mananos/nxy.dev/internal/version.Version={{.Version}}
+      - -s -w -X github.com/mananos/nxy.dev/v2/internal/version.Version={{.Version}}
     goos: [linux, windows, darwin]
     goarch: [amd64, arm64]
 

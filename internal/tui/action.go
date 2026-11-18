@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // staleText is what the TUI says when the db is from a newer nxy.

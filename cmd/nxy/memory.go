@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
 )
 
 // app cannot import adapters: the store meets the port here.

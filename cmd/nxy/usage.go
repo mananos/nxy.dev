@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/report"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/tools"
 )
 
 // claudeTranscripts reads Claude Code's session transcripts.

@@ -3,7 +3,7 @@ package review
 import (
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func rank(r domain.Risk) int {

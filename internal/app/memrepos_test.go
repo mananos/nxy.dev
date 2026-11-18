@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 // keyedMemory serves rules per repo key and records which key each false reference went to.

@@ -7,11 +7,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/pricing"
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // tail is what one transcript file says so far. It is fed with only the bytes that grew since the

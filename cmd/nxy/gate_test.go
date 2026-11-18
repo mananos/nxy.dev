@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 func gateRepo(t *testing.T) string {

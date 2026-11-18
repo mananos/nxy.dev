@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/tools"
 )
 
 // vgGit runs git in dir with a fixed identity and dates, so commits are the same everywhere.

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 )
 
 func asst(ts, id string, out int) string {

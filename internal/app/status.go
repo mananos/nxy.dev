@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // StatusView is what `nxy status` shows; the zero value means no active feature.

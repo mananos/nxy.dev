@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func engineerFeature(t *testing.T) (Hooks, *memStore, string) {

@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 // num reads input[key] as a float64; JSON null or a missing key is NaN (JS null).

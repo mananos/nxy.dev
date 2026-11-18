@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/repos"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/repos"
 )
 
 // noRulesYet is what the planner reads when the memory is on but holds no rule of the repo.

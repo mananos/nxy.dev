@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // LedgerRow is one command of rtk's savings ledger (core/filter/ledger.mjs).

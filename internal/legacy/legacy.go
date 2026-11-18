@@ -3,7 +3,7 @@
 // writing the v2 db belong to the adapters.
 package legacy
 
-import "github.com/mananos/nxy.dev/internal/memory"
+import "github.com/mananos/nxy.dev/v2/internal/memory"
 
 // Memory is a row of the 1.x memories table (core/memory/store.mjs). Times are
 // Unix milliseconds.

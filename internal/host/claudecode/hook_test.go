@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 func TestDecodeRegistrations(t *testing.T) {

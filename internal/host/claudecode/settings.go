@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
 )
 
 // SettingsFiles are the Claude Code settings files that can carry hooks and permissions, in precedence order.

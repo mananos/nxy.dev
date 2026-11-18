@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // resolveCwd is the working directory every utility command uses: `--cwd <dir>` if given, else

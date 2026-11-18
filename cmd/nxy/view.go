@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 const viewUsage = "uso: nxy view <cockpit|agents|decision|memory|stats|trend|config|plan|file|engineer> --json [--feature id] [--path ruta] [--scope repo|global] [--session id] [--cwd dir]"

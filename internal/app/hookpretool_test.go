@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
 )
 
 type fakeConfig struct{ s filter.Settings }

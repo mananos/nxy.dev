@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // waitingOf is the row the hook would hold for the ask of f.

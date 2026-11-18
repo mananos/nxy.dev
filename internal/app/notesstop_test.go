@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 type fixedClock struct{ t time.Time }

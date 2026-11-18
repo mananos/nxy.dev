@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	nxydev "github.com/mananos/nxy.dev"
-	"github.com/mananos/nxy.dev/internal/platform"
+	nxydev "github.com/mananos/nxy.dev/v2"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // The statusline runs a stable copy of the shim, ~/.nxy/bin/nxy.cmd (about 13 KB), never the one

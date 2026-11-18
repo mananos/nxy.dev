@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
 )
 
 type fileSpec struct {

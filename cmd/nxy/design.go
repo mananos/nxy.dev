@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
 )
 
 // runDesign is `nxy design agenda|fork|today|propose|close --feature <id>`: the JSON comes on stdin.

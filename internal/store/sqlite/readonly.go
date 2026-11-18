@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // Reader reads nxy.db without writing: it never creates the file, runs no migration and holds no

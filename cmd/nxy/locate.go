@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/repomap"
-	"github.com/mananos/nxy.dev/internal/scout"
-	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/scout"
+	"github.com/mananos/nxy.dev/v2/internal/tools"
 )
 
 const locateUsage = `Usage: nxy locate "<question>"  |  --callers|--callees|--impact <symbol>  |  --status  |  --index`

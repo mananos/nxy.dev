@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/gate"
-	"github.com/mananos/nxy.dev/internal/repomap"
-	"github.com/mananos/nxy.dev/internal/repos"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/gate"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/repos"
 )
 
 // goos is the OS the path comparison follows; a variable so tests can pin it.

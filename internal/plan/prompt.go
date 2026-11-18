@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 //go:embed prompts/planner.md

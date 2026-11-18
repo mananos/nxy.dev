@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/docs"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/docs"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // skipDirs are the folders the docs search never enters: dependencies, builds and tool state.

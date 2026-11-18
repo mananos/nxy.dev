@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
 )
 
 // RepoMapFiles are where the repo map and its metadata live for a checkout: the same files the

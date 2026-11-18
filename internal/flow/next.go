@@ -5,7 +5,7 @@ package flow
 import (
 	"errors"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // ErrOutOfOrder means the event does not apply to the current state; the state

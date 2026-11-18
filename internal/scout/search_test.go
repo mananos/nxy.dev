@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/mananos/nxy.dev/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
 )
 
 // fake is a set of engines with one canned answer each.

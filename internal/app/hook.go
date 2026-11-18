@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // permissionModeAuto is the one permission mode where a rewritten input with no decision gets refused.

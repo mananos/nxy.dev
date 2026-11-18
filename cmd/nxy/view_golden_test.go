@@ -14,14 +14,14 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/setup"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // vgRoot is the folder every temp path becomes in the goldens.

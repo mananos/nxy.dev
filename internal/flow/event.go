@@ -1,6 +1,6 @@
 package flow
 
-import "github.com/mananos/nxy.dev/internal/domain"
+import "github.com/mananos/nxy.dev/v2/internal/domain"
 
 // EventKind is what happened to a feature.
 type EventKind string

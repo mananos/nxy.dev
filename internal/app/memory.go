@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // maxImportBytes caps the bundle an import reads.

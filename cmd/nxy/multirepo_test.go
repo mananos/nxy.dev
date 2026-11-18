@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 // mrAnswers answers several questions of one AskUserQuestion call.
@@ -39,7 +39,11 @@ func mrGitRepo(t *testing.T, dir string) {
 func mrParent(t *testing.T, names ...string) string {
 	t.Helper()
 	flowRepo(t) // isolates NXY_HOME and the project dir; its repo is not used
-	parent := t.TempDir()
+	// Long form of the folder (expands 8.3 names like RUNNER~1; /var -> /private/var on macOS): it is what git returns.
+	parent, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	old, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)

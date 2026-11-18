@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // CountDeliveries adds one delivery to each rule (by ULID). It does not touch updated_at: a counter

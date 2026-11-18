@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
 )
 
 var (
@@ -36,7 +36,7 @@ func buildStub(t *testing.T) string {
 			name = "rtk.exe"
 		}
 		stubPath = filepath.Join(dir, name)
-		out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/internal/goldentest/rtkstub").CombinedOutput()
+		out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/v2/internal/goldentest/rtkstub").CombinedOutput()
 		if err != nil {
 			stubErr = &buildError{err, string(out)}
 		}

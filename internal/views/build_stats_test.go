@@ -3,9 +3,9 @@ package views
 import (
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 func TestBuildStats(t *testing.T) {

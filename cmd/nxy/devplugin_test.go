@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/version"
+	"github.com/mananos/nxy.dev/v2/internal/version"
 )
 
 func pluginDir(t *testing.T) string {

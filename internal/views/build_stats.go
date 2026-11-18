@@ -3,9 +3,9 @@ package views
 import (
 	"sort"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // BuildStats maps the numbers of `nxy stats --json` to the screen. others are the other

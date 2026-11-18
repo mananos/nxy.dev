@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func TestPendingAsks(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/docs"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/docs"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func TestInstructionDocsSteps(t *testing.T) {

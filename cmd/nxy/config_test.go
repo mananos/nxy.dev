@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/configedit"
+	"github.com/mananos/nxy.dev/v2/internal/configedit"
 )
 
 func TestConfigShowAndSet(t *testing.T) {

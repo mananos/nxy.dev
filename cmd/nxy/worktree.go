@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/worktree"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/worktree"
 )
 
 // The worktree actions of `nxy feature` (hosts/claude-code/entries/features.mjs). Text output; exit 1 on

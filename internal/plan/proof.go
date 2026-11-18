@@ -3,7 +3,7 @@ package plan
 import (
 	"fmt"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // Need is what a batch must prove before it counts as done.

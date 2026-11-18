@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/worktree"
+	"github.com/mananos/nxy.dev/v2/internal/worktree"
 )
 
 // The git side of `nxy feature list|new|pause|resume|close` (hosts/claude-code/worktrees.mjs). Nothing

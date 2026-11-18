@@ -1,7 +1,7 @@
 package report
 
 import (
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // StatuslineSettings are cfg.metrics.statusline read with JS semantics.

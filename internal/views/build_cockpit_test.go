@@ -3,7 +3,7 @@ package views
 import (
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func TestBuildCockpit(t *testing.T) {

@@ -5,17 +5,17 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/affected"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/gate"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/legacy"
-	"github.com/mananos/nxy.dev/internal/memory"
-	"github.com/mananos/nxy.dev/internal/repomap"
-	"github.com/mananos/nxy.dev/internal/report"
-	"github.com/mananos/nxy.dev/internal/review"
-	"github.com/mananos/nxy.dev/internal/scout"
+	"github.com/mananos/nxy.dev/v2/internal/affected"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/gate"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/scout"
 )
 
 // RepoIndex is the repo map of a project: structure, built by a script and queried by a script.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
 )
 
 // runCLI runs `nxy <args>` with stdin and returns exit code, stdout and stderr.

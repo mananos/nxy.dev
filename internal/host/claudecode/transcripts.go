@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // ListOpts select the sessions ListSessions returns.

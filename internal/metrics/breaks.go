@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 // BreakCauses are the causes of a cache rebuild, in report order.

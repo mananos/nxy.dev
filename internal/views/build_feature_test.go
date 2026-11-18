@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 var testNow = time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)

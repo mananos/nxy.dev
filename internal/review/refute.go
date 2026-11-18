@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // VerdictEntry is the refuter's conclusion about one finding.

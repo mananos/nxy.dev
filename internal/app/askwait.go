@@ -5,9 +5,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // Who answered a held question (pending_asks.answered_by).

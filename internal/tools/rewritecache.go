@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // rewriteCacheMax is a var so a test can exercise eviction with few entries.

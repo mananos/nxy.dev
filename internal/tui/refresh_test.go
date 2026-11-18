@@ -9,7 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // liveSource is the demo with a cockpit the test can change and a count of the cockpit loads.

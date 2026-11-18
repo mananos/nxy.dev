@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 // refuterReturned is the return of a refuter that stopped without saving: the high findings

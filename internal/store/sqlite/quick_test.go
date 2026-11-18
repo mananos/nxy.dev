@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 func TestOpenQuickDropsWriteOnBusyDB(t *testing.T) {

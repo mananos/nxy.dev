@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 const idleGapMs = 5 * 60 * 1000 // gaps longer than this do not count as "active" time

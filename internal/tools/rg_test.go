@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
 )
 
 func TestKnownRgLocations(t *testing.T) {

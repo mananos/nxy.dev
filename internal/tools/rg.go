@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // RgRow is one line rg found: Path with forward slashes and no leading "./".

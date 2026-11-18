@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // Row is one matching symbol of a query.

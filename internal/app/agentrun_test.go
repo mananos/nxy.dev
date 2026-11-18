@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 type fakeAgentFiles struct {

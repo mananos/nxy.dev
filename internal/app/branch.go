@@ -6,11 +6,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
-	"github.com/mananos/nxy.dev/internal/plan"
-	"github.com/mananos/nxy.dev/internal/repos"
-	"github.com/mananos/nxy.dev/internal/worktree"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/repos"
+	"github.com/mananos/nxy.dev/v2/internal/worktree"
 )
 
 // maxBaseOptions is how many bases a base question offers.

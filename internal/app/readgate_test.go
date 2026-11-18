@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/gate"
+	"github.com/mananos/nxy.dev/v2/internal/gate"
 )
 
 type fakeGate struct {

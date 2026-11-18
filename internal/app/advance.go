@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
 )
 
 // advance applies ev to the feature through flow.Next, atomically, and returns the stored

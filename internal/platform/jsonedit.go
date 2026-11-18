@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // ErrNotObject: the file holds JSON that is not an object (nxy never overwrites it).

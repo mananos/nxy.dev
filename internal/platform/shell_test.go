@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -41,17 +42,21 @@ func TestShellArgv(t *testing.T) {
 	}
 }
 
-func needShell(t *testing.T) {
+// testShell uses the same shell as RunShell; it reports whether that is cmd.exe.
+func testShell(t *testing.T) (cmd bool) {
 	t.Helper()
-	if _, err := exec.LookPath("sh"); err != nil {
-		if _, err := exec.LookPath("bash"); err != nil {
-			t.Skip("no sh")
-		}
+	argv, _ := ShellArgv(runtime.GOOS, exec.LookPath, "")
+	if argv[0] == "cmd.exe" {
+		return true
 	}
+	if _, err := exec.LookPath(argv[0]); err != nil {
+		t.Skip("no sh")
+	}
+	return false
 }
 
 func TestRunShellExit(t *testing.T) {
-	needShell(t)
+	testShell(t)
 	exit, _, err := RunShell(context.Background(), t.TempDir(), "exit 3", 1024)
 	if err != nil || exit != 3 {
 		t.Fatalf("exit=%d err=%v", exit, err)
@@ -59,7 +64,7 @@ func TestRunShellExit(t *testing.T) {
 }
 
 func TestRunShellAnd(t *testing.T) {
-	needShell(t)
+	testShell(t)
 	exit, out, err := RunShell(context.Background(), t.TempDir(), "echo a && echo b", 1024)
 	if err != nil || exit != 0 || !strings.Contains(out, "a") || !strings.Contains(out, "b") {
 		t.Fatalf("exit=%d out=%q err=%v", exit, out, err)
@@ -67,11 +72,14 @@ func TestRunShellAnd(t *testing.T) {
 }
 
 func TestRunShellTimeoutKillsAndReturns(t *testing.T) {
-	needShell(t)
+	command := "echo start; sleep 30; echo late"
+	if testShell(t) {
+		command = "echo start && ping -n 30 127.0.0.1 >nul && echo late"
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 	start := time.Now()
-	exit, out, err := RunShell(ctx, t.TempDir(), "echo start; sleep 30; echo late", 1024)
+	exit, out, err := RunShell(ctx, t.TempDir(), command, 1024)
 	if !errors.Is(err, context.DeadlineExceeded) || exit != -1 {
 		t.Fatalf("exit=%d err=%v", exit, err)
 	}
@@ -81,8 +89,8 @@ func TestRunShellTimeoutKillsAndReturns(t *testing.T) {
 }
 
 func TestRunShellKeepsTail(t *testing.T) {
-	needShell(t)
-	_, out, err := RunShell(context.Background(), t.TempDir(), "echo aaaaaaaaaa; echo zzzz", 8)
+	testShell(t)
+	_, out, err := RunShell(context.Background(), t.TempDir(), "echo aaaaaaaaaa && echo zzzz", 8)
 	if err != nil {
 		t.Fatal(err)
 	}

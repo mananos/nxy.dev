@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/format"
-	"github.com/mananos/nxy.dev/internal/gate"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/gate"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // runGate is `nxy gate [status|once [search]|reads on|off]` (entries/gate.mjs of the 1.x): once arms

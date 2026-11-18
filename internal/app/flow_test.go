@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // memStore is an in-memory Store whose Transition keeps the real contract: fn runs against a

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/setup"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // isolateView points every home the command reads at empty temp folders.

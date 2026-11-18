@@ -6,7 +6,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // KindRow is the filter activity of one command kind. Kind is the raw JSON value of the row:

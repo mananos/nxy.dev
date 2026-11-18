@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 func globalRule(text string, roles ...string) memory.Rule {

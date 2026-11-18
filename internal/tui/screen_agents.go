@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/mananos/nxy.dev/internal/format"
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 func init() { register(agentsScreen{}) }

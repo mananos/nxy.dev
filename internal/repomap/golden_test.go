@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 func TestExplicitIFlagIsRegex(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/plan"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 // memPlan is batchPlan with a repo decision (it carries the question a rule needs) and a suite.

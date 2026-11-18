@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 func writeTree(t *testing.T, root string, tree map[string]string) {

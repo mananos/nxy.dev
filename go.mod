@@ -1,4 +1,4 @@
-module github.com/mananos/nxy.dev
+module github.com/mananos/nxy.dev/v2
 
 go 1.27
 

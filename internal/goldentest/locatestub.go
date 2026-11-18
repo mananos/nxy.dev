@@ -18,7 +18,7 @@ func LocateStubs(t testing.TB) string {
 		ext = ".exe"
 	}
 	rg := filepath.Join(dir, "rg"+ext)
-	if out, err := exec.Command("go", "build", "-o", rg, "github.com/mananos/nxy.dev/internal/goldentest/locatestub").CombinedOutput(); err != nil {
+	if out, err := exec.Command("go", "build", "-o", rg, "github.com/mananos/nxy.dev/v2/internal/goldentest/locatestub").CombinedOutput(); err != nil {
 		t.Fatalf("go build locatestub: %v: %s", err, out)
 	}
 	data, err := os.ReadFile(rg)

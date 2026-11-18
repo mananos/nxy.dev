@@ -8,7 +8,7 @@ import (
 	"text/template"
 	"unicode/utf8"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 //go:embed prompts/engineer.md

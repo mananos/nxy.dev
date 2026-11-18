@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // FeatureIn is what the builders need to know of one feature: the domain value, its db times (epoch

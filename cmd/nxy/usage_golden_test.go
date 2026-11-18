@@ -18,9 +18,9 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // The usage-cli golden (this file and internal/goldentest document the case format): each case runs the
@@ -116,7 +116,7 @@ func buildRtkStub(t *testing.T) string {
 			name = "rtk.exe"
 		}
 		stubPath = filepath.Join(dir, name)
-		if out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/internal/goldentest/rtkstub").CombinedOutput(); err != nil {
+		if out, err := exec.Command("go", "build", "-o", stubPath, "github.com/mananos/nxy.dev/v2/internal/goldentest/rtkstub").CombinedOutput(); err != nil {
 			stubErr = fmt.Errorf("go build rtkstub: %v: %s", err, out)
 		}
 	})

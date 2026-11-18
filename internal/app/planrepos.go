@@ -8,10 +8,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
-	"github.com/mananos/nxy.dev/internal/repos"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/repos"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 // planRepo is one repo of a plan once nxy resolved it against the disk.

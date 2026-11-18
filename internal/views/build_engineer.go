@@ -1,8 +1,8 @@
 package views
 
 import (
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // EngineerIn is what the engineer screen needs. Draw turns a d2 source into a drawn diagram; the

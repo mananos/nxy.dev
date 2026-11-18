@@ -7,7 +7,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // d2Cache draws d2 sources once: it finds d2 on first use and keeps each drawing by the hash of its

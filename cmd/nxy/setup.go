@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/setup"
-	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/tools"
 )
 
 // runSetupPlan is the only call that installs anything; a var so a test can prove it does not run.

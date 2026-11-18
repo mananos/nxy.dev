@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 const actionUsage = "uso: nxy action decide --ask <id> --answer <etiqueta> [--answer <etiqueta> ...] | decide --ask <id> --release"

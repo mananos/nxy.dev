@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/mananos/nxy.dev/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
 )
 
 // halfPlans are the 1.x plans of this checkout that were approved and left half-finished and that

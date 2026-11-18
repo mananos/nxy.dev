@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/searchscope"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/searchscope"
 )
 
 // Where a subagent run's time goes: model / Bash / other tools / waiting, with usage-limit gaps

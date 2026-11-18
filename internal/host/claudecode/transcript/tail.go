@@ -3,8 +3,8 @@ package transcript
 import (
 	"bytes"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 // LastContextTokens is the context the main thread carries: input + cache read + cache creation of

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // Decode reads one plan from r. An unknown field is an error that names it,

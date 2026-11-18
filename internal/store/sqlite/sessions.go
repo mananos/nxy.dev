@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // Session is the local per-session state of the hooks. Times are in ms; zero means "never".

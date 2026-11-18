@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 // fakeRoot stands for the temp dir the JS golden wrote the texts under; every label is

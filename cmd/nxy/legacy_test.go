@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/legacy"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/report"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
 )
 
 // legacyWorld is a repo the 1.x worked in: a memory.db under NXY_HOME with its memories, and the

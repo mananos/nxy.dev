@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/searchscope"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/searchscope"
 )
 
 // shellWrites returns the files the command writes inside the repo (outside .git and .nxy), in the

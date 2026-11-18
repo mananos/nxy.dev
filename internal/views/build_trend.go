@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/metrics"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // TrendIn is the data of Tendencia. Loc is the zone the days are cut in (nil is UTC).

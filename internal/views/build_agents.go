@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
 )
 
 // MaxAttempts is the most attempts a batch gets (the first and one retry).

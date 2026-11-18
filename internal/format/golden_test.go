@@ -6,8 +6,8 @@ import (
 	"time"
 	_ "time/tzdata" // zones load on Windows CI too
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
 )
 
 func forFile(t *testing.T, file string, fn func(t *testing.T, c goldentest.Case)) {

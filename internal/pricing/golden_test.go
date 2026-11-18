@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 func matchJSON(m Match, ok bool, withPrice bool) any {

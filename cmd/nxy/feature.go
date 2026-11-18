@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // runPlan is `nxy plan save --feature <id>`: the plan JSON comes on stdin.

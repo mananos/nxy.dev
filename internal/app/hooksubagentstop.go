@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
 )
 
 // subagentStop handles SubagentStop of a planner or implementer launched in the background: it

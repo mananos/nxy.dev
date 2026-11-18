@@ -7,7 +7,7 @@ import (
 	"time"
 	_ "time/tzdata" // zones load on Windows CI too
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 // revive turns {"$undefined": true} (how the corpus writes JS undefined) into Undefined.

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 // BuildDecision is the question f.Next asks the user; false when the step is not a question.

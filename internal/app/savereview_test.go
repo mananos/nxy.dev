@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func reviewingFeature(t *testing.T, h Hooks, st *memStore, quick bool, lenses ...string) string {

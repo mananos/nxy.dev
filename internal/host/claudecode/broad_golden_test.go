@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
-	"github.com/mananos/nxy.dev/internal/searchscope"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/searchscope"
 )
 
 // TestGoldenBroadHistory runs the history cases of testdata/golden/searchscope: each is materialized

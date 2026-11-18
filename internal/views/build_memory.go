@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // Thresholds of the memory screen, fixed in code (the 10 is an estimate, nobody measures it).

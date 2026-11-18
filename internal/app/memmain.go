@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 // engineerMemoryNote is what the main thread reads when the design starts in engineer mode: every

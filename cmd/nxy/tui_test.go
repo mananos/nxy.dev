@@ -10,7 +10,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/mananos/nxy.dev/internal/tui"
+	"github.com/mananos/nxy.dev/v2/internal/tui"
 )
 
 func TestTuiDump(t *testing.T) {

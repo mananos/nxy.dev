@@ -3,7 +3,7 @@ package plan
 import (
 	"sort"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // Steps is the schedule of the plan: one step per batch. A batch starts after its Depends; without

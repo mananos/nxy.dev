@@ -4,10 +4,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/report"
-	"github.com/mananos/nxy.dev/internal/searchscope"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/searchscope"
 )
 
 // isFileIn is fileCheck of hosts/claude-code/search-history.mjs: stat the path against the cwd of the

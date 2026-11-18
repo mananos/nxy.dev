@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/setup"
+	"github.com/mananos/nxy.dev/v2/internal/setup"
 )
 
 // stepTimeout bounds each step of an install plan.

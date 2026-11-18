@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 )
 
 // FoldStatusline folds the new transcript bytes into c (hosts/claude-code/statusline.mjs fold):

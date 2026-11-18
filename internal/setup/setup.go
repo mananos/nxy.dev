@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 )
 
 // Tools are the tools `nxy setup` knows, in the order it lists them.

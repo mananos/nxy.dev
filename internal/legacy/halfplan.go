@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // ScopeHalfPlan is the scope of the mark of a 1.x plan left half-finished (key = HalfPlanKey);

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"math"
 
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 // Call is one API call as a host adapter hands it to the core (JSON keys of the 1.x).

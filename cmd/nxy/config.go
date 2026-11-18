@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/configedit"
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/tools"
+	"github.com/mananos/nxy.dev/v2/internal/configedit"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/tools"
 )
 
 const configUsage = "uso: nxy config [show] | set <clave> <valor|default> [--repo] | cache-ttl 1h|off"

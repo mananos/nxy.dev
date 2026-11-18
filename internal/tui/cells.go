@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/mananos/nxy.dev/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/format"
 )
 
 // The cell model of the mockup: a line is a list of segments, each with its own colors. A

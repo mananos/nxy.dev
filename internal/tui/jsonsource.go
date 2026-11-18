@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // jsonSource is a views.Source over the JSON files of the contract: the demo (testdata/views) and

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 // planSnapshot lists every file under root with its bytes and mtime, and every directory.

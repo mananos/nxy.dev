@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // latestDone is the repo's most recent feature when it is done.

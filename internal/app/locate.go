@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/repomap"
-	"github.com/mananos/nxy.dev/internal/scout"
+	"github.com/mananos/nxy.dev/v2/internal/repomap"
+	"github.com/mananos/nxy.dev/v2/internal/scout"
 )
 
 // Locator is the model-free search the scout runs before it reads anything: repo map, then rg, then

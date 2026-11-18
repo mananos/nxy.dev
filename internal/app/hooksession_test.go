@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
 )
 
 func TestSessionStartAutoModeRtk(t *testing.T) {

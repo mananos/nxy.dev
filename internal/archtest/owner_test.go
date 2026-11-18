@@ -18,9 +18,10 @@ func readRepoFile(t *testing.T, rel ...string) string {
 }
 
 // The module path, the GoReleaser release target and the shim's default
-// download URLs must all name the same GitHub owner/repo.
+// download URLs must all name the same GitHub owner/repo. The module path may
+// carry a major-version suffix (/v2), which is not part of the repo name.
 func TestReleaseOwnerConsistent(t *testing.T) {
-	mod := regexp.MustCompile(`(?m)^module github\.com/([^/\s]+/[^/\s]+)\s*$`).FindStringSubmatch(readRepoFile(t, "go.mod"))
+	mod := regexp.MustCompile(`(?m)^module github\.com/([^/\s]+/[^/\s]+)(?:/v[0-9]+)?\s*$`).FindStringSubmatch(readRepoFile(t, "go.mod"))
 	if mod == nil {
 		t.Fatal("go.mod: module path not found")
 	}

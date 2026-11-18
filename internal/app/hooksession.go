@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
 )
 
 const legacyNotice = "la 1.x de nxy sigue activada: desactivala mientras probás la v2 (las dos responden a los mismos hooks)"

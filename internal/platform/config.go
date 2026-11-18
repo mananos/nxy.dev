@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
 )
 
 // GitRoot is the first ancestor of dir (or dir itself) holding a `.git` (directory or worktree

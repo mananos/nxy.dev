@@ -4,10 +4,10 @@ import (
 	"math"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/format"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 // Presets is a palette per role (PRESETS of hosts/claude-code/statusline.mjs). `label` and `value`

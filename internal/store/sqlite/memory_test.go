@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/memory"
+	"github.com/mananos/nxy.dev/v2/internal/memory"
 )
 
 var memT0 = time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)

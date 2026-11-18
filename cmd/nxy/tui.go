@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	nxydev "github.com/mananos/nxy.dev"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
-	"github.com/mananos/nxy.dev/internal/tui"
-	"github.com/mananos/nxy.dev/internal/views"
+	nxydev "github.com/mananos/nxy.dev/v2"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/tui"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // runTui opens the TUI over the real data (views.Source of the db), or over the sample views with

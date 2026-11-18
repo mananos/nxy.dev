@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 func decideSetup(t *testing.T, multi bool) (Hooks, *fakeAsks, string) {

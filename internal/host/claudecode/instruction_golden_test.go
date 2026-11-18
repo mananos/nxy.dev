@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 const goldenExe = "/opt/nxy/bin/nxy"

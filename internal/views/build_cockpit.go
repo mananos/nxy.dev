@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // CockpitItem is one feature of Inicio with what the caller read for it: the batches running and

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/legacy"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // Marks of what was imported once (the same text as the store's).

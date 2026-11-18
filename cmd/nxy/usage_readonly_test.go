@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 // filterStatsCase is the first stats golden case that has filter rows and a plain text output.

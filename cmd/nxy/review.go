@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/app"
 )
 
 // reviewUser is `nxy review show|status|escape`: what the user runs (/nxy:review).

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/flow"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/flow"
 )
 
 // ErrNoActiveFeature means there is no feature to act on in the repo.

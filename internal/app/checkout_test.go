@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // coRepos gives every folder the same repo key but its own checkout, like worktrees of one repo.

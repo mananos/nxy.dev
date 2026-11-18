@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/app"
 )
 
 func TestDecodeAgentModelEffort(t *testing.T) {

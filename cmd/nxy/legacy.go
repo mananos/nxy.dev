@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/legacy"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/report"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
 )
 
 const legacyUsage = `uso: nxy legacy <import [--dir <d>] (copia lo que la 1.x sabe del repo; lo que ya se importó lo avisa) | status (qué se importó, por repo y checkout)>`

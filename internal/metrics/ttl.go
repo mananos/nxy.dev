@@ -3,7 +3,7 @@ package metrics
 import (
 	"math"
 
-	"github.com/mananos/nxy.dev/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
 )
 
 const (

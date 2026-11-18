@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
 )
 
 // HeadBytes is how much of the start of a 1.x jsonl file the cursor hashes.

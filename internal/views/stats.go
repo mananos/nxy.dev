@@ -1,8 +1,8 @@
 package views
 
 import (
-	"github.com/mananos/nxy.dev/internal/pricing"
-	"github.com/mananos/nxy.dev/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/pricing"
+	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
 // Stats is the stats screen of one session. Usage and Savings are reused from

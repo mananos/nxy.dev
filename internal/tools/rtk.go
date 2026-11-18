@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/filter"
-	"github.com/mananos/nxy.dev/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // rewriteTimeout is a var so a test can force the timeout path.

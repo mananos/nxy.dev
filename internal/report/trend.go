@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/format"
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
-	"github.com/mananos/nxy.dev/internal/jscompat"
-	"github.com/mananos/nxy.dev/internal/metrics"
+	"github.com/mananos/nxy.dev/v2/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/metrics"
 )
 
 // TrendSession is one parsed session as `nxy trend` sees it (the `sessions` of the JSON, in the

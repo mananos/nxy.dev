@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/legacy"
+	"github.com/mananos/nxy.dev/v2/internal/legacy"
 )
 
 const halfPlanBody = "## Next\n- seguir\n\n## Plan\nGoal: migrar el login\n### Batch 1 — modelo\nhacer x\n### Batch 2 — vista\nhacer y\n"

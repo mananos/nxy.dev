@@ -3,8 +3,8 @@ package claudecode
 import (
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/ask"
-	"github.com/mananos/nxy.dev/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/ask"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 )
 
 // ProposalInstruction shows the pending decision and asks the user to save it.

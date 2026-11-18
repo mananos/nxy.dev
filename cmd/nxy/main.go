@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/version"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/version"
 )
 
 type command func(args []string, stdin io.Reader, stdout, stderr io.Writer) int

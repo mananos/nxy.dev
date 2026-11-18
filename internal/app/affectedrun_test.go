@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/affected"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/affected"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 type fakeChanges struct {

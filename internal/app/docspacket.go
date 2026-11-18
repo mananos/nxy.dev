@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/docs"
-	"github.com/mananos/nxy.dev/internal/plan"
+	"github.com/mananos/nxy.dev/v2/internal/docs"
+	"github.com/mananos/nxy.dev/v2/internal/plan"
 )
 
 // NoDocsText is what `nxy review docs` prints for a feature with no docs to update.

@@ -3,7 +3,7 @@ package scout
 import (
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 func TestGoldenTerms(t *testing.T) {

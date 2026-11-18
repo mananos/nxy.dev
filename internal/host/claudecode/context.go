@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 )
 
 // contextTailBytes is how much of the end of the transcript is read to measure the main context.

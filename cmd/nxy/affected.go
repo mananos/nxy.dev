@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mananos/nxy.dev/internal/app"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/host/claudecode"
+	"github.com/mananos/nxy.dev/v2/internal/app"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode"
 )
 
 // runAffected is `nxy affected --feature <id>`: nxy works out the affected tests, runs them,

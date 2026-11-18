@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mananos/nxy.dev/internal/format"
+	"github.com/mananos/nxy.dev/v2/internal/format"
 )
 
 // contentWidth is the width of the content: the whole terminal, edge to edge with the bars.

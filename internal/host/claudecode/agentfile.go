@@ -3,7 +3,7 @@ package claudecode
 import (
 	"os"
 
-	"github.com/mananos/nxy.dev/internal/host/claudecode/transcript"
+	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 )
 
 // AgentFile reads a subagent's transcript file for app.AgentFiles.

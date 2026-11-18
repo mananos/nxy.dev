@@ -3,7 +3,7 @@ package tui
 import (
 	"sort"
 
-	"github.com/mananos/nxy.dev/internal/views"
+	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
 // Data is everything the screens show: one struct of the contract per screen. It is a cache the

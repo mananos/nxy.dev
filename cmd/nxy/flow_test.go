@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/design"
-	"github.com/mananos/nxy.dev/internal/domain"
-	"github.com/mananos/nxy.dev/internal/platform"
-	"github.com/mananos/nxy.dev/internal/store/sqlite"
+	"github.com/mananos/nxy.dev/v2/internal/design"
+	"github.com/mananos/nxy.dev/v2/internal/domain"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
+	"github.com/mananos/nxy.dev/v2/internal/store/sqlite"
 )
 
 // flowRepo makes a temp repo, enters it and returns its directory as the process sees it.
@@ -256,6 +256,7 @@ func strconvQuote(s string) string {
 	return string(b)
 }
 
+// needSh looks only for sh (not bash) on purpose: these tests need a real POSIX sh for their Accept (`test -f`).
 func needSh(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("sh"); err != nil {

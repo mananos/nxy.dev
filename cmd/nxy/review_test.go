@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/docs"
-	"github.com/mananos/nxy.dev/internal/review"
+	"github.com/mananos/nxy.dev/v2/internal/docs"
+	"github.com/mananos/nxy.dev/v2/internal/review"
 )
 
 const baseWithFinding = `{"lens":"base","criteria":[{"id":"R1","ok":true}],"findings":[` +

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mananos/nxy.dev/internal/filter"
+	"github.com/mananos/nxy.dev/v2/internal/filter"
 )
 
 // rewriteEngine is an Engine with a temp rewrite cache and a fake clock; rtk answers from the stub table.

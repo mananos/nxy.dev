@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mananos/nxy.dev/internal/goldentest"
+	"github.com/mananos/nxy.dev/v2/internal/goldentest"
 )
 
 // SpaceClass must be exactly isSpace (the JS \s set) over the whole BMP.
