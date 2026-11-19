@@ -1,7 +1,7 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-B › Agentes                                         esc vuelve  
 
-     Agentes                                              7 agentes · $0.18   
+    ▌AGENTES                                              7 agentes · $0.18   
      Agente               Modelo            ↓ tiempo       $                  
   ›  ○ Hilo principal     sonnet-4.6     3.0k 3h 00m   $0.03   Agent          
      ├ ✓ planner          sonnet-4.6     2.5k     6m   $0.04                  

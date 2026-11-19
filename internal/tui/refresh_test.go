@@ -34,7 +34,7 @@ func fakeWatch(context.Context) (int64, int, error) { return 1, 1, nil }
 
 func liveModel(t *testing.T, src views.Source, schema int) *model {
 	t.Helper()
-	st := newState(Options{Source: src, InRepo: true, Width: 100, Dark: true, Plain: true, Watch: fakeWatch, Schema: schema})
+	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true, Watch: fakeWatch, Schema: schema})
 	st.onLoad(cheapMsg{r: st.ld.cheap()})
 	return &model{st: st}
 }
@@ -139,7 +139,7 @@ func TestRefreshForgetsFarViews(t *testing.T) {
 
 func TestRefreshBaseVersion(t *testing.T) {
 	src := newLiveSource(t)
-	st := newState(Options{Source: src, InRepo: true, Width: 100, Dark: true, Plain: true, Watch: fakeWatch, Schema: 5, Ver: 1, HaveVer: true})
+	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true, Watch: fakeWatch, Schema: 5, Ver: 1, HaveVer: true})
 	st.onLoad(cheapMsg{r: st.ld.cheap()})
 	m := &model{st: st}
 	_, cmd := m.Update(pollMsg{ver: 2, schema: 1})

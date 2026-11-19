@@ -1,18 +1,18 @@
-   nxy     ›Inicio    Memoria    Gasto    Config                                         ● 2 decisiones    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
 
-  Te necesita  2
-  ›   Te necesita    No                                                                            21h 00m    $0.46   
-                     Te    Te necesita    Plan                   FEAT-D · acme/pagos   1 de 2    ━━━───  lote 3/4     
+ ▌TE NECESITA  2
+  ›   TE NECESITA    No                                                                            21h 00m    $0.46   
+                     Te    TE NECESITA    Plan                   FEAT-D · acme/pagos   1 de 2    ━━━───  lote 3/4     
                                                                                                  
-      Te necesita    Mi   ¿Aprobás el plan FEAT-D r2 de nxy?                                        1d 22h    $0.00   
+      TE NECESITA    Mi   ¿Aprobás el plan FEAT-D r2 de nxy?                                        1d 22h    $0.00   
                      Te                                                                          ──────  plan         
                                                                                                  
-  En curso  1          ›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
-      Trabajando     Ex     2  Cambiar     Escribí qué cambiar; nxy vuelve a planificar             3h 00m    $0.18   
+ ▌EN CURSO  1          ›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
+      TRABAJANDO     Ex     2  Cambiar     Escribí qué cambiar; nxy vuelve a planificar             3h 00m    $0.18   
                      Es     3  Ver completoAbrir el plan completo en tu editor                   ──────  lote 2/4     
                                                                                                  
-  Listo hoy  1            No espera a la TUI: contestá en la terminal de Claude Code.            
-      Listo          Co                                                                                       $0.03   
+ ▌LISTO HOY  1            No espera a la TUI: contestá en la terminal de Claude Code.            
+      LISTO          Co                                                                                       $0.03   
 
   worktrees  1 pausado · 1 huérfano   w ver todos
   1-3  elegir     enter  confirmar     tab  la otra     esc  después     ?  ayuda                                       

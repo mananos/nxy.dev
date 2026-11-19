@@ -43,7 +43,7 @@ func dim(base []string, th *theme) []string {
 			out[i] = plain
 			continue
 		}
-		out[i] = th.style(tSb, tBg, false).Render(plain)
+		out[i] = th.style(tSb, tBg, false, false).Render(plain)
 	}
 	return out
 }

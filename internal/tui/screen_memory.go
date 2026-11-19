@@ -333,9 +333,9 @@ func (st *state) memRowLine(row memRow, li int, search bool) line {
 		if row.folded {
 			lead = L(T("▸ ", tSb))
 		}
-		return lr(L(lead, B(row.title, "")), L(T(fmt.Sprint(row.n), tSb)), li)
+		return lr(L(lead, heading(row.title)), L(T(fmt.Sprint(row.n), tSb)), li)
 	case "title":
-		return lr(L(B(row.title, "")), L(T(fmt.Sprint(row.n), tSb)), li)
+		return lr(L(heading(row.title)), L(T(fmt.Sprint(row.n), tSb)), li)
 	case "more":
 		return L(spaces(5, ""), T(fmt.Sprintf("↓ %d más", row.n), tSb))
 	case "note":
@@ -433,9 +433,9 @@ func exLine() line {
 func proposalKind(k string) (string, tok) {
 	switch k {
 	case "delete":
-		return "borrar", tNeed
+		return "borrar", tFail
 	case "promote":
-		return "promover", tAc
+		return "promover", tDone
 	}
 	return "unir", tVer
 }
@@ -583,15 +583,15 @@ func proposalVerb(p *views.Proposal) string {
 // memScopeBar is the repos and Global; [ ] changes them.
 func (st *state) memScopeBar(scope string, aw int) line {
 	scopes := st.memScopes()
-	chipOf := func(s string) seg {
-		label := " " + s + " "
+	chipOf := func(s string) line {
+		name := s
 		if s == views.ScopeGlobal {
-			label = " Global "
+			name = "Global"
 		}
 		if s == scope {
-			return S(label, "ch-ac")
+			return accent(name)
 		}
-		return S(label, "ch-off")
+		return L(S(" "+name+" ", "ch-off"))
 	}
 	var l line
 	total := 0
@@ -604,7 +604,7 @@ func (st *state) memScopeBar(scope string, aw int) line {
 				l = append(l, spaces(1, ""))
 			}
 		}
-		l = append(l, chipOf(s))
+		l = append(l, chipOf(s)...)
 		if s == scope {
 			idx = i
 		}
@@ -634,12 +634,12 @@ func (st *state) memTop(scope string, aw int) []line {
 			continue
 		}
 		label, kt := proposalKind(p.Kind)
-		props = append(props, lr(L(chip(label, kt, 11), "   ", B(p.Target, ""), T("  "+p.Why, tMu)), yesNo(label, strings.ToLower(p.Reject.Label)), inner))
+		props = append(props, lr(L(tonal(label, kt, 11), "   ", B(p.Target, ""), T("  "+p.Why, tMu)), yesNo(label, strings.ToLower(p.Reject.Label)), inner))
 	}
 	if len(props) == 0 {
 		return nil
 	}
-	head := lr(L(B("Propuestas", "")), L(T("nxy las arma, vos aceptás o no", tSb)), inner)
+	head := lr(L(heading("Propuestas")), L(T("nxy las arma, vos aceptás o no", tSb)), inner)
 	return block(append([]line{head}, props...), aw, tBg1, 3)
 }
 
@@ -678,16 +678,14 @@ func (memoryScreen) view(st *state, r route, w int) ([]line, int) {
 	var left []line
 	focus := len(out)
 	for i, row := range rows {
-		bg := tBg1
 		if i == selRow {
-			bg = tSel
 			focus = len(out) + len(left)
 		}
 		var l line
 		if row.kind != "gap" {
 			l = st.memRowLine(row, li, m.search)
 		}
-		left = append(left, block([]line{l}, lwid, bg, 3)...)
+		left = append(left, pick([]line{l}, lwid, tBg1, i == selRow, 3)...)
 	}
 	if len(rows) == 0 || (m.search && len(sel) == 0) {
 		left = append(left, block([]line{L(T("nada coincide con «"+m.q.Value()+"»", tMu))}, lwid, tBg1, 3)...)

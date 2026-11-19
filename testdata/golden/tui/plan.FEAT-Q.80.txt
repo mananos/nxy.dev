@@ -1,24 +1,24 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-Q › Plan                                            esc vuelve  
 
-     ←   Revisar el formato de las notas   FEAT-Q              Te necesita    
+     ←   Revisar el formato de las notas   FEAT-Q              TE NECESITA    
          api · feat/formato · 1d 0h · $0.00                                   
 
    ✓ Diseño  ━━  Plan  ──  Lotes  ──  Review  ──  Cierre 
 
-     Lotes                esperando tu aprobación  ·  en fila, un solo repo   
+    ▌LOTES                esperando tu aprobación  ·  en fila, un solo repo   
      ›○ 1 Formato                                                             
                                                                               
      Lote 1 · Formato                                           riesgo bajo   
      accept  go test ./src/ -run TestFormato                                  
 
-     Objetivo                                                                 
+    ▌OBJETIVO                                                                 
      Revisar el formato de las notas                                          
                                                                               
-     Criterios                                                                
+    ▌CRITERIOS                                                                
      R1  Revisar el formato de las notas                                      
                                                                               
-     Decisiones                                                               
+    ▌DECISIONES                                                               
 
      Impacto · lote 1                                             codegraph   
                                                                               

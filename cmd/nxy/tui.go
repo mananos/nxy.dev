@@ -34,7 +34,6 @@ func runTui(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	cwd := fs.String("cwd", "", "the folder; default CLAUDE_PROJECT_DIR or the current one")
 	width := fs.Int("width", 120, "width of the dump in cells")
 	plain := fs.Bool("plain", false, "no ANSI in the dump")
-	theme := fs.String("theme", "dark", "dump theme: dark|light")
 	icons := fs.String("icons", "auto", "auto|nerd|unicode")
 	if err := fs.Parse(args); err != nil {
 		return 1
@@ -50,11 +49,7 @@ func runTui(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "nxy tui: --icons %q: usá auto, nerd o unicode\n", *icons)
 		return 1
 	}
-	if *theme != "dark" && *theme != "light" {
-		fmt.Fprintf(stderr, "nxy tui: --theme %q: usá dark o light\n", *theme)
-		return 1
-	}
-	o := tui.Options{Width: *width, Dark: *theme == "dark", Nerd: nerd, Plain: *plain}
+	o := tui.Options{Width: *width, Nerd: nerd, Plain: *plain}
 	if *demo {
 		src, err := tui.NewJSONSource(nxydev.DemoViews, "testdata/views")
 		if err != nil {

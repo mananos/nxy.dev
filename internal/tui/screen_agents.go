@@ -115,7 +115,7 @@ func (agentsScreen) view(st *state, r route, w int) ([]line, int) {
 		head = L(head, rcol(T(st.ic.Up, tSb), 6), rcol(T("cache", tSb), 7))
 	}
 	head = L(head, rcol(T("tiempo", tSb), 7), rcol(T("$", tSb), 8))
-	title := lr(L(B("Agentes", "")), L(T(fmt.Sprintf("%d agentes · %s", countAgents(&a.Root), costText(a.Feature.CostUSD, a.Feature.CostEstimated)), tSb)), iw)
+	title := lr(L(heading("Agentes")), L(T(fmt.Sprintf("%d agentes · %s", countAgents(&a.Root), costText(a.Feature.CostUSD, a.Feature.CostEstimated)), tSb)), iw)
 
 	out := []line{nil}
 	out = append(out, indent(block([]line{title, head}, w-4, tBg1, 3), 2)...)
@@ -163,12 +163,10 @@ func (agentsScreen) view(st *state, r route, w int) ([]line, int) {
 			l = L(l, rcol(T(tout, tMu), 6), rcol(T(cache, tMu), 7))
 		}
 		l = L(l, rcol(T(when, tMu), 7), rcol(B(cost, ""), 8), "   ", note)
-		bg := tBg1
 		if i == sel {
-			bg = tSel
 			focus = len(out)
 		}
-		out = append(out, indent(block([]line{l}, w-4, bg, 3), 2)...)
+		out = append(out, indent(pick([]line{l}, w-4, tBg1, i == sel, 3), 2)...)
 	}
 
 	// the detail of the agent under the cursor

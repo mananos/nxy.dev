@@ -29,7 +29,7 @@ func TestScreensFit(t *testing.T) {
 		for _, w := range []int{80, 120, 200} {
 			for _, nerd := range []bool{false, true} {
 				for _, plain := range []bool{true, false} {
-					out, err := Render(Options{Source: d, Demo: true, Width: w, Dark: true, Nerd: nerd, Plain: plain}, tg.ID, tg.Key)
+					out, err := Render(Options{Source: d, Demo: true, Width: w, Nerd: nerd, Plain: plain}, tg.ID, tg.Key)
 					if err != nil {
 						t.Fatalf("%s: %v", tg.ID, err)
 					}
@@ -49,21 +49,30 @@ func TestScreensFit(t *testing.T) {
 
 func dump(t *testing.T, target string, w int) string {
 	t.Helper()
-	out, err := Render(Options{Source: testSource(t), Demo: true, Width: w, Dark: true, Plain: true}, target, "")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: w, Plain: true}, target, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	return out
 }
 
+func TestDemoToday(t *testing.T) {
+	if out := dump(t, "inicio", 120); !strings.Contains(out, "hoy $99.97") {
+		t.Errorf("inicio demo should show hoy $99.97:\n%s", out)
+	}
+	if out := dump(t, "tendencia", 120); !strings.Contains(out, "99.97") {
+		t.Errorf("tendencia demo should show 99.97:\n%s", out)
+	}
+}
+
 func TestInicio(t *testing.T) {
 	out := dump(t, "inicio", 80)
-	for _, chip := range []string{"Te necesita", "Trabajando", "Verificando", "Listo"} {
+	for _, chip := range []string{"TE NECESITA", "TRABAJANDO", "VERIFICANDO", "LISTO"} {
 		if !strings.Contains(out, " "+chip+" ") {
 			t.Errorf("no chip %q", chip)
 		}
 	}
-	a, b, c := strings.Index(out, "Te necesita  2"), strings.Index(out, "En curso"), strings.Index(out, "Listo hoy")
+	a, b, c := strings.Index(out, "TE NECESITA  2"), strings.Index(out, "EN CURSO"), strings.Index(out, "LISTO HOY")
 	if a < 0 || b < a || c < b {
 		t.Fatalf("groups out of order: %d %d %d", a, b, c)
 	}
@@ -96,7 +105,7 @@ func press(m *model, keys ...string) {
 
 func testModel(t *testing.T) *model {
 	t.Helper()
-	m := &model{st: newState(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true, eager: true})}
+	m := &model{st: newState(Options{Source: testSource(t), Demo: true, Width: 100, Plain: true, eager: true})}
 	m.st.height = 40
 	return m
 }
@@ -188,16 +197,16 @@ func TestDecisionBadgeNarrow(t *testing.T) {
 	d := testSource(t)
 	wide, _ := Render(Options{Source: d, Demo: true, Width: 120, Plain: true}, "inicio", "")
 	narrow, _ := Render(Options{Source: d, Demo: true, Width: 80, Plain: true}, "inicio", "")
-	if !strings.Contains(wide, "decisi") {
+	if !strings.Contains(wide, "DECISIONES") {
 		t.Error("wide bar has no decisions label")
 	}
-	if first := strings.Split(narrow, "\n")[0]; strings.Contains(first, "decisi") || !strings.Contains(first, "● 2") {
+	if first := strings.Split(narrow, "\n")[0]; strings.Contains(first, "DECISI") || !strings.Contains(first, "● 2") {
 		t.Errorf("narrow bar: %q", first)
 	}
 }
 
 func TestFeature(t *testing.T) {
-	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "feature", "F7K2")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Plain: true}, "feature", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +286,7 @@ func TestPlanApproval(t *testing.T) {
 	if strings.Contains(out, "esperando tu aprobación") {
 		t.Fatal("the default plan (F7K2) is running, not waiting")
 	}
-	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "plan", "F7K9")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Plain: true}, "plan", "F7K9")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,14 +349,14 @@ func TestPlanApproval(t *testing.T) {
 }
 
 func TestPlanGraph(t *testing.T) {
-	wide, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "plan", "F7K2")
+	wide, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Plain: true}, "plan", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(wide, "┬") || !strings.Contains(wide, "┘") || !strings.Contains(wide, "├") {
 		t.Errorf("the graph at 100 has no connectors:\n%s", wide)
 	}
-	narrow, err := Render(Options{Source: testSource(t), Demo: true, Width: 80, Dark: true, Plain: true}, "plan", "F7K2")
+	narrow, err := Render(Options{Source: testSource(t), Demo: true, Width: 80, Plain: true}, "plan", "F7K2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -532,7 +541,7 @@ func TestEngineerNoAnchor(t *testing.T) {
 	}
 	press(m, "h")
 	got = m.st.frame(true)
-	if !strings.Contains(got, "Así es hoy") || !strings.Contains(got, "PagoRepo") {
+	if !strings.Contains(got, "ASÍ ES HOY") || !strings.Contains(got, "PagoRepo") {
 		t.Fatalf("h did not show how it is today:\n%s", got)
 	}
 }
@@ -555,8 +564,8 @@ func TestMemoryRareOnly(t *testing.T) {
 		left = append(left, ansi.Cut(l, 0, 52)) // the list is the left column
 	}
 	list := strings.Join(left, "\n")
-	list = list[strings.Index(list, "Reglas  "):] // under the proposals
-	for _, mark := range []string{"sin citar", "visto 3", "obsoleto", "↓ 9 más", "▸ Features cerradas"} {
+	list = list[strings.Index(list, "REGLAS  "):] // under the proposals
+	for _, mark := range []string{"sin citar", "visto 3", "obsoleto", "↓ 9 más", "▸ FEATURES CERRADAS"} {
 		if !strings.Contains(list, mark) {
 			t.Errorf("the list lacks %q:\n%s", mark, list)
 		}
@@ -580,11 +589,11 @@ func TestMemoryScopes(t *testing.T) {
 	if !strings.Contains(g, "nxy propone pasarlo a regla") || !strings.Contains(g, "F6A1 · F7C3 · F7K2") {
 		t.Fatalf("learning detail:\n%s", g)
 	}
-	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}, "memoria", "global")
+	out, err := Render(Options{Source: testSource(t), Demo: true, Width: 100, Plain: true}, "memoria", "global")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Tuyas, en todos los repos", "Reglas tuyas", "de la 1.x", "no hay globales", "gana el repo"} {
+	for _, want := range []string{"Tuyas, en todos los repos", "REGLAS TUYAS", "de la 1.x", "no hay globales", "gana el repo"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("global lacks %q:\n%s", want, out)
 		}
@@ -595,7 +604,7 @@ func TestMemoryScopes(t *testing.T) {
 		t.Fatalf("] did not go to facturacion-web:\n%s", m.st.frame(true))
 	}
 	press(m, "[", "[")
-	if !strings.Contains(m.st.frame(true), "Reglas tuyas") {
+	if !strings.Contains(m.st.frame(true), "REGLAS TUYAS") {
 		t.Fatalf("[ [ did not wrap to Global:\n%s", m.st.frame(true))
 	}
 }
@@ -804,7 +813,7 @@ func TestStatsTab(t *testing.T) {
 		t.Fatalf("tab in Gasto should open Tendencia: %+v", top)
 	}
 	press(m, "enter")
-	if !strings.Contains(m.st.frame(true), "Últimas 8 semanas") {
+	if !strings.Contains(m.st.frame(true), "ÚLTIMAS 8 SEMANAS") {
 		t.Fatal("enter did not group by week")
 	}
 	press(m, "shift+tab")
@@ -896,7 +905,7 @@ func TestLookupUnknownPanics(t *testing.T) {
 }
 
 func TestRenderUnknownKey(t *testing.T) {
-	o := Options{Source: testSource(t), Demo: true, Width: 100, Dark: true, Plain: true}
+	o := Options{Source: testSource(t), Demo: true, Width: 100, Plain: true}
 	if _, err := Render(o, "feature", "ZZZZ"); err == nil || !strings.Contains(err.Error(), "F7K2") {
 		t.Fatalf("err %v", err)
 	}
@@ -941,7 +950,7 @@ func TestFullWidth(t *testing.T) {
 	}
 	d := testSource(t)
 	plan := func(w int) string {
-		out, err := Render(Options{Source: d, Demo: true, Width: w, Dark: true, Plain: true}, "plan", "F7K2")
+		out, err := Render(Options{Source: d, Demo: true, Width: w, Plain: true}, "plan", "F7K2")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -29,27 +29,32 @@ const (
 	tFail tok = "fail"
 	tD2   tok = "d2"
 
+	tCap    tok = "cap"    // keycap of the footer
+	tBandMu tok = "bandmu" // muted text on the yellow band
+	tTape   tok = "tape"   // the ╱ fill of the band
+
 	tDoneBg tok = "donebg" // tint of an added line
 	tFailBg tok = "failbg" // tint of the red block of a failed batch and of a deleted line
 )
 
 var darkPalette = map[tok]string{
-	"bg": "#101318", "fg": "#d6dae1", "mu": "#8b94a3", "sb": "#4b5463", "ac": "#5fd4c4",
-	"bg1": "#171b22", "bg2": "#1f242d", "sel": "#222a37",
-	"work": "#6ea8fe", "ver": "#b69cff", "need": "#f2b65a", "done": "#7fd19a", "fail": "#f07c7c", "d2": "#aab2bf",
-	"needbg": "#2b2416", "failbg": "#2a1719", "workbg": "#16202f", "verbg": "#211b30", "donebg": "#15241b", "acbg": "#12262a",
+	"bg": "#070707", "fg": "#DEDBD2", "mu": "#8F8B80", "sb": "#5B5850", "ac": "#FDBF01",
+	"bg1": "#0E0E0D", "bg2": "#191916", "sel": "#FDBF01",
+	"work": "#6ea8fe", "ver": "#b69cff", "need": "#FDBF01", "done": "#7fd19a", "fail": "#FF8A80", "d2": "#B8B4A8",
+	"needbg": "#2A2200", "failbg": "#3A1414", "workbg": "#13203A", "verbg": "#231A3A", "donebg": "#14301C", "acbg": "#2A2200",
+	"cap": "#2A2822", "bandmu": "#5C4800", "tape": "#C79600",
 }
 
-var lightPalette = map[tok]string{
-	"bg": "#fbfbf9", "fg": "#1d2430", "mu": "#5f6878", "sb": "#aab1bd", "ac": "#0c7d70",
-	"bg1": "#f0f1ed", "bg2": "#e6e8e2", "sel": "#e2e8f1",
-	"work": "#2f6bd8", "ver": "#7a52d6", "need": "#a86500", "done": "#2b8a4b", "fail": "#c93c3c", "d2": "#434b58",
-	"needbg": "#fbf0dc", "failbg": "#fbe7e6", "workbg": "#e5edfb", "verbg": "#eee8fb", "donebg": "#e3f2e7", "acbg": "#dcf0ec",
+// selInk is the dark-on-yellow tone of each token when it is drawn on the chosen row (tSel).
+var selInk = map[tok]string{
+	"fg": "#070707", "ac": "#070707", "need": "#070707", "d2": "#070707",
+	"mu": "#4A3B00", "sb": "#6B5600", "fail": "#8A1C12", "done": "#0F5A2A", "work": "#0B3D91", "ver": "#4B2A9A",
 }
 
 type styleKey struct {
 	fg, bg tok
 	bold   bool
+	under  bool
 }
 
 // theme paints segments. With plain=true nothing is painted, so the output has no ESC.
@@ -59,12 +64,8 @@ type theme struct {
 	cache map[styleKey]lipgloss.Style
 }
 
-func newTheme(dark, plain bool) *theme {
-	t := &theme{plain: plain, pal: lightPalette, cache: map[styleKey]lipgloss.Style{}}
-	if dark {
-		t.pal = darkPalette
-	}
-	return t
+func newTheme(plain bool) *theme {
+	return &theme{plain: plain, pal: darkPalette, cache: map[styleKey]lipgloss.Style{}}
 }
 
 func (t *theme) color(k tok) color.Color {
@@ -85,18 +86,26 @@ func (t *theme) bgColor() color.Color {
 
 // style is the lipgloss style of a segment: both colors are always explicit, so a text color
 // never lets the terminal background show through a block.
-func (t *theme) style(fg, bg tok, bold bool) lipgloss.Style {
+func (t *theme) style(fg, bg tok, bold, under bool) lipgloss.Style {
 	if fg == "" {
 		fg = tFg
 	}
 	if bg == "" {
 		bg = tBg
 	}
-	k := styleKey{fg, bg, bold}
+	k := styleKey{fg, bg, bold, under}
 	if s, ok := t.cache[k]; ok {
 		return s
 	}
-	s := lipgloss.NewStyle().Foreground(t.color(fg)).Background(t.color(bg)).Bold(bold)
+	fgc := t.color(fg)
+	if bg == tSel {
+		ink, ok := selInk[fg]
+		if !ok {
+			ink = "#070707"
+		}
+		fgc = lipgloss.Color(ink)
+	}
+	s := lipgloss.NewStyle().Foreground(fgc).Background(t.color(bg)).Bold(bold).Underline(under)
 	t.cache[k] = s
 	return s
 }

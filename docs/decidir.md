@@ -12,7 +12,7 @@ Una feature te hace preguntas todo el tiempo: aprobar el plan, qué hacer con un
 
 ![La ventana de decisión de la TUI: una pregunta con opciones numeradas y una recomendada](assets/gifs/tui-decidir.gif)
 
-- En la TUI, arriba a la derecha, `● 2 decisiones`; la feature que espera aparece en el grupo **Te necesita**, y el título de la terminal pasa a `● nxy: 2 decisiones`.
+- En la TUI, arriba a la derecha, `● 2 DECISIONES`; la feature que espera aparece en el grupo **Te necesita**, y el título de la terminal pasa a `● nxy: 2 decisiones`.
 - En la terminal de Claude Code, el título pasa a `● nxy: decisión pendiente` mientras la pregunta espera.
 - Al apretar `d` se abre la ventana: el chip **Te necesita**, el título de la pregunta, la feature y el repo (`F7K2 · facturacion-web`), cuántas hay (`1 de 2`), la pregunta con su contexto, y las opciones numeradas, con la **recomendada** marcada. Si la pregunta es de varias partes ves `pregunta 1 de 3`.
 - Al contestar, Claude sigue como si hubieras elegido en su diálogo; en el registro de la herramienta queda `nxy: contestada en la TUI`.
@@ -50,7 +50,7 @@ El modelo no puede contestarse solo: `nxy action decide` sólo lo acepta si lo c
 | `t` | Contestar en la terminal de Claude Code |
 | `tab` · `shift+tab` | La otra pregunta |
 | `esc` | Después |
-| `q` · `?` · `ctrl+t` · `ctrl+g` | Salir, ayuda, tema, íconos (siguen funcionando) |
+| `q` · `?` · `ctrl+g` | Salir, ayuda, íconos (siguen funcionando) |
 
 Mensajes que podés ver abajo en la TUI (los demás avisos de nxy, en [Mensajes de nxy](mensajes.md)):
 

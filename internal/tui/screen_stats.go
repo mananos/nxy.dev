@@ -21,9 +21,9 @@ func statsNav(active string) line {
 			l = append(l, spaces(1, ""))
 		}
 		if x.id == active {
-			t := S(" "+x.name+" ", "ch-ac")
-			t.Mark = true
-			l = append(l, t)
+			t := accent(x.name)
+			t[0].Mark = true
+			l = append(l, t...)
 		} else {
 			l = append(l, T(" "+x.name+" ", tMu))
 		}
@@ -127,7 +127,7 @@ func (statsScreen) view(st *state, _ route, w int) ([]line, int) {
 
 	// shape of the session
 	kv := func(k, v string) line { return L(T(k+"  ", tMu), B(v, ""), "     ") }
-	forma := []line{L(B("Forma de la sesión", "")), L(
+	forma := []line{L(heading("Forma de la sesión")), L(
 		kv("por turno", fmt.Sprintf("%.1f llamadas", s.Shape.CallsPerTurn)),
 		kv("del hilo", fmt.Sprintf("%.1f", s.Shape.MainCallsPerTurn)),
 		kv("contexto", format.FmtTokens(s.Shape.MainCtxAvg)),
@@ -136,7 +136,7 @@ func (statsScreen) view(st *state, _ route, w int) ([]line, int) {
 	out = append(out, nil)
 
 	// filter and broad searches
-	filtro := []line{L(B("Filtro y búsquedas", ""))}
+	filtro := []line{L(heading("Filtro y búsquedas"))}
 	if s.Filter.Rows > 0 {
 		engine := "el filtro"
 		if len(s.Filter.ByEngine) == 1 {

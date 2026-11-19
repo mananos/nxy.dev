@@ -1,4 +1,4 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-P › Plan › Nota.java                                esc vuelve  
 
      ←   Nota.java   api                                         codegraph    
@@ -23,19 +23,19 @@
                                                                               
      ✗ src/billing/Nota.java:12: se esperaba 100.00 y dio 99.99               
 
-     Importado por                                                            
+    ▌IMPORTADO POR                                                            
      ›Factura.java                                                      :30   
       Listado.java                                                       :7   
                                                                               
-     Tests                                                                    
+    ▌TESTS                                                                    
      ✗ NotaTest.java                                                          
      ○ NotaServiceTest.java                                                   
                                                                               
-     Memoria anclada                                                          
+    ▌MEMORIA ANCLADA                                                          
      K1  Usar BigDecimal para los importes                                    
      A1  Los importes se guardan en centavos                                  
                                                                               
-     Features                                                                 
+    ▌FEATURES                                                                 
      FEAT-P  lote 1 · en curso                                                
      FEAT-Q  lote 1 · por empezar                                             
      CF-NOTA  cerrada hace 5d                                                 

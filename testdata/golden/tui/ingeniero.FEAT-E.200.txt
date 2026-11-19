@@ -1,4 +1,4 @@
-   nxy     ›Inicio    Memoria    Gasto    Config                                                                                                                         ● 2 decisiones    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
   Inicio › FEAT-E › Ingeniero                                                                                                                                                               esc vuelve  
 
      ←   cobrar por suscripción   FEAT-E                                                                                                                                                 ingeniero    
@@ -8,7 +8,7 @@
 
    ✓ Dónde vive el cobro  ━━  ● Cómo se reintenta  ━━  ✓ Formato de los recibos  ──  Moneda 
 
-     Cómo se reintenta                               A  Cola de reintentos                                                                                                                 A   hoy    
+    ▌CÓMO SE REINTENTA                               A  Cola de reintentos                                                                                                                 A   hoy    
      bifurcación 2 de 4 · ninguna elegida                                                                                                                                                             
                                                      [cola: Cola]                                                                                                                                     
      ¿Cómo se reintenta un cobro fallido?                                                                                                                                                             

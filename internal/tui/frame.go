@@ -12,15 +12,13 @@ func contentWidth(w int) int { return w }
 
 // topBar is the bar of the sections, on the whole width.
 func (st *state) topBar(w int) line {
-	l := L("  ", S(" nxy ", "ch-ac"), "    ")
+	l := L("  ", B(" nxy ", tBg), "    ")
 	active := st.currentSection()
 	for _, s := range sections {
 		if s.id == active {
-			t := S(" "+s.title+" ", "tabon")
-			t.Mark = true
-			l = append(l, t)
+			l = append(l, seg{Text: " " + s.title + " ", Fg: tAc, Bg: tBg, Bold: true, Mark: true})
 		} else {
-			l = append(l, T(" "+s.title+" ", tMu))
+			l = append(l, T(" "+s.title+" ", tBandMu))
 		}
 		l = append(l, spaces(2, ""))
 	}
@@ -28,27 +26,27 @@ func (st *state) topBar(w int) line {
 	if n := st.decisionCount(); n > 0 {
 		label := fmt.Sprintf(" ● %d ", n)
 		if w >= 100 {
-			label = " ● " + decisionsText(n) + " "
+			label = " ● " + strings.ToUpper(decisionsText(n)) + " "
 		}
-		right = append(right, S(label, "ch-need"), spaces(3, ""))
+		right = append(right, seg{Text: label, Fg: tAc, Bg: tBg, Bold: true}, spaces(3, ""))
 	}
-	right = append(right, T("hoy ", tMu), B(format.FmtUsd(st.data.Cockpit.Totals.CostTodayUSD), ""), spaces(3, ""))
-	return bgize(lr(l, right, w), tBg2)
+	right = append(right, T("hoy ", tBandMu), B(format.FmtUsd(st.data.Cockpit.Totals.CostTodayUSD), tBg), spaces(3, ""))
+	return fillRun(bgize(lr(l, right, w), tAc), "╱", tTape, 10, 3)
 }
 
 // footBar is the bar of keys: the ones that do not fit fall from the end; ? stays.
 func (st *state) footBar(w int, hints []hint) line {
 	all := append(append([]hint(nil), hints...), hint{"?", "ayuda"})
 	for n := len(hints); n >= 0; n-- {
-		l := L("  ")
+		l := L(" ")
 		for i, h := range append(append([]hint(nil), all[:n]...), all[len(all)-1]) {
 			if i > 0 {
-				l = append(l, spaces(5, ""))
+				l = append(l, spaces(4, ""))
 			}
-			l = append(l, B(h.key, ""), T("  "+h.desc, tMu))
+			l = append(l, footCap(h.key), T(" "+h.desc, tMu))
 		}
 		if lw(l) <= w || n == 0 {
-			return bgize(fit(l, w), tBg2)
+			return bgize(fit(l, w), tBg)
 		}
 	}
 	return nil
@@ -56,7 +54,7 @@ func (st *state) footBar(w int, hints []hint) line {
 
 func (st *state) helpLines(w int) []line {
 	r := st.top()
-	rows := []line{L(B("Teclas", ""))}
+	rows := []line{L(heading("Teclas"))}
 	for _, h := range st.lookup(r.screen).keys(st, r) {
 		rows = append(rows, L(keycap(h.key), "  ", h.desc))
 	}
@@ -64,7 +62,6 @@ func (st *state) helpLines(w int) []line {
 		L(keycap("esc"), "  ", "sube un nivel; en la raíz de una sección vuelve a Inicio"),
 		L(keycap("tab"), "  ", "cambia de sección"),
 		L(keycap("q"), "  ", "salir"),
-		L(keycap("ctrl+t"), "  ", "tema oscuro o claro"),
 		L(keycap("ctrl+g"), "  ", "íconos nerd o unicode"),
 	)
 	if st.demo {

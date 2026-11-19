@@ -10,7 +10,7 @@ import (
 	"github.com/mananos/nxy.dev/v2/internal/views"
 )
 
-// The batches drawn as a graph without boxes: one filled label per batch (tonal by state, solid
+// The batches drawn as a graph without boxes: one filled label per batch (tonal by state, yellow
 // for the one under the cursor) and lines between them. Batches go in layers by how deep their
 // dependencies go; with a single repo they come out in a row.
 
@@ -77,17 +77,18 @@ func (st *state) batchNode(b views.PlanBatch, sel bool, w int, repo string) seg 
 	text += strings.Repeat(" ", max(w-ansi.StringWidth(text)-ansi.StringWidth(right), 0)) + right
 	style := "ch-mute"
 	k := batchTok(b.Status)
-	switch {
-	case sel && k == "":
-		style = "ch-ac"
-	case sel:
-		style = "ch-" + string(k)
-	case k != "":
+	if k != "" {
 		style = "tn-" + string(k)
 	}
-	s := S(ansi.Truncate(text, w, ""), style)
-	s.Mark = sel
-	return s
+	if sel {
+		// the chosen box is the chosen row: yellow, its ink comes from selInk
+		fg := k
+		if fg == "" {
+			fg = tFg
+		}
+		return seg{Text: ansi.Truncate(text, w, ""), Fg: fg, Bg: tSel, Bold: true, Mark: true}
+	}
+	return S(ansi.Truncate(text, w, ""), style)
 }
 
 // riskWord is the risk of a batch in words and the color it gets.

@@ -26,11 +26,13 @@ func durText(ms int64) string {
 const chipW = 13
 
 type seg struct {
-	Text string
-	Fg   tok
-	Bg   tok
-	Bold bool
-	Mark bool // in plain the first cell is drawn as › (the selected row)
+	Text  string
+	Fg    tok
+	Bg    tok
+	Bold  bool
+	Mark  bool // in plain the first cell is drawn as › (the selected row)
+	Under bool // underlined
+	Head  bool // a section title: block draws ▌ in the cell before it
 }
 
 type line []seg
@@ -168,9 +170,19 @@ func rcol(l any, w int) line {
 func block(lines []line, w int, bg tok, padX int) []line {
 	out := make([]line, len(lines))
 	for i, l := range lines {
-		pad := spaces(padX, bg)
-		pad.Mark = bg == tSel && i == 0 && padX > 0
-		out[i] = bgize(L(pad, fit(l, w-2*padX), spaces(padX, bg)), bg)
+		pad := L(spaces(padX, bg))
+		if len(l) > 0 && l[0].Head && padX > 0 {
+			pad = L(spaces(padX-1, bg), headBar())
+		}
+		if bg == tSel && i == 0 && padX > 0 {
+			pad[0].Mark = true
+		}
+		body := L(pad, fit(l, w-2*padX), spaces(padX, bg))
+		if bg == tSel {
+			out[i] = selLine(body)
+		} else {
+			out[i] = bgize(body, bg)
+		}
 	}
 	return out
 }
@@ -229,18 +241,117 @@ func hcat(cols [][]line, ws []int, gap int) []line {
 	return out
 }
 
+// tonal is a label in a tonal state block of fixed width w: " borrar    ".
+func tonal(label string, state tok, w int) seg {
+	pad := w - 1 - len([]rune(label))
+	return S(" "+label+strings.Repeat(" ", max(pad, 0)), "tn-"+string(state))
+}
+
 // chip is a label in a state chip of fixed width: " Te necesita ".
 func chip(label string, state tok, w int) line {
-	text := " " + label
+	text := " " + strings.ToUpper(label)
 	if n := ansi.StringWidth(text); n > w-1 {
 		text = ansi.Truncate(text, w-1, "")
 	}
 	pad := w - ansi.StringWidth(text)
-	return L(S(text+strings.Repeat(" ", max(pad, 0)), "ch-"+string(state)))
+	text += strings.Repeat(" ", max(pad, 0))
+	if state == tNeed {
+		return L(S(text, "ch-need"))
+	}
+	return L(B(text, state))
 }
 
 // keycap is a key drawn as a small button.
 func keycap(k string) seg { return S(" "+k+" ", "ch-mute") }
+
+// footCap is a key of the footer: yellow letter on a gray cap.
+func footCap(k string) seg { return seg{Text: " " + k + " ", Fg: tAc, Bg: tCap, Bold: true} }
+
+// heading is a section title: uppercase yellow bold; block draws the ▌ before it.
+func heading(text string) seg {
+	return seg{Text: strings.ToUpper(text), Fg: tAc, Bold: true, Head: true}
+}
+
+// headBar is the ▌ that opens a section title.
+func headBar() seg { return T("▌", tAc) }
+
+// accent is a label in yellow bold underlined, with a space on each side (same width as the old
+// ch-ac chip).
+func accent(text string) line {
+	return L(" ", seg{Text: text, Fg: tAc, Bold: true, Under: true}, " ")
+}
+
+// selLine paints a line on the chosen row: a chip drawn on need/ac is inverted (yellow on dark).
+func selLine(l line) line {
+	out := make(line, len(l))
+	for i, s := range l {
+		if s.Bg == tNeed || s.Bg == tAc {
+			s.Fg, s.Bg = tAc, tBg
+		}
+		out[i] = s
+	}
+	return bgize(out, tSel)
+}
+
+// pick draws a card: when selected only its first line is on the chosen row, the rest keep the
+// normal background.
+func pick(lines []line, w int, normal tok, selected bool, padX int) []line {
+	if !selected || len(lines) == 0 {
+		return block(lines, w, normal, padX)
+	}
+	out := block(lines[:1], w, tSel, padX)
+	return append(out, block(lines[1:], w, normal, padX)...)
+}
+
+// fillRun replaces the interior of the longest run of plain spaces (at least minRun) with ch in
+// fg, leaving keep spaces on each side. The width does not change.
+func fillRun(l line, ch string, fg tok, minRun, keep int) line {
+	var cells line
+	for _, s := range l {
+		if strings.Trim(s.Text, " ") != "" {
+			cells = append(cells, s)
+			continue
+		}
+		for range s.Text {
+			c := s
+			c.Text = " "
+			cells = append(cells, c)
+		}
+	}
+	bestStart, bestLen := 0, 0
+	for i := 0; i < len(cells); {
+		if cells[i].Text != " " {
+			i++
+			continue
+		}
+		j := i
+		for j < len(cells) && cells[j].Text == " " {
+			j++
+		}
+		if j-i > bestLen {
+			bestStart, bestLen = i, j-i
+		}
+		i = j
+	}
+	if bestLen < minRun || bestLen-2*keep <= 0 {
+		return l
+	}
+	for i := bestStart + keep; i < bestStart+bestLen-keep; i++ {
+		cells[i].Text, cells[i].Fg = ch, fg
+	}
+	var out line
+	for _, c := range cells {
+		if n := len(out); n > 0 {
+			p := &out[n-1]
+			if p.Fg == c.Fg && p.Bg == c.Bg && p.Bold == c.Bold && p.Under == c.Under && !p.Mark && !c.Mark && !p.Head && !c.Head {
+				p.Text += c.Text
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out
+}
 
 var stageNames = []struct{ key, name string }{
 	{"design", "Diseño"}, {"plan", "Plan"}, {"batches", "Lotes"}, {"review", "Review"}, {"close", "Cierre"},
@@ -272,7 +383,7 @@ func stepper(stage, detail string) line {
 			if detail != "" {
 				name += " " + detail
 			}
-			p = append(p, S(" "+name+" ", "ch-ac"))
+			p = append(p, accent(name)...)
 		default:
 			p = append(p, S(" "+s.name+" ", "ch-off"))
 		}
@@ -324,12 +435,12 @@ func render(l line, th *theme) string {
 		s := l[i]
 		text := s.Text
 		j := i + 1
-		for ; j < len(l) && l[j].Fg == s.Fg && l[j].Bg == s.Bg && l[j].Bold == s.Bold; j++ {
+		for ; j < len(l) && l[j].Fg == s.Fg && l[j].Bg == s.Bg && l[j].Bold == s.Bold && l[j].Under == s.Under; j++ {
 			text += l[j].Text
 		}
 		i = j
 		if text != "" {
-			b.WriteString(th.style(s.Fg, s.Bg, s.Bold).Render(text))
+			b.WriteString(th.style(s.Fg, s.Bg, s.Bold, s.Under).Render(text))
 		}
 	}
 	return b.String()

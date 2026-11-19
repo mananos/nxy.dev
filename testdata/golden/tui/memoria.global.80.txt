@@ -1,13 +1,13 @@
-   nxy      Inicio   ›Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy      Inicio   ›Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
 
    Global   │   app                                               [ ]  cambiar  
 
      Tuyas, en todos los… se suman a las del repo donde trabaja cada agente   
 
-     Reglas tuyas                                                         1   
+    ▌REGLAS TUYAS                                                         1   
   ›  G1   Sin comentarios que repitan el código                               
                                                                               
-     Aprendizajes                                                         1   
+    ▌APRENDIZAJES                                                         1   
      A9   Preferir composición a herencia en los servicios                    
 
      G1   regla tuya                                                 global   

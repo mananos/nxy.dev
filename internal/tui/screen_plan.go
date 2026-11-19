@@ -125,7 +125,7 @@ func (planScreen) view(st *state, r route, w int) ([]line, int) {
 		}
 		right = L(T(strings.Join(parts, " · "), tSb))
 	}
-	lotes := []line{lr(L(B("Lotes", "")), right, iw)}
+	lotes := []line{lr(L(heading("Lotes")), right, iw)}
 	lotes = append(lotes, st.batchGraph(p.Batches, b.N, iw, short, approval)...)
 	lotes = append(lotes, nil)
 
@@ -190,11 +190,11 @@ func (planScreen) view(st *state, r route, w int) ([]line, int) {
 // planGoal is the objective, the criteria and the decisions, as lines of the inner width.
 func (st *state) planGoal(p *views.Plan, short func(string) string, iw int) []line {
 	var g []line
-	g = append(g, L(B("Objetivo", "")))
+	g = append(g, L(heading("Objetivo")))
 	for _, s := range wrap(p.Goal, iw) {
 		g = append(g, L(s))
 	}
-	g = append(g, nil, L(B("Criterios", "")))
+	g = append(g, nil, L(heading("Criterios")))
 	for _, c := range p.Criteria {
 		g = append(g, paras(L(T(c.ID+"  ", tSb)), c.Text, iw, 4)...)
 	}
@@ -205,7 +205,7 @@ func (st *state) planGoal(p *views.Plan, short func(string) string, iw int) []li
 			note = L(T("del diseño", tSb))
 		}
 	}
-	g = append(g, lr(L(B("Decisiones", "")), note, iw))
+	g = append(g, lr(L(heading("Decisiones")), note, iw))
 	for _, d := range p.Decisions {
 		label := "tarea"
 		if d.Scope != "task" {
@@ -263,12 +263,10 @@ func (st *state) planImpact(r route, p *views.Plan, b views.PlanBatch, short fun
 			}
 			g = append(g, L(" ", T("↔ ", tAc), B(c.Name, ""), T(fmt.Sprintf("  del %s, lote %d ", repo, c.Batch), tMu), st.contractGlyph(c.Status)))
 		}
-		bg := tBg1
 		if i == sel {
-			bg = tSel
 			selRow = len(out)
 		}
-		out = append(out, block(g, w, bg, 3)...)
+		out = append(out, pick(g, w, tBg1, i == sel, 3)...)
 	}
 	legend := L(T("← ", tSb), T("importa   ", tMu), T("○ ", tSb), T("test que lo cubre", tMu))
 	if !approval {

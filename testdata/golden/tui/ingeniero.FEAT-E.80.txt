@@ -1,4 +1,4 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-E › Ingeniero                                       esc vuelve  
 
      ←   cobrar por suscripción   FEAT-E                         ingeniero    
@@ -9,7 +9,7 @@
    ✓ Dónde vive el cobro  ━━  ● Cómo se reintenta 
    ✓ Formato de los recibos  ──  Moneda 
 
-     Cómo se reintenta                                                        
+    ▌CÓMO SE REINTENTA                                                        
      bifurcación 2 de 4 · ninguna elegida                                     
                                                                               
      ¿Cómo se reintenta un cobro fallido?                                     

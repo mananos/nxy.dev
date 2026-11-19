@@ -1,8 +1,8 @@
-   nxy      Inicio    Memoria   ›Gasto    Config                                         ● 2 decisiones    hoy $0.079   
+   nxy      Inicio    Memoria   ›Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
 
    Sesión  ›Tendencia                                                            por   día   semana   modelo   agente   
 
-     Últimos 7 días                                                                      total $0.15  ·  2 sesiones   
+    ▌ÚLTIMOS 7 DÍAS                                                                      total $0.15  ·  2 sesiones   
      jue 05      0 ses       ━                                                 $0.00       0 %                        
      vie 06      0 ses       ━                                                 $0.00       0 %                        
      sáb 07      0 ses       ━                                                 $0.00       0 %                        
@@ -11,7 +11,7 @@
      mar 10      1 ses       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━        $0.08      86 %                        
      mié 11      1 ses       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━      $0.08      85 %  hoy                   
 
-     Por agente                                                                el resto es el hilo principal: $0.00   
+    ▌POR AGENTE                                                                el resto es el hilo principal: $0.00   
      implementer 4 corridas  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━      $0.43  prom 27m                        
      planner     2 corridas  ━━━━━━━━━                                         $0.09   prom 6m                        
      fixer       1 corridas  ━━━━━                                             $0.05  prom 10m                        

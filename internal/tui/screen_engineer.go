@@ -51,7 +51,7 @@ func engAgenda(e *views.Engineer, w int) []line {
 		case views.ForkDecided:
 			chipSeg = L(S(" ✓ "+f.Title+" ", "ch-mute"))
 		case views.ForkCurrent:
-			chipSeg = L(S(" ● "+f.Title+" ", "ch-ac"))
+			chipSeg = accent("● " + f.Title)
 		default:
 			chipSeg = L(S(" "+f.Title+" ", "ch-off"))
 		}
@@ -98,7 +98,7 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 		names = append(names, x.Name)
 	}
 	meta := []string{strings.Join(names, " + "), durText(f.ElapsedMs), costText(f.CostUSD, f.CostEstimated)}
-	l1 := lr(L(T("←", tMu), "   ", B(f.Title, ""), "   ", T(f.ID, tSb)), L(S(" ingeniero ", "ch-ac")), aw-6)
+	l1 := lr(L(T("←", tMu), "   ", B(f.Title, ""), "   ", T(f.ID, tSb)), accent("ingeniero"), aw-6)
 	l2 := L("    ", T(strings.Join(nonEmpty(meta...), " · "), tMu))
 	out := []line{nil}
 	out = append(out, indent(block([]line{l1, l2}, aw, tBg1, 3), 2)...)
@@ -125,7 +125,7 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 	li := lwid - 6
 
 	head := []line{
-		L(B(title, "")),
+		L(heading(title)),
 		L(T(fmt.Sprintf("bifurcación %d de %d · ninguna elegida", n, of), tSb)),
 	}
 	if e.Question != "" {
@@ -137,9 +137,9 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 	left := block(append(head, nil), lwid, tBg1, 3)
 	focus := len(out) + len(left)
 	for i, o := range e.Options {
-		bg, mark := tBg1, "  "
+		mark := "  "
 		if i == cur {
-			bg, mark = tSel, "▸ "
+			mark = "▸ "
 			focus = len(out) + len(left)
 		}
 		row := L(T(mark, tAc), S(" "+o.Key+" ", "ch-mute"), "  ")
@@ -147,7 +147,7 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 		if i == cur {
 			lab.Bold = true
 		}
-		left = append(left, block([]line{L(row, lab), L("       ", T(o.Summary, tMu))}, lwid, bg, 3)...)
+		left = append(left, pick([]line{L(row, lab), L("       ", T(o.Summary, tMu))}, lwid, tBg1, i == cur, 3)...)
 	}
 	tail := []line{nil, L(S(" ? ", "ch-off"), "  ", T(e.Other, tSb)), nil}
 	if st.engFlag(r, "c") && e.Opinion != "" {
@@ -165,14 +165,14 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 		ri := rwid - 6
 		if st.engFlag(r, "h") {
 			right = []line{
-				lr(L(B("Así es hoy", "")), L(S(" "+o.Key+" ", "ch-off"), " ", S(" hoy ", "ch-ac")), ri),
+				lr(L(heading("Así es hoy")), L(S(" "+o.Key+" ", "ch-off"), " ", accent("hoy")), ri),
 				nil,
 			}
 			right = append(right, engDiagram(e.Today, ri)...)
 			right = append(right, nil, L(T("lo que hay en el repo ahora, sin ninguna opción aplicada", tMu)))
 		} else {
 			right = []line{
-				lr(L(B(o.Key, tAc), "  ", B(o.Label, "")), L(S(" "+o.Key+" ", "ch-ac"), " ", S(" hoy ", "ch-off")), ri),
+				lr(L(B(o.Key, tAc), "  ", B(o.Label, "")), L(accent(o.Key), " ", S(" hoy ", "ch-off")), ri),
 				nil,
 			}
 			right = append(right, engDiagram(o.Diagram, ri)...)

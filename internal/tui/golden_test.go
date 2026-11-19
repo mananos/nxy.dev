@@ -49,7 +49,7 @@ func TestTuiGolden(t *testing.T) {
 				feat = "FEAT-P"
 			}
 			out, err := Render(Options{
-				Source: src, Width: w, Dark: true, Plain: true, FileFeature: feat,
+				Source: src, Width: w, Plain: true, FileFeature: feat,
 				Getenv: func(string) string { return "" }, GOOS: "linux",
 			}, tg.id, tg.key)
 			if err != nil {

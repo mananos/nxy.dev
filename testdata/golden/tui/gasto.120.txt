@@ -1,4 +1,4 @@
-   nxy      Inicio    Memoria   ›Gasto    Config                                         ● 2 decisiones    hoy $0.079   
+   nxy      Inicio    Memoria   ›Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
 
   ›Sesión   Tendencia                                                                                     -srv-dev-app  
 
@@ -10,10 +10,10 @@
      sonnet-4.6                             5      6.8k     2.8k    86 %    $0.08                                     
      haiku-5.5                              1       900      200    69 %    $0.00                                     
 
-     Forma de la sesión                                                                                               
+    ▌FORMA DE LA SESIÓN                                                                                               
      por turno  3.0 llamadas     del hilo  1.5     contexto  15k     subagentes  25 %                                 
 
-     Filtro y búsquedas                                                                                               
+    ▌FILTRO Y BÚSQUEDAS                                                                                               
      El filtro todavía no sacó nada de esta sesión.                                                                   
      ninguna búsqueda amplia frenada                                                                                  
   tab  tendencia     s  otra sesión     ?  ayuda                                                                        

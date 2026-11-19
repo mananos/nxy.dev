@@ -320,12 +320,10 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 			l = L(l, rcol(T(when, tMu), timeW))
 		}
 		l = L(l, rcol(T(cost, ""), 8), "   ", extra)
-		bg := tBg1
 		if i == sel {
-			bg = tSel
 			focus = len(out)
 		}
-		out = append(out, indent(block([]line{l}, w-4, bg, 3), 2)...)
+		out = append(out, indent(pick([]line{l}, w-4, tBg1, i == sel, 3), 2)...)
 	}
 
 	// the red block: the batch under the cursor if it failed, else the first red one
@@ -341,7 +339,7 @@ func (featureScreen) view(st *state, r route, w int) ([]line, int) {
 		}
 	}
 	if red != nil {
-		label := S(fmt.Sprintf(" Lote %d ", red.Batch), "ch-fail")
+		label := B(fmt.Sprintf(" Lote %d ", red.Batch), tFail)
 		head := L(label, "   ", T(strings.Join(nonEmpty(attemptText(red), modelEffort(red, " "), durText(red.ElapsedMs)), " · "), tMu))
 		pad := spaces(lw(L(label))+3, "")
 		lines := []line{head, L(pad, T(red.Failure.Test, tMu))}

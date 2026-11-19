@@ -21,7 +21,6 @@ type Options struct {
 	InRepo bool // the folder is inside a repo: Memory has the repo and Config the repo layer
 	Demo   bool // sample data: ctrl+n simulates a decision
 	Width  int
-	Dark   bool
 	Nerd   bool
 	Plain  bool
 	// FileFeature is the feature of the file a dump of archivo shows (empty: the one whose plan
@@ -113,10 +112,8 @@ type state struct {
 	data      *Data
 	th        *theme
 	ic        icons
-	dark      bool
 	nerd      bool
 	plain     bool
-	darkSet   bool // the user toggled the theme: ignore the terminal's answer
 	stack     []route
 	cur       map[string]int // cursor of each screen
 	toast     string
@@ -163,7 +160,7 @@ type state struct {
 }
 
 func newState(o Options) *state {
-	st := &state{data: newData(), dark: o.Dark, nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
+	st := &state{data: newData(), nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
 		stack: []route{{screen: "inicio"}}, cur: map[string]int{}, postponed: map[string]bool{},
 		answered: map[string]bool{}, decIdx: map[string]int{}, decAns: map[string][]string{}, decAsk: map[string]string{}, decMark: map[string]map[int]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
 		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, cfgPend: map[string]string{}}
@@ -192,7 +189,7 @@ func newState(o Options) *state {
 }
 
 func (st *state) restyle() {
-	st.th = newTheme(st.dark, st.plain)
+	st.th = newTheme(st.plain)
 	st.ic = iconSet(st.nerd)
 }
 
@@ -288,9 +285,6 @@ func (st *state) onKey(k string) (quit bool) {
 		return true
 	case "?":
 		st.help = true
-	case "ctrl+t":
-		st.dark, st.darkSet = !st.dark, true
-		st.restyle()
 	case "ctrl+g":
 		st.nerd = !st.nerd
 		st.restyle()
@@ -516,18 +510,13 @@ func Run(o Options) error {
 }
 
 func (m *model) Init() tea.Cmd {
-	return tea.Batch(tea.RequestBackgroundColor, m.st.cheapCmd(), m.st.topCmd(false), m.st.pollCmd())
+	return tea.Batch(m.st.cheapCmd(), m.st.topCmd(false), m.st.pollCmd())
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.st.width, m.st.height = msg.Width, msg.Height
-	case tea.BackgroundColorMsg:
-		if !m.st.darkSet {
-			m.st.dark = msg.IsDark()
-			m.st.restyle()
-		}
 	case tea.KeyPressMsg:
 		if m.st.onKey(msg.String()) {
 			return m, tea.Quit

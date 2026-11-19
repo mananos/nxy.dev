@@ -211,10 +211,10 @@ func (st *state) decAnswer(d *views.Decision) {
 }
 
 // decKey handles a key while the window is open and tells whether it was taken. A few keys go
-// on to the app (quit, theme, icons, help); the rest are swallowed so nothing moves behind.
+// on to the app (quit, icons, help); the rest are swallowed so nothing moves behind.
 func (st *state) decKey(k string) bool {
 	switch k {
-	case "q", "ctrl+t", "ctrl+g", "ctrl+n", "ctrl+c", "?":
+	case "q", "ctrl+g", "ctrl+n", "ctrl+c", "?":
 		return false
 	}
 	d, i, n := st.currentDecision()
@@ -367,13 +367,12 @@ func (st *state) decWindow(cw int) []line {
 	sel := st.decOption(d, dq.opts)
 	for k, o := range dq.opts {
 		var row line
-		bg := tBg2
 		if isFork(d) {
 			row = L("  ", S(" "+string(rune('A'+k))+" ", "ch-mute"), "  ", B(o.Label, ""), "  ", T(o.Description, tMu))
 		} else {
 			marker, num := T("  ", tAc), B(fmt.Sprint(k+1), "")
 			if k == sel {
-				marker, num, bg = T("▸ ", tAc), B(fmt.Sprint(k+1), tAc), tSel
+				marker, num = T("▸ ", tAc), B(fmt.Sprint(k+1), tAc)
 			}
 			if dq.multi && st.decMark[d.FeatureID][k] {
 				marker = T("✓ ", tDone)
@@ -383,7 +382,7 @@ func (st *state) decWindow(cw int) []line {
 				row = append(row, spaces(3, ""), T("recomendada", tDone))
 			}
 		}
-		out = append(out, block([]line{row}, ww, bg, 3)...)
+		out = append(out, pick([]line{row}, ww, tBg2, !isFork(d) && k == sel, 3)...)
 	}
 
 	note := "No espera a la TUI: " + terminalText + "."

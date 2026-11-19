@@ -65,7 +65,7 @@ func (worktreesScreen) view(st *state, _ route, w int) ([]line, int) {
 	if widths[0]+widths[1]+widths[2]+widths[3]+4*gap+18 > iw {
 		gap = 1
 	}
-	inner := []line{L(B("Worktrees", ""), T("  "+plural(len(rows), "carpeta", "carpetas"), tSb)), nil}
+	inner := []line{L(heading("Worktrees"), T("  "+plural(len(rows), "carpeta", "carpetas"), tSb)), nil}
 	for _, x := range rows {
 		fg := tok("")
 		if x[3] == "huérfano" {

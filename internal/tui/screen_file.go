@@ -222,7 +222,7 @@ func (st *state) fileSide(f *views.File, imp, w int) []line {
 		if len(g) > 0 {
 			g = append(g, nil)
 		}
-		g = append(g, L(B(title, "")))
+		g = append(g, L(heading(title)))
 	}
 	if len(f.ImportedBy) > 0 {
 		section("Importado por")
@@ -288,9 +288,9 @@ func (fileScreen) view(st *state, r route, w int) ([]line, int) {
 	if label == "" {
 		label = "diff"
 	}
-	diffChip, fullChip := S(" "+label+" ", "ch-ac"), S(" archivo ", "ch-off")
+	diffChip, fullChip := accent(label), L(S(" archivo ", "ch-off"))
 	if full {
-		diffChip, fullChip = S(" "+label+" ", "ch-off"), S(" archivo ", "ch-ac")
+		diffChip, fullChip = L(S(" "+label+" ", "ch-off")), accent("archivo")
 	}
 	body, rows := st.fileCode(f, cur, full, ciw)
 	head := []line{lr(L(diffChip, " ", fullChip), L(keycap("v"), T(" alterna ", tMu), keycap("o"), T(" editor", tMu)), ciw), nil}

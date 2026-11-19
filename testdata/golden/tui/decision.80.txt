@@ -1,17 +1,17 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
 
-  Te necesita  2
+ ▌TE NECESITA  2
   ›                                                                           
-       Te necesita    Plan                   FEAT-D · acme/pagos   1 de 2     
+       TE NECESITA    Plan                   FEAT-D · acme/pagos   1 de 2     
                                                                              
       ¿Aprobás el plan FEAT-D r2 de nxy?                                      
                                                                               
                                                                              
-  E›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
+ ▌E›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
         2  Cambiar     Escribí qué cambiar; nxy vuelve a planificar           
         3  Ver completoAbrir el plan completo en tu editor                    
                                                                              
-  L   No espera a la TUI: contestá en la terminal de Claude Code.            
+ ▌L   No espera a la TUI: contestá en la terminal de Claude Code.            
                                                                               
 
   worktrees  1 pausado · 1 huérfano   w ver todos

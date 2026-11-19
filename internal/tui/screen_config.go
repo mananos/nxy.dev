@@ -282,7 +282,7 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 	if !repo.Exists {
 		repoText = repoName + " · sin archivo"
 	}
-	layers := L("  ", S(" usuario ", "ch-ac"), "  ", T(user.Path, tMu), "      ", S(" repo ", "ch-off"), "  ", T(repoText, tSb))
+	layers := L("  ", accent("usuario"), "  ", T(user.Path, tMu), "      ", S(" repo ", "ch-off"), "  ", T(repoText, tSb))
 	out := []line{nil, lr(layers, L(T("gana el repo", tSb), "  "), w), nil}
 
 	// roles
@@ -299,7 +299,7 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 		head = L(col(T("Etapa", tSb), 13))
 	}
 	head = L(head, col(T("Rol", tSb), 16), col(T("Qué hace", tSb), doesW-1), spaces(1, ""), col(T("Modelo", tSb), 8), col(T("Effort", tSb), 8), col(T("Origen", tSb), 8))
-	title := lr(L(B("Roles", "")), L(T("se aplica al próximo agente que se lance", tSb)), iw)
+	title := lr(L(heading("Roles")), L(T("se aplica al próximo agente que se lance", tSb)), iw)
 	out = append(out, indent(block([]line{title, head}, w-4, tBg1, 3), 2)...)
 	prevStage := ""
 	for i, ro := range c.Roles {
@@ -331,11 +331,10 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 			srcTok = tSb
 		}
 		l = L(l, col(name, 16), col(T(ro.Does, tMu), doesW-1), spaces(1, ""), col(hot(model), 8), col(hot(effort), 8), col(T(sourceText(src), srcTok), 8))
-		bg := tBg1
 		if isSel {
-			bg, focus = tSel, len(out)
+			focus = len(out)
 		}
-		out = append(out, indent(block([]line{l}, w-4, bg, 3), 2)...)
+		out = append(out, indent(pick([]line{l}, w-4, tBg1, isSel, 3), 2)...)
 	}
 	out = append(out, nil)
 
@@ -348,18 +347,18 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 		colW[0] = min((w-4-2)/2, 57) // modules keep their width at 120; tools take the rest
 		colW[1] = w - 4 - 2 - colW[0]
 	}
-	mods := []line{L(B("Módulos", ""))}
+	mods := []line{L(heading("Módulos"))}
 	for i, s := range c.Settings {
 		isSel := sel == len(c.Roles)+i
 		l := lr(L(lead(isSel), T(s.Label, "")), L(B(valueText(s.Value), "")), colW[0]-6)
 		if isSel {
-			l = bgize(l, tSel)
+			l = selLine(l)
 			focus = len(out) + len(mods)
 		}
 		mods = append(mods, l)
 	}
 	toolBase := len(c.Roles) + len(c.Settings)
-	tools := []line{L(B("Herramientas", ""))}
+	tools := []line{L(heading("Herramientas"))}
 	for i, t := range c.Tools {
 		isSel := sel == toolBase+i
 		ld := lead(isSel)
@@ -376,7 +375,7 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(tname, "")), L(T("no está   ", tSb), keycap("i"), T(" instalar", tMu)), colW[1]-6)
 		}
 		if isSel {
-			l = bgize(l, tSel)
+			l = selLine(l)
 			focus = len(out) + len(tools)
 		}
 		tools = append(tools, l)
@@ -426,7 +425,7 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 		ld := lead(selected)
 		row := func(l line) line {
 			if selected {
-				return bgize(l, tSel)
+				return selLine(l)
 			}
 			return l
 		}

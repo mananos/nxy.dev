@@ -1,22 +1,22 @@
-   nxy     ›Inicio    Memoria    Gasto    Config                                         ● 2 decisiones    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
   Inicio › FEAT-P › Plan › Nota.java                                                                        esc vuelve  
 
      ←   Nota.java   api                                                                                 codegraph    
          src/billing/Nota.java · lo edita el lote 1                                                                   
 
-      diff de la feature   archivo                    v  alterna  o  editor        Importado por                      
+      diff de la feature   archivo                    v  alterna  o  editor       ▌IMPORTADO POR                      
                                                                                    ›Factura.java                :30   
      ▸  9   linea I                                                                 Listado.java                 :7   
        10   linea J                                                                                                   
-       11   linea K                                                                Tests                              
+       11   linea K                                                               ▌TESTS                              
        12 - linea L                                                                ✗ NotaTest.java                    
        12 + linea nueva 12                                                         ○ NotaServiceTest.java             
        13   linea M                                                                                                   
-       14   linea N                                                                Memoria anclada                    
+       14   linea N                                                               ▌MEMORIA ANCLADA                    
        15   linea O                                                                K1  Usar BigDecimal para los im…   
          ··· 1 línea sin cambios ···                                               A1  Los importes se guardan en …   
        17   linea Q                                                                                                   
-       18   linea R                                                                Features                           
+       18   linea R                                                               ▌FEATURES                           
        19   linea S                                                                FEAT-P  lote 1 · en curso          
        20 - linea T                                                                FEAT-Q  lote 1 · por empezar       
        20 + linea nueva 20                                                         CF-NOTA  cerrada hace 5d           

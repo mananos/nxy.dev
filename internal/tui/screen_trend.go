@@ -66,7 +66,7 @@ func trendBlock(title string, right line, rows []trendRow, iw int) []line {
 	for _, r := range rows {
 		top = math.Max(top, r.usd)
 	}
-	out := []line{lr(L(B(title, "")), right, iw)}
+	out := []line{lr(L(heading(title)), right, iw)}
 	for _, r := range rows {
 		k := 1
 		if top > 0 {

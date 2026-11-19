@@ -1,7 +1,7 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-A                                                   esc vuelve  
 
-     ←   Notas de crédito en facturación   FEAT-A              Te necesita    
+     ←   Notas de crédito en facturación   FEAT-A              TE NECESITA    
          api + web · feat/notas · 21h 00m · $0.46                             
 
    ✓ Diseño  ━━  ✓ Plan  ━━  Lotes 3/4  ──  Review  ──  Cierre 

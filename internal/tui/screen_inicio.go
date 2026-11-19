@@ -147,15 +147,11 @@ func ago(now, then string) string {
 
 // card is the block of a feature: two lines, or one when it is done.
 func card(f views.CockpitFeature, selected bool, w int, now string) []line {
-	bg := tBg1
-	if selected {
-		bg = tSel
-	}
 	iw := w - 6
 	if f.Status == views.StatusDone {
 		when := ago(now, f.ClosedAt)
 		l := L(chip(statusLabel(f.Status), statusTok(f.Status), chipW), "   ", B(f.Title, ""), "   ", T(f.ID+" · "+when, tSb))
-		return block([]line{lr(l, rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6), iw)}, w, bg, 3)
+		return pick([]line{lr(l, rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6), iw)}, w, tBg1, selected, 3)
 	}
 	st := statusTok(f.Status)
 	right1 := L(T(durText(f.ElapsedMs), tMu), "   ", rcol(B(costText(f.CostUSD, f.CostEstimated), ""), 6))
@@ -163,7 +159,7 @@ func card(f views.CockpitFeature, selected bool, w int, now string) []line {
 	n, m := progressOf(f)
 	right2 := L(progress(n, m, 12, st), "  ", col(T(phaseText(f), tMu), 10))
 	l2 := lr(L(spaces(chipW+3, ""), T(f.LastEvent, tMu)), right2, iw)
-	return block([]line{l1, l2}, w, bg, 3)
+	return pick([]line{l1, l2}, w, tBg1, selected, 3)
 }
 
 func plural(n int, one, many string) string {
@@ -216,7 +212,7 @@ func (inicioScreen) view(st *state, r route, w int) ([]line, int) {
 		if gi > 0 {
 			out = append(out, nil)
 		}
-		out = append(out, L("  ", B(g.title, tMu), T("  "+fmt.Sprint(len(g.feats)), tSb)))
+		out = append(out, L(" ", headBar(), heading(g.title), T("  "+fmt.Sprint(len(g.feats)), tSb)))
 		for i, f := range g.feats {
 			if i > 0 {
 				out = append(out, nil)

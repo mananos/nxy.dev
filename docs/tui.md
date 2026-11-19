@@ -10,7 +10,7 @@ Claude Code es un chat y se lee de arriba para abajo; cuando hay tres lotes corr
 
 ![La pantalla de inicio de la TUI, recorriendo las secciones](assets/gifs/tui-inicio.gif)
 
-Arriba van las cuatro secciones (**Inicio**, **Memoria**, **Gasto**, **Config**), a la derecha `● 2 decisiones` (las preguntas que esperan por vos) y `hoy $9.87` (lo gastado hoy). Abajo, las teclas de la pantalla en la que estás.
+Arriba van las cuatro secciones (**Inicio**, **Memoria**, **Gasto**, **Config**), a la derecha `● 2 DECISIONES` (las preguntas que esperan por vos) y `hoy $99.97` (lo gastado hoy). Abajo, las teclas de la pantalla en la que estás.
 
 ### Inicio
 
@@ -62,7 +62,6 @@ Las teclas que valen en todas las pantallas:
 | `d` | Abrir la ventana de decisión ([Decidir](decidir.md)) |
 | `space` | Pausar o reanudar la feature bajo el cursor (en Inicio y en la feature) |
 | `?` | Ayuda con las teclas de la pantalla |
-| `ctrl+t` | Tema oscuro o claro |
 | `ctrl+g` | Íconos nerd o unicode |
 | `q` · `ctrl+c` | Salir |
 
@@ -79,7 +78,7 @@ Si los íconos se ven como cuadrados, el tipo de letra de tu terminal no es una 
 | `nxy tui --demo` | Datos de ejemplo, sin tocar nada |
 | `nxy tui --icons auto\|nerd\|unicode` | Íconos (por defecto `auto`) |
 | `nxy tui --cwd <carpeta>` | Otra carpeta en vez de `CLAUDE_PROJECT_DIR` o la actual |
-| `nxy tui --dump <pantalla> [--feature <id>] [--width N] [--plain] [--theme dark\|light]` | Imprime una pantalla y sale, sin abrir la TUI |
+| `nxy tui --dump <pantalla> [--feature <id>] [--width N] [--plain]` | Imprime una pantalla y sale, sin abrir la TUI |
 
 `--dump` sirve para pegar una pantalla en un issue o para ver un estado sin abrir nada. Pantallas válidas: `inicio`, `worktrees`, `gasto`, `tendencia`, `tendencia.semana`, `config`, `feature`, `agentes`, `decision`, `ingeniero`, `ingeniero.hoy`, `ingeniero.claude`, `plan`, `memoria`, `memoria.aprendizaje`, `memoria.buscar`, `memoria.editar`, `archivo` y `archivo.entero`. Con un nombre que no existe te lista las válidas.
 

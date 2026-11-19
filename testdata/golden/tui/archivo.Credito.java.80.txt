@@ -1,4 +1,4 @@
-   nxy     ›Inicio    Memoria    Gasto    Config            ● 2    hoy $0.079   
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
   Inicio › FEAT-P › Plan › Credito.java                             esc vuelve  
 
      ←   Credito.java   api                                      codegraph    
@@ -9,9 +9,9 @@
      ▸ 1 + class Credito {                                                    
        2 + }                                                                  
 
-     Memoria anclada                                                          
+    ▌MEMORIA ANCLADA                                                          
      K1  Usar BigDecimal para los importes                                    
                                                                               
-     Features                                                                 
+    ▌FEATURES                                                                 
      FEAT-P  lote 2 · en rojo                                                 
   n N  otro cambio     v  archivo entero     o  editor     ?  ayuda             
