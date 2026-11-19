@@ -65,10 +65,40 @@ func exeName(base string) string {
 	return base
 }
 
+// goCacheEnv holds the real Go caches, computed before any test changes HOME,
+// so builds under a temp HOME do not download read-only modules into it.
+var goCacheEnv []string
+
+func init() {
+	b, err := exec.Command("go", "env", "GOMODCACHE", "GOCACHE", "GOPATH").Output()
+	if err != nil {
+		return
+	}
+	lines := strings.Split(strings.ReplaceAll(string(b), "\r\n", "\n"), "\n")
+	for i, k := range []string{"GOMODCACHE", "GOCACHE", "GOPATH"} {
+		if i < len(lines) && strings.TrimSpace(lines[i]) != "" {
+			goCacheEnv = append(goCacheEnv, k+"="+strings.TrimSpace(lines[i]))
+		}
+	}
+}
+
+// isDash reports whether sh is dash, whose `.` takes no arguments.
+func isDash(sh shellSpec) bool {
+	if sh.name == "dash" {
+		return true
+	}
+	if sh.ps || len(sh.argv) == 0 || runtime.GOOS == "windows" {
+		return false
+	}
+	p, err := filepath.EvalSymlinks(sh.argv[0])
+	return err == nil && strings.HasPrefix(filepath.Base(p), "dash")
+}
+
 func goBuild(t *testing.T, dir, out string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("go", append([]string{"build", "-o", out}, args...)...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), goCacheEnv...)
 	if b, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, b)
 	}
@@ -381,7 +411,7 @@ func TestShimCommandArgs(t *testing.T) {
 	fake := buildFake(t)
 	for _, sh := range shells(t) {
 		t.Run(sh.name, func(t *testing.T) {
-			if sh.name == "dash" {
+			if isDash(sh) {
 				// dash's `.` takes no arguments: slash commands run in bash/zsh/PowerShell, and the
 				// statusline line on Linux runs the shim as a script (TestShimAsScript covers dash).
 				t.Skip("dash does not pass arguments to a sourced file")

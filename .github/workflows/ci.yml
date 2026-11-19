@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           while IFS= read -r payload; do
-            out=$(printf '%s' "$payload" | bash -c '. "$1/bin/nxy.cmd"; exit $LASTEXITCODE' _ "$PWD" 2>"$RUNNER_TEMP/shim-stderr") || { echo "non-zero exit for: $payload"; exit 1; }
+            out=$(printf '%s' "$payload" | SHIM_ROOT="$PWD" bash -c '. "$SHIM_ROOT/bin/nxy.cmd"; exit $LASTEXITCODE' 2>"$RUNNER_TEMP/shim-stderr") || { echo "non-zero exit for: $payload"; exit 1; }
             test -z "$out" || { echo "expected no output, got: $out (for: $payload)"; exit 1; }
             ! grep -q '^nxy:' "$RUNNER_TEMP/shim-stderr" || { echo "the shim reported a failure:"; cat "$RUNNER_TEMP/shim-stderr"; exit 1; }
           done <<'EOF'
