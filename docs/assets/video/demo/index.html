@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #181825; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #1e1e2e; color: #cdd6f4;
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; padding: 56px 72px; }
+  .mono { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; }
+  h1 { font-size: 112px; letter-spacing: -2px; color: #cba6f7; }
+  .lead { font-size: 34px; line-height: 1.4; color: #cdd6f4; max-width: 980px; margin-top: 28px; }
+  .sub { font-size: 24px; color: #a6adc8; margin-top: 22px; }
+  .win { position: absolute; left: 72px; right: 72px; top: 56px; background: #181825; border: 1px solid #45475a;
+    border-radius: 12px; overflow: hidden; }
+  .bar { background: #313244; color: #a6adc8; font-size: 15px; padding: 9px 16px; }
+  .body { padding: 22px 26px; font-size: 22px; line-height: 1.55; min-height: 330px; }
+  .user { color: #f9e2af; }
+  .bot { color: #cdd6f4; }
+  .dim { color: #7f849c; }
+  .ok { color: #a6e3a1; }
+  .bad { color: #f38ba8; }
+  .acc { color: #cba6f7; }
+  .opt { display: inline-block; margin-right: 18px; padding: 4px 16px; border: 1px solid #585b70; border-radius: 6px; }
+  .opt.sel { border-color: #a6e3a1; color: #a6e3a1; }
+  pre.tui { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; font-size: 17.5px; line-height: 1.32;
+    color: #cdd6f4; padding: 16px 22px; white-space: pre; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 44px; font-size: 30px; line-height: 1.35;
+    color: #cdd6f4; border-left: 5px solid #cba6f7; padding-left: 20px; }
+  .tag { position: absolute; left: 72px; top: 24px; font-size: 18px; color: #7f849c; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="demo" data-start="0" data-duration="44" data-width="1280" data-height="720" data-fps="30">
+
+  <section class="clip scene" id="s1" data-start="0" data-duration="6">
+    <div style="margin-top:150px">
+      <h1 data-in="0.2">nxy</h1>
+      <p class="lead" data-in="0.9">Un flujo de trabajo para Claude Code: planes que aprobás, lotes que un test verifica y una memoria que no se pierde.</p>
+      <p class="sub mono" data-in="2.2">/nxy:feature &lt;pedido&gt;</p>
+    </div>
+  </section>
+
+  <section class="clip scene" id="s2" data-start="6" data-duration="8">
+    <div class="tag" data-in="0">1 · EL PEDIDO</div>
+    <div class="win" style="top:90px" data-in="0.1">
+      <div class="bar">claude</div>
+      <div class="body mono">
+        <div class="user" data-in="0.6">&gt; /nxy:feature alta de clientes corporativos con validación de CUIT</div>
+        <div class="bot dim" data-in="2.0" style="margin-top:14px">● nxy guarda tu pedido y despacha al planner.</div>
+        <div class="bot dim" data-in="3.0">● El planner busca en el repo con <span class="acc">nxy locate</span>.</div>
+        <div class="bot" data-in="4.2">● Plan listo: 3 lotes, criterios R1…R3, un <span class="acc">Accept:</span> por lote.</div>
+      </div>
+    </div>
+    <div class="cap" data-in="5">Pedís la feature. nxy arma un plan por lotes: todavía no se escribe nada.</div>
+  </section>
+
+  <section class="clip scene" id="s3" data-start="14" data-duration="8">
+    <div class="tag" data-in="0">2 · VOS APROBÁS</div>
+    <div class="win" style="top:90px" data-in="0.1">
+      <div class="bar">claude</div>
+      <div class="body mono">
+        <div class="bot" data-in="0.5">¿Aprobás el plan 3f9a1c2e r1 de nxy?</div>
+        <div class="dim" data-in="1.4" style="margin-top:10px">Lote 1  Contrato del DTO          Accept: go test ./cuit/...</div>
+        <div class="dim" data-in="1.9">Lote 2  Servicio de alta          Accept: go test ./clientes/...</div>
+        <div class="dim" data-in="2.4">Lote 3  Pantalla de alta          Accept: npm test -- clientes</div>
+        <div data-in="3.6" style="margin-top:26px"><span class="opt sel">Aprobar</span><span class="opt">Cambiar</span><span class="opt">Ver completo</span></div>
+      </div>
+    </div>
+    <div class="cap" data-in="4.6">Los <b>Accept:</b> son comandos que nxy va a correr: leelos antes de aprobar.</div>
+  </section>
+
+  <section class="clip scene" id="s4" data-start="22" data-duration="9">
+    <div class="tag" data-in="0">3 · LOS LOTES</div>
+    <div class="win" style="top:70px" data-in="0.1">
+      <div class="bar">nxy tui</div>
+<pre class="tui">  Inicio › F7K2                                                       esc vuelve
+
+     ←   Notas de crédito parciales   F7K2
+         facturacion-api + facturacion-web · feat/notas-credito · 23m · $4.62
+
+   ✓ Diseño  ━━  ✓ Plan  ━━  Lotes 3/4  ──  Review  ──  Cierre
+
+     ✓  1  Contrato NotaCreditoDto       api   sonnet-4.6 · medium     4m   $0.52
+     ✓  2  Servicio de notas parciales   api   sonnet-4.6 · high       5m   $1.12
+  ›  ✗  3  Componente de nota parcial    web   sonnet-4.6 · high       8m   $1.54
+     ○  4  Integración y e2e             web                         espera a 3</pre>
+    </div>
+    <div class="cap" data-in="2">Cada lote lo prueba su <b>Accept:</b>. Lo corre nxy, no el modelo: el veredicto no es opinión.</div>
+  </section>
+
+  <section class="clip scene" id="s5" data-start="31" data-duration="7">
+    <div class="tag" data-in="0">4 · EL CIERRE</div>
+    <div class="win" style="top:90px" data-in="0.1">
+      <div class="bar">claude</div>
+      <div class="body mono">
+        <div class="bot dim" data-in="0.5">● Review: lentes por riesgo, hallazgos H1, H2… vos elegís cuáles se arreglan.</div>
+        <div class="bot dim" data-in="1.5">● Docs: ¿Actualizar docs o Dejar?</div>
+        <div class="bot" data-in="2.6" style="margin-top:14px"><span class="ok">Listo</span> · R1 <span class="ok">✔</span> test_alta_corporativa · R2 <span class="ok">✔</span> test_cuit_invalido</div>
+      </div>
+    </div>
+    <div class="cap" data-in="3.6">Ves qué criterio quedó probado y con qué test. Vos mirás el diff y commiteás: nxy nunca commitea ni pushea.</div>
+  </section>
+
+  <section class="clip scene" id="s6" data-start="38" data-duration="6">
+    <div style="margin-top:180px">
+      <h1 data-in="0.2" style="font-size:80px">nxy</h1>
+      <p class="lead" data-in="0.9">Todo está en el README y en la carpeta docs/.</p>
+      <p class="sub mono" data-in="1.8">github.com/mananos/nxy.dev</p>
+    </div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["demo"] = tl;
+</script>
+</body>
+</html>

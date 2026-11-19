@@ -1,0 +1,29 @@
+direction: right
+
+hilo: "Hilo principal\nquiere editar o buscar"
+
+escritura: "Gate de escritura" {
+  codigo: "Edita código\nsin feature activa"
+  texto: "Docs y texto"
+}
+lectura: "Gate de lectura" {
+  amplia: "grep/glob/find amplio\ncon contexto sobre el umbral"
+  puntual: "Read de un archivo\no con offset/limit"
+}
+
+pasa: "Pasa" {style.fill: "#d4f4dd"; style.font-color: "#14532d"}
+frena: "Se frena\ny sugiere el camino" {style.fill: "#fde2e2"; style.font-color: "#7f1d1d"}
+camino: "Camino sugerido\n/nxy:feature, implementer\no scout"
+once: "/nxy:gate once\n(un solo uso)"
+
+hilo -> escritura.codigo
+hilo -> escritura.texto
+hilo -> lectura.amplia
+hilo -> lectura.puntual
+
+escritura.texto -> pasa
+lectura.puntual -> pasa
+escritura.codigo -> frena
+lectura.amplia -> frena
+frena -> camino
+once -> pasa: "deja pasar\nuna vez"

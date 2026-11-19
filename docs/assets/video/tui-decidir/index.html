@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — decidir desde la TUI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #181825; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #1e1e2e; color: #cdd6f4;
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; padding: 56px 72px; }
+  .mono { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; }
+  h1 { font-size: 84px; letter-spacing: -1px; color: #cba6f7; }
+  .lead { font-size: 34px; line-height: 1.4; color: #cdd6f4; max-width: 980px; margin-top: 28px; }
+  .win { position: absolute; left: 72px; right: 72px; top: 90px; background: #181825; border: 1px solid #45475a;
+    border-radius: 12px; overflow: hidden; }
+  .bar { background: #313244; color: #a6adc8; font-size: 15px; padding: 9px 16px; }
+  .body { padding: 22px 26px; font-size: 22px; line-height: 1.55; min-height: 250px; }
+  .user { color: #f9e2af; }
+  .bot { color: #cdd6f4; }
+  .dim { color: #7f849c; }
+  .ok { color: #a6e3a1; }
+  .bad { color: #f38ba8; }
+  .acc { color: #cba6f7; }
+  .warn { color: #f9e2af; }
+  pre.tui { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; font-size: 17.5px; line-height: 1.32;
+    color: #cdd6f4; padding: 16px 22px; white-space: pre; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 44px; font-size: 30px; line-height: 1.35;
+    color: #cdd6f4; border-left: 5px solid #cba6f7; padding-left: 20px; }
+  .tag { position: absolute; left: 72px; top: 24px; font-size: 18px; color: #7f849c; letter-spacing: 1px; }
+  .two { position: absolute; left: 72px; right: 72px; top: 90px; display: flex; gap: 24px; }
+  .two .win { position: static; flex: 1; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="tui-decidir" data-start="0" data-duration="38" data-width="1280" data-height="720" data-fps="30">
+
+  <section class="clip scene" id="s1" data-start="0" data-duration="5">
+    <div style="margin-top:190px">
+      <h1 data-in="0.2">Decidir desde la TUI</h1>
+      <p class="lead" data-in="0.9">Contestás las preguntas de nxy sin volver a la terminal de Claude Code.</p>
+    </div>
+  </section>
+
+  <section class="clip scene" id="s2" data-start="5" data-duration="8">
+    <div class="tag" data-in="0">1 · CLAUDE PREGUNTA</div>
+    <div class="two">
+      <div class="win" data-in="0.2">
+        <div class="bar warn">● nxy: decisión pendiente</div>
+        <div class="body mono" style="font-size:19px">
+          <div class="bot dim" data-in="0.8">● Lote 3 en rojo después del reintento.</div>
+          <div class="bot dim" data-in="1.6">● Esperando tu respuesta…</div>
+        </div>
+      </div>
+      <div class="win" data-in="0.4">
+        <div class="bar">nxy tui</div>
+        <div class="body mono" style="font-size:19px">
+          <div class="warn" data-in="1.2">● 2 decisiones</div>
+          <div data-in="2" style="margin-top:12px">Te necesita  2</div>
+          <div class="dim" data-in="2.4">F7K2 · facturacion-web</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap" data-in="3.5">Con la TUI abierta, nxy retiene la pregunta en vez de mostrar el diálogo de Claude Code.</div>
+  </section>
+
+  <section class="clip scene" id="s3" data-start="13" data-duration="9">
+    <div class="tag" data-in="0">2 · APRETÁS d</div>
+    <div class="win" style="top:70px">
+      <div class="bar">nxy tui</div>
+<pre class="tui">                 Te necesita    Lote 3 falló        F7K2 · facturacion-web   1 de 2
+
+                 El lote 3 sigue en rojo después del reintento. ¿Cómo seguimos?
+
+                   nota-credito.component.spec.ts:42
+                   TS2345: el tipo NotaCredito no se puede asignar a NotaParcial
+                   el lote 2 ya está en verde y no queda nada corriendo
+
+              ›  ▸ 1  Reintentar  otro intento con la falla   recomendada
+                  2  Seguir      el 4 queda frenado y se revisa lo demás
+                  3  Parar       la feature queda pausada con su nota
+
+  1-3  elegir     enter  confirmar     t  en la terminal     tab  la otra     ?  ayuda</pre>
+    </div>
+    <div class="cap" data-in="3">La pregunta, con su contexto y las opciones numeradas. La recomendada va marcada.</div>
+  </section>
+
+  <section class="clip scene" id="s4" data-start="22" data-duration="8">
+    <div class="tag" data-in="0">3 · ELEGÍS Y CLAUDE SIGUE</div>
+    <div class="two">
+      <div class="win" data-in="0.2">
+        <div class="bar">nxy tui</div>
+        <div class="body mono" style="font-size:19px">
+          <div data-in="0.6">▸ 1  Reintentar</div>
+          <div class="ok" data-in="1.5" style="margin-top:12px">enter · contestada</div>
+        </div>
+      </div>
+      <div class="win" data-in="0.4">
+        <div class="bar">claude</div>
+        <div class="body mono" style="font-size:19px">
+          <div class="dim" data-in="2.2">nxy: contestada en la TUI</div>
+          <div class="bot" data-in="3.2" style="margin-top:12px">● Reintentando el lote 3…</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap" data-in="4.2">Lo que elegís vuelve a Claude como si lo hubieras contestado en el chat.</div>
+  </section>
+
+  <section class="clip scene" id="s5" data-start="30" data-duration="8">
+    <div class="tag" data-in="0">SIEMPRE PODÉS VOLVER AL CHAT</div>
+    <div class="win">
+      <div class="bar">cuándo vuelve el diálogo normal</div>
+      <div class="body mono">
+        <div data-in="0.5">· apretás <span class="acc">t</span> (en la terminal)</div>
+        <div data-in="1.3">· cerrás la TUI</div>
+        <div data-in="2.1">· pasan 25 minutos sin respuesta</div>
+        <div class="dim" data-in="3.3" style="margin-top:14px">Sin TUI abierta, nada cambia.</div>
+      </div>
+    </div>
+    <div class="cap" data-in="4.4">El modelo no puede contestarse solo: la respuesta sólo la acepta nxy si viene de la TUI.</div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["tui-decidir"] = tl;
+</script>
+</body>
+</html>

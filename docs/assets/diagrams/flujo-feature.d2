@@ -1,0 +1,28 @@
+direction: down
+
+pedido: "Pedido\n/nxy:feature"
+scouts: "Scouts + locate\n(dónde está el código)"
+planner: "planner\narma el plan"
+preguntas: "Preguntas y decisiones\n(las respondés vos)"
+aprobar: "Aprobás el plan\ny la rama"
+lotes: "Lotes" {
+  implementer: "implementer\nhace el cambio"
+  accept: "Accept\n(comando del lote)"
+  verify: "verify\nverde o rojo"
+  implementer -> accept -> verify
+  verify -> implementer: "rojo: 1 reintento" {style.stroke-dash: 4}
+}
+afectados: "Tests afectados"
+review: "review\nlentes + refuter"
+arreglos: "fixer\narregla lo que elegís"
+documenter: "documenter\ndocs que nombran el cambio"
+cierre: "Cierre\n(reglas nuevas)"
+
+pedido -> scouts -> planner -> preguntas
+preguntas -> planner: "respuestas" {style.stroke-dash: 4}
+preguntas -> aprobar
+aprobar -> lotes -> afectados -> review
+review -> arreglos: "hallazgos"
+arreglos -> afectados: "re-verifica" {style.stroke-dash: 4}
+review -> documenter
+documenter -> cierre

@@ -1,0 +1,34 @@
+direction: right
+
+feature: "Features y sesiones"
+aprendizajes: "Aprendizajes (A)\nlo que nxy anota"
+reglas: "Reglas (K)\ndel repo"
+globales: "Globales (G)\ncon roles"
+
+feature -> aprendizajes: "anota"
+aprendizajes -> reglas: "nxy mem promote"
+feature -> reglas: "nxy mem rule" {style.stroke-dash: 4}
+feature -> globales: "nxy mem rule --global" {style.stroke-dash: 4}
+
+editar: "Editar y borrar" {
+  edit: "nxy mem edit"
+  rm: "nxy mem rm"
+  restore: "nxy mem restore"
+  rm -> restore: "se recupera" {style.stroke-dash: 4}
+}
+reglas -> editar
+globales -> editar
+
+lectores: "Quién las lee" {
+  planner
+  implementer
+  reviewer
+  main: "main\n(modo ingeniero)"
+}
+reglas -> lectores.planner: "todas"
+reglas -> lectores.main: "todas"
+reglas -> lectores.implementer: "las del área\nde los archivos"
+reglas -> lectores.reviewer: "las del área\nde los archivos"
+aprendizajes -> lectores.implementer: "los de esos archivos"
+aprendizajes -> lectores.reviewer: "los de esos archivos"
+globales -> lectores: "según --roles\n(sin --roles, todos)"

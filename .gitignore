@@ -11,6 +11,11 @@ node_modules/
 dist/
 # codegraph index (nxy affected creates and syncs it on its own)
 .codegraph/
+# Docs visuals: Linux binary for the VHS container, and the rendered MP4s (uploaded by hand)
+docs/assets/.build/
+docs/assets/video/out/
+# HyperFrames render state (container paths and timestamps)
+docs/assets/video/*/.hyperframes/
 # API declarations Claude Code writes when a plugin is loaded from a folder (--plugin-dir)
 .claude-plugin/types/
 *.log

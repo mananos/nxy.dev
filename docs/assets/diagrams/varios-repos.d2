@@ -1,0 +1,25 @@
+direction: down
+
+plan: "Plan de una feature\nque toca varios repos"
+contrato: "Lote 1: el contrato\n(API, tipos compartidos)"
+a: "Lote 2: repo A\nDepende de: 1"
+b: "Lote 3: repo B\nDepende de: 1"
+review: "review de todos los repos\n(lente de contrato entre repos)"
+
+plan -> contrato
+contrato -> a
+contrato -> b
+a -> review
+b -> review
+
+ramas: "Al aprobar el plan: rama y base de cada repo" {
+  uno: "1 repo\nla rama se crea en tu carpeta"
+  varios: "2 o más repos\nun worktree por repo\n<repo>.worktrees/<rama>"
+  ocupado: "Un repo ocupado\npor otra feature" {
+    p: "pausar la otra"
+    w: "abrir en un worktree\n(si es un solo repo)"
+    d: "dejar el repo afuera\n(si son varios)"
+    s: "parar esta feature"
+  }
+}
+plan -> ramas

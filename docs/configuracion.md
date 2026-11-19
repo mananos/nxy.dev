@@ -1,39 +1,36 @@
 # Configuración de nxy
 
-Casi nada de esto hace falta tocarlo: los defaults están elegidos para que nxy funcione sin calibrar nada. Esta página es la referencia completa para cuando querés cambiar algo puntual.
+Casi nada de esto hace falta tocarlo: los defaults están elegidos para que nxy funcione sin calibrar nada. Esta página es la referencia completa para cuando querés cambiar algo puntual, y dice dónde guarda nxy cada cosa.
 
-## Dónde vive
+## Para qué sirve
+
+La config de nxy son dos archivos JSON opcionales (uno tuyo y uno del repo) que se combinan con los defaults que trae el binario. Ahí elegís qué modelo usa cada agente, si el filtro y los frenos están prendidos y cómo se ve la statusline. Si no existe ninguno, rige todo por defecto.
+
+## Qué ves
+
+La forma más cómoda es la pantalla **Config** de la TUI ([abrirla](tui.md)): muestra cada clave que se puede cambiar, su valor efectivo y de dónde viene, y lo cambia con teclas.
+
+![La pantalla Config de la TUI](assets/gifs/tui-config.gif)
+
+Con `nxy config` (o `/nxy:config`) ves lo mismo en texto: cada clave, su valor y su origen entre paréntesis (`predeterminado`, `usuario`, `repo` o `env`), y al final los dos archivos con su estado (`existe`, `no existe` o `roto`).
+
+## Qué significa
+
+### Dónde vive
 
 | Archivo | Alcance |
 | --- | --- |
-| `internal/platform/defaults.json` (va dentro del binario) | Defaults. No se edita |
-| `~/.nxy/config.json` | Vos, en todos tus proyectos. Es donde guarda `nxy config set` si no le pedís otra cosa |
-| `<repo>/.nxy/config.json` | El repo. Se commitea: quien lo clone hereda lo mismo sin configurar nada |
+| `internal/platform/defaults.json` (va dentro del binario) | Los defaults. No se editan |
+| `~/.nxy/config.json` | Vos, en todos tus proyectos. Es donde guardan `nxy config set` y la TUI si no les pedís otra cosa |
+| `<repo>/.nxy/config.json` | El repo. Se elige a propósito (`--repo`, o el botón `r` de la TUI), y se puede commitear: quien lo clone hereda lo mismo |
 
-Se combinan en ese orden con deep-merge (los objetos se mezclan; listas y valores sueltos se reemplazan). Después se aplican `NXY_FILTER` y `NXY_ENGINE` (ver abajo).
+Se combinan en ese orden con *deep-merge*: los objetos se mezclan; las listas y los valores sueltos se reemplazan. Después se aplican las variables `NXY_FILTER` y `NXY_ENGINE` (abajo), que ganan sobre todo.
 
-`.nxy/` vive en la raíz del repo git, desde cualquier subcarpeta donde arranques un comando. Un `.nxy/config.json` dentro de una subcarpeta ya no se lee: movelo a la raíz del repo. Fuera de un repo git se usa la carpeta donde estás.
+`.nxy/` vive en la **raíz del repo git**, desde cualquier subcarpeta donde arranques un comando. Un `.nxy/config.json` dentro de una subcarpeta no se lee: movelo a la raíz. Fuera de un repo git se usa la carpeta donde estás.
 
-### Cómo se cambia
+Un cambio de config aplica «al próximo agente que se lance» y, para el filtro, en el comando siguiente. Si un archivo tiene un JSON roto, nxy lo ignora al leer y se niega a escribir en él (`<ruta> está roto; no se toca`): arreglalo a mano.
 
-- `nxy config` (o `nxy config show`): cada clave que se puede cambiar, su valor efectivo y de dónde viene (`predeterminado`, `usuario`, `repo` o `env`), más la ruta de los dos archivos y si existen o están rotos.
-- `nxy config set <clave> <valor|default> [--repo]`: guarda en `~/.nxy/config.json`; con `--repo`, en `<repo>/.nxy/config.json`. `default` borra la clave. Si el archivo está roto no lo toca y te lo dice: arreglalo a mano y repetí.
-- `nxy config cache-ttl 1h|off`: escribe o quita `promptCacheTtl` en `~/.claude/settings.json` (deja un backup `settings.json.bak-nxy-<ms>`, se conservan los 3 últimos). Claude Code lo toma en la próxima sesión.
-- `/nxy:config`: lo mismo desde el chat, con los mismos argumentos.
-- La pestaña **Config** de la TUI ([abrirla](#abrir-la-tui)): muestra lo mismo y lo cambia con botones.
-
-`config set` sólo acepta las claves de `nxy config show`: `modules.filter` (`true` o `false`), `filter.engine` (`auto`, `rtk` o `off`) y `roles.<rol>.model` / `roles.<rol>.effort` (ver [roles](#roles)). Las demás claves de esta página se editan a mano en el JSON.
-
-```
-.nxy/
-  config.json     # commiteado: la config del repo
-  lenses/         # commiteado: lentes de review propias del repo
-  local/          # en .gitignore: estado que cada clon regenera
-```
-
-Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout.
-
-## Variables de entorno
+### Variables de entorno
 
 | Variable | Efecto |
 | --- | --- |
@@ -50,7 +47,9 @@ Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout.
 | `NXY_BIN` | Ruta a un binario de nxy para que el lanzador (`bin/nxy.cmd`) corra ése en vez de bajar el de la versión. Para desarrollo: un `NXY_BIN` olvidado corre un build viejo sin avisar |
 | `NXY_RELEASE_URL` | Carpeta de la que el lanzador baja el binario y `checksums.txt` (por defecto, el release de GitHub de la versión) |
 
-## Los defaults
+Las variables que usan los tests o la TUI por dentro (`NXY_WRITE_GOLDEN`, `NXY_TUI_NONCE`, …) no son para vos.
+
+### Los defaults
 
 ```json
 {
@@ -70,15 +69,15 @@ Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout.
 }
 ```
 
-`scout.codegraph` no está en el archivo: se lee, y vale `true` si no está.
+`scout.codegraph` no está en el archivo: se lee, y vale `true` si no está. Los roles tampoco: sin clave rige lo que dice el encabezado de cada agente.
 
-## Cada sección
+### Cada sección
 
-### `modules`
+#### `modules`
 
-`metrics` y `filter` se prenden y apagan por separado. Con `filter: false` los comandos pasan intactos; con `metrics: false` el filtro no registra una fila por comando.
+`metrics` y `filter` se prenden y apagan por separado. Con `filter: false` los comandos pasan intactos; con `metrics: false` el filtro no registra una fila por comando. Más en [El filtro de comandos](rtk.md).
 
-### `filter`
+#### `filter`
 
 | Clave | Qué hace |
 | --- | --- |
@@ -87,17 +86,15 @@ Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout.
 | `onlyCommands` | Si no está vacía, sólo se filtran estos |
 | `autoAllowWhenOriginalAllowed` | Si el comando original estaba permitido por tus reglas `permissions.allow`, el reescrito hereda el permiso y no aparece un prompt nuevo |
 
-`/nxy:filter` ([abajo](#nxyfilter)) prende y apaga el filtro sin tocar el JSON.
-
-### `metrics`
+#### `metrics`
 
 | Clave | Qué hace |
 | --- | --- |
 | `projectsDir` | Dónde están los transcripts de Claude Code (`null` = `~/.claude/projects`) |
 | `subscription` | `true` muestra los montos como *equivalente* (`$1.20~`) |
-| `cacheBreakThreshold` | Desde cuántos tokens una reescritura de cache cuenta como "reconstrucción" en `stats` y `trend` |
+| `cacheBreakThreshold` | Desde cuántos tokens una reescritura de cache cuenta como «reconstrucción» en `stats` y `trend` |
 
-### `metrics.statusline`
+#### `metrics.statusline`
 
 | Clave | Qué hace |
 | --- | --- |
@@ -117,24 +114,24 @@ Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout.
 { "metrics": { "statusline": { "theme": { "brand": "bold magenta", "gauge": "#ff79c6" } } } }
 ```
 
-Los cambios se ven en el próximo refresco, sin reiniciar. La statusline la dibuja `nxy statusline`, el mismo binario; cómo instalarla, en [`/nxy:statusline`](#nxystatusline).
+Los cambios se ven en el próximo refresco, sin reiniciar. Qué significa cada segmento: [Ver en qué se gasta](gasto.md).
 
-### `scout`
+#### `scout`
 
-`codegraph: false` desactiva el índice de codegraph en `nxy locate` aunque esté instalado.
+`codegraph: false` desactiva el índice de codegraph en `nxy locate` aunque esté instalado ([Buscar](buscar.md)).
 
-### `gate`
+#### `gate`
 
 | Clave | Qué hace |
 | --- | --- |
 | `enabled` | `false` apaga el freno de escritura y también el de búsquedas amplias |
-| `reads` | `false` deja el freno de búsquedas amplias del hilo principal apagado (por defecto `true`). También: `/nxy:gate reads off\|on` (guarda en tu usuario; con `--repo`, en el repo) |
-| `contextTokens` | Desde cuánto contexto del hilo principal se delegan las ediciones y se frenan las búsquedas amplias |
+| `reads` | `false` deja el freno de búsquedas amplias del hilo principal sólo observando (por defecto `true`). También: `/nxy:gate reads off\|on` (guarda en tu usuario; con `--repo`, en el repo) |
+| `contextTokens` | Desde cuánto contexto del hilo principal se frena una búsqueda amplia |
 | `escapeMinutes` | Cuánto vale un `/nxy:gate once` o `/nxy:gate once search` antes de vencer solo (mínimo 1) |
 
-Las filas del freno quedan en un `metrics/gate.jsonl` del estado local, con tope de 256 KB: al pasarlo se descartan las de más de 90 días, y si aun así sobra quedan las más nuevas.
+Más en [El freno](gate.md).
 
-### `roles`
+#### `roles`
 
 Qué modelo y effort usa cada rol de nxy. nxy lo aplica al despachar cada agente: `"planner": { "model": "sonnet", "effort": "medium" }` hace que el planner corra en Sonnet con effort medio (más barato que el default, Opus high).
 
@@ -148,52 +145,97 @@ Qué modelo y effort usa cada rol de nxy. nxy lo aplica al despachar cada agente
 | `scout` | sonnet | medium |
 | `documenter` | sonnet | low |
 
-Los defaults salen del encabezado de cada `agents/*.md`. Valores que acepta la config: `roles.<rol>.model` = `haiku`, `sonnet`, `opus` o `fable`; `roles.<rol>.effort` = `low`, `medium` o `high`. Sin clave queda lo del agente. Si el despacho ya trae modelo o effort explícito, gana el del despacho.
+Los defaults salen del encabezado de cada `agents/*.md`. Valores que acepta la config: `roles.<rol>.model` = `haiku`, `sonnet`, `opus` o `fable`; `roles.<rol>.effort` = `low`, `medium` o `high`. Sin clave queda lo del agente. Si el despacho ya trae modelo o effort explícito, gana el del despacho. Editar los `.md` del plugin se pisa al actualizar: usá la config.
 
 ```
 nxy config set roles.planner.model sonnet
 nxy config set roles.planner.effort default --repo
 ```
 
-### Lentes de review
+#### Lentes de review
 
-Cada `.md` en `<repo>/.nxy/lenses/` (o en `~/.nxy/lenses/` para todos tus repos) suma una lente propia. Con el mismo nombre que una de nxy la reemplaza, y con `enabled: false` en el frontmatter la apaga. Las lentes de nxy están en [`lenses/`](../lenses).
+Cada `.md` en `<repo>/.nxy/lenses/` (o en `~/.nxy/lenses/` para todos tus repos) suma una lente propia. Con el mismo nombre que una de nxy la reemplaza, y con `enabled: false` en el frontmatter la apaga. Las lentes de nxy están en [`internal/review/lenses/`](../internal/review/lenses). Más en [Review](review.md).
 
-### Claves de la 1.x que la v2 ignora
+#### Runners de tests afectados
 
-Si venís de la 1.x y tus `config.json` todavía las tienen, no hacen nada (no se borran ni dan error): `flow` (`plan`, `pauseAfterBatch`, `orchestrator`), `ui`, `docs`, `memory` (`mode`, `handoff`), el rol `tester` y el que relacionaba memorias, y `provider` dentro de un rol.
+`<repo>/.nxy/runners.json` suma filas a la tabla de runners que trae nxy, para que los tests afectados corran con tu propio comando ([Plan y lotes](plan-y-lotes.md)). Una fila que no estaba en el plan aprobado no se usa, y nxy lo avisa.
 
-## Comandos relacionados
+#### Claves de la 1.x que la v2 ignora
 
-### /nxy:statusline
+Ver [Si venís de la 1.x](si-venis-de-la-1x.md#claves-de-la-1x-que-la-v2-ignora): no hacen nada, pero no dan error.
 
-Sin argumentos muestra el bloque `statusLine` que se escribiría en `~/.claude/settings.json` y si ya está instalada. `/nxy:statusline install` la escribe (con backup `bak-nxy-<ms>` junto al archivo; se conservan los 3 últimos), te dice la ruta del lanzador y te pide reiniciar Claude Code. `/nxy:statusline remove` la quita, sólo si es la de nxy. Sólo estos dos subcomandos escriben.
+## Qué hacer
 
-Una copia estable del lanzador queda en `~/.nxy/bin/nxy.cmd` (unos 13 KB) y se actualiza al abrir sesión con la versión del binario; `remove` la borra.
+Cómo se cambia, de lo más cómodo a lo más manual:
 
-### /nxy:setup
+- **La pestaña Config de la TUI.** `e` cambia el modelo (o el valor de un módulo), `f` el effort, `r` guarda el valor en el repo en vez de en tu usuario.
+- **`nxy config set <clave> <valor|default> [--repo]`** (o `/nxy:config set …` desde el chat): guarda en `~/.nxy/config.json`; con `--repo`, en `<repo>/.nxy/config.json`, conservando las otras claves. `default` borra la clave.
+- **A mano**, en el JSON, para todo lo demás.
 
-Muestra el estado de las herramientas: rtk, rg, codegraph y d2 (instaladas o no, de dónde, y cómo instalarlas). Sólo detecta: no instala nada solo. Para instalar una, decí cuál y que sí: corre `nxy setup run <rtk|rg|codegraph|d2> --yes`. Sin `--yes` muestra los pasos y no hace nada; con `--dry-run` los lista sin correrlos. Dónde instala cada una:
+`nxy config set` sólo acepta las claves que lista `nxy config show`:
 
-| Herramienta | Windows | Linux | macOS |
-| --- | --- | --- | --- |
-| rtk | `winget install rtk-ai.rtk` (actualizar: `winget upgrade rtk-ai.rtk`) | `install.sh` de rtk-ai/rtk | `brew install rtk` |
-| rg | `winget install BurntSushi.ripgrep.MSVC` | el gestor de paquetes que haya (`apt`, `dnf`, `pacman`, con `sudo -n`) | `brew install ripgrep` |
-| codegraph | `install.ps1` de colbymchenry/codegraph | `install.sh` de colbymchenry/codegraph | ídem Linux |
-| d2 (dibuja los diagramas del diseño) | `winget install Terrastruct.D2` | `install.sh` de d2lang.com con `--prefix "$HOME/.local"` | `brew install d2` |
+| Clave | Valores |
+| --- | --- |
+| `modules.filter` | `true` o `false` |
+| `filter.engine` | `auto`, `rtk` u `off` |
+| `roles.<rol>.model` | `haiku`, `sonnet`, `opus` o `fable` |
+| `roles.<rol>.effort` | `low`, `medium` o `high` |
 
-Un `sudo` sin terminal falla sin colgarse y te devuelve el comando para correr a mano. Si hay un hook de rtk propio (`rtk init -g`) o un servidor MCP de codegraph, lo marca como choque y los pasos de reinstalación incluyen quitarlo cuando es posible; si no, te dice cómo hacerlo a mano (nxy no edita settings ajenos).
+con `<rol>` = `planner`, `implementer`, `reviewer`, `reviewer-quick`, `refuter`, `scout` o `documenter`. Con otra clave responde `campo desconocido: <clave>`, y con un valor que no está en la lista, `valor inválido para <clave>: <valor>`. Las demás claves de esta página (el `gate`, la `statusline`, `metrics`…) se editan a mano en el JSON; hay atajos para algunas: `/nxy:gate reads on|off`, `/nxy:filter on|off`.
 
-La fila «nxy en el PATH» (`nxy setup run path --yes`) hace que alcance con escribir `nxy tui`. En Windows suma `~/.nxy/bin` al `Path` del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas que llama al lanzador (esa carpeta tiene que estar en tu PATH). Si cambiás `NXY_HOME`, repetilo. Para sacarlo: quitá la carpeta del PATH del usuario o borrá `~/.local/bin/nxy`.
+Las recetas más pedidas:
 
-### /nxy:filter
+| Querés | Hacé |
+| --- | --- |
+| Ver cada clave, su valor y de dónde viene | `/nxy:config` (o `nxy config show`) |
+| Que el planner de este repo use Sonnet (más barato) | `nxy config set roles.planner.model sonnet --repo` |
+| Apagar los dos frenos | En el JSON: `"gate": { "enabled": false }` |
+| Apagar sólo el freno de búsquedas amplias | `/nxy:gate reads off` |
+| Apagar el filtro | `/nxy:filter off` (o `nxy config set modules.filter false`) |
+| Probar la cache de 1 hora | `nxy config cache-ttl 1h` |
+| Lentes de review propias del repo | Un `.md` en `.nxy/lenses/` |
+| Tests afectados con tu propio runner | Un `.nxy/runners.json` en el repo |
 
-`/nxy:filter status` muestra el motor del filtro (rtk o no), rg, lo excluido y la salida de emergencia (`NXY_RAW=1`). `on` y `off` escriben `modules.filter` en `~/.nxy/config.json`, o en el `.nxy/config.json` del repo con `--repo`, conservando las otras claves, y refrescan la cache del motor. Si el archivo está roto no lo toca y sale con error.
+`nxy config cache-ttl 1h|off` no toca la config de nxy: escribe o quita `promptCacheTtl` en `~/.claude/settings.json` (deja un backup `settings.json.bak-nxy-<ms>` al lado; se conservan los 3 últimos), y Claude Code lo toma en la próxima sesión. Cuándo conviene: [Ver en qué se gasta](gasto.md).
 
-### /nxy:config
+## Dónde guarda nxy sus cosas
 
-Es `nxy config` ([cómo se cambia](#cómo-se-cambia)) desde el chat: `show`, `set <clave> <valor|default> [--repo]` y `cache-ttl 1h|off`.
+Igual que `.claude`, hay una carpeta tuya y una por repo. `NXY_HOME` mueve `~/.nxy` a otra carpeta.
 
-### Abrir la TUI
+| Carpeta o archivo | Qué tiene | ¿Se commitea? |
+| --- | --- | --- |
+| `~/.nxy/nxy.db` | La base SQLite: features, memoria, notas, resumen del filtro, costos por agente | No: es de tu máquina |
+| `~/.nxy/config.json` | Tu config global | No |
+| `~/.nxy/bin/<versión>/` | El binario de esa versión (el lanzador lo baja la primera vez) y, si instalaste la statusline o la fila del PATH, una copia estable del lanzador (`~/.nxy/bin/nxy.cmd`, unos 13 KB) | No |
+| `~/.nxy/plans/` y `~/.nxy/reviews/` | El plan y la review de cada feature (`<id>.md`, 5 a 15 KB el plan), para **Ver completo**. Se borran al cerrar con éxito o al parar la feature | No |
+| `~/.nxy/cache/` | Lo que nxy puede rehacer: el motor del filtro (`engine-v2.json`), la cache de reescrituras de rtk (`rewrite-v2.json`, hasta 500 comandos, unos 75 KB) y el estado de la statusline (`statusline-v2/`, unos 7 KB por sesión; los de más de 7 días se borran) | No |
+| `~/.nxy/run/` | Una señal `tui-<pid>` (unos 50 bytes) mientras una TUI está abierta; se borra al cerrarla | No |
+| `~/.nxy/lenses/` | Tus lentes de review | No |
+| `<repo>/.nxy/config.json`, `<repo>/.nxy/lenses/`, `<repo>/.nxy/runners.json` | Lo que el equipo comparte: config, lentes y runners de tests | **Sí**, si querés compartirlos |
+| `<repo>/.nxy/local/` | Lo de tu checkout: el índice de búsqueda (`index/`), el registro del freno (`metrics/gate.jsonl`, tope 256 KB), los permisos `once` (`gate-escape*.json`) y la marca de pausa de un worktree (`features/paused.json`) | No: ignoralo en tu `.gitignore`; nxy no lo agrega solo |
 
-La TUI necesita su propia terminal. `/nxy:tui` no la abre: te muestra el comando exacto (el de `nxy tui where`) para pegar en otra terminal. Si `nxy` ya está en el PATH es `nxy tui`; si no, es el lanzador, por ejemplo `& "<ruta>/nxy.cmd" tui` en PowerShell o `sh "<ruta>/nxy.cmd" tui` en Git Bash, Linux y macOS. Con `nxy tui --demo` abre el mismo programa con datos de ejemplo, sin tocar tu db ni tu repo.
+Regla: `.nxy/` se comparte, `.nxy/local/` es de tu checkout. Borrar `.nxy/local/` de un repo descarta sólo esos datos del checkout (el índice se rehace solo): el estado de las features vive en `nxy.db`, no ahí. Si codegraph está instalado, nxy también crea en cada repo donde lo necesita un `.codegraph/` (el índice de codegraph, ignorado en `.git/info/exclude`; no toca tu `.gitignore`).
+
+Lo que viaja a otra máquina no es la base sino la memoria exportada (`/nxy:mem export`, [Memoria](memoria.md)). El costo por agente de cada feature vive sólo en tu máquina y se borra a los 90 días.
+
+## Comandos y config
+
+| Comando | Qué hace |
+| --- | --- |
+| `nxy config [show]` · `/nxy:config` | Cada clave que se puede cambiar, su valor efectivo y su origen, más los dos archivos |
+| `nxy config set <clave> <valor\|default> [--repo]` | Cambia una clave; `default` la borra |
+| `nxy config cache-ttl 1h\|off` | Escribe o quita `promptCacheTtl` en `~/.claude/settings.json` |
+| `/nxy:filter [status\|on\|off] [--repo]` | Ver o prender/apagar el filtro ([rtk](rtk.md)) |
+| `/nxy:gate reads on\|off [--repo]` | Prender o apagar el freno de búsquedas ([gate](gate.md)) |
+| `/nxy:statusline [install\|remove]` | Mostrar, instalar o sacar la statusline; el bloque que escribe va a `~/.claude/settings.json` con backup |
+| `/nxy:setup` | Estado de rtk, rg, codegraph y d2; instala lo que digas que sí |
+| `nxy tui where` · `/nxy:tui` | El comando para abrir la TUI en otra terminal |
+
+`/nxy:statusline install` además deja una copia estable del lanzador en `~/.nxy/bin/nxy.cmd`, que se actualiza al abrir sesión; `remove` la borra. `/nxy:setup` no instala nada solo: sin `--yes` muestra los pasos, con `--dry-run` los lista. El detalle de cada herramienta, por sistema, está en [Instalación](instalacion.md).
+
+## Relacionados
+
+- [La TUI](tui.md): la pantalla Config.
+- [El filtro de comandos](rtk.md) · [El freno](gate.md) · [Ver en qué se gasta](gasto.md): las secciones que más se tocan.
+- [Instalación](instalacion.md): rtk, rg, codegraph y d2, y la statusline.
+- [Cómo funciona por dentro](como-funciona.md) · [Mensajes de nxy](mensajes.md)

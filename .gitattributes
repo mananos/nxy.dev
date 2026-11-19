@@ -3,3 +3,5 @@
 # Force LF for every text file regardless of the cloning machine.
 * text=auto eol=lf
 *.png binary
+*.gif binary
+*.mp4 binary

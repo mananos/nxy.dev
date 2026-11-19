@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — memoria</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #181825; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #1e1e2e; color: #cdd6f4;
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; padding: 56px 72px; }
+  .mono { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; }
+  h1 { font-size: 84px; letter-spacing: -1px; color: #cba6f7; }
+  .lead { font-size: 34px; line-height: 1.4; color: #cdd6f4; max-width: 980px; margin-top: 28px; }
+  .win { position: absolute; left: 72px; right: 72px; top: 90px; background: #181825; border: 1px solid #45475a;
+    border-radius: 12px; overflow: hidden; }
+  .bar { background: #313244; color: #a6adc8; font-size: 15px; padding: 9px 16px; }
+  .body { padding: 22px 26px; font-size: 22px; line-height: 1.55; min-height: 250px; }
+  .user { color: #f9e2af; }
+  .bot { color: #cdd6f4; }
+  .dim { color: #7f849c; }
+  .ok { color: #a6e3a1; }
+  .acc { color: #cba6f7; }
+  .warn { color: #f9e2af; }
+  .blue { color: #89b4fa; }
+  pre.tui { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; font-size: 17.5px; line-height: 1.32;
+    color: #cdd6f4; padding: 16px 22px; white-space: pre; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 44px; font-size: 30px; line-height: 1.35;
+    color: #cdd6f4; border-left: 5px solid #cba6f7; padding-left: 20px; }
+  .tag { position: absolute; left: 72px; top: 24px; font-size: 18px; color: #7f849c; letter-spacing: 1px; }
+  .cards { position: absolute; left: 72px; right: 72px; top: 110px; display: flex; gap: 22px; }
+  .card { flex: 1; background: #181825; border: 1px solid #45475a; border-radius: 12px; padding: 22px 24px; }
+  .card b { font-size: 40px; display: block; margin-bottom: 10px; }
+  .card p { font-size: 22px; line-height: 1.4; color: #a6adc8; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="memoria" data-start="0" data-duration="38" data-width="1280" data-height="720" data-fps="30">
+
+  <section class="clip scene" id="s1" data-start="0" data-duration="5">
+    <div style="margin-top:190px">
+      <h1 data-in="0.2">La memoria de nxy</h1>
+      <p class="lead" data-in="0.9">Lo que decidiste no se va con el /clear.</p>
+    </div>
+  </section>
+
+  <section class="clip scene" id="s2" data-start="5" data-duration="9">
+    <div class="tag" data-in="0">TRES COSAS DISTINTAS</div>
+    <div class="cards">
+      <div class="card" data-in="0.5"><b class="blue mono">K3</b><p><span class="bot">Regla del repo</span><br>Una decisión que las tareas futuras de este repo tienen que seguir. Dice la pregunta que resuelve.</p></div>
+      <div class="card" data-in="1.7"><b class="ok mono">A7</b><p><span class="bot">Aprendizaje</span><br>Algo que notaste y todavía no es regla. Repetirlo suma «visto N veces».</p></div>
+      <div class="card" data-in="2.9"><b class="warn mono">G2</b><p><span class="bot">Regla global</span><br>Tuya, para todos tus repos.</p></div>
+    </div>
+    <div class="cap" data-in="4.5">Una base local (SQLite, sin servidor). El número no se reutiliza nunca, ni al borrar.</div>
+  </section>
+
+  <section class="clip scene" id="s3" data-start="14" data-duration="9">
+    <div class="tag" data-in="0">EN LA TUI</div>
+    <div class="win" style="top:70px">
+      <div class="bar">nxy tui · Memoria</div>
+<pre class="tui">     Reglas                                    14        K9   regla                    del repo
+  ›  K9   Los logs de facturación usan… sin citar
+     K3   Los DTO de la API se versionan en /v2 …        Los logs de facturación usan el MDC
+     K8   Los importes van en BigDecimal con esc…        con el id de factura
+     K11  Las fechas viajan en ISO 8601 con zona
+     K13  Un endpoint nuevo lleva su test de con…        pregunta   ¿Cómo se loguea una
+                                                                    factura?
+     Aprendizajes                               6        entregada  9 veces
+     A2   Las pruebas de integración lev… visto 3        citada     nunca
+     A1   El job de conciliación vive e… obsoleto
+                                                         nxy propone borrarla
+  ↑↓  mover     /  buscar     e  editar     x  borrar     +  nueva     [ ]  repo     ?  ayuda</pre>
+    </div>
+    <div class="cap" data-in="3">Listás, editás, borrás y creás sin escribir comandos. nxy te propone limpiar lo que nadie cita.</div>
+  </section>
+
+  <section class="clip scene" id="s4" data-start="23" data-duration="7">
+    <div class="tag" data-in="0">BUSCAR</div>
+    <div class="win" style="top:70px">
+      <div class="bar">nxy tui · Memoria · /</div>
+<pre class="tui">     / dto▏                                 4 resultados     este repo  ·  todos    tab  cambia
+
+     Reglas                                     2        K3   regla             facturacion-api
+  ›  K3   Los DTO de la API se v… facturacion-api
+     K12  Los DTO del front sale… facturacion-web        Los DTO de la API se versionan en /v2
+                                                         y no se rompen
+     Aprendizajes                               1
+     A4   Los DTO se regeneran c… facturacion-api        pregunta   ¿Se puede romper un DTO?
+
+     Features cerradas                          1
+     F6A1 Versionar los DTO de f… facturacion-api</pre>
+    </div>
+    <div class="cap" data-in="2">Buscás en este repo o en todos, y enter te lleva a la lista.</div>
+  </section>
+
+  <section class="clip scene" id="s5" data-start="30" data-duration="8">
+    <div class="tag" data-in="0">QUIÉN LA LEE</div>
+    <div class="win">
+      <div class="bar">qué recibe cada agente</div>
+      <div class="body mono">
+        <div data-in="0.5"><span class="acc">planner</span>      todas las reglas del repo</div>
+        <div data-in="1.5"><span class="acc">implementer</span>  las reglas y aprendizajes del área que toca</div>
+        <div data-in="2.5"><span class="acc">reviewer</span>     las del área del diff</div>
+        <div class="dim" data-in="3.7" style="margin-top:14px">Las globales llegan después, a los roles que cada una elige.</div>
+      </div>
+    </div>
+    <div class="cap" data-in="4.7">El planner, el implementer y el reviewer respetan lo que ya decidiste sin que se lo repitas.</div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["memoria"] = tl;
+</script>
+</body>
+</html>
