@@ -2,7 +2,9 @@
 
 `/nxy:feature <pedido>` convierte un pedido en un plan que aprobás vos, lotes que nxy verifica con un test, una review y los arreglos que elijas.
 
-<!-- video feature: reemplazá esta línea por la URL de user-attachments de docs/assets/video/out/feature.mp4 -->
+▶ [Video: feature](assets/video/feature.mp4)
+
+https://github.com/user-attachments/assets/3067635a-c9f8-46f7-b102-13c178b77984
 
 ## Para qué sirve
 
@@ -12,11 +14,9 @@ Para los cambios con forma: varios archivos, algo nuevo, o más de un repo. En v
 
 El recorrido completo, del pedido al cierre:
 
-![Flujo de una feature: scouts y locate, planner, plan y preguntas, lotes con implementer, Accept y verify, review con lentes, documenter, cierre](assets/diagrams/flujo-feature.svg)
+![Flujo de una feature: pedido, plan que aprobás, lotes con su Accept, tests afectados, review y cierre](assets/diagrams/flujo-feature.png)
 
-Y la TUI mostrando una feature en curso, con el plan, los lotes y los agentes:
-
-![La TUI mostrando una feature](assets/gifs/tui-feature.gif)
+La TUI muestra una feature en curso con el plan, los lotes y los agentes: probala sin datos con `nxy tui --demo`.
 
 ## Qué significa
 

@@ -10,7 +10,7 @@ El plan es el contrato de la feature: lo que tiene que cumplirse (criterios), en
 
 En la TUI, la pantalla del plan muestra los lotes con su estado, y el plan completo se abre como archivo:
 
-![El plan de una feature en la TUI](assets/gifs/tui-plan.gif)
+![El plan de una feature esperando tu aprobación: cuatro lotes con su riesgo, el Accept del primero, los archivos que toca cada uno, los criterios R1 a R3 y las decisiones del diseño](assets/capturas/plan.png)
 
 En el chat, el plan llega como un resumen con esta forma:
 

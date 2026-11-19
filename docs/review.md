@@ -8,9 +8,7 @@ Una segunda mirada, con la profundidad que pide el riesgo del cambio, sobre lo q
 
 ## Qué ves
 
-Después de los tests afectados, la feature pasa a **Revisando** y, si hay hallazgos, a **Necesita tu decisión**: una pregunta (hasta 4 grupos de 4 hallazgos) con `H1`, `H2`… y su severidad y ubicación. En la TUI se contesta desde la pantalla de decisión:
-
-![Contestar una pregunta de nxy desde la TUI](assets/gifs/tui-decidir.gif)
+Después de los tests afectados, la feature pasa a **Revisando** y, si hay hallazgos, a **Necesita tu decisión**: una pregunta (hasta 4 grupos de 4 hallazgos) con `H1`, `H2`… y su severidad y ubicación. En la TUI se contesta desde la pantalla de decisión ([cómo se ve](decidir.md)).
 
 Al final de la feature, `/nxy:review show` te muestra la última review completa, y `/nxy:review status` cuántos hallazgos eligió o ignoró cada lente en los últimos 30 días.
 

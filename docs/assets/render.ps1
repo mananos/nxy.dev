@@ -1,9 +1,12 @@
-# Regenera los visuales de la documentacion: GIFs (VHS), diagramas (d2) y videos (HyperFrames).
+# Regenera los visuales de la documentacion: capturas de la TUI y portada (volcados de `nxy tui --demo --dump`
+# sobre el marco de marca de docs/assets/brand/, con Chromium), diagramas (HTML -> PNG con Chromium) y
+# videos (HyperFrames).
 #
-#   powershell -File docs/assets/render.ps1 [-DryRun] [todo|gifs|diagramas|videos] [nombres...]
+#   powershell -File docs/assets/render.ps1 [-DryRun] [todo|capturas|diagramas|videos] [nombres...]
 #
 # Mismo contrato que render.sh: sin nombres regenera todo el grupo; con nombres, solo esos.
-# Todo corre en Docker y nunca baja ni construye una imagen: si falta, imprime el comando y sale con 2.
+# Los volcados corren en el host con `go run`; el resto en Docker, que nunca baja ni construye una imagen:
+# si falta, imprime el comando y sale con 2.
 param(
     [switch]$DryRun,
     [Parameter(Position = 0)][string]$Group = 'todo',
@@ -12,30 +15,37 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$VhsImage = 'nxy-docs-vhs:v0.12.1'
-$VhsSize = '~30 MB sobre ghcr.io/charmbracelet/vhs:v0.12.1, que pesa ~887 MB comprimida / ~3 GB en disco; si no la tenés, antes: docker pull ghcr.io/charmbracelet/vhs:v0.12.1'
-$VhsBuild = 'docker build -t nxy-docs-vhs:v0.12.1 docs/assets/tapes'
 $VideoImage = 'nxy-docs-video:0.9.10'
 $VideoSize = 'unos 2 GB en disco (node, chromium, ffmpeg, fuentes y HyperFrames)'
 $VideoBuild = 'docker build -t nxy-docs-video:0.9.10 docs/assets/video'
-$D2Image = 'terrastruct/d2:v0.9.0'
-$D2Size = '~95 MB'
 
-if (@('todo', 'gifs', 'diagramas', 'videos') -notcontains $Group) {
-    [Console]::Error.WriteLine("Grupo desconocido: $Group. Opciones: todo, gifs, diagramas, videos.")
+if (@('todo', 'capturas', 'diagramas', 'videos') -notcontains $Group) {
+    [Console]::Error.WriteLine("Grupo desconocido: $Group. Opciones: todo, capturas, diagramas, videos.")
     exit 1
 }
 
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location $Root
 
+$Tsv = Join-Path $Root 'docs/assets/capturas/capturas.tsv'
+
 function Get-BaseNames($dir, $filter) {
     $p = Join-Path $Root $dir
     if (-not (Test-Path $p)) { return @() }
     @(Get-ChildItem -Path $p -Filter $filter -File | ForEach-Object { $_.BaseName } | Sort-Object)
 }
-$Tapes = Get-BaseNames 'docs/assets/tapes' '*.tape'
-$Diagrams = Get-BaseNames 'docs/assets/diagrams' '*.d2'
+function Get-Captures {
+    # Una fila por captura del manifiesto: nombre, dump, feature.
+    if (-not (Test-Path $Tsv)) { return @() }
+    $lines = @([IO.File]::ReadAllLines($Tsv) | Where-Object { $_.Trim() -ne '' })
+    @($lines | Select-Object -Skip 1 | ForEach-Object {
+            $c = $_.Split("`t")
+            [pscustomobject]@{ Name = $c[0].Trim(); Dump = $c[1].Trim(); Feature = $c[2].Trim() }
+        })
+}
+$Captures = Get-Captures
+$CaptureNames = @($Captures | ForEach-Object { $_.Name })
+$Diagrams = Get-BaseNames 'docs/assets/diagrams' '*.html'
 $Videos = @()
 $videoDir = Join-Path $Root 'docs/assets/video'
 if (Test-Path $videoDir) {
@@ -45,10 +55,10 @@ if (Test-Path $videoDir) {
 }
 
 switch ($Group) {
-    'gifs' { $Valid = $Tapes }
+    'capturas' { $Valid = @($CaptureNames) + @('banner') }
     'diagramas' { $Valid = $Diagrams }
     'videos' { $Valid = $Videos }
-    default { $Valid = @($Tapes) + @($Diagrams) + @($Videos) }
+    default { $Valid = @($CaptureNames) + @('banner') + @($Diagrams) + @($Videos) }
 }
 foreach ($n in $Names) {
     if ($Valid -notcontains $n) {
@@ -88,62 +98,62 @@ function Test-Image($image, $size, $cmd) {
     }
 }
 
-function Step-Build {
-    Write-Host '== Binario de nxy para Linux (lo usan los contenedores) =='
-    Write-Host '+ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o docs/assets/.build/nxy ./cmd/nxy'
-    if ($DryRun) { return }
-    New-Item -ItemType Directory -Force -Path (Join-Path $Root 'docs/assets/.build') | Out-Null
-    $old = @{ GOOS = $env:GOOS; GOARCH = $env:GOARCH; CGO_ENABLED = $env:CGO_ENABLED }
-    try {
-        $env:GOOS = 'linux'; $env:GOARCH = 'amd64'; $env:CGO_ENABLED = '0'
-        & go build -o 'docs/assets/.build/nxy' ./cmd/nxy
-        if ($LASTEXITCODE -ne 0) { exit 1 }
-    }
-    finally {
-        foreach ($k in $old.Keys) {
-            if ($null -eq $old[$k]) { Remove-Item "Env:$k" -ErrorAction SilentlyContinue }
-            else { Set-Item "Env:$k" $old[$k] }
-        }
-    }
-}
-
-function Step-Gifs {
-    Write-Host '== GIFs (VHS) =='
-    if ($Tapes.Count -eq 0) {
-        Write-Host 'No hay tapes en docs/assets/tapes/*.tape: nada que grabar.'
+function Step-Capturas {
+    Write-Host '== Capturas de la TUI y portada =='
+    $wanted = @($Captures | Where-Object { Test-Wanted $_.Name })
+    $wantBanner = Test-Wanted 'banner'
+    if ($wanted.Count -eq 0 -and -not $wantBanner) {
+        Write-Host 'Nada que capturar.'
         return
     }
     Test-Docker
-    Test-Image $VhsImage $VhsSize $VhsBuild
-    New-Item -ItemType Directory -Force -Path (Join-Path $Root 'docs/assets/gifs') | Out-Null
-    foreach ($n in $Tapes) {
-        if (-not (Test-Wanted $n)) { continue }
-        Invoke-Step 'docker' @('run', '--rm', '-v', "${Root}:/vhs", $VhsImage, "docs/assets/tapes/$n.tape")
+    Test-Image $VideoImage $VideoSize $VideoBuild
+    if (-not $DryRun) {
+        foreach ($d in @('docs/assets/.build/dumps', 'docs/assets/capturas')) {
+            New-Item -ItemType Directory -Force -Path (Join-Path $Root $d) | Out-Null
+        }
+    }
+    # 1) volcados de la TUI con datos de ejemplo, en el host (mismo resultado en Windows y Linux)
+    foreach ($c in $wanted) {
+        $out = "docs/assets/.build/dumps/$($c.Name).ansi"
+        $goArgs = @('run', './cmd/nxy', 'tui', '--demo', '--dump', $c.Dump)
+        if ($c.Feature -ne '-' -and $c.Feature -ne '') { $goArgs += @('--feature', $c.Feature) }
+        $goArgs += @('--width', '120', '--icons', 'unicode')
+        Write-Host ("+ go " + ($goArgs -join ' ') + " > $out")
+        if ($DryRun) { continue }
+        # UTF-8 sin BOM: con `>` PowerShell escribiria UTF-16 y el volcado no se podria leer.
+        [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+        $text = (& go @goArgs) -join "`n"
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+        if (-not $text.Contains([string][char]27 + '[38;2')) {
+            [Console]::Error.WriteLine("El volcado de $($c.Name) no trae color (ESC[38;2): sin color la captura no sirve.")
+            exit 1
+        }
+        [IO.File]::WriteAllText((Join-Path $Root $out), $text + "`n", (New-Object System.Text.UTF8Encoding($false)))
+    }
+    # 2) capturas y portada (Chromium)
+    if ($wanted.Count -gt 0) {
+        Invoke-Step 'docker' (@('run', '--rm', '--shm-size=1g', '-v', "${Root}:/work", '-w', '/work', $VideoImage,
+                'node', 'docs/assets/brand/captura.cjs', 'captura') + @($wanted | ForEach-Object { $_.Name }))
+    }
+    if ($wantBanner) {
+        Invoke-Step 'docker' @('run', '--rm', '--shm-size=1g', '-v', "${Root}:/work", '-w', '/work', $VideoImage,
+            'node', 'docs/assets/brand/captura.cjs', 'banner')
     }
 }
 
 function Step-Diagramas {
-    Write-Host '== Diagramas (d2) =='
+    Write-Host '== Diagramas (HTML -> PNG) =='
     if ($Diagrams.Count -eq 0) {
-        Write-Host 'No hay diagramas en docs/assets/diagrams/*.d2: nada que dibujar.'
+        Write-Host 'No hay diagramas en docs/assets/diagrams/*.html: nada que dibujar.'
         return
     }
-    $localD2 = $null -ne (Get-Command d2 -ErrorAction SilentlyContinue)
-    if (-not $localD2) {
-        Test-Docker
-        Test-Image $D2Image $D2Size "docker pull $D2Image"
-    }
-    foreach ($n in $Diagrams) {
-        if (-not (Test-Wanted $n)) { continue }
-        $src = "docs/assets/diagrams/$n.d2"; $dst = "docs/assets/diagrams/$n.svg"
-        if ($localD2) {
-            Invoke-Step 'd2' @('--theme', '0', '--dark-theme', '200', '--pad', '24', $src, $dst)
-        }
-        else {
-            Invoke-Step 'docker' @('run', '--rm', '-v', "${Root}:/work", '-w', '/work', $D2Image,
-                '--theme', '0', '--dark-theme', '200', '--pad', '24', $src, $dst)
-        }
-    }
+    $wanted = @($Diagrams | Where-Object { Test-Wanted $_ })
+    if ($wanted.Count -eq 0) { return }
+    Test-Docker
+    Test-Image $VideoImage $VideoSize $VideoBuild
+    Invoke-Step 'docker' (@('run', '--rm', '--shm-size=1g', '-v', "${Root}:/work", '-w', '/work', $VideoImage,
+            'node', 'docs/assets/brand/captura.cjs', 'diagrama') + $wanted)
 }
 
 function Step-Videos {
@@ -154,17 +164,30 @@ function Step-Videos {
     }
     Test-Docker
     Test-Image $VideoImage $VideoSize $VideoBuild
-    New-Item -ItemType Directory -Force -Path (Join-Path $Root 'docs/assets/video/out') | Out-Null
     foreach ($n in $Videos) {
         if (-not (Test-Wanted $n)) { continue }
-        Invoke-Step 'docker' @('run', '--rm', '--shm-size=1g', '-v', "${Root}:/work", '-w', '/work/docs/assets/video',
-            $VideoImage, 'hyperframes', 'render', $n, '-o', "out/$n.mp4", '--quiet')
+        # HyperFrames puede no servir archivos fuera de la carpeta de la composicion: la marca se copia antes
+        # del render (marca/ esta en .gitignore) y se borra despues.
+        $marca = Join-Path $Root "docs/assets/video/$n/marca"
+        if ($DryRun) {
+            Write-Host "+ cp docs/assets/brand/marca.css docs/assets/brand/perro-*.png docs/assets/video/$n/marca/"
+        } else {
+            New-Item -ItemType Directory -Force -Path $marca | Out-Null
+            Copy-Item (Join-Path $Root 'docs/assets/brand/marca.css') $marca
+            Copy-Item (Join-Path $Root 'docs/assets/brand/perro-*.png') $marca
+        }
+        try {
+            Invoke-Step 'docker' @('run', '--rm', '--shm-size=1g', '-v', "${Root}:/work", '-w', '/work/docs/assets/video',
+                $VideoImage, 'hyperframes', 'render', $n, '-o', "$n.mp4", '--quiet')
+        } finally {
+            if (-not $DryRun -and (Test-Path $marca)) { Remove-Item -Recurse -Force $marca }
+        }
     }
 }
 
 switch ($Group) {
-    'todo' { Step-Build; Step-Gifs; Step-Diagramas; Step-Videos }
-    'gifs' { Step-Build; Step-Gifs }
+    'todo' { Step-Capturas; Step-Diagramas; Step-Videos }
+    'capturas' { Step-Capturas }
     'diagramas' { Step-Diagramas }
     'videos' { Step-Videos }
 }

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/nxydev.png" alt="nxy.dev: banner con la mascota, un perro, junto al logo" width="100%">
+  <img src="docs/assets/brand/banner.png" alt="nxy.dev: el perro de la marca con gorra y collar, el logo, «Claude Code con correa» y el comando de instalación" width="100%">
 </p>
 
 <p align="center">Plugin de Claude Code para gastar menos tokens sin perder calidad, y para ver en qué se va cada dólar.</p>
@@ -8,13 +8,17 @@ nxy es un plugin de Claude Code con un solo binario escrito en Go: no necesitás
 Convierte tus pedidos en features con plan, lotes verificados y review; recorta lo que Claude lee; guarda las reglas de tu repo y te muestra lo que gastás.
 Funciona con cualquier lenguaje, en Windows, Linux y macOS, y tiene una consola (la TUI) para verlo todo en otra terminal.
 
-<!-- video demo: reemplazá esta línea por la URL de user-attachments de docs/assets/video/out/demo.mp4 -->
+▶ [Video: demo](docs/assets/video/demo.mp4)
+
+https://github.com/user-attachments/assets/4d0dbf89-1659-4db1-b432-0dddaa95a28c
 
 ## Una feature, de punta a punta
 
 `/nxy:feature <pedido>` te lleva del pedido a un plan que aprobás vos, lotes que nxy verifica con un test, una review y los arreglos que elijas. Vos decidís; el resto lo hacen agentes con el contexto justo.
 
-<img src="docs/assets/diagrams/flujo-feature.svg" alt="Flujo de una feature" width="720">
+<img src="docs/assets/diagrams/flujo-feature.png" alt="Flujo de una feature: pedido, plan que aprobás, lotes con su Accept, tests afectados, review y cierre" width="720">
+
+https://github.com/user-attachments/assets/3067635a-c9f8-46f7-b102-13c178b77984
 
 [Docs → Una feature, paso a paso](docs/feature.md)
 
@@ -22,7 +26,7 @@ Funciona con cualquier lenguaje, en Windows, Linux y macOS, y tiene una consola 
 
 Antes de tocar código ves el plan: qué se hace, qué preguntas quedaron y en cuántos lotes. Cada lote termina con un comando de aceptación (`Accept:`) que corre nxy: verde sigue, rojo se arregla antes de seguir.
 
-<img src="docs/assets/gifs/tui-plan.gif" alt="El plan de una feature en la TUI" width="720">
+<img src="docs/assets/capturas/plan.png" alt="El plan de una feature esperando tu aprobación: cuatro lotes con su riesgo, el Accept del primero, los archivos que toca cada uno, los criterios R1 a R3 y las decisiones del diseño" width="720">
 
 [Docs → Plan y lotes](docs/plan-y-lotes.md)
 
@@ -36,7 +40,9 @@ Cuando los lotes están en verde, nxy revisa lo que cambió, te muestra los hall
 
 Las reglas de tu repo, tus reglas globales y lo que nxy va aprendiendo quedan en una base local, y sólo les llegan a los agentes que las necesitan. Sobreviven al `/clear`.
 
-<img src="docs/assets/diagrams/memoria.svg" alt="Reglas, aprendizajes y globales de la memoria" width="720">
+<img src="docs/assets/diagrams/memoria.png" alt="De features y sesiones salen aprendizajes, reglas y globales; cada rol lee lo suyo" width="720">
+
+https://github.com/user-attachments/assets/2a97db47-9251-445e-8d55-0676a2554237
 
 [Docs → Memoria](docs/memoria.md)
 
@@ -44,7 +50,9 @@ Las reglas de tu repo, tus reglas globales y lo que nxy va aprendiendo quedan en
 
 Una consola que abrís en otra terminal, al lado de Claude Code: tus features, el plan, los agentes, la memoria, el gasto y la config, en vivo. Cuando Claude te hace una pregunta de nxy, la contestás ahí.
 
-<img src="docs/assets/gifs/tui-decidir.gif" alt="Contestar una pregunta desde la TUI" width="720">
+<img src="docs/assets/capturas/decidir.png" alt="La ventana de decisión sobre Inicio: el lote 3 sigue en rojo, la línea que falla y tres opciones numeradas con la recomendada" width="720">
+
+https://github.com/user-attachments/assets/9dccc289-c08e-4cbc-937e-5ea99029462d
 
 [Docs → La TUI](docs/tui.md) · [Docs → Decidir desde la TUI](docs/decidir.md)
 
@@ -52,7 +60,7 @@ Una consola que abrís en otra terminal, al lado de Claude Code: tus features, e
 
 Para los cambios donde querés decidir el diseño vos, bifurcación por bifurcación, antes de que nadie planifique ni toque código.
 
-<img src="docs/assets/gifs/tui-ingeniero.gif" alt="El modo ingeniero en la TUI" width="720">
+<img src="docs/assets/capturas/ingeniero.png" alt="La bifurcación 2 de 4 con las opciones A, B y C, los pros y contras de la marcada y su diagrama de componentes" width="720">
 
 [Docs → Modo ingeniero](docs/ingeniero.md)
 
@@ -60,7 +68,7 @@ Para los cambios donde querés decidir el diseño vos, bifurcación por bifurcac
 
 Un cambio que toca la API y el front es una sola feature, con un plan y una review. Y varias features pueden convivir en un mismo repo, cada una en su carpeta, sin pisarse.
 
-<img src="docs/assets/diagrams/varios-repos.svg" alt="Un plan con un lote por repo" width="720">
+<img src="docs/assets/diagrams/varios-repos.png" alt="Un plan con lote de contrato, un lote por repo en paralelo y un review de todos" width="720">
 
 [Docs → Varios repos y worktrees](docs/varios-repos.md)
 
@@ -68,7 +76,20 @@ Un cambio que toca la API y el front es una sola feature, con un plan y una revi
 
 `/nxy:locate` encuentra dónde vive algo y te devuelve un `path:line`, sin llenar tu contexto de archivos.
 
-<img src="docs/assets/gifs/cli-locate.gif" alt="nxy locate en la terminal" width="720">
+```console
+$ nxy locate "donde se calcula el IVA"
+# model-free search — "donde se calcula el IVA"
+
+## repo index (3 files, 3 symbols)
+src/impuestos.go:4	func	CalcularIVA	func CalcularIVA(total float64) float64 { return total * 0.21 }
+tests/factura_test.go:5	func	TestCalcularIVA	func TestCalcularIVA(t *testing.T) {
+
+## exact text (rg)
+`IVA`:
+src/impuestos.go:3: // CalcularIVA devuelve el IVA de un importe (21%).
+src/impuestos.go:4: func CalcularIVA(total float64) float64 { return total * 0.21 }
+src/factura.go:5: return Factura{Pedido: pedido, IVA: CalcularIVA(pedido.Total)}
+```
 
 [Docs → Buscar](docs/buscar.md)
 
@@ -76,7 +97,7 @@ Un cambio que toca la API y el front es una sola feature, con un plan y una revi
 
 La statusline, `/nxy:stats`, `/nxy:trend` y la pantalla Gasto de la TUI te muestran cuánto cuesta cada sesión, por qué, y cuándo conviene cortar. Los números salen del `usage` real de Claude Code, no de estimaciones.
 
-<img src="docs/assets/gifs/tui-gasto.gif" alt="La pantalla Gasto de la TUI" width="720">
+<img src="docs/assets/capturas/gasto.png" alt="La pantalla Gasto: los últimos 7 días con la barra de hoy ($99.97) y el reparto por agente" width="720">
 
 [Docs → Ver en qué se gasta](docs/gasto.md)
 
@@ -84,7 +105,7 @@ La statusline, `/nxy:stats`, `/nxy:trend` y la pantalla Gasto de la TUI te muest
 
 Dos frenos que cuidan el contexto del hilo principal: uno para escribir código sin una feature y otro para las búsquedas amplias con la sesión ya cargada. Frenan con un mensaje que le dice a Claude qué hacer; casi nunca te toca actuar.
 
-<img src="docs/assets/diagrams/gate.svg" alt="Qué deja pasar y qué frena el gate" width="720">
+<img src="docs/assets/diagrams/gate.png" alt="Qué deja pasar y qué frena el gate, y cómo dejar pasar una vez" width="720">
 
 [Docs → El freno](docs/gate.md)
 

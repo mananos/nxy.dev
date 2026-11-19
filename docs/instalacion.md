@@ -8,9 +8,7 @@ nxy es un plugin de Claude Code con un solo binario escrito en Go: no necesitás
 
 ## Qué ves
 
-Una vez instalado, lo primero visible es la statusline (paso 3) y los comandos `/nxy:…` en Claude Code. La TUI (paso 4) es una consola que abrís aparte:
-
-![La TUI de nxy, pantalla de inicio](assets/gifs/tui-inicio.gif)
+Una vez instalado, lo primero visible es la statusline (paso 3) y los comandos `/nxy:…` en Claude Code. La TUI (paso 4) es una consola que abrís aparte. Probala sin datos: `nxy tui --demo`.
 
 ## Qué significa
 

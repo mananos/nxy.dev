@@ -1,6 +1,7 @@
 package nxydev
 
 import (
+	"image/png"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -125,10 +126,71 @@ func checkPairs(t *testing.T, srcDir, srcExt, dstDir, dstExt string) {
 	}
 }
 
+// pngSize returns the canvas of a PNG without decoding the pixels.
+func pngSize(t *testing.T, f string) (int, int, bool) {
+	t.Helper()
+	fh, err := os.Open(f)
+	if err != nil {
+		t.Errorf("%s: %v", f, err)
+		return 0, 0, false
+	}
+	defer fh.Close()
+	cfg, err := png.DecodeConfig(fh)
+	if err != nil {
+		t.Errorf("%s: %v", f, err)
+		return 0, 0, false
+	}
+	return cfg.Width, cfg.Height, true
+}
+
+// checkCaptures: every row of capturas.tsv has its PNG (and the other way round), every capture is
+// 2560 wide and the banner is 2560x1440.
+func checkCaptures(t *testing.T, assets string) {
+	t.Helper()
+	dir := filepath.Join(assets, "capturas")
+	raw, err := os.ReadFile(filepath.Join(dir, "capturas.tsv"))
+	if err != nil {
+		t.Errorf("capturas.tsv: %v", err)
+		return
+	}
+	rows := map[string]bool{}
+	for i, line := range strings.Split(strings.ReplaceAll(string(raw), "\r", ""), "\n") {
+		if i == 0 || strings.TrimSpace(line) == "" {
+			continue
+		}
+		rows[strings.Split(line, "\t")[0]] = true
+	}
+	for n := range rows {
+		f := filepath.Join(dir, n+".png")
+		if !nonEmpty(f) {
+			t.Errorf("capturas.tsv row %q has no non-empty %s", n, f)
+		}
+	}
+	for n := range listNames(t, dir, ".png") {
+		f := filepath.Join(dir, n+".png")
+		if !rows[n] {
+			t.Errorf("orphan %s: no row in capturas.tsv", f)
+		}
+		if w, _, ok := pngSize(t, f); ok && w != 2560 {
+			t.Errorf("%s is %d wide, want 2560", f, w)
+		}
+	}
+	banner := filepath.Join(assets, "brand", "banner.png")
+	if w, h, ok := pngSize(t, banner); ok && (w != 2560 || h != 1440) {
+		t.Errorf("%s is %dx%d, want 2560x1440", banner, w, h)
+	}
+}
+
 func TestDocAssets(t *testing.T) {
 	assets := filepath.Join("docs", "assets")
-	checkPairs(t, filepath.Join(assets, "tapes"), ".tape", filepath.Join(assets, "gifs"), ".gif")
-	checkPairs(t, filepath.Join(assets, "diagrams"), ".d2", filepath.Join(assets, "diagrams"), ".svg")
+	checkCaptures(t, assets)
+	checkPairs(t, filepath.Join(assets, "diagrams"), ".html", filepath.Join(assets, "diagrams"), ".png")
+	for n := range listNames(t, filepath.Join(assets, "diagrams"), ".png") {
+		f := filepath.Join(assets, "diagrams", n+".png")
+		if w, h, ok := pngSize(t, f); ok && (w != 2560 || h != 1440) {
+			t.Errorf("%s is %dx%d, want 2560x1440", f, w, h)
+		}
+	}
 
 	videoDir := filepath.Join(assets, "video")
 	entries, err := os.ReadDir(videoDir)
@@ -136,11 +198,14 @@ func TestDocAssets(t *testing.T) {
 		return
 	}
 	for _, e := range entries {
-		if !e.IsDir() || e.Name() == "out" || e.Name() == "node_modules" {
+		if !e.IsDir() || e.Name() == "node_modules" {
 			continue
 		}
 		if !nonEmpty(filepath.Join(videoDir, e.Name(), "index.html")) {
 			t.Errorf("%s has no index.html", filepath.Join(videoDir, e.Name()))
+		}
+		if mp4 := filepath.Join(videoDir, e.Name()+".mp4"); !nonEmpty(mp4) {
+			t.Errorf("%s has no rendered %s", filepath.Join(videoDir, e.Name()), mp4)
 		}
 	}
 }

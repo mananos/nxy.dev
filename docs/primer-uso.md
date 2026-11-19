@@ -10,9 +10,7 @@ No tenés que aprender nada para aprovechar la mayor parte de nxy. Esta página 
 
 nxy se engancha en los eventos de Claude Code (los hooks de `hooks/hooks.json`: inicio de sesión, antes y después de usar una herramienta, cada mensaje tuyo, fin de un subagente y fin de sesión). Cuando no hay nada que decir, no ves nada. Cuando frena o te avisa, ves un mensaje que empieza con `nxy:`.
 
-La TUI, si la abrís en otra terminal, muestra todo lo que nxy sabe de tu repo:
-
-![La TUI de nxy, pantalla de inicio](assets/gifs/tui-inicio.gif)
+La TUI, si la abrís en otra terminal, muestra todo lo que nxy sabe de tu repo. Probala sin datos: `nxy tui --demo`.
 
 ## Qué significa
 

@@ -1,0 +1,81 @@
+/* Marca nxy: hoja compartida por las capturas, los diagramas y los videos. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;700&display=swap");
+
+:root {
+  --negro: #070707;
+  --amarillo: #FDBF01;
+  --texto: #DEDBD2;
+  --blanco: #fff;
+  --gris-caja: #141414;
+  --gris-borde: #2E2E2E;
+  --gris-texto: #BDBDBD;
+  --gris-medio: #9A9A9A;
+  --gris-tenue: #7A7A7A;
+  --gris-oscuro: #5E5E5E;
+}
+
+body { margin: 0; }
+.titulo { font-family: 'Archivo', sans-serif; font-weight: 900; font-stretch: 120%; text-transform: uppercase; letter-spacing: -.01em; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+/* glifo que JetBrains Mono no trae (✓): una celda de 1ch para no romper la grilla de la TUI */
+.g { display: inline-block; width: .8333em; font-size: .72em; text-align: center; vertical-align: baseline; overflow: visible; }
+.scan { background: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px); position: absolute; inset: 0; pointer-events: none; }
+.hazard { background: repeating-linear-gradient(-45deg, var(--amarillo) 0 12px, var(--negro) 12px 24px); }
+.esquinas { position: absolute; width: 28px; height: 28px; border-top: 3px solid var(--amarillo); border-right: 3px solid var(--amarillo); }
+
+.caja { position: absolute; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; gap: 8px; background: var(--gris-caja); border: 2px solid var(--gris-borde); color: var(--blanco); font-family: 'Archivo', sans-serif; }
+.caja .num { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gris-tenue); }
+.caja .nombre { font-size: 28px; font-weight: 900; font-stretch: 118%; text-transform: uppercase; }
+.caja .texto { font-size: 16px; color: var(--gris-texto); }
+.caja--decidis { background: var(--amarillo); border-color: var(--amarillo); color: var(--negro); }
+.caja--decidis .num { color: var(--negro); font-weight: 700; }
+.caja--decidis .texto { color: var(--negro); font-weight: 600; }
+.caja--en-curso { border-color: var(--amarillo); }
+.caja--en-curso .num { color: var(--amarillo); }
+.caja--guardado { background: var(--blanco); border-color: var(--blanco); color: var(--negro); }
+.caja--guardado .num { color: var(--negro); font-weight: 700; }
+.caja--guardado .texto { color: var(--negro); font-weight: 600; }
+.caja--gris { background: var(--gris-caja); border-color: var(--gris-borde); }
+
+/* Terminal del marco de captura (capturas y videos). --sombra-term: la sombra, por contexto. */
+.term { position: absolute; left: 40px; top: 96px; width: 1200px; padding: 12px 24px; background: #070707; box-shadow: 12px 12px 0 var(--sombra-term, #070707); color: #DEDBD2; font-family: 'JetBrains Mono', monospace; font-size: 16px; font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+.fila { white-space: pre; line-height: 21.12px; height: 21.12px; }
+
+.flecha-h { position: absolute; height: 6px; background: var(--amarillo); }
+.flecha-h::after { content: ""; position: absolute; right: -8px; top: -9px; border-left: 16px solid var(--amarillo); border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+.flecha-v { position: absolute; width: 6px; background: var(--amarillo); }
+.flecha-v::after { content: ""; position: absolute; bottom: -10px; left: -9px; border-top: 16px solid var(--amarillo); border-left: 12px solid transparent; border-right: 12px solid transparent; }
+
+.sticker { position: absolute; background: var(--blanco); color: var(--negro); font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; padding: 6px 10px; transform: rotate(-4deg); box-shadow: 4px 4px 0 var(--negro); }
+.chip { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; background: var(--negro); color: var(--amarillo); padding: 6px 12px; }
+.leyenda { position: absolute; display: flex; flex-direction: column; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gris-tenue); line-height: 1.5; }
+.leyenda b { color: var(--amarillo); }
+.leyenda i { display: inline-block; width: 12px; height: 12px; margin-right: 8px; box-sizing: border-box; background: var(--amarillo); }
+.leyenda i.en-curso { background: none; border: 2px solid var(--amarillo); }
+.leyenda i.guardado { background: var(--blanco); }
+
+/* Escenas de los videos con el chat de Claude Code (gramatica del cuadro "nxy entra"): burbujas, carta con franjas, riel de pasos. */
+.chat { position: absolute; display: flex; flex-direction: column; gap: 18px; font-family: 'JetBrains Mono', monospace; }
+.msg { display: flex; gap: 12px; align-items: flex-start; }
+.av { flex: none; width: 34px; height: 34px; background: #2A2A2A; color: #BDBDBD; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.bub { background: #141414; border: 1px solid #262626; padding: 14px 16px; font-size: 17px; line-height: 1.45; color: #9A9A9A; }
+.bub.u { color: #E6E6E6; }
+.bub b { color: #fff; font-weight: 400; }
+.bub .opt { display: inline-block; margin: 10px 10px 0 0; padding: 6px 14px; border: 2px solid #2E2E2E; color: #BDBDBD; font-size: 16px; font-weight: 700; }
+.bub .opt.sel { background: #FDBF01; border-color: #FDBF01; color: #070707; }
+.carta { transform: rotate(-3deg); }
+.carta .hz { height: 16px; background: repeating-linear-gradient(-45deg, #FDBF01 0 18px, #070707 18px 36px); }
+.carta .cuerpo { background: #FDBF01; color: #070707; padding: 18px 24px; display: flex; align-items: center; gap: 18px; }
+.carta .cuerpo img { width: 70px; height: auto; flex: none; }
+.carta .gran { font-size: 46px; line-height: .95; font-weight: 900; font-stretch: 120%; text-transform: uppercase; }
+.carta .sub { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; margin-top: 4px; }
+.riel { position: absolute; display: flex; flex-direction: column; gap: 14px; }
+.paso { display: flex; align-items: center; gap: 16px; border: 2px solid #2E2E2E; padding: 14px 18px; color: #6E6E6E; }
+.paso .n { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; }
+.paso .p { font-size: 32px; font-weight: 900; font-stretch: 118%; text-transform: uppercase; flex: 1; }
+.paso .e { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+.paso.hecho { background: #fff; border-color: #fff; color: #070707; padding: 16px 20px; }
+.paso.ahora { background: #FDBF01; border-color: #FDBF01; color: #070707; padding: 16px 20px; }
+.nota { position: absolute; font-size: 22px; line-height: 1.35; color: #BDBDBD; }
+.nota b { color: #fff; }
+.escena-tag { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--amarillo); }

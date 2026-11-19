@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Marco de captura</title>
+<link rel="stylesheet" href="marca.css">
+<style>
+html, body { width: 1280px; overflow: hidden; }
+.fondo { position: relative; width: 1280px; height: 1000px; overflow: hidden; background: #FDBF01; font-family: 'Archivo', sans-serif; }
+.diag { position: absolute; left: -100px; top: -40px; width: 420px; height: 1100px; background: #070707; transform: rotate(-30deg); transform-origin: top left; opacity: .08; }
+.cab { position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: center; gap: 16px; color: #070707; }
+.cab img { width: 46px; height: auto; }
+.cab .t { font-size: 30px; }
+.cab .s { font-size: 20px; font-weight: 600; }
+.cab .chip { margin-left: auto; }
+.term { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div class="fondo">
+  <div class="diag"></div>
+  <div class="cab">
+    <img src="perro-chico.png" alt="">
+    <span class="t titulo" data-campo="titulo"></span>
+    <span class="s">· <span data-campo="sub"></span></span>
+    <span class="chip" data-campo="chip"></span>
+  </div>
+  <div class="term" id="term"></div>
+</div>
+</body>
+</html>

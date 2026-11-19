@@ -2,7 +2,9 @@
 
 Cuando Claude te hace una pregunta de nxy y tenés la TUI abierta, la contestás ahí, sin volver a la terminal de Claude Code.
 
-<!-- video tui-decidir: reemplazá esta línea por la URL de user-attachments de docs/assets/video/out/tui-decidir.mp4 -->
+▶ [Video: tui-decidir](assets/video/tui-decidir.mp4)
+
+https://github.com/user-attachments/assets/9dccc289-c08e-4cbc-937e-5ea99029462d
 
 ## Para qué sirve
 
@@ -10,7 +12,7 @@ Una feature te hace preguntas todo el tiempo: aprobar el plan, qué hacer con un
 
 ## Qué ves
 
-![La ventana de decisión de la TUI: una pregunta con opciones numeradas y una recomendada](assets/gifs/tui-decidir.gif)
+![La ventana de decisión sobre Inicio: el lote 3 sigue en rojo, la línea que falla y tres opciones numeradas con la recomendada](assets/capturas/decidir.png)
 
 - En la TUI, arriba a la derecha, `● 2 DECISIONES`; la feature que espera aparece en el grupo **Te necesita**, y el título de la terminal pasa a `● nxy: 2 decisiones`.
 - En la terminal de Claude Code, el título pasa a `● nxy: decisión pendiente` mientras la pregunta espera.

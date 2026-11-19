@@ -6,15 +6,14 @@ Dos frenos que cuidan el contexto del hilo principal: uno para escribir código 
 
 Todo lo que el hilo principal lee o escribe se queda en el contexto y se reenvía en **cada** llamada siguiente ([Gasto](gasto.md)). Una búsqueda amplia con 150k encima arrastra los resultados en todos los pasos que vienen; una edición hecha ahí mismo se paga igual. El freno manda ese trabajo a un subagente (el implementer para escribir, el scout para buscar), que arranca limpio, paga lo que lee una vez y devuelve un resumen corto.
 
-![Qué deja pasar el freno, qué frena y cómo dejar pasar una vez](assets/diagrams/gate.svg)
+![Qué deja pasar el freno, qué frena y cómo dejar pasar una vez](assets/diagrams/gate.png)
 
 ## Qué ves
 
 `/nxy:gate status` (o `nxy gate status` en una terminal) muestra el estado de los dos frenos, los permisos de una sola vez y lo que registró:
 
-![nxy gate status en una terminal](assets/gifs/cli-gate.gif)
-
-```
+```console
+$ nxy gate status
 gate de escritura:  activo (sin una feature, el hilo principal no edita archivos de código; docs y texto pasan)
 gate de lectura:    activo (se frena un grep/glob/find amplio con más de 100k tokens de contexto en el hilo principal)
 edición única:      no

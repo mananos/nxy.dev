@@ -16,7 +16,7 @@ En Claude Code el costo no se ve y se acumula: cada mensaje reenvía todo el con
 
 **La pantalla Gasto de la TUI**, con la sesión y su tendencia:
 
-![La pantalla Gasto de la TUI: la sesión y la tendencia](assets/gifs/tui-gasto.gif)
+![La pestaña Tendencia de la pantalla Gasto: los últimos 7 días con la barra de hoy ($99.97) y el reparto por agente](assets/capturas/gasto.png)
 
 La pestaña **Sesión** trae cuatro tarjetas (gasto, cache, llamadas, turnos), una tabla por modelo (llamadas, entrada, salida, cache, costo), la «forma de la sesión» y lo que ahorró el filtro. La pestaña **Tendencia** agrupa los últimos días por día, semana, modelo o agente, con barras.
 

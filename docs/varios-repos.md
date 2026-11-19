@@ -8,7 +8,7 @@ Dos casos que en el chat salen mal. El primero: el cambio cruza repos (la API ex
 
 ## Qué ves
 
-![El flujo de una feature con varios repos: lote de contrato, un lote por repo y worktrees por feature](assets/diagrams/varios-repos.svg)
+![El flujo de una feature con varios repos: lote de contrato, un lote por repo y worktrees por feature](assets/diagrams/varios-repos.png)
 
 - **El plan** trae una sección `### Repos` con cada repo, su rol (api, web, lib compartida) y su ruta, y cada lote toca **un solo repo**. El primer lote suele ser el **contrato** (lo que comparten los repos) y el de cada repo declara `Depende de:` ese lote.
 - **Al aprobar**, Claude te pregunta la rama (`¿en qué rama trabajamos?`, con sugerencias) y, por cada repo, la base de la que sale.
@@ -18,9 +18,17 @@ Dos casos que en el chat salen mal. El primero: el cambio cruza repos (la API ex
 
 Y desde la terminal, `nxy feature list` (o `/nxy:worktree list`):
 
-![nxy feature list en un repo de ejemplo](assets/gifs/cli-feature.gif)
+```console
+$ nxy feature list
+Worktrees de facturacion-api (1):
+- facturacion-api [master] (principal, esta sesión)
+    ~/facturacion-api
+    limpio
+Rama base por defecto: master
+Bases para `new --base`: master
+```
 
-En el repo de ejemplo del GIF no hay features ni worktrees extra, así que ves sólo la carpeta principal: `Worktrees de facturacion-api (1)`, su rama, `(principal, esta sesión)`, que está `limpio`, la rama base por defecto y las bases que se pueden usar con `new --base`. Con features abiertas, debajo aparece `Features de nxy (N)`, cada una `activa` o `pausada`, con sus repos, ramas y carpetas.
+En el repo de ejemplo no hay features ni worktrees extra, así que ves sólo la carpeta principal: `Worktrees de facturacion-api (1)`, su rama, `(principal, esta sesión)`, que está `limpio`, la rama base por defecto y las bases que se pueden usar con `new --base`. Con features abiertas, debajo aparece `Features de nxy (N)`, cada una `activa` o `pausada`, con sus repos, ramas y carpetas.
 
 ## Qué significa
 

@@ -8,7 +8,7 @@ En una feature común, el planner arma el plan y vos lo aprobás. Eso alcanza cu
 
 ## Qué ves
 
-![La pantalla Ingeniero de la TUI: la agenda de bifurcaciones, las opciones y el diagrama](assets/gifs/tui-ingeniero.gif)
+![La pantalla Ingeniero: la bifurcación 2 de 4 con las opciones A, B y C, los pros y contras de la marcada y su diagrama de componentes](assets/capturas/ingeniero.png)
 
 - `nxy status` dice **Diseñando**, y el chat muestra la agenda: `Agenda: 3 de 5 decididas`, con cada bifurcación `B1`, `B2`… y su estado (`abierta`, `decidida`, `delegada`).
 - Antes de debatir, Claude hace un reconocimiento con un scout (nunca lee archivos en el hilo principal) y dibuja un diagrama chico de cómo es hoy.

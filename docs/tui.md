@@ -8,7 +8,7 @@ Claude Code es un chat y se lee de arriba para abajo; cuando hay tres lotes corr
 
 ## Qué ves
 
-![La pantalla de inicio de la TUI, recorriendo las secciones](assets/gifs/tui-inicio.gif)
+Probala sin datos: `nxy tui --demo`.
 
 Arriba van las cuatro secciones (**Inicio**, **Memoria**, **Gasto**, **Config**), a la derecha `● 2 DECISIONES` (las preguntas que esperan por vos) y `hoy $99.97` (lo gastado hoy). Abajo, las teclas de la pantalla en la que estás.
 
@@ -28,8 +28,6 @@ Con `enter` abrís la feature: sus lotes con el modelo, el tiempo y el costo de 
 - **Memoria**: tus reglas del repo, las globales y los aprendizajes, con búsqueda y edición en el lugar ([Memoria](memoria.md)).
 - **Gasto**: la sesión y la tendencia, con barras ([Gasto](gasto.md)).
 - **Config**: los roles con su modelo y effort, los módulos, las herramientas que nxy usa y el estado de la statusline y del binario.
-
-![La pantalla Config de la TUI](assets/gifs/tui-config.gif)
 
 En Config, arriba ves las dos capas: **usuario** (`~/.nxy/config.json`) y **repo** (`.nxy/config.json`); cuando las dos dicen algo, gana el repo. La columna **Origen** de cada rol te dice de dónde sale el valor (`default`, `usuario` o `repo`), y un cambio aplica «al próximo agente que se lance». Detalle de cada clave: [Configuración](configuracion.md).
 

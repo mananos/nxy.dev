@@ -1,6 +1,6 @@
 # Cómo funciona nxy por dentro
 
-Para quien quiere tocar el código: cómo viaja un evento de Claude Code hasta el binario, cómo está organizado el código y qué reglas hace cumplir un test, dónde vive el estado, cómo se arma una pantalla de la TUI, y cómo correr la suite y regenerar los GIFs y diagramas de la documentación. Cómo usar cada cosa está en la documentación por feature, que arranca en el [README](../README.md).
+Para quien quiere tocar el código: cómo viaja un evento de Claude Code hasta el binario, cómo está organizado el código y qué reglas hace cumplir un test, dónde vive el estado, cómo se arma una pantalla de la TUI, y cómo correr la suite y regenerar las capturas y diagramas de la documentación. Cómo usar cada cosa está en la documentación por feature, que arranca en el [README](../README.md).
 
 ## Para qué sirve
 
@@ -17,7 +17,7 @@ bin/nxy.cmd              # el lanzador (shim) que corre el binario
 cmd/nxy/                 # el único lugar que conecta adaptadores con casos de uso: un archivo por comando
 internal/                # todo el código, por capas (abajo)
 testdata/                # golden files y datos de la demo de la TUI
-docs/                    # esta documentación y docs/assets (GIFs, diagramas, videos)
+docs/                    # esta documentación y docs/assets (capturas, diagramas, videos)
 ```
 
 ## Qué significa
@@ -95,7 +95,7 @@ El estado de nxy (features, plan, lotes, review, memoria, notas, resumen del fil
 `internal/views` es el contrato entre los datos y la TUI: un struct por pantalla (`Cockpit`, `Agents`, `Decision`, `Memory`, `Stats`, `Trend`, `Config`, `Plan`, `File`, `Engineer`), con tags JSON en snake_case, y una interfaz `Source` que devuelve cada uno. Los constructores (`Build*`) son puros: reciben datos de dominio, memoria y reportes más la hora, y no leen base, archivos ni reloj.
 
 - La fuente **real** vive en `cmd/nxy/viewsource.go` (y `viewplan.go`, `viewfile.go`, `viewengineer.go`): lee la base y arma cada pantalla.
-- La fuente **de la demo** (`nxy tui --demo`) lee `testdata/views/*.json`, que se decodifican de forma estricta. Esos archivos son la base de los tests de la TUI: no se editan para hacer lucir un GIF.
+- La fuente **de la demo** (`nxy tui --demo`) lee `testdata/views/*.json`, que se decodifican de forma estricta. Esos archivos son la base de los tests de la TUI: no se editan para hacer lucir una captura.
 - `nxy view <pantalla> --json` imprime esa misma estructura con tus datos reales (sólo lee); sirve para depurar y para escribir tests. Pantallas: `cockpit`, `agents`, `decision`, `memory`, `stats`, `trend`, `config`, `plan`, `file` (con `--path`) y `engineer`.
 
 ### La TUI
@@ -135,26 +135,27 @@ NXY_BIN=<carpeta>/nxy.exe claude --plugin-dir .
 - **CI** (`.github/workflows/ci.yml`), en Ubuntu y Windows: `go vet ./...`, `go test ./...`, compila el binario en la carpeta versionada, imprime la tabla del bench en el resumen del job, y prueba que cada evento de hook, pasando por el shim (en Windows, también bajo Windows PowerShell), no responde nada ni imprime errores `nxy:`. Un job aparte corre GoReleaser en modo `--snapshot` y verifica que los nombres de los binarios coincidan con lo que descarga el shim.
 - **Releases.** Un tag `v2.*` dispara `.github/workflows/release.yml`: verifica que el tag coincida con la versión fijada en `bin/nxy.cmd`, corre `go vet` y `go test` y publica con GoReleaser los binarios `nxy_<versión>_<os>_<arch>[.exe]` (Windows, Linux y macOS, amd64 y arm64) y `checksums.txt`. La versión del binario sale del tag (`internal/version`). El dueño del repo en GitHub es `mananos/nxy.dev`: el módulo de Go, GoReleaser y las URLs del shim tienen que decir lo mismo, y un test (`internal/archtest`) lo verifica.
 
-### Regenerar los GIFs, diagramas y videos de la documentación
+### Regenerar las capturas, diagramas y videos de la documentación
 
 Los visuales de `docs/` están en `docs/assets/` y se regeneran con un solo comando, que corre todo en Docker (no instala nada en tu máquina):
 
 ```
-sh docs/assets/render.sh [--dry-run] [todo|gifs|diagramas|videos] [nombres...]
-powershell -File docs/assets/render.ps1 [-DryRun] [todo|gifs|diagramas|videos] [nombres...]
+sh docs/assets/render.sh [--dry-run] [todo|capturas|diagramas|videos] [nombres...]
+powershell -File docs/assets/render.ps1 [-DryRun] [todo|capturas|diagramas|videos] [nombres...]
 ```
 
-Sin nombres regenera todo el grupo; con nombres, sólo esos (`sh docs/assets/render.sh gifs tui-plan`). **Conviene regenerar por nombre**: cada GIF regenerado agrega su tamaño completo al historial de git, aunque no haya cambiado nada visible. `--dry-run` imprime cada comando sin correr Docker ni compilar.
+Sin nombres regenera todo el grupo; con nombres, sólo esos (`sh docs/assets/render.sh capturas plan`). **Conviene regenerar por nombre**: cada PNG regenerado agrega su tamaño completo al historial de git, aunque no haya cambiado nada visible. `--dry-run` imprime cada comando sin correr Docker ni `go run`.
 
 | Qué | Fuente | Salida | Se commitea | Imagen de Docker |
 | --- | --- | --- | --- | --- |
-| GIFs de terminal (12) | `docs/assets/tapes/*.tape` ([VHS](https://github.com/charmbracelet/vhs)) | `docs/assets/gifs/*.gif` | Sí (unos 3,4 MB en total) | `nxy-docs-vhs:v0.12.1` (la oficial `ghcr.io/charmbracelet/vhs:v0.12.1`, unos 3 GB en disco, más git, unos 30 MB) |
-| Diagramas (4) | `docs/assets/diagrams/*.d2` ([d2](https://d2lang.com)) | `docs/assets/diagrams/*.svg` | Sí (unos 0,1 MB) | `terrastruct/d2:v0.9.0` (unos 95 MB), o el `d2` local si está en el PATH |
-| Videos (4) | `docs/assets/video/<nombre>/index.html` ([HyperFrames](https://hyperframes.heygen.com) 0.9.10) | `docs/assets/video/out/<nombre>.mp4` (unos 1 MB cada uno, 38–50 s) | No: se suben a mano a GitHub (la carpeta `out/` está en `.gitignore`) | `nxy-docs-video:0.9.10`, que se construye con `docs/assets/video/Dockerfile` (node 22 + chromium + ffmpeg + fuentes Noto; unos 2 GB en disco) |
+| Capturas de la TUI (5) | `docs/assets/capturas/capturas.tsv` (el manifiesto), `nxy tui --demo --dump` y el marco `docs/assets/brand/captura-fondo.html` | `docs/assets/capturas/*.png` (2560 de ancho) | Sí (unos 1,2 MB en total) | `nxy-docs-video:0.9.10` |
+| Portada | `docs/assets/brand/banner.html` | `docs/assets/brand/banner.png` (2560×1440) | Sí (unos 1,5 MB) | `nxy-docs-video:0.9.10` |
+| Diagramas (4) | `docs/assets/diagrams/*.html` (cajas y flechas con `brand/marca.css`) | `docs/assets/diagrams/*.png` (2560×1440) | Sí (unos 1 MB en total) | `nxy-docs-video:0.9.10` |
+| Videos (4) | `docs/assets/video/<nombre>/index.html` ([HyperFrames](https://hyperframes.heygen.com) 0.9.10) | `docs/assets/video/<nombre>.mp4` (unos 2 MB cada uno, 38–50 s) | Sí; además se suben a mano a GitHub y su URL de user-attachments va debajo del link `▶ Video`, para que se vea el reproductor; si se re-renderiza un video, hay que subirlo de nuevo y cambiar la URL. Antes de cada render se copia `docs/assets/brand` a `marca/` dentro de la carpeta del video y se borra al terminar; las fuentes vienen de Google Fonts | `nxy-docs-video:0.9.10`, que se construye con `docs/assets/video/Dockerfile` (node 22 + chromium + ffmpeg + fuentes Noto; unos 2 GB en disco) |
 
-El script **nunca baja ni construye una imagen por su cuenta**: si falta una, imprime el comando exacto (`docker pull …` o `docker build -t nxy-docs-vhs:v0.12.1 docs/assets/tapes` / `docker build -t nxy-docs-video:0.9.10 docs/assets/video`) con su tamaño y sale con código 2; si Docker no responde, te pide que lo inicies. Para los GIFs de la TUI y de la CLI compila antes un binario de Linux en `docs/assets/.build/nxy` (unos 15–20 MB, ignorado por git), porque los contenedores son Linux. Un `.tape` de la TUI corre `nxy tui --demo` y se mueve con las teclas reales de `internal/tui/app.go`.
+El script **nunca baja ni construye una imagen por su cuenta**: si falta una, imprime el comando exacto (`docker build -t nxy-docs-video:0.9.10 docs/assets/video`) con su tamaño y sale con código 2; si Docker no responde, te pide que lo inicies. Las capturas no necesitan un binario de Linux: los volcados (`nxy tui --demo --dump <pantalla> --width 120`, con color) corren con `go run` en tu máquina, igual en Windows y en Linux, y quedan en `docs/assets/.build/dumps/` (unos 60 KB, ignorados por git). Chromium los pasa a HTML (`ansiAHtml` en `captura.cjs`), los pone en el marco de marca con el título, el subtítulo y el chip de cada fila del manifiesto y comprueba que cada fila mida exactamente 120 celdas de JetBrains Mono: si un glifo cayera a otra fuente, la captura falla en vez de salir desalineada.
 
-Un test de la raíz (`go test -run TestDoc .`) verifica sin Docker que cada enlace e imagen de `README.md` y `docs/*.md` apunte a un archivo que existe, que cada `.tape` tenga su `.gif` (y al revés), cada `.d2` su `.svg`, cada video su `index.html`, y que cada `/nxy:<comando>` nombrado exista en `commands/`.
+Un test de la raíz (`go test -run TestDoc .`) verifica sin Docker que cada enlace e imagen de `README.md` y `docs/*.md` apunte a un archivo que existe, que cada fila de `capturas.tsv` tenga su PNG (y al revés), que todas las capturas midan 2560 de ancho y la portada 2560×1440, que cada diagrama `.html` tenga su `.png` de 2560×1440 (y al revés), cada video su `index.html`, y que cada `/nxy:<comando>` nombrado exista en `commands/`.
 
 ## Comandos y config
 
@@ -166,7 +167,7 @@ Un test de la raíz (`go test -run TestDoc .`) verifica sin Docker que cada enla
 | `nxy bench hook` | Mide cuánto tarda el hook real |
 | `nxy view <pantalla> --json` | Una pantalla de la TUI como JSON, con tus datos |
 | `nxy tui --dump <pantalla> --width 80 --plain` | Una pantalla de la TUI como texto |
-| `sh docs/assets/render.sh [--dry-run] …` · `render.ps1 [-DryRun] …` | Regenera GIFs, diagramas y videos |
+| `sh docs/assets/render.sh [--dry-run] …` · `render.ps1 [-DryRun] …` | Regenera capturas, diagramas y videos |
 
 Las variables que afectan al desarrollo (`NXY_HOME`, `NXY_BIN`, `NXY_RELEASE_URL`, `NXY_DEBUG`, `NXY_WRITE_GOLDEN`): [Configuración](configuracion.md#variables-de-entorno).
 

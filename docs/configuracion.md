@@ -8,9 +8,7 @@ La config de nxy son dos archivos JSON opcionales (uno tuyo y uno del repo) que 
 
 ## Qué ves
 
-La forma más cómoda es la pantalla **Config** de la TUI ([abrirla](tui.md)): muestra cada clave que se puede cambiar, su valor efectivo y de dónde viene, y lo cambia con teclas.
-
-![La pantalla Config de la TUI](assets/gifs/tui-config.gif)
+La forma más cómoda es la pantalla **Config** de la TUI ([abrirla](tui.md)): muestra cada clave que se puede cambiar, su valor efectivo y de dónde viene, y lo cambia con teclas. Probala sin datos: `nxy tui --demo`.
 
 Con `nxy config` (o `/nxy:config`) ves lo mismo en texto: cada clave, su valor y su origen entre paréntesis (`predeterminado`, `usuario`, `repo` o `env`), y al final los dos archivos con su estado (`existe`, `no existe` o `roto`).
 

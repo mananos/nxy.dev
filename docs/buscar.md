@@ -12,9 +12,22 @@ Cuando Claude busca algo en el chat, lee archivos enteros y todo eso queda en el
 /nxy:locate ¿dónde se calcula el IVA?
 ```
 
-Claude despacha al scout y te contesta con `path:line` y una línea de qué hay ahí, más lo que miró y descartó. También podés correr la búsqueda vos, sin modelo, desde la terminal (cero tokens, milisegundos):
+Claude despacha al scout y te contesta con `path:line` y una línea de qué hay ahí, más lo que miró y descartó. También podés correr la búsqueda vos, sin modelo, desde la terminal (cero tokens, milisegundos). Esto es lo que devuelve en un repo de ejemplo:
 
-![nxy locate en un repo de ejemplo](assets/gifs/cli-locate.gif)
+```console
+$ nxy locate "donde se calcula el IVA"
+# model-free search — "donde se calcula el IVA"
+
+## repo index (3 files, 3 symbols)
+src/impuestos.go:4	func	CalcularIVA	func CalcularIVA(total float64) float64 { return total * 0.21 }
+tests/factura_test.go:5	func	TestCalcularIVA	func TestCalcularIVA(t *testing.T) {
+
+## exact text (rg)
+`IVA`:
+src/impuestos.go:3: // CalcularIVA devuelve el IVA de un importe (21%).
+src/impuestos.go:4: func CalcularIVA(total float64) float64 { return total * 0.21 }
+src/factura.go:5: return Factura{Pedido: pedido, IVA: CalcularIVA(pedido.Total)}
+```
 
 El resultado tiene hasta tres bloques, uno por buscador:
 

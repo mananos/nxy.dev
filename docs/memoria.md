@@ -2,7 +2,9 @@
 
 Las reglas de tu repo, tus reglas globales y lo que nxy va aprendiendo: guardado en una base local, entregado solo a los agentes que lo necesitan.
 
-<!-- video memoria: reemplazá esta línea por la URL de user-attachments de docs/assets/video/out/memoria.mp4 -->
+▶ [Video: memoria](assets/video/memoria.mp4)
+
+https://github.com/user-attachments/assets/2a97db47-9251-445e-8d55-0676a2554237
 
 ## Para qué sirve
 
@@ -12,15 +14,27 @@ Lo que decidiste en una sesión se va con el `/clear`. La memoria de nxy es una 
 
 Tres cosas distintas, y cómo circulan entre sí y hacia los agentes:
 
-![Reglas, aprendizajes y globales: cómo se crean, cómo se editan y qué agente las lee](assets/diagrams/memoria.svg)
+![Reglas, aprendizajes y globales: cómo se crean, cómo se editan y qué agente las lee](assets/diagrams/memoria.png)
 
 En la TUI, la pantalla Memoria las lista y deja editar, borrar y crear sin escribir comandos:
 
-![La pantalla Memoria de la TUI](assets/gifs/tui-memoria.gif)
+![La pantalla Memoria: las propuestas de nxy (borrar K9, que se entregó 9 veces y nadie citó, y promover A2, que aprendieron 3 features) junto a las reglas](assets/capturas/memoria.png)
 
-Y desde la terminal (o con `/nxy:mem`):
+Y desde la terminal (o con `/nxy:mem`), en un repo de ejemplo con tres reglas:
 
-![nxy mem show y nxy mem search](assets/gifs/cli-mem.gif)
+```console
+$ nxy mem show
+Reglas (3)
+K1 · Los importes se guardan en centavos, nunca en float
+   resuelve: Como guardamos los importes? · manual · entregada 0 · citada 0
+K2 · Todo endpoint nuevo lleva un test en tests/
+   resuelve: Que exigimos a un endpoint nuevo? · manual · entregada 0 · citada 0
+K3 · El IVA se calcula en impuestos.go, no en los handlers
+   resuelve: Donde se calcula el IVA? · manual · entregada 0 · citada 0
+
+$ nxy mem search IVA
+rule · K3 · El IVA se calcula en impuestos.go, no en los handlers
+```
 
 ## Qué significa
 

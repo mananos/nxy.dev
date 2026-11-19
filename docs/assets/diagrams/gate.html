@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagrama: el gate</title>
+<link rel="stylesheet" href="../brand/marca.css">
+</head>
+<body>
+<div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#070707;font-family:'Archivo',sans-serif;color:#fff">
+  <div style="position:absolute;left:64px;top:52px;display:flex;align-items:baseline;gap:18px">
+    <span class="titulo" style="font-size:40px">El gate</span>
+    <span style="font-size:20px;color:#9A9A9A">qué pasa y qué se frena</span>
+  </div>
+
+  <div class="caja" style="left:64px;top:290px;width:200px;height:135px">
+    <span class="num">00</span><span class="nombre" style="font-size:24px">Hilo</span>
+    <span class="texto">Quiere editar o buscar</span>
+  </div>
+  <div style="position:absolute;left:264px;top:355px;width:36px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:297px;top:157px;width:6px;height:381px;background:#FDBF01"></div>
+
+  <div class="flecha-h" style="left:300px;top:157px;width:32px"></div>
+  <div class="caja" style="left:340px;top:100px;width:260px;height:120px">
+    <span class="num">01 · ESCRITURA</span><span class="texto" style="color:#fff;font-weight:600">Edita código sin feature activa</span>
+  </div>
+  <div class="flecha-h" style="left:300px;top:282px;width:32px"></div>
+  <div class="caja" style="left:340px;top:225px;width:260px;height:120px">
+    <span class="num">02 · LECTURA</span><span class="texto" style="color:#fff;font-weight:600">grep, glob o find amplio con contexto sobre el umbral</span>
+  </div>
+  <div class="flecha-h" style="left:300px;top:407px;width:32px"></div>
+  <div class="caja" style="left:340px;top:350px;width:260px;height:120px">
+    <span class="num">03 · ESCRITURA</span><span class="texto" style="color:#fff;font-weight:600">Docs y texto</span>
+  </div>
+  <div class="flecha-h" style="left:300px;top:532px;width:32px"></div>
+  <div class="caja" style="left:340px;top:475px;width:260px;height:120px">
+    <span class="num">04 · LECTURA</span><span class="texto" style="color:#fff;font-weight:600">Read de un archivo, o con offset/limit</span>
+  </div>
+
+  <!-- 01 y 02 -> Se frena -->
+  <div style="position:absolute;left:600px;top:157px;width:40px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:600px;top:282px;width:40px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:637px;top:157px;width:6px;height:131px;background:#FDBF01"></div>
+  <div class="flecha-h" style="left:640px;top:222px;width:52px"></div>
+  <!-- 03 y 04 -> Pasa -->
+  <div style="position:absolute;left:600px;top:407px;width:40px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:600px;top:532px;width:40px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:637px;top:407px;width:6px;height:131px;background:#FDBF01"></div>
+  <div class="flecha-h" style="left:640px;top:472px;width:52px"></div>
+
+  <div class="caja" style="left:700px;top:147px;width:220px;height:150px;background:#070707;border-color:#FDBF01;padding-left:36px">
+    <div class="hazard" style="position:absolute;left:0;top:0;bottom:0;width:14px"></div>
+    <span class="num" style="color:#FDBF01">SE FRENA</span>
+    <span class="nombre" style="font-size:22px">Sugiere el camino</span>
+  </div>
+  <div class="caja caja--guardado" style="left:700px;top:397px;width:220px;height:150px">
+    <span class="num">SIN FRENO</span><span class="nombre">Pasa</span>
+    <span class="texto">Sin molestar</span>
+  </div>
+
+  <div class="flecha-h" style="left:922px;top:222px;width:50px"></div>
+  <div class="caja" style="left:980px;top:147px;width:236px;height:150px">
+    <span class="num">CAMINO</span><span class="nombre" style="font-size:22px">Camino sugerido</span>
+    <span class="texto"><span class="mono" style="font-size:14px">/nxy:feature</span>, implementer o scout</span>
+  </div>
+
+  <div class="caja caja--decidis" style="left:700px;top:610px;width:220px;height:80px;padding:14px 20px;gap:2px">
+    <span class="nombre" style="font-size:18px;font-family:'JetBrains Mono',monospace;font-stretch:100%;text-transform:none">/nxy:gate once</span>
+    <span class="texto" style="font-size:14px">Un solo uso</span>
+  </div>
+  <div style="position:absolute;left:807px;top:562px;width:6px;height:48px;background:#FDBF01"></div>
+  <div style="position:absolute;left:798px;top:546px;width:0;height:0;border-bottom:16px solid #FDBF01;border-left:12px solid transparent;border-right:12px solid transparent"></div>
+  <div class="mono" style="position:absolute;left:830px;top:568px;font-size:13px;color:#FDBF01;font-weight:700">deja pasar una vez</div>
+
+  <img src="../brand/perro-diagrama.png" alt="" aria-hidden="true" style="position:absolute;left:1040px;top:470px;width:150px;height:auto">
+
+  <div class="leyenda" style="left:64px;top:480px;width:240px">
+    <b>LEYENDA</b>
+    <span><i></i>decidís vos</span>
+    <span><i class="guardado"></i>pasa</span>
+  </div>
+</div>
+</body>
+</html>

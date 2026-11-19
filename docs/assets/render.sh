@@ -1,21 +1,18 @@
 #!/bin/sh
-# Regenera los visuales de la documentacion: GIFs (VHS), diagramas (d2) y videos (HyperFrames).
+# Regenera los visuales de la documentacion: capturas de la TUI y portada (volcados de `nxy tui --demo --dump`
+# sobre el marco de marca de docs/assets/brand/, con Chromium), diagramas (HTML -> PNG con Chromium) y
+# videos (HyperFrames).
 #
-#   sh docs/assets/render.sh [--dry-run] [todo|gifs|diagramas|videos] [nombres...]
+#   sh docs/assets/render.sh [--dry-run] [todo|capturas|diagramas|videos] [nombres...]
 #
-# Sin nombres regenera todo el grupo; con nombres, solo esos (un GIF que cambia no
-# reescribe los otros 11 en el historial de git). Todo corre en Docker: nunca baja ni
-# construye una imagen por su cuenta. Si falta una, imprime el comando exacto y sale con 2.
+# Sin nombres regenera todo el grupo; con nombres, solo esos (una captura que cambia no reescribe las
+# otras en el historial de git). Los volcados corren en el host con `go run`; el resto en Docker: nunca
+# baja ni construye una imagen por su cuenta. Si falta una, imprime el comando exacto y sale con 2.
 # Hay un equivalente para Windows PowerShell en docs/assets/render.ps1.
 
-VHS_IMAGE="nxy-docs-vhs:v0.12.1"
-VHS_SIZE="~30 MB sobre ghcr.io/charmbracelet/vhs:v0.12.1, que pesa ~887 MB comprimida / ~3 GB en disco; si no la tenés, antes: docker pull ghcr.io/charmbracelet/vhs:v0.12.1"
-VHS_BUILD="docker build -t nxy-docs-vhs:v0.12.1 docs/assets/tapes"
 VIDEO_IMAGE="nxy-docs-video:0.9.10"
 VIDEO_SIZE="unos 2 GB en disco (node, chromium, ffmpeg, fuentes y HyperFrames)"
 VIDEO_BUILD="docker build -t nxy-docs-video:0.9.10 docs/assets/video"
-D2_IMAGE="terrastruct/d2:v0.9.0"
-D2_SIZE="~95 MB"
 
 DRY=0
 if [ "$1" = "--dry-run" ]; then
@@ -27,9 +24,9 @@ GROUP="${1:-todo}"
 NAMES="$*"
 
 case "$GROUP" in
-todo | gifs | diagramas | videos) ;;
+todo | capturas | diagramas | videos) ;;
 *)
-	echo "Grupo desconocido: $GROUP. Opciones: todo, gifs, diagramas, videos." >&2
+	echo "Grupo desconocido: $GROUP. Opciones: todo, capturas, diagramas, videos." >&2
 	exit 1
 	;;
 esac
@@ -48,11 +45,19 @@ MINGW* | MSYS*)
 	;;
 esac
 
+TSV=docs/assets/capturas/capturas.tsv
+
 # Listas de lo que existe en disco (un nombre por linea).
 list_names() { # dir ext
 	for f in "$1"/*."$2"; do
 		[ -e "$f" ] || continue
 		basename "$f" ".$2"
+	done
+}
+list_captures() { # nombres del manifiesto, sin la cabecera
+	[ -f "$TSV" ] || return 0
+	tail -n +2 "$TSV" | tr -d '\r' | while IFS="$(printf '\t')" read -r n _; do
+		[ -n "$n" ] && echo "$n"
 	done
 }
 list_videos() {
@@ -63,16 +68,16 @@ list_videos() {
 		echo "$n"
 	done
 }
-TAPES=$(list_names docs/assets/tapes tape)
-DIAGRAMS=$(list_names docs/assets/diagrams d2)
+CAPTURES=$(list_captures)
+DIAGRAMS=$(list_names docs/assets/diagrams html)
 VIDEOS=$(list_videos)
 
-# Valida los nombres pedidos contra lo que existe para el grupo.
+# Valida los nombres pedidos contra lo que existe para el grupo ("banner" es parte de las capturas).
 case "$GROUP" in
-gifs) VALID="$TAPES" ;;
+capturas) VALID=$(printf '%s\nbanner\n' "$CAPTURES") ;;
 diagramas) VALID="$DIAGRAMS" ;;
 videos) VALID="$VIDEOS" ;;
-*) VALID=$(printf '%s\n%s\n%s\n' "$TAPES" "$DIAGRAMS" "$VIDEOS") ;;
+*) VALID=$(printf '%s\nbanner\n%s\n%s\n' "$CAPTURES" "$DIAGRAMS" "$VIDEOS") ;;
 esac
 for n in $NAMES; do
 	if ! printf '%s\n' "$VALID" | grep -qx "$n"; then
@@ -111,52 +116,62 @@ need_image() { # imagen tamano comando-para-conseguirla
 	fi
 }
 
-step_build() {
-	echo "== Binario de nxy para Linux (lo usan los contenedores) =="
-	if [ "$DRY" = 1 ]; then
-		echo "+ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o docs/assets/.build/nxy ./cmd/nxy"
-		return 0
-	fi
-	mkdir -p docs/assets/.build
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o docs/assets/.build/nxy ./cmd/nxy || exit 1
-}
-
-step_gifs() {
-	echo "== GIFs (VHS) =="
-	if [ -z "$TAPES" ]; then
-		echo "No hay tapes en docs/assets/tapes/*.tape: nada que grabar."
+step_capturas() {
+	echo "== Capturas de la TUI y portada =="
+	WANTED=""
+	for n in $CAPTURES; do
+		wanted "$n" && WANTED="$WANTED $n"
+	done
+	WANT_BANNER=0
+	wanted banner && WANT_BANNER=1
+	if [ -z "$WANTED" ] && [ "$WANT_BANNER" = 0 ]; then
+		echo "Nada que capturar."
 		return 0
 	fi
 	check_docker
-	need_image "$VHS_IMAGE" "$VHS_SIZE" "$VHS_BUILD"
-	mkdir -p docs/assets/gifs
-	for n in $TAPES; do
-		wanted "$n" || continue
-		run docker run --rm -v "$MOUNT:/vhs" "$VHS_IMAGE" "docs/assets/tapes/$n.tape" || exit 1
+	need_image "$VIDEO_IMAGE" "$VIDEO_SIZE" "$VIDEO_BUILD"
+	[ "$DRY" = 1 ] || mkdir -p docs/assets/.build/dumps docs/assets/capturas
+	# 1) volcados de la TUI con datos de ejemplo, en el host (mismo resultado en Windows y Linux)
+	for n in $WANTED; do
+		dump=$(tail -n +2 "$TSV" | tr -d '\r' | awk -F '\t' -v n="$n" '$1 == n { print $2 }')
+		feat=$(tail -n +2 "$TSV" | tr -d '\r' | awk -F '\t' -v n="$n" '$1 == n { print $3 }')
+		FEAT_ARGS=""
+		[ "$feat" != "-" ] && [ -n "$feat" ] && FEAT_ARGS="--feature $feat"
+		echo "+ go run ./cmd/nxy tui --demo --dump $dump $FEAT_ARGS --width 120 --icons unicode > docs/assets/.build/dumps/$n.ansi"
+		if [ "$DRY" != 1 ]; then
+			# shellcheck disable=SC2086
+			go run ./cmd/nxy tui --demo --dump "$dump" $FEAT_ARGS --width 120 --icons unicode >"docs/assets/.build/dumps/$n.ansi" || exit 1
+			if ! grep -q "$(printf '\033')\[38;2" "docs/assets/.build/dumps/$n.ansi"; then
+				echo "El volcado de $n no trae color (ESC[38;2): sin color la captura no sirve." >&2
+				exit 1
+			fi
+		fi
 	done
+	# 2) capturas y portada (Chromium)
+	if [ -n "$WANTED" ]; then
+		# shellcheck disable=SC2086
+		run docker run --rm --shm-size=1g -v "$MOUNT:/work" -w /work "$VIDEO_IMAGE" node docs/assets/brand/captura.cjs captura $WANTED || exit 1
+	fi
+	if [ "$WANT_BANNER" = 1 ]; then
+		run docker run --rm --shm-size=1g -v "$MOUNT:/work" -w /work "$VIDEO_IMAGE" node docs/assets/brand/captura.cjs banner || exit 1
+	fi
 }
 
 step_diagramas() {
-	echo "== Diagramas (d2) =="
+	echo "== Diagramas (HTML -> PNG) =="
 	if [ -z "$DIAGRAMS" ]; then
-		echo "No hay diagramas en docs/assets/diagrams/*.d2: nada que dibujar."
+		echo "No hay diagramas en docs/assets/diagrams/*.html: nada que dibujar."
 		return 0
 	fi
-	LOCAL_D2=0
-	command -v d2 >/dev/null 2>&1 && LOCAL_D2=1
-	if [ "$LOCAL_D2" = 0 ]; then
-		check_docker
-		need_image "$D2_IMAGE" "$D2_SIZE" "docker pull $D2_IMAGE"
-	fi
+	WANTED=""
 	for n in $DIAGRAMS; do
-		wanted "$n" || continue
-		if [ "$LOCAL_D2" = 1 ]; then
-			run d2 --theme 0 --dark-theme 200 --pad 24 "docs/assets/diagrams/$n.d2" "docs/assets/diagrams/$n.svg" || exit 1
-		else
-			run docker run --rm -v "$MOUNT:/work" -w /work "$D2_IMAGE" \
-				--theme 0 --dark-theme 200 --pad 24 "docs/assets/diagrams/$n.d2" "docs/assets/diagrams/$n.svg" || exit 1
-		fi
+		wanted "$n" && WANTED="$WANTED $n"
 	done
+	[ -z "$WANTED" ] && return 0
+	check_docker
+	need_image "$VIDEO_IMAGE" "$VIDEO_SIZE" "$VIDEO_BUILD"
+	# shellcheck disable=SC2086
+	run docker run --rm --shm-size=1g -v "$MOUNT:/work" -w /work "$VIDEO_IMAGE" node docs/assets/brand/captura.cjs diagrama $WANTED || exit 1
 }
 
 step_videos() {
@@ -167,25 +182,32 @@ step_videos() {
 	fi
 	check_docker
 	need_image "$VIDEO_IMAGE" "$VIDEO_SIZE" "$VIDEO_BUILD"
-	mkdir -p docs/assets/video/out
 	for n in $VIDEOS; do
 		wanted "$n" || continue
+		# HyperFrames puede no servir archivos fuera de la carpeta de la composicion: la marca se copia antes
+		# del render (marca/ esta en .gitignore) y se borra despues.
+		if [ "$DRY" = 1 ]; then
+			echo "+ cp docs/assets/brand/marca.css docs/assets/brand/perro-*.png docs/assets/video/$n/marca/"
+		else
+			mkdir -p "docs/assets/video/$n/marca"
+			cp docs/assets/brand/marca.css docs/assets/video/"$n"/marca/
+			for p in perro-banner perro-chico perro-diagrama; do cp "docs/assets/brand/$p.png" "docs/assets/video/$n/marca/"; done
+		fi
 		run docker run --rm --shm-size=1g -v "$MOUNT:/work" -w /work/docs/assets/video "$VIDEO_IMAGE" \
-			hyperframes render "$n" -o "out/$n.mp4" --quiet || exit 1
+			hyperframes render "$n" -o "$n.mp4" --quiet
+		rc=$?
+		[ "$DRY" = 1 ] || rm -rf "docs/assets/video/$n/marca"
+		[ "$rc" = 0 ] || exit 1
 	done
 }
 
 case "$GROUP" in
 todo)
-	step_build
-	step_gifs
+	step_capturas
 	step_diagramas
 	step_videos
 	;;
-gifs)
-	step_build
-	step_gifs
-	;;
+capturas) step_capturas ;;
 diagramas) step_diagramas ;;
 videos) step_videos ;;
 esac
