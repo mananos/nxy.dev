@@ -12,10 +12,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      NXY_HOME: ${{ runner.temp }}/nxy-home
     steps:
       - uses: actions/checkout@v4
+      # The runner context is not available in a job-level env: NXY_HOME is set here for every later step.
+      - name: NXY_HOME in the runner's temp folder
+        shell: bash
+        run: echo "NXY_HOME=$RUNNER_TEMP/nxy-home" >> "$GITHUB_ENV"
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
