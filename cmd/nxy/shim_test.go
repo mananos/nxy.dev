@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -639,7 +640,14 @@ func TestShimConcurrentDownload(t *testing.T) {
 		t.Run(sh.name, func(t *testing.T) {
 			rel, asset := releaseDir(t, fake, false)
 			var hits int32
+			start := time.Now()
+			ms := func() int64 { return time.Since(start).Milliseconds() }
+			var logMu sync.Mutex
+			var reqLog []string
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				logMu.Lock()
+				reqLog = append(reqLog, fmt.Sprintf("+%dms %s %s from %s ua=%q", ms(), r.Method, r.URL.Path, r.RemoteAddr, r.Header.Get("User-Agent")))
+				logMu.Unlock()
 				if strings.HasSuffix(r.URL.Path, "/"+asset) {
 					atomic.AddInt32(&hits, 1)
 					time.Sleep(2 * time.Second) // a slow download, so the others overlap it
@@ -651,12 +659,15 @@ func TestShimConcurrentDownload(t *testing.T) {
 			env := map[string]string{"NXY_HOME": home(sh, h), "NXY_RELEASE_URL": srv.URL}
 			const n = 4
 			res := make([]result, n)
+			var t0, t1 [n]int64
 			var wg sync.WaitGroup
 			for i := 0; i < n; i++ {
 				wg.Add(1)
 				go func(i int) {
 					defer wg.Done()
+					t0[i] = ms()
 					res[i] = runShim(t, sh, env)
+					t1[i] = ms()
 				}(i)
 			}
 			wg.Wait()
@@ -672,7 +683,31 @@ func TestShimConcurrentDownload(t *testing.T) {
 				}
 			}
 			if got := atomic.LoadInt32(&hits); got != 1 {
-				t.Fatalf("binary fetched %d times, want 1", got)
+				var b strings.Builder
+				logMu.Lock()
+				b.WriteString("requests:\n")
+				for _, l := range reqLog {
+					b.WriteString("  " + l + "\n")
+				}
+				logMu.Unlock()
+				b.WriteString("runs:\n")
+				for i, r := range res {
+					fmt.Fprintf(&b, "  run %d: %d..%dms code=%d stdout=%q stderr=%q\n", i, t0[i], t1[i], r.code, r.stdout, r.stderr)
+				}
+				dir := filepath.Join(h, "bin", version.Version)
+				b.WriteString("bin dir " + dir + ":\n")
+				ents, err := os.ReadDir(dir)
+				if err != nil {
+					fmt.Fprintf(&b, "  readdir: %v\n", err)
+				}
+				for _, e := range ents {
+					var size int64 = -1
+					if fi, err := e.Info(); err == nil {
+						size = fi.Size()
+					}
+					fmt.Fprintf(&b, "  %s size=%d dir=%v\n", e.Name(), size, e.IsDir())
+				}
+				t.Fatalf("binary fetched %d times, want 1\n%s", got, b.String())
 			}
 			if _, err := os.Stat(filepath.Join(h, "bin", version.Version, exeName("nxy"))); err != nil {
 				t.Fatalf("not installed: %v", err)

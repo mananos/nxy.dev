@@ -39,7 +39,12 @@ type hookInput struct {
 // Decode reads a Claude Code hook payload. Unknown fields are ignored.
 func Decode(r io.Reader) (app.HookEvent, error) {
 	var in hookInput
-	if err := json.NewDecoder(r).Decode(&in); err != nil {
+	// PowerShell prepends a UTF-8 BOM when it forwards stdin; drop one.
+	br := bufio.NewReader(r)
+	if head, _ := br.Peek(3); bytes.Equal(head, []byte("\xef\xbb\xbf")) {
+		_, _ = br.Discard(3)
+	}
+	if err := json.NewDecoder(br).Decode(&in); err != nil {
 		return app.HookEvent{}, fmt.Errorf("decode hook payload: %w", err)
 	}
 	ev := app.HookEvent{

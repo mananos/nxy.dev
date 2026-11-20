@@ -55,6 +55,21 @@ func TestEncodeZeroWritesNothing(t *testing.T) {
 	}
 }
 
+func TestDecodeStripsBOM(t *testing.T) {
+	const payload = `{"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"s1"}`
+	want, err := Decode(strings.NewReader(payload))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Decode(strings.NewReader("\xef\xbb\xbf" + payload))
+	if err != nil {
+		t.Fatalf("BOM payload: %v", err)
+	}
+	if got.Name != want.Name || got.Tool != want.Tool || got.SessionID != want.SessionID {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
 func TestDecodeCommand(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", "")
 	ev, err := Decode(strings.NewReader(`{"tool_name":"Bash","cwd":"/tmp/x","tool_input":{"command":"git status"}}`))
