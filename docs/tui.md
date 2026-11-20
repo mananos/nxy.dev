@@ -14,7 +14,7 @@ Arriba van las cuatro secciones (**Inicio**, **Memoria**, **Gasto**, **Config**)
 
 ### Inicio
 
-Tus features en tres grupos: **Te necesita** (hay que decidir algo), **En curso** y **Listo hoy**. Cada tarjeta dice el título, el id (`F7K2`), el tiempo, el costo, lo último que pasó, una barra de avance y la fase (`lote 3/4`, `diseño 2/4`, `review`). Un `*` junto al costo quiere decir que un modelo todavía no está en la tabla de precios y se estimó por familia ([Gasto](gasto.md)). Debajo, una línea de worktrees (`3 activos · 1 huérfano`).
+Tus features en tres grupos: **Te necesita** (hay que decidir algo), **En curso** y **Listo hoy**. Cada tarjeta dice el título, el id (`F7K2`), el tiempo, el costo, lo último que pasó, una barra de avance y la fase (`lote 3/4`, `diseño 2/4`, `review`). Un `*` junto al costo quiere decir que un modelo todavía no está en la tabla de precios y se estimó por familia ([Gasto](gasto.md)). Debajo, una línea de worktrees (`3 activos · 1 huérfano`). Si no hay ninguna feature abierta, Inicio dice cómo arrancar una: en Claude Code, `/nxy:feature <lo que querés hacer>` (o `/nxy:engineer`).
 
 Con `enter` abrís la feature: sus lotes con el modelo, el tiempo y el costo de cada uno, y los errores del lote que falló. Si la feature está en el diseño, abre el [modo ingeniero](ingeniero.md). Desde la feature:
 
@@ -26,7 +26,7 @@ Con `enter` abrís la feature: sus lotes con el modelo, el tiempo y el costo de 
 ### Memoria, Gasto y Config
 
 - **Memoria**: tus reglas del repo, las globales y los aprendizajes, con búsqueda y edición en el lugar ([Memoria](memoria.md)).
-- **Gasto**: la sesión y la tendencia, con barras ([Gasto](gasto.md)).
+- **Gasto**: la sesión y la tendencia, con barras; `s` cambia de sesión. En Tendencia, `←` y `→` mueven la ventana un período (7 días u 8 semanas), hasta 12 atrás; al salir vuelve a hoy ([Gasto](gasto.md)).
 - **Config**: los roles con su modelo y effort, los módulos, las herramientas que nxy usa y el estado de la statusline y del binario.
 
 En Config, arriba ves las dos capas: **usuario** (`~/.nxy/config.json`) y **repo** (`.nxy/config.json`); cuando las dos dicen algo, gana el repo. La columna **Origen** de cada rol te dice de dónde sale el valor (`default`, `usuario` o `repo`), y un cambio aplica «al próximo agente que se lance». Detalle de cada clave: [Configuración](configuracion.md).
@@ -47,7 +47,7 @@ Abrila en **otra terminal**. En Claude Code, `/nxy:tui` te muestra el comando ex
 nxy tui
 ```
 
-Si no, `nxy tui where` te da el comando con la ruta completa del lanzador, para PowerShell o para Git Bash, Linux y macOS; para que sea `nxy tui` hace falta `nxy` en el PATH ([Instalación](instalacion.md)). Para mirar antes de usarla: `nxy tui --demo` abre el mismo programa con datos de ejemplo, sin tocar tu repo ni tu base.
+Si no, `nxy tui where` te da el comando con la ruta completa del lanzador, para PowerShell o para Git Bash, Linux y macOS; para que sea `nxy tui` hace falta `nxy` en el PATH ([Instalación](instalacion.md)). El `nxy` que Claude Code agrega para sus comandos no cuenta: `tui where` da la ruta del lanzador hasta que nxy esté en tu PATH. Para mirar antes de usarla: `nxy tui --demo` abre el mismo programa con datos de ejemplo, sin tocar tu repo ni tu base.
 
 Las teclas que valen en todas las pantallas:
 

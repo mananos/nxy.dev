@@ -94,3 +94,33 @@ func TestDecodeSessionEndReason(t *testing.T) {
 		t.Errorf("event = %+v", ev)
 	}
 }
+
+func TestDecodeMultiSelectListAnswers(t *testing.T) {
+	in := `{"hook_event_name":"PostToolUse","tool_name":"AskUserQuestion","cwd":"/p","tool_response":{"answers":{"q1":["B1 a","B2 b"],"q2":"B3","q3":[1,2]}}}`
+	ev, err := Decode(strings.NewReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ev.Answers["q1"] != "B1 a, B2 b" || ev.Answers["q2"] != "B3" {
+		t.Errorf("answers = %v", ev.Answers)
+	}
+	if _, ok := ev.Answers["q3"]; ok {
+		t.Errorf("non-string list kept: %v", ev.Answers)
+	}
+}
+
+func TestDecodeStopHookActive(t *testing.T) {
+	ev, err := Decode(strings.NewReader(`{"hook_event_name":"Stop","cwd":"/p","stop_hook_active":true}`))
+	if err != nil || !ev.StopHookActive {
+		t.Errorf("ev = %+v, err = %v", ev, err)
+	}
+}
+
+func TestEncodeStopAskIsADecisionBlock(t *testing.T) {
+	ask := &app.AskSpec{Question: "¿Qué reglas?", Header: "Reglas", MultiSelect: true, Options: []app.AskOption{{Label: "B1 x", Description: "d"}, {Label: "B2 y", Description: "d"}}}
+	m := encode(t, app.HookEvent{Name: "Stop"}, app.HookResponse{Ask: ask})
+	reason, _ := m["reason"].(string)
+	if m["decision"] != "block" || !strings.Contains(reason, "AskUserQuestion") || !strings.Contains(reason, "¿Qué reglas?") {
+		t.Errorf("out = %v", m)
+	}
+}

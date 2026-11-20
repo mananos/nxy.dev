@@ -199,6 +199,7 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	}
 	if ev.Subagent == roleScout && resp.Prompt == "" {
 		resp.Prompt = h.bootstrapPrompt(ctx, ev)
+		resp.Foreground = resp.Prompt != ""
 	}
 	if ev.Subagent == roleScout && resp.Prompt == "" && h.Exe != "" {
 		resp.Prompt = scoutPrompt(ev.AgentPrompt, h.Exe)

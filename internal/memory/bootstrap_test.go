@@ -45,6 +45,13 @@ func TestBootstrapPrompt(t *testing.T) {
 	}
 }
 
+func TestBootstrapPromptHasNoLocate(t *testing.T) {
+	p := BootstrapPrompt(nil, "/x/nxy")
+	if strings.Contains(p, "locate") || !strings.HasPrefix(p, BootstrapPromptHead) {
+		t.Errorf("prompt = %q", p)
+	}
+}
+
 func cands(n int) []BootstrapCandidate {
 	var out []BootstrapCandidate
 	for i := 1; i <= n; i++ {
@@ -97,5 +104,42 @@ func TestBootstrapChosenAcrossPages(t *testing.T) {
 	// text that mentions another label inside a rule is not a pick
 	if got := BootstrapChosen(map[string]string{BootstrapQuestion(1, 1): "B3 rule 3"}, cands(3)); len(got) != 1 || got[0].Text != "rule 3" {
 		t.Errorf("single %+v", got)
+	}
+}
+
+func TestBootstrapChosenQuotedLabel(t *testing.T) {
+	cs := cands(3)
+	q := BootstrapQuestion(1, 1)
+	got := BootstrapChosen(map[string]string{q: `"B2 texto, con coma"`}, cs)
+	if len(got) != 1 || got[0].Text != "rule 2" {
+		t.Errorf("chosen %+v", got)
+	}
+}
+
+func TestBootstrapChosenText(t *testing.T) {
+	cands := make([]BootstrapCandidate, 5)
+	for i := range cands {
+		cands[i] = BootstrapCandidate{Text: "t", Question: "q"}
+	}
+	got, ok := BootstrapChosenText("B1, B2, B4", cands)
+	if !ok || len(got) != 3 {
+		t.Fatalf("B1, B2, B4 = %v %v", got, ok)
+	}
+	if got, ok := BootstrapChosenText("todas", cands); !ok || len(got) != 5 {
+		t.Errorf("todas = %v %v", got, ok)
+	}
+	if got, ok := BootstrapChosenText("b1, B3", cands); !ok || len(got) != 2 {
+		t.Errorf("b1, B3 = %v %v", got, ok)
+	}
+	if got, ok := BootstrapChosenText("Todas", cands); !ok || len(got) != 5 {
+		t.Errorf("Todas = %v %v", got, ok)
+	}
+	if got, ok := BootstrapChosenText("ninguna", cands); !ok || len(got) != 0 {
+		t.Errorf("ninguna = %v %v", got, ok)
+	}
+	for _, in := range []string{"b2 no anda el login", "B9", "B1 y B2", "hacé el login", ""} {
+		if _, ok := BootstrapChosenText(in, cands); ok {
+			t.Errorf("%q accepted", in)
+		}
 	}
 }

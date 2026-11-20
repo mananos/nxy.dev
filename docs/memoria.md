@@ -65,7 +65,7 @@ Un hallazgo de la review que cita una regla sube a severidad media como mínimo.
 
 - Al cerrar una feature, nxy te propone guardar las decisiones `[repo]` del plan.
 - Si con una feature activa escribís «siempre», «nunca» o «de ahora en adelante» (o `always`, `never`, `from now on`), nxy le pide a Claude que te pregunte si es una regla del repo. Nunca la guarda sin que lo confirmes.
-- En un repo sin reglas, la primera feature ofrece proponerlas (`/nxy:mem bootstrap` también): un scout lee el build, los linters y el CI y te propone hasta 10.
+- En un repo sin reglas, la primera feature ofrece proponerlas (`/nxy:mem bootstrap` también): un scout lee el build, los linters y el CI y te propone hasta 10. El scout corre en primer plano; si igual queda en segundo plano, nxy pregunta cuando termine. Si contestás escribiendo, nxy toma solo un mensaje que sea entero `B1, B3…`, `todas`, `ninguna`, `sí` o `no`; cualquier otra cosa sigue su curso y nxy vuelve a preguntar.
 - Los aprendizajes los puede sumar un implementer o un reviewer al terminar (hasta 5 por informe, 300 caracteres cada uno). Uno que se comprueba falso, o cuyos archivos ya no existen, queda **obsoleto**: se marca, no se borra.
 - Un hallazgo que la review no vio (`/nxy:review escape`) también termina como regla.
 

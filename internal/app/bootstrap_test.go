@@ -217,14 +217,42 @@ func TestBootstrapOtherScoutDoesNotFinishIt(t *testing.T) {
 	}
 }
 
-func TestBootstrapBackgroundScoutAsksForForeground(t *testing.T) {
+func TestBootstrapBackgroundScoutWaits(t *testing.T) {
 	h, _, bs := bootHooks(t)
 	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapScouting, PendingRequest: "do it"}
 	ev := scoutDone()
 	ev.AgentAsync = true
 	r := h.Handle(context.Background(), ev)
-	if r.Ask != nil || !strings.Contains(r.Context, "foreground") || bs.rows["repo:/p"].Status != bootstrapScouting {
+	if r.Ask != nil || strings.Contains(r.Context, "must run in the foreground") || !strings.Contains(r.Context, "background") ||
+		bs.rows["repo:/p"].Status != bootstrapScouting {
 		t.Errorf("background bootstrap scout = %+v state %+v", r, bs.rows["repo:/p"])
+	}
+}
+
+func TestBootstrapScoutRunsInForeground(t *testing.T) {
+	h, _, bs := bootHooks(t)
+	ctx := context.Background()
+	if r := h.Handle(ctx, scoutPre()); r.Foreground {
+		t.Errorf("foreground outside scouting: %+v", r)
+	}
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapScouting}
+	if r := h.Handle(ctx, scoutPre()); !r.Foreground || r.Prompt == "" {
+		t.Errorf("bootstrap scout = %+v", r)
+	}
+	other := scoutPre()
+	other.AgentPrompt = "find the login"
+	if r := h.Handle(ctx, other); r.Foreground {
+		t.Errorf("another scout forced to foreground: %+v", r)
+	}
+}
+
+func TestBootstrapScoutDoneWithRewrittenPrompt(t *testing.T) {
+	h, _, bs := bootHooks(t)
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapConfirming, Candidates: bootCands(2)}
+	ev := scoutDone()
+	ev.AgentPrompt = memory.BootstrapPromptHead + "\nmore text"
+	if r := h.Handle(context.Background(), ev); r.Ask == nil {
+		t.Errorf("rewritten prompt not recognised: %+v", r)
 	}
 }
 
@@ -235,5 +263,91 @@ func TestBootstrapBackgroundScoutIsLeftAlone(t *testing.T) {
 	ev.AgentAsync = true
 	if r := h.Handle(context.Background(), ev); r.Ask != nil {
 		t.Errorf("background launch asked: %+v", r)
+	}
+}
+
+func TestBootstrapStopAsksWhenConfirming(t *testing.T) {
+	h, _, bs := bootHooks(t)
+	ctx := context.Background()
+	stop := HookEvent{Name: "Stop", ProjectDir: "/p", Cwd: "/p"}
+	if r := h.Handle(ctx, stop); r.Ask != nil {
+		t.Errorf("asked without bootstrap: %+v", r)
+	}
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapConfirming, Candidates: bootCands(2)}
+	r := h.Handle(ctx, stop)
+	if r.Ask == nil || !r.Ask.MultiSelect {
+		t.Fatalf("stop in confirming = %+v", r)
+	}
+	active := stop
+	active.StopHookActive = true
+	if r := h.Handle(ctx, active); r.Ask != nil {
+		t.Errorf("asked with stop_hook_active: %+v", r)
+	}
+	sub := stop
+	sub.AgentID = "a1"
+	if r := h.Handle(ctx, sub); r.Ask != nil {
+		t.Errorf("asked from a subagent: %+v", r)
+	}
+	st := bs.rows["repo:/p"]
+	st.Status = bootstrapAsked
+	bs.rows["repo:/p"] = st
+	if r := h.Handle(ctx, stop); r.Ask != nil {
+		t.Errorf("asked again once asked: %+v", r)
+	}
+}
+
+func TestBootstrapAskedMarkedOnPreToolUse(t *testing.T) {
+	h, _, bs := bootHooks(t)
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapConfirming, Candidates: bootCands(2)}
+	q := memory.BootstrapQuestions(bootCands(2))[0].Question
+	ev := HookEvent{Name: "PreToolUse", Tool: toolAskUser, ProjectDir: "/p", Cwd: "/p", Questions: []string{q}}
+	h.Handle(context.Background(), ev)
+	if got := bs.rows["repo:/p"].Status; got != bootstrapAsked {
+		t.Fatalf("status = %q", got)
+	}
+	r := h.Handle(context.Background(), bootAnswerEv(map[string]string{q: "B1 regla a"}))
+	if bs.rows["repo:/p"].Status != bootstrapDone || !strings.Contains(r.Context, "guardadas") {
+		t.Errorf("answer when asked = %+v state %+v", r, bs.rows["repo:/p"])
+	}
+}
+
+func TestBootstrapTextAnswerSavesRules(t *testing.T) {
+	h, mem, bs := bootHooks(t)
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapConfirming, Candidates: bootCands(3), PendingRequest: "add a flag"}
+	r := h.Handle(context.Background(), prompt("B1, B3"))
+	if len(mem.added) != 2 || mem.added[0].Text != "regla a" || mem.added[1].Text != "regla c" {
+		t.Fatalf("added = %+v", mem.added)
+	}
+	if r.Next == nil || r.Next.Feature.Request != "add a flag" {
+		t.Errorf("request not resumed: %+v", r)
+	}
+	if st := bs.rows["repo:/p"]; st.Status != bootstrapDone {
+		t.Errorf("state = %+v", st)
+	}
+}
+
+func TestBootstrapTextAnswerToOffer(t *testing.T) {
+	h, _, bs := bootHooks(t)
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, PendingRequest: "add a flag"}
+	r := h.Handle(context.Background(), prompt("sí"))
+	if st := bs.rows["repo:/p"]; st.Status != bootstrapScouting || !strings.Contains(r.Context, BootstrapDispatch()) {
+		t.Fatalf("yes: %+v %+v", st, r)
+	}
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, PendingRequest: "add a flag"}
+	r = h.Handle(context.Background(), prompt("no"))
+	if r.Next == nil || bs.rows["repo:/p"].Status != bootstrapDone {
+		t.Errorf("no: %+v", r)
+	}
+}
+
+func TestBootstrapTextNotAnAnswerAsksAgain(t *testing.T) {
+	h, mem, bs := bootHooks(t)
+	bs.rows["repo:/p"] = BootstrapState{Repo: "repo:/p", OfferedAt: 1, Status: bootstrapConfirming, Candidates: bootCands(2)}
+	r := h.Handle(context.Background(), prompt("/nxy:feature b2 no anda el login"))
+	if len(mem.added) != 0 || bs.rows["repo:/p"].Status != bootstrapConfirming {
+		t.Fatalf("taken as answer: %+v %+v", mem.added, bs.rows["repo:/p"])
+	}
+	if r.Next == nil || r.Ask == nil {
+		t.Errorf("request must go on and ask again: %+v", r)
 	}
 }

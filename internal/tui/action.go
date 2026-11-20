@@ -81,6 +81,7 @@ func (st *state) startAction(q actionReq) {
 	}
 	if q.key != "" {
 		st.busy[q.key] = q.busy
+		delete(st.failed, q.key)
 	}
 	run, ctx := st.run, context.Background()
 	if st.ld != nil {
@@ -122,7 +123,10 @@ func (st *state) onActionDone(m actionDoneMsg) tea.Cmd {
 		delete(st.busy, m.q.key)
 	}
 	if m.err != nil {
-		st.toast, st.toastErr = firstLine(m.out, m.err.Error()), true
+		st.toast, st.toastErr = failureText(m.out, m.err.Error()), true
+		if m.q.key != "" {
+			st.failed[m.q.key] = st.toast
+		}
 		if m.q.reloadOnErr {
 			return st.reload()
 		}
@@ -133,6 +137,25 @@ func (st *state) onActionDone(m actionDoneMsg) tea.Cmd {
 		m.q.after()
 	}
 	return st.reload()
+}
+
+// failureText is the error of a failed command. A setup output ends with "Falló en: <step>": the
+// real error is the last line before it, so both are shown. Anything else: its first line.
+func failureText(out, fallback string) string {
+	lines := strings.Split(out, "\n")
+	for i, l := range lines {
+		step := strings.TrimSpace(l)
+		if !strings.HasPrefix(step, "Falló en:") {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if prev := strings.TrimSpace(lines[j]); prev != "" {
+				return prev + " · " + step
+			}
+		}
+		return step
+	}
+	return firstLine(out, fallback)
 }
 
 // firstLine is the first line of out that is not blank, or the fallback.

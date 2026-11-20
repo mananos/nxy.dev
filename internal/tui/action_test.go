@@ -215,6 +215,24 @@ func TestActionFailureShowsFirstLine(t *testing.T) {
 	}
 }
 
+func TestActionInstallFailureShowsTheError(t *testing.T) {
+	out := "Instalar rtk\n  paso 1\ncurl: (22) The requested URL returned error: 404\nFalló en: descargar rtk\nPara correrlo en una terminal: x\n"
+	f := &fakeRun{out: out, err: errors.New("exit status 1")}
+	m := withRun(inConfig(t), f)
+	c := m.st.data.Config
+	c.Tools = []views.Tool{{Name: "rtk", Install: &views.Action{Argv: []string{"nxy", "setup", "run", "rtk", "--yes"}, Confirm: "Instala rtk"}}}
+	m.st.setCursor(route{screen: "config"}, len(c.Roles)+len(c.Settings))
+	_, _ = m.Update(key("i"))
+	send(m, key("y"))
+	want := "curl: (22) The requested URL returned error: 404 · Falló en: descargar rtk"
+	if m.st.toast != want || !m.st.toastErr {
+		t.Fatalf("toast %q err=%v", m.st.toast, m.st.toastErr)
+	}
+	if got := m.st.frame(false); !strings.Contains(got, "curl: (22)") {
+		t.Fatalf("row has no error:\n%s", got)
+	}
+}
+
 func TestActionStaleRunsNothing(t *testing.T) {
 	f := &fakeRun{}
 	m := withRun(testModel(t), f)

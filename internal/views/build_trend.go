@@ -79,7 +79,8 @@ func BuildTrend(in TrendIn) Trend {
 	models := map[string]*ModelRow{}
 	var modelOrder []string
 	for _, s := range in.Sessions {
-		if i, ok := dayIdx[report.PeriodKey(s.Ts, "day", loc)]; ok {
+		i, inRange := dayIdx[report.PeriodKey(s.Ts, "day", loc)]
+		if inRange {
 			add(days[i], s)
 			t.Totals.Sessions++
 			t.Totals.Turns += s.Turns
@@ -88,6 +89,9 @@ func BuildTrend(in TrendIn) Trend {
 		}
 		if i, ok := weekIdx[report.PeriodKey(s.Ts, "week", loc)]; ok {
 			add(weeks[i], s)
+		}
+		if !inRange {
+			continue
 		}
 		for _, k := range s.ByModel.Keys {
 			f := s.ByModel.Values[k]

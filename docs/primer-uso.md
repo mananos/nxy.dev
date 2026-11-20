@@ -29,7 +29,7 @@ La primera vez que arrancás una feature en un repo que no tiene reglas guardada
 
 > Este repo no tiene reglas guardadas. ¿Las propongo ahora? (~30–60k tokens, 1–2 min, una sola vez)
 
-- **Sí**: un scout lee el build, los linters y el CI, y te propone hasta 10 reglas para que elijas cuáles guardar. Cuesta lo que dice el mensaje y se hace una sola vez por repo.
+- **Sí**: un scout lee el build, los linters y el CI, y te propone hasta 10 reglas para que elijas cuáles guardar. El scout corre en primer plano; si igual queda en segundo plano, nxy te pregunta cuando termine. Cuesta lo que dice el mensaje y se hace una sola vez por repo. Si contestás escribiendo, nxy toma solo un mensaje que sea entero `B1, B3…`, `todas`, `ninguna`, `sí` o `no`; cualquier otra cosa sigue su curso y nxy vuelve a preguntar.
 - **No**: arranca la feature igual, sin reglas. No vuelve a preguntar; si más adelante las querés, `/nxy:mem bootstrap`.
 
 Una regla es una decisión del repo que las tareas futuras tienen que seguir («los montos son `BigDecimal`»). Con reglas, el planner y los implementers las respetan sin que se las repitas.

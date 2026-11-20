@@ -138,6 +138,11 @@ type state struct {
 	demo      bool
 	dumpFeat  string // the feature of the file a dump shows
 
+	statsSession string // Gasto: session picked with s ("" = the current one)
+	statsPick    bool   // Gasto: the session list is open
+	statsCur     int    // Gasto: cursor of that list (0 = the current one)
+	trendBack    int    // Tendencia: periods the window is moved back (0 = today)
+
 	watch      func(ctx context.Context) (int64, int, error)
 	schema     int
 	haveVer    bool  // lastVer is the first reading
@@ -150,6 +155,7 @@ type state struct {
 	run      func(ctx context.Context, argv []string) (string, error)
 	confirm  *actionReq        // an action waits for y/n
 	busy     map[string]string // row key → the running line of a command in flight
+	failed   map[string]string // row key → the error of its last failed command
 	toastErr bool              // the toast is a failure
 	errNext  bool              // the toast runAction just returned is a failure
 	cfgPend  map[string]string // value picked with e and not saved: "role/kind" or "setting/id"
@@ -163,7 +169,7 @@ func newState(o Options) *state {
 	st := &state{data: newData(), nerd: o.Nerd, plain: o.Plain, width: max(o.Width, 80), height: 24,
 		stack: []route{{screen: "inicio"}}, cur: map[string]int{}, postponed: map[string]bool{},
 		answered: map[string]bool{}, decIdx: map[string]int{}, decAns: map[string][]string{}, decAsk: map[string]string{}, decMark: map[string]map[int]bool{}, folded: map[string]bool{}, demo: o.Demo, dumpFeat: o.FileFeature,
-		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, cfgPend: map[string]string{}}
+		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, failed: map[string]string{}, cfgPend: map[string]string{}}
 	st.haveVer, st.lastVer = o.HaveVer, o.Ver
 	st.onStale = o.OnStale
 	st.getenv, st.goos, st.lookPath = o.Getenv, o.GOOS, o.LookPath
@@ -258,6 +264,14 @@ func (st *state) apply(in intent) {
 	}
 }
 
+// leaveTrend takes the window of Tendencia back to today once the screen is left.
+func (st *state) leaveTrend() {
+	if st.trendBack != 0 && st.top().screen != "tendencia" {
+		st.trendBack = 0
+		st.cmd = st.reload()
+	}
+}
+
 // onKey handles one key and tells whether the program should quit.
 func (st *state) onKey(k string) (quit bool) {
 	if k == "ctrl+c" {
@@ -274,6 +288,7 @@ func (st *state) onKey(k string) (quit bool) {
 	if st.decOpen && st.decKey(k) {
 		return false
 	}
+	defer st.leaveTrend()
 	r := st.top()
 	scr := st.lookup(r.screen)
 	if c, ok := scr.(capturer); ok && c.captures(st, r, k) {
@@ -436,7 +451,7 @@ func Render(o Options, target, key string) (string, error) {
 		return "", fmt.Errorf("tui: pantalla desconocida %q", target)
 	}
 	st := newState(o)
-	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
 	if err := st.data.Errs["cockpit"]; err != nil {
 		return "", fmt.Errorf("tui: %w", err)
 	}

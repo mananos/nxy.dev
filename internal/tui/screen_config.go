@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/mananos/nxy.dev/v2/internal/views"
 )
@@ -371,6 +372,8 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(tname, "")), L(T(run, tWork)), colW[1]-6)
 		} else if t.Found {
 			l = lr(L(ld, T(st.ic.Done+" ", tDone), T(tname, "")), L(T(t.Version, tMu)), colW[1]-6)
+		} else if e := st.failed["tool/"+t.Name]; e != "" {
+			l = lr(L(ld, T(st.ic.Failed+" ", tFail), T(tname, "")), L(T(ansi.Truncate(e, max(colW[1]-6-ansi.StringWidth(tname)-4, 8), "…"), tFail)), colW[1]-6)
 		} else {
 			l = lr(L(ld, T(st.ic.Pending+" ", tSb), T(tname, "")), L(T("no está   ", tSb), keycap("i"), T(" instalar", tMu)), colW[1]-6)
 		}

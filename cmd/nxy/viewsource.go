@@ -445,7 +445,7 @@ func (v *viewSource) Cockpit(ctx context.Context) (views.Cockpit, error) {
 		}
 	}
 	mid := v.midnight()
-	for _, s := range v.usage.TrendSessions(&mid, false, v.cwd) {
+	for _, s := range v.usage.TrendSessions(&mid, nil, false, v.cwd) {
 		if int64(s.Ts) >= mid {
 			in.CostTodayUSD += s.USD
 		}
@@ -701,6 +701,15 @@ func (v *viewSource) Stats(ctx context.Context, session string) (views.Stats, er
 		args = append(args, "--session", session)
 	}
 	d, ref, early := v.usage.StatsData(args)
+	here := true
+	if early != nil && session == "" && early.Code != 0 {
+		// no session for this folder (outside a repo, say): the last one of any project
+		d, ref, early = v.usage.StatsData(append(args, "--all"))
+		here = false
+		if early != nil && early.Code != 0 {
+			return views.Stats{}, views.ErrNoSession
+		}
+	}
 	if early != nil {
 		msg := strings.TrimSpace(early.Stdout + early.Stderr)
 		if msg == "" {
@@ -710,7 +719,7 @@ func (v *viewSource) Stats(ctx context.Context, session string) (views.Stats, er
 	}
 	since := v.now().AddDate(0, 0, -30).UnixMilli()
 	var others []views.SessionRef
-	sessions := v.usage.TrendSessions(&since, true, v.cwd)
+	sessions := v.usage.TrendSessions(&since, nil, here, v.cwd)
 	sort.SliceStable(sessions, func(i, j int) bool { return sessions[i].Ts > sessions[j].Ts })
 	for _, s := range sessions {
 		if s.SessionID == ref.SessionID || len(others) >= 10 {
@@ -729,16 +738,34 @@ func (v *viewSource) Stats(ctx context.Context, session string) (views.Stats, er
 }
 
 // Trend is Tendencia: the last 8 weeks of every project, and the agent runs of the same range.
-func (v *viewSource) Trend(ctx context.Context) (views.Trend, error) {
+func (v *viewSource) Trend(ctx context.Context, anchor time.Time) (views.Trend, error) {
 	now := v.now()
+	var until *int64
+	if !anchor.IsZero() {
+		now = anchor
+		a := anchor.In(v.loc)
+		// the end of the Sunday of the anchor's week: what the weeks shown reach
+		sunday := a.AddDate(0, 0, (7-int(a.Weekday()))%7)
+		end := time.Date(sunday.Year(), sunday.Month(), sunday.Day(), 23, 59, 59, 999e6, v.loc).UnixMilli()
+		until = &end
+	}
 	since := now.In(v.loc).AddDate(0, 0, -64).UnixMilli()
 	runs, err := v.store.AgentRunsSince(ctx, since)
 	if err != nil {
 		return views.Trend{}, err
 	}
+	if until != nil {
+		kept := runs[:0]
+		for _, r := range runs {
+			if r.StartedAt <= *until {
+				kept = append(kept, r)
+			}
+		}
+		runs = kept
+	}
 	return views.BuildTrend(views.TrendIn{
 		Now: now, Loc: v.loc, Scope: views.ScopeGlobal,
-		Sessions: v.usage.TrendSessions(&since, false, v.cwd), Runs: runs,
+		Sessions: v.usage.TrendSessions(&since, until, false, v.cwd), Runs: runs,
 	}), nil
 }
 
