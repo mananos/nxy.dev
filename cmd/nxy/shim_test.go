@@ -744,7 +744,7 @@ func TestShimStaleCleanup(t *testing.T) {
 				}
 			}
 			lock := filepath.Join(dir, exeName("nxy")+".lock")
-			if err := os.Mkdir(lock, 0o755); err != nil {
+			if err := os.Mkdir(lock, 0o755); err != nil { // a lock DIRECTORY, as the previous shim left it
 				t.Fatal(err)
 			}
 			dead := time.Now().Add(-10 * time.Minute)
@@ -774,7 +774,10 @@ func TestShimFreshLockSkips(t *testing.T) {
 			h := t.TempDir()
 			dir := filepath.Join(h, "bin", version.Version)
 			lock := filepath.Join(dir, exeName("nxy")+".lock")
-			if err := os.MkdirAll(lock, 0o755); err != nil {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(lock, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			mark := filepath.Join(t.TempDir(), "mark")

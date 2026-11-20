@@ -206,17 +206,20 @@ nxy_main() {
       # Temp files left by dead runs (older than a day).
       find "$home/bin/$NXY_VERSION" -maxdepth 1 \( -name '*.tmp' -o -name '*.sums' \) -mmin +1440 -exec rm -f {} + 2>/dev/null
       # A lock older than a minute belongs to a dead run (the download itself is capped at 8 s).
-      if [ -d "$lock" ] && [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
-        rmdir "$lock" 2>/dev/null
+      # (A lock left as a directory by an older shim is cleaned up too.)
+      if [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
+        if [ -d "$lock" ]; then rmdir "$lock" 2>/dev/null; else rm -f "$lock"; fi
       fi
-      if ! mkdir "$lock" 2>/dev/null; then
+      # mkdir is not atomic in every coreutils (uutils on Ubuntu 26.04); a noclobber redirect is (O_EXCL).
+      # A lock left as a directory by an older shim, or the cmd half's lock directory, also makes it fail.
+      if ! (set -C; : > "$lock") 2>/dev/null; then
         nxy_skip "downloading its binary in another hook - this hook was skipped"; return 0
       fi
       ok=0
       if [ ! -f "$bin" ]; then
         nxy_fetch || ok=1
       fi
-      rm -f "$tmp" "$sums"; rmdir "$lock" 2>/dev/null
+      rm -f "$tmp" "$sums" "$lock"
       [ "$ok" = 0 ] || return 0
     fi
   fi
