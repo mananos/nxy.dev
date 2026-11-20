@@ -111,7 +111,7 @@ func runView(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	case "stats":
 		v, err = src.Stats(ctx, *session)
 	case "trend":
-		v, err = src.Trend(ctx)
+		v, err = src.Trend(ctx, time.Time{})
 	case "config":
 		v, err = src.Config(ctx)
 	}

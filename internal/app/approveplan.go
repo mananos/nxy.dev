@@ -98,6 +98,7 @@ func (h Hooks) preToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 	if ev.AgentID != "" {
 		return HookResponse{}
 	}
+	h.markBootstrapAsked(ctx, ev)
 	if !ev.InputHasAnswers && (h.Asks == nil || h.TUI == nil) {
 		return HookResponse{}
 	}

@@ -70,7 +70,7 @@ func TestBuildTrendDaysAndWeeksInLocalZone(t *testing.T) {
 	if tr.Weeks[0].Label != "21 sep" {
 		t.Errorf("first week %q", tr.Weeks[0].Label)
 	}
-	if len(tr.Models) != 2 || tr.Models[0].Model != "m1" || tr.Models[0].USD != 16 || tr.Models[0].Calls != 6 {
+	if len(tr.Models) != 2 || tr.Models[0].Model != "m2" || tr.Models[0].USD != 12 || tr.Models[0].Calls != 4 {
 		t.Errorf("models %+v", tr.Models)
 	}
 	if len(tr.Agents) != 2 || tr.Agents[0].Role != "planner" || tr.Agents[0].AvgMs != 1000 {
@@ -78,6 +78,17 @@ func TestBuildTrendDaysAndWeeksInLocalZone(t *testing.T) {
 	}
 	if a := tr.Agents[1]; a.Runs != 2 || a.AvgMs != 2000 || a.USD != 3 {
 		t.Errorf("implementer %+v", a)
+	}
+}
+
+func TestBuildTrendModelsOnlyInRange(t *testing.T) {
+	now := time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)
+	tr := BuildTrend(TrendIn{Now: now, Sessions: []report.TrendSession{
+		trendSession(now, 3, "in"),
+		trendSession(now.AddDate(0, 0, -20), 9, "out"),
+	}})
+	if len(tr.Models) != 1 || tr.Models[0].Model != "in" {
+		t.Fatalf("models %+v", tr.Models)
 	}
 }
 

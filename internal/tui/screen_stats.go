@@ -38,28 +38,88 @@ func (statsScreen) section() string            { return "gasto" }
 func (statsScreen) crumb(*state, route) string { return "Gasto" }
 
 // captures takes tab to go on to Tendencia; shift+tab goes to the previous section (Memoria).
-func (statsScreen) captures(_ *state, _ route, k string) bool { return k == "tab" }
+func (statsScreen) captures(st *state, _ route, k string) bool {
+	if k == "tab" {
+		return true
+	}
+	if !st.statsPick {
+		return false
+	}
+	switch k {
+	case "esc", "up", "k", "down", "j", "enter", "s":
+		return true
+	}
+	return false
+}
 
-func (statsScreen) keys(*state, route) []hint {
+func (statsScreen) keys(st *state, _ route) []hint {
+	if st.statsPick {
+		return []hint{{"↑↓", "mover"}, {"enter", "ver"}, {"esc", "cerrar"}}
+	}
 	return []hint{{"tab", "tendencia"}, {"s", "otra sesión"}}
 }
 
 func (statsScreen) key(st *state, _ route, k string) intent {
+	var others []views.SessionRef
+	if s := st.data.Stats; s != nil {
+		others = s.Sessions
+	}
+	if st.statsPick {
+		switch k {
+		case "esc", "s":
+			st.statsPick = false
+		case "up", "k":
+			st.statsCur = max(st.statsCur-1, 0)
+		case "down", "j":
+			st.statsCur = min(st.statsCur+1, len(others))
+		case "enter":
+			st.statsPick = false
+			id := ""
+			if st.statsCur > 0 && st.statsCur <= len(others) {
+				id = others[st.statsCur-1].ID
+			}
+			if id != st.statsSession {
+				st.statsSession = id
+				st.cmd = st.reload()
+			}
+		}
+		return intent{}
+	}
 	switch k {
 	case "tab":
 		return intent{section: "tendencia"}
 	case "s":
-		s := st.data.Stats
-		if s == nil || len(s.Sessions) == 0 {
-			return intent{toast: "No hay otras sesiones en el demo."}
+		if len(others) == 0 {
+			return intent{toast: "No hay otras sesiones en este repo."}
 		}
-		var p []string
-		for _, x := range s.Sessions {
-			p = append(p, fmt.Sprintf("%s %s", x.Label, costText(x.USD, false)))
+		st.statsPick, st.statsCur = true, 0
+		for i, x := range others {
+			if x.ID == st.statsSession {
+				st.statsCur = i + 1
+			}
 		}
-		return intent{toast: "sesiones · " + strings.Join(p, " · ") + " · el demo muestra una sola"}
 	}
 	return intent{}
+}
+
+// sessionPicker is the open list of sessions: the current one and the others, with the cursor row marked.
+func (st *state) sessionPicker(others []views.SessionRef, w int) []line {
+	row := func(i int, text, cost string) line {
+		mark, tk := "  ", tok("")
+		if i == st.statsCur {
+			mark, tk = "▸ ", tAc
+		}
+		return L(T(mark, tk), col(T(text, tk), max(w-24, 20)), rcol(T(cost, tMu), 10))
+	}
+	rows := []line{L(heading("Elegí una sesión")), row(0, "la última sesión", "")}
+	for i, x := range others {
+		date := x.StartedAt
+		if len(date) > 10 {
+			date = date[:10]
+		}
+		rows = append(rows, row(i+1, date+"  "+x.Label, costText(x.USD, false)))
+	}
+	return append(indent(block(rows, w-4, tBg1, 3), 2), nil)
 }
 
 // topModelShare is the name and share of the model that costs the most.
@@ -84,10 +144,13 @@ func tile(label, value, sub string, valueTok tok, w int) []line {
 func (statsScreen) view(st *state, _ route, w int) ([]line, int) {
 	s := st.data.Stats
 	if s == nil {
-		return st.missing("stats", "No hay una sesión para mostrar.", w), 0
+		return st.missing("stats", "Todavía no hay sesiones de Claude Code para mostrar.", w), 0
 	}
 	iw := w - 4 - 6
 	out := []line{nil, lr(statsNav("gasto"), L(T(path0(s.Project), tSb), "  "), w), nil}
+	if st.statsPick {
+		out = append(out, st.sessionPicker(s.Sessions, w)...)
+	}
 
 	share := ""
 	if name, pct := topModelShare(s); name != "" {

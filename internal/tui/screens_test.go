@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -78,6 +80,35 @@ func TestInicio(t *testing.T) {
 	}
 	if !strings.Contains(out, "3 activos · 1 huérfano") {
 		t.Error("no worktrees line")
+	}
+}
+
+func TestInicioEmpty(t *testing.T) {
+	const hint = "/nxy:feature"
+	text := func(st *state) string {
+		ls, _ := inicioScreen{}.view(st, route{screen: "inicio"}, 100)
+		var sb strings.Builder
+		for _, l := range ls {
+			for _, s := range l {
+				sb.WriteString(s.Text)
+			}
+			sb.WriteString("\n")
+		}
+		return sb.String()
+	}
+	st := newState(Options{Width: 100, Plain: true})
+	if out := text(st); strings.Contains(out, hint) {
+		t.Errorf("without Done there must be no hint:\n%s", out)
+	}
+	st.data.Loading["cockpit"] = true
+	if out := text(st); strings.Contains(out, hint) {
+		t.Errorf("loading must show the loading line, not the hint:\n%s", out)
+	}
+	delete(st.data.Loading, "cockpit")
+	st.data.Done["cockpit"] = true
+	out := text(st)
+	if !strings.Contains(out, "No hay features abiertas") || !strings.Contains(out, hint) || !strings.Contains(out, "/nxy:engineer") {
+		t.Errorf("loaded empty cockpit must say how to start one:\n%s", out)
 	}
 }
 
@@ -609,6 +640,20 @@ func TestMemoryScopes(t *testing.T) {
 	}
 }
 
+func TestMemoryOpenFileOfClosedFeature(t *testing.T) {
+	m := testModel(t)
+	closed := &memItem{scope: "zz-repo", kind: "closed", id: "F0", closed: &views.ClosedFeature{ID: "FEAT-X", Files: []string{"zz/none.go"}}}
+	in := m.st.memOpenFile(closed)
+	if in.push == nil || in.push.screen != "archivo" || in.push.key != "zz-repo/zz/none.go" || in.push.feature != "FEAT-X" {
+		t.Fatalf("closed feature should open its file: %+v", in)
+	}
+	loose := &memItem{scope: "zz-repo", kind: "learn", id: "A0", learn: &views.Learning{Files: []string{"zz/none.go"}}}
+	in = m.st.memOpenFile(loose)
+	if in.push != nil || !strings.Contains(in.toast, "zz/none.go no está en el plan de una feature abierta") || strings.Contains(strings.ToLower(in.toast), "demo") {
+		t.Fatalf("loose learning toast: %+v", in)
+	}
+}
+
 func TestMemorySearch(t *testing.T) {
 	m := inMemory(t)
 	press(m, "/", "d", "t", "o")
@@ -819,6 +864,115 @@ func TestStatsTab(t *testing.T) {
 	press(m, "shift+tab")
 	if m.st.top().screen != "gasto" {
 		t.Fatal("shift+tab in Tendencia should go back to the session")
+	}
+}
+
+// trendRec records the anchor each Trend call asks for.
+type trendRec struct {
+	views.Source
+	anchors []time.Time
+}
+
+func (r *trendRec) Trend(ctx context.Context, anchor time.Time) (views.Trend, error) {
+	r.anchors = append(r.anchors, anchor)
+	return r.Source.Trend(ctx, anchor)
+}
+
+func TestTrendPeriodKeys(t *testing.T) {
+	rec := &trendRec{Source: testSource(t)}
+	m := &model{st: newState(Options{Source: rec, Demo: true, Width: 100, Plain: true, eager: true})}
+	m.st.height = 40
+	m.st.stack = []route{{screen: "tendencia"}}
+	// last is the anchor the next cheap load asks for.
+	last := func() time.Time {
+		m.st.ld.cheap(m.st.cheapOpts())
+		return rec.anchors[len(rec.anchors)-1]
+	}
+	near := func(a time.Time, days int) bool {
+		d := time.Since(a) - time.Duration(days)*24*time.Hour
+		return d > -time.Minute && d < time.Minute
+	}
+	noToast := func() {
+		if strings.Contains(strings.ToLower(m.st.toast), "demo") {
+			t.Fatalf("toast mentions the demo: %q", m.st.toast)
+		}
+	}
+	if a := last(); !a.IsZero() {
+		t.Fatalf("anchor at start should be zero: %v", a)
+	}
+	press(m, "left")
+	noToast()
+	if m.st.trendBack != 1 || !near(last(), 7) {
+		t.Fatalf("left: back=%d anchor=%v", m.st.trendBack, rec.anchors[len(rec.anchors)-1])
+	}
+	press(m, "enter") // by week: the step is 8 weeks
+	if !near(last(), 56) {
+		t.Fatalf("week anchor: %v", rec.anchors[len(rec.anchors)-1])
+	}
+	press(m, "enter", "enter", "enter") // back to day
+	press(m, "right")
+	if m.st.trendBack != 0 || !last().IsZero() {
+		t.Fatalf("right: back=%d", m.st.trendBack)
+	}
+	press(m, "right")
+	if m.st.trendBack != 0 {
+		t.Fatalf("right below zero: %d", m.st.trendBack)
+	}
+	for i := 0; i < 13; i++ {
+		press(m, "left")
+	}
+	if m.st.trendBack != 12 || !near(last(), 84) {
+		t.Fatalf("limit: back=%d", m.st.trendBack)
+	}
+	press(m, "tab")
+	if m.st.top().screen == "tendencia" || m.st.trendBack != 0 || !last().IsZero() {
+		t.Fatalf("leaving should reset: screen=%s back=%d", m.st.top().screen, m.st.trendBack)
+	}
+	noToast()
+}
+
+// statsRec records the session each Stats call asks for.
+type statsRec struct {
+	views.Source
+	ids []string
+}
+
+func (r *statsRec) Stats(ctx context.Context, id string) (views.Stats, error) {
+	r.ids = append(r.ids, id)
+	return r.Source.Stats(ctx, id)
+}
+
+func TestStatsPickSession(t *testing.T) {
+	rec := &statsRec{Source: testSource(t)}
+	m := &model{st: newState(Options{Source: rec, Demo: true, Width: 100, Plain: true, eager: true})}
+	m.st.height = 40
+	m.st.stack = []route{{screen: "gasto"}}
+	want := m.st.data.Stats.Sessions[0]
+
+	press(m, "s")
+	if !strings.Contains(m.st.frame(true), want.Label) {
+		t.Fatalf("s did not open the list:\n%s", m.st.frame(true))
+	}
+	press(m, "down", "enter")
+	if m.st.statsPick || !m.st.cheapBusy {
+		t.Fatalf("enter should close the list and reload: pick=%v busy=%v", m.st.statsPick, m.st.cheapBusy)
+	}
+	m.st.cheapBusy = false
+	m.st.onLoad(m.st.cheapCmd()().(cheapMsg))
+	if got := rec.ids[len(rec.ids)-1]; got != want.ID {
+		t.Fatalf("Stats asked for %q, want %q", got, want.ID)
+	}
+	m.st.cheapBusy = false
+	m.st.onLoad(m.st.cheapCmd()().(cheapMsg)) // a refresh keeps it
+	if got := rec.ids[len(rec.ids)-1]; got != want.ID {
+		t.Fatalf("refresh asked for %q, want %q", got, want.ID)
+	}
+	press(m, "s", "esc")
+	if m.st.statsPick || m.st.statsSession != want.ID {
+		t.Fatalf("esc should only close the list: pick=%v session=%q", m.st.statsPick, m.st.statsSession)
+	}
+	if strings.Contains(strings.ToLower(m.st.toast), "demo") {
+		t.Fatalf("toast mentions the demo: %q", m.st.toast)
 	}
 }
 

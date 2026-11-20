@@ -57,11 +57,21 @@ func (u Usage) Trend(args []string) report.Output {
 }
 
 // TrendSessions are the sessions of the days since (nil is all), per session as `nxy trend` counts
-// them; here limits them to the project of cwd.
-func (u Usage) TrendSessions(since *int64, here bool, cwd string) []report.TrendSession {
+// them; here limits them to the project of cwd. until (nil is no bound) drops the sessions that
+// started after it.
+func (u Usage) TrendSessions(since, until *int64, here bool, cwd string) []report.TrendSession {
 	d := report.TrendData{Since: since, By: "day", Here: here, Cwd: cwd, Settings: report.SettingsFrom(u.Config(cwd)), Loc: u.Loc}
 	u.readTrend(&d, cwd, since)
-	return d.Sessions
+	if until == nil {
+		return d.Sessions
+	}
+	kept := d.Sessions[:0]
+	for _, s := range d.Sessions {
+		if s.Ts <= float64(*until) {
+			kept = append(kept, s)
+		}
+	}
+	return kept
 }
 
 // readTrend lists the sessions in range and fills d (sessions, or agent runs for by agent, and

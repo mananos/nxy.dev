@@ -10,7 +10,7 @@ import (
 )
 
 // BootstrapState is the bootstrap of one repo (local, never exported). Status is "", "scouting",
-// "confirming" or "done".
+// "confirming", "asked" or "done".
 type BootstrapState struct {
 	Repo            string
 	OfferedAt       int64

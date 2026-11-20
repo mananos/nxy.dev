@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -104,6 +105,39 @@ func TestTuiWhere(t *testing.T) {
 	out.Reset()
 	if code := run([]string{"tui", "where"}, strings.NewReader(""), &out, &errb); code != 0 || !strings.Contains(out.String(), "  nxy tui") || strings.Contains(out.String(), "PowerShell") {
 		t.Fatalf("with nxy in the PATH (%d):\n%s", code, out.String())
+	}
+}
+
+func TestNxyOnPathSkipsPluginBin(t *testing.T) {
+	root := t.TempDir()
+	goos, name := runtime.GOOS, "nxy"
+	if goos == "windows" {
+		name = "nxy.exe"
+	}
+	mk := func(dir string) string {
+		d := filepath.Join(root, filepath.FromSlash(dir))
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(d, name), []byte("x"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	plugin := mk(".claude/plugins/x/bin")
+	other := mk("pluginroot/bin")
+	user := mk("user/bin")
+	sep := string(os.PathListSeparator)
+
+	if got := lookNxy(plugin, "", "", goos); got != "" {
+		t.Errorf("plugin bin only: got %q", got)
+	}
+	if got := lookNxy(other, "", filepath.Join(root, "pluginroot"), goos); got != "" {
+		t.Errorf("CLAUDE_PLUGIN_ROOT/bin only: got %q", got)
+	}
+	want := filepath.Join(user, name)
+	if got := lookNxy(plugin+sep+other+sep+user, "", filepath.Join(root, "pluginroot"), goos); got != want {
+		t.Errorf("with a user dir: got %q, want %q", got, want)
 	}
 }
 

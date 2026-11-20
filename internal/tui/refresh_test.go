@@ -35,7 +35,7 @@ func fakeWatch(context.Context) (int64, int, error) { return 1, 1, nil }
 func liveModel(t *testing.T, src views.Source, schema int) *model {
 	t.Helper()
 	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true, Watch: fakeWatch, Schema: schema})
-	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
 	return &model{st: st}
 }
 
@@ -140,7 +140,7 @@ func TestRefreshForgetsFarViews(t *testing.T) {
 func TestRefreshBaseVersion(t *testing.T) {
 	src := newLiveSource(t)
 	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true, Watch: fakeWatch, Schema: 5, Ver: 1, HaveVer: true})
-	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
 	m := &model{st: st}
 	_, cmd := m.Update(pollMsg{ver: 2, schema: 1})
 	if !hasCheap(collect(cmd)) {
@@ -162,7 +162,7 @@ func TestCursorFollowsID(t *testing.T) {
 	want := order[st.cursor(r)].ID
 
 	src.cockpit.Features = append([]views.CockpitFeature{newNeedsYou("NEWX")}, src.cockpit.Features...)
-	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
 
 	order = inicioOrder(st.data.Cockpit)
 	if got := order[min(st.cursor(r), len(order)-1)].ID; got != want {

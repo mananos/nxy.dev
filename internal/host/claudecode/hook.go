@@ -32,6 +32,7 @@ type hookInput struct {
 	ToolResponse   json.RawMessage `json:"tool_response"`
 	PermissionMode string          `json:"permission_mode"`
 
+	StopHookActive       bool   `json:"stop_hook_active"`
 	LastAssistantMessage string `json:"last_assistant_message"`
 	AgentTranscriptPath  string `json:"agent_transcript_path"`
 }
@@ -61,6 +62,8 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		Reason:         in.Reason,
 		ToolUseID:      in.ToolUseID,
 		PermissionMode: in.PermissionMode,
+
+		StopHookActive: in.StopHookActive,
 	}
 	var ti struct {
 		Command      json.RawMessage `json:"command"`
@@ -179,9 +182,12 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 		}}
 	case resp.Rewrite != nil:
 		return encodeRewrite(w, ev, resp)
-	case ev.Name == "PreToolUse" && (resp.Prompt != "" || resp.Model != "" || resp.Effort != ""):
+	case ev.Name == "PreToolUse" && (resp.Prompt != "" || resp.Model != "" || resp.Effort != "" || resp.Foreground):
 		fields := map[string]json.RawMessage{}
 		_ = json.Unmarshal(ev.ToolInput, &fields)
+		if resp.Foreground {
+			fields["run_in_background"] = json.RawMessage("false")
+		}
 		for key, val := range map[string]string{"prompt": resp.Prompt, "model": resp.Model, "effort": resp.Effort} {
 			if val == "" {
 				continue
@@ -193,7 +199,9 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			fields[key] = b
 		}
 		reason := "nxy: prompt written by nxy"
-		if resp.Prompt == "" {
+		if resp.Prompt == "" && resp.Model == "" && resp.Effort == "" {
+			reason = "nxy: foreground"
+		} else if resp.Prompt == "" {
 			var set []string
 			if resp.Model != "" {
 				set = append(set, "model")
@@ -211,6 +219,8 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 		}}
 	case ev.Name == "Stop" && resp.Block != "":
 		out = map[string]any{"decision": "block", "reason": resp.Block}
+	case ev.Name == "Stop" && resp.Ask != nil && resp.Next == nil:
+		out = map[string]any{"decision": "block", "reason": askInstruction(*resp.Ask)}
 	case ev.Name == "Stop" && resp.Next != nil:
 		out = map[string]any{"decision": "block", "reason": StopInstruction(resp.Next.Feature, resp.Next.Note, resp.Next.Exe)}
 	case ev.Name != "PreToolUse" && (resp.Next != nil || resp.Notice != "" || resp.Context != "" || resp.Ask != nil):
@@ -359,8 +369,22 @@ func encodeRewrite(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 func stringAnswers(m map[string]any) map[string]string {
 	out := map[string]string{}
 	for k, v := range m {
-		if s, ok := v.(string); ok {
-			out[k] = s
+		switch x := v.(type) {
+		case string:
+			out[k] = x
+		case []any:
+			var parts []string
+			for _, e := range x {
+				s, ok := e.(string)
+				if !ok {
+					parts = nil
+					break
+				}
+				parts = append(parts, s)
+			}
+			if len(parts) > 0 {
+				out[k] = strings.Join(parts, ", ")
+			}
 		}
 	}
 	return out

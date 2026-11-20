@@ -110,6 +110,30 @@ func TestDecodeProjectDir(t *testing.T) {
 	}
 }
 
+func TestEncodeAgentForeground(t *testing.T) {
+	ev := app.HookEvent{Name: "PreToolUse", Subagent: "nxy:scout", ToolInput: []byte(`{"subagent_type":"nxy:scout","prompt":"nxy bootstrap","run_in_background":true}`)}
+	var b bytes.Buffer
+	if err := Encode(&b, ev, app.HookResponse{Prompt: "new prompt", Foreground: true}); err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		H struct {
+			Updated map[string]any `json:"updatedInput"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal(b.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	u := got.H.Updated
+	if u["run_in_background"] != false || u["prompt"] != "new prompt" || u["subagent_type"] != "nxy:scout" {
+		t.Errorf("updatedInput: %v", u)
+	}
+	b.Reset()
+	if err := Encode(&b, ev, app.HookResponse{Foreground: true}); err != nil || !strings.Contains(b.String(), `"run_in_background":false`) {
+		t.Errorf("foreground alone: %s %v", b.String(), err)
+	}
+}
+
 func TestEncodeKeepsToolInput(t *testing.T) {
 	ev := app.HookEvent{ToolInput: []byte(`{"command":"a","description":"d","timeout":5,"run_in_background":true}`)}
 	var b bytes.Buffer

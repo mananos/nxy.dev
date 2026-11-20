@@ -90,7 +90,8 @@ nxy también cuesta algo, y es mejor que lo sepas:
 - **`/nxy:trend [--since <período>] [--by day|week|session|model|agent] [--here] [--json]`**: por defecto, los últimos 30 días agrupados por día. El período es `7d`, `24h`, `30m` o una fecha ISO. `--here` limita a este proyecto. `--by agent` te dice cuánto y cuándo gasta cada rol.
 - **`/nxy:statusline install`** la instala (ver [Instalación](instalacion.md)); sin argumentos sólo muestra el bloque y si ya está instalada; `remove` la saca, y sólo si es la de nxy.
 - **`nxy config cache-ttl 1h`** escribe `promptCacheTtl` en `~/.claude/settings.json` (con un backup al lado) cuando el informe dice que conviene; `nxy config cache-ttl off` lo quita. Claude Code lo toma en la próxima sesión.
-- **En la TUI:** pestaña Gasto → `tab` pasa a Tendencia, `enter` ahí cambia el agrupado (día, semana, modelo, agente), `shift+tab` vuelve a la sesión y `s` lista las otras sesiones con su costo ([La TUI](tui.md)).
+- **Fuera de un repo**, Gasto muestra la última sesión de cualquier proyecto; si no hay ninguna, dice que todavía no hay sesiones de Claude Code.
+- **En la TUI:** pestaña Gasto → `tab` pasa a Tendencia, `enter` ahí cambia el agrupado (día, semana, modelo, agente), `←` y `→` cambian el período, `shift+tab` vuelve a la sesión y `s` abre la lista de sesiones (con fecha y costo) y `enter` muestra la elegida ([La TUI](tui.md)).
 
 La statusline la dibuja `nxy statusline`, el mismo binario: lee sólo lo nuevo del transcript en cada refresco. Si algo falla, imprime `nxy ?`; con `NXY_DEBUG=1` ves la causa por stderr.
 

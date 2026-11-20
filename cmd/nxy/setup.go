@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -139,12 +138,59 @@ func runSetup(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 }
 
 // nxyOnPath is where `nxy` resolves in the PATH of this process ("" when it does not).
+// The bin dirs of Claude Code plugins do not count: Claude Code adds them to the PATH itself.
 var nxyOnPath = func() string {
-	p, err := exec.LookPath("nxy")
-	if err != nil {
-		return ""
+	return lookNxy(os.Getenv("PATH"), os.Getenv("PATHEXT"), os.Getenv("CLAUDE_PLUGIN_ROOT"), runtime.GOOS)
+}
+
+// lookNxy resolves `nxy` in pathEnv, skipping pluginRoot/bin and any dir under .claude/plugins.
+func lookNxy(pathEnv, pathExt, pluginRoot, goos string) string {
+	win := goos == "windows"
+	norm := func(s string) string {
+		s = strings.ReplaceAll(s, "\\", "/")
+		s = strings.TrimRight(s, "/")
+		if win {
+			s = strings.ToLower(s)
+		}
+		return s
 	}
-	return p
+	skipBin := ""
+	if pluginRoot != "" {
+		skipBin = norm(pluginRoot + "/bin")
+	}
+	exts := []string{""}
+	if win {
+		exts = nil
+		if pathExt == "" {
+			pathExt = ".COM;.EXE;.BAT;.CMD"
+		}
+		for _, e := range strings.Split(pathExt, ";") {
+			if e != "" {
+				exts = append(exts, strings.ToLower(e))
+			}
+		}
+	}
+	for _, dir := range filepath.SplitList(pathEnv) {
+		if dir == "" {
+			continue
+		}
+		n := norm(dir)
+		if (skipBin != "" && n == skipBin) || strings.Contains(n+"/", "/.claude/plugins/") {
+			continue
+		}
+		for _, e := range exts {
+			p := filepath.Join(dir, "nxy"+e)
+			fi, err := os.Stat(p)
+			if err != nil || fi.IsDir() {
+				continue
+			}
+			if !win && fi.Mode()&0o111 == 0 {
+				continue
+			}
+			return p
+		}
+	}
+	return ""
 }
 
 // nxyPathPlan is the plan that makes `nxy` resolvable, over the stable shim.

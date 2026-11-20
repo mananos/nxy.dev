@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/mananos/nxy.dev/v2/internal/format"
 	"github.com/mananos/nxy.dev/v2/internal/views"
@@ -22,6 +23,21 @@ func (trendScreen) keys(*state, route) []hint {
 	return []hint{{"tab", "config"}, {"shift+tab", "sesión"}, {"enter", "cambiar agrupado"}, {"←→", "período"}}
 }
 
+// trendMaxBack is how many periods back the window can go.
+const trendMaxBack = 12
+
+// trendAnchor is the end of the window Tendencia asks for: zero is now.
+func (st *state) trendAnchor() time.Time {
+	if st.trendBack == 0 {
+		return time.Time{}
+	}
+	days := 7
+	if st.trendGroup(route{screen: "tendencia"}) == 1 {
+		days = 56
+	}
+	return time.Now().AddDate(0, 0, -st.trendBack*days)
+}
+
 // trendGroups are the groupings of the first block, in the order enter cycles them.
 var trendGroups = []string{"día", "semana", "modelo", "agente"}
 
@@ -33,12 +49,19 @@ func (trendScreen) key(st *state, r route, k string) intent {
 		return intent{section: "gasto"}
 	case "enter":
 		st.cur[r.ckey()+"#g"] = (st.trendGroup(r) + 1) % len(trendGroups)
-	case "left", "right", "h", "l":
-		t := st.data.Trend
-		if t == nil {
-			return intent{}
+		if st.trendBack > 0 { // the step changes with the grouping
+			st.cmd = st.reload()
 		}
-		return intent{toast: fmt.Sprintf("el demo tiene un solo período (%s a %s)", t.Range.Since, t.Range.Until)}
+	case "left", "h":
+		if st.trendBack < trendMaxBack {
+			st.trendBack++
+			st.cmd = st.reload()
+		}
+	case "right", "l":
+		if st.trendBack > 0 {
+			st.trendBack--
+			st.cmd = st.reload()
+		}
 	}
 	return intent{}
 }
@@ -109,11 +132,15 @@ func (trendScreen) view(st *state, r route, w int) ([]line, int) {
 
 	var rows []trendRow
 	title := "Últimos 7 días"
+	back := st.trendBack > 0
+	if back {
+		title = "7 días hasta " + t.Range.Until
+	}
 	right := L(T("total ", tSb), B(costText(t.Totals.USD, false), ""), T(fmt.Sprintf("  ·  %d sesiones", t.Totals.Sessions), tSb))
 	period := func(src []views.PeriodRow) {
 		for i, p := range src {
 			row := trendRow{label: p.Label, count: fmt.Sprintf("%d ses", p.Sessions), extra: fmt.Sprintf("%.0f %%", p.CacheHitPct), usd: p.USD}
-			if i == len(src)-1 {
+			if i == len(src)-1 && !back {
 				row.now = "hoy"
 				if g == 1 {
 					row.now = "ahora"
@@ -127,6 +154,9 @@ func (trendScreen) view(st *state, r route, w int) ([]line, int) {
 		period(t.Days)
 	case 1:
 		title = "Últimas 8 semanas"
+		if back {
+			title = "8 semanas hasta " + t.Range.Until
+		}
 		var sum float64
 		var ses int
 		for _, p := range t.Weeks {

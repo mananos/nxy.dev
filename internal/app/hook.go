@@ -57,6 +57,8 @@ type HookEvent struct {
 	Answers map[string]string
 	// AgentAsync is true on PostToolUse Agent/Task when the agent was launched in the background.
 	AgentAsync bool
+	// StopHookActive is Stop's stop_hook_active: a Stop hook already kept the model going this turn.
+	StopHookActive bool
 	// AsyncAgentID is the agentId of the background agent in that tool_response, when it carries one.
 	AsyncAgentID string
 	// Reason is SessionEnd's reason (clear, logout, other...).
@@ -109,6 +111,8 @@ type HookResponse struct {
 	// Model and Effort set tool_input.model / effort (PreToolUse Agent) from the config's role table.
 	Model  string
 	Effort string
+	// Foreground sets run_in_background to false (PreToolUse Agent).
+	Foreground bool
 	// Next is the instruction for the main thread.
 	Next *Next
 	// Notice is shown to the user.
@@ -256,6 +260,18 @@ func (h Hooks) askedByNxy(ctx context.Context, ev HookEvent) bool {
 	return false
 }
 
+// handlePrompt is the UserPromptSubmit flow once the bootstrap's typed answer is ruled out.
+func (h Hooks) handlePrompt(ctx context.Context, ev HookEvent) HookResponse {
+	if r, ok := h.firstPromptNotes(ctx, ev); ok {
+		return r
+	}
+	if r, ok := h.changeNote(ctx, ev); ok {
+		return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
+	}
+	h.designRef(ctx, ev)
+	return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, h.startFeature(ctx, ev)))
+}
+
 func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 	switch {
 	case ev.Name == "PreToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
@@ -273,14 +289,18 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		return h.deliverPending(ctx, ev, h.postToolAgent(ctx, ev))
 	case ev.Name == "UserPromptSubmit":
-		if r, ok := h.firstPromptNotes(ctx, ev); ok {
+		r, ok, again := h.bootstrapTextAnswer(ctx, ev)
+		if ok {
 			return r
 		}
-		if r, ok := h.changeNote(ctx, ev); ok {
-			return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
+		if again != nil {
+			r := h.handlePrompt(ctx, ev)
+			if r.Ask == nil {
+				r.Ask = again.Ask
+			}
+			return r
 		}
-		h.designRef(ctx, ev)
-		return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, h.startFeature(ctx, ev)))
+		return h.handlePrompt(ctx, ev)
 	case ev.Name == "PreToolUse" && ev.Tool == toolAskUser:
 		return h.preToolAskUser(ctx, ev)
 	case ev.Name == "PostToolUse" && ev.Tool == toolAskUser:
@@ -295,6 +315,14 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		return h.subagentStop(ctx, ev)
 	case ev.Name == "Stop":
 		r := h.deliverPending(ctx, ev, HookResponse{})
+		if r.Next == nil && ev.AgentID == "" && !ev.StopHookActive && h.Bootstrap != nil && h.Repos != nil {
+			_, repo := h.bootstrapRepo(ev)
+			if st, ok, err := h.Bootstrap.Bootstrap(ctx, repo); err == nil && ok && st.Status == bootstrapConfirming {
+				if a, ok := bootstrapAsk(st); ok {
+					return a
+				}
+			}
+		}
 		if r.Next == nil {
 			if n, ok := h.stopNote(ctx, ev); ok {
 				return n

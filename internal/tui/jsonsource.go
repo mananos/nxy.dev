@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mananos/nxy.dev/v2/internal/views"
 )
@@ -126,7 +127,7 @@ func (s *jsonSource) Stats(context.Context, string) (views.Stats, error) {
 	return *s.d.Stats, nil
 }
 
-func (s *jsonSource) Trend(context.Context) (views.Trend, error) {
+func (s *jsonSource) Trend(context.Context, time.Time) (views.Trend, error) {
 	if s.d.Trend == nil {
 		return views.Trend{}, errNoView
 	}

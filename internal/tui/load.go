@@ -2,9 +2,11 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -41,12 +43,22 @@ func (r *result) fail(key string, err error) {
 	r.d.Errs[key] = err
 }
 
+// cheapOpts is what the user chose that the cheap load must keep: the session Gasto shows.
+type cheapOpts struct {
+	session string
+	anchor  time.Time // Tendencia: the end of the window (zero is now)
+}
+
+func (st *state) cheapOpts() cheapOpts {
+	return cheapOpts{session: st.statsSession, anchor: st.trendAnchor()}
+}
+
 type cheapMsg struct{ r *result }
 type topMsg struct{ r *result }
 
 // cheap loads what every screen shares: the cockpit, the questions, the memory, the spend and the
 // config.
-func (l *loader) cheap() *result {
+func (l *loader) cheap(opts cheapOpts) *result {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	ctx, r := l.ctx, newResult()
@@ -100,13 +112,15 @@ func (l *loader) cheap() *result {
 	}
 
 	r.keys = append(r.keys, "stats")
-	if s, err := l.src.Stats(ctx, ""); err != nil {
+	if s, err := l.src.Stats(ctx, opts.session); errors.Is(err, views.ErrNoSession) {
+		r.d.Stats = nil
+	} else if err != nil {
 		r.fail("stats", err)
 	} else {
 		r.d.Stats = &s
 	}
 	r.keys = append(r.keys, "trend")
-	if t, err := l.src.Trend(ctx); err != nil {
+	if t, err := l.src.Trend(ctx, opts.anchor); err != nil {
 		r.fail("trend", err)
 	} else {
 		r.d.Trend = &t
@@ -315,8 +329,8 @@ func (st *state) cheapCmd() tea.Cmd {
 	}
 	st.cheapBusy = true
 	st.data.Loading["cockpit"] = true
-	l := st.ld
-	return func() tea.Msg { return cheapMsg{r: l.cheap()} }
+	l, o := st.ld, st.cheapOpts()
+	return func() tea.Msg { return cheapMsg{r: l.cheap(o)} }
 }
 
 // onLoad applies what a load brought.
@@ -339,7 +353,7 @@ func (st *state) loadAll() {
 	if st.ld == nil {
 		return
 	}
-	st.onLoad(cheapMsg{r: st.ld.cheap()})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
 	if js, ok := st.ld.src.(*jsonSource); ok {
 		for k, f := range js.d.Files {
 			st.data.Files[k] = f

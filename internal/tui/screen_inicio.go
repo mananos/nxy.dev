@@ -226,6 +226,8 @@ func (inicioScreen) view(st *state, r route, w int) ([]line, int) {
 	}
 	if len(c.Features) == 0 && (st.data.Errs["cockpit"] != nil || st.data.Loading["cockpit"]) {
 		out = append(out, st.missing("cockpit", "", w)[1:]...)
+	} else if len(c.Features) == 0 && st.data.Done["cockpit"] {
+		out = append(out, L(" ", T("No hay features abiertas. En Claude Code: /nxy:feature <lo que querés hacer> (o /nxy:engineer)", tMu)))
 	}
 	if wl := worktreeLine(c); wl != nil {
 		out = append(out, nil, wl)

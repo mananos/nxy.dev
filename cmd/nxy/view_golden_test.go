@@ -409,7 +409,7 @@ func TestViewGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	check("stats", "stats", stats)
-	trend, err := src.Trend(ctx)
+	trend, err := src.Trend(ctx, time.Time{})
 	if err != nil {
 		t.Fatal(err)
 	}

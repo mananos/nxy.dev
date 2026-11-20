@@ -190,7 +190,8 @@ type Sessions interface {
 }
 
 // BootstrapState is the bootstrap of the first rules of a repo: status is "", "scouting",
-// "confirming" or "done"; the pending request waits for it to finish.
+// "confirming", "asked" (the candidates' question is on screen) or "done"; the pending request
+// waits for it to finish.
 type BootstrapState struct {
 	Repo            string
 	OfferedAt       int64

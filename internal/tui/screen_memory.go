@@ -823,7 +823,8 @@ func (st *state) memTarget(target, scope string) {
 	}
 }
 
-// memOpenFile opens the first file of the item that has a view; the demo has few.
+// memOpenFile opens the first file of the item that has a view. A closed feature opens its
+// files under its own id (the loader brings them); a learning needs an open feature that touches it.
 func (st *state) memOpenFile(it *memItem) intent {
 	var files []string
 	switch it.kind {
@@ -836,6 +837,9 @@ func (st *state) memOpenFile(it *memItem) intent {
 	}
 	for _, f := range files {
 		key := it.scope + "/" + f
+		if it.kind == "closed" {
+			return intent{push: &route{screen: "archivo", key: key, feature: it.closed.ID}}
+		}
 		_, loaded := st.data.Files[key]
 		if feat := st.featureOfFile(key); loaded || feat != "" {
 			return intent{push: &route{screen: "archivo", key: key, feature: feat}}
@@ -844,5 +848,5 @@ func (st *state) memOpenFile(it *memItem) intent {
 	if len(files) == 0 {
 		return intent{}
 	}
-	return intent{toast: "Sin view de " + files[0] + " en el demo."}
+	return intent{toast: files[0] + " no está en el plan de una feature abierta"}
 }
