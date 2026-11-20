@@ -1,0 +1,35 @@
+version: 2
+
+project_name: nxy
+
+builds:
+  - id: nxy
+    main: ./cmd/nxy
+    binary: nxy
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/mananos/nxy.dev/v2/internal/version.Version={{.Version}}
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+
+# Raw binaries named exactly as the shim (bin/nxy.cmd) downloads them:
+# nxy_<version>_<os>_<arch>[.exe]
+archives:
+  - formats: [binary]
+    name_template: "nxy_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+release:
+  github:
+    owner: mananos
+    name: nxy.dev
+  prerelease: auto
+
+changelog:
+  disable: true

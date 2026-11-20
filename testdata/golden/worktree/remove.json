@@ -1,0 +1,5 @@
+[
+{"name":"remove:000","input":{"path":"/r.worktrees/x","force":false},"output":{"argv":["git","worktree","remove","/r.worktrees/x"]}},
+{"name":"remove:001","input":{"path":"/r.worktrees/x","force":true},"output":{"argv":["git","worktree","remove","--force","/r.worktrees/x"]}},
+{"name":"remove:002","input":{"path":"C:/work/dev/repo.worktrees/my feature","force":true},"output":{"argv":["git","worktree","remove","--force","C:/work/dev/repo.worktrees/my feature"]}}
+]

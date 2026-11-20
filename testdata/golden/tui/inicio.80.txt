@@ -1,0 +1,18 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+
+ ▌TE NECESITA  2
+  ›   TE NECESITA    Notas de crédito en facturación   FE… 21h 00m    $0.46   
+                     Te necesita: decidir, el lot… ━━━━━━━━━───  lote 3/4     
+
+      TE NECESITA    Migrar pagos a la API v3   FEAT-D      1d 22h    $0.00   
+                     Te necesita: aprobar plan     ────────────  plan         
+
+ ▌EN CURSO  1
+      TRABAJANDO     Exportar facturas a CSV   FEAT-B       3h 00m    $0.18   
+                     Esperando lotes 2 y 3         ━━━━━━──────  lote 2/4     
+
+ ▌LISTO HOY  1
+      LISTO          Corregir el redondeo de IVA   FEAT-C · hace 7h   $0.03   
+
+  worktrees  1 pausado · 1 huérfano   w ver todos
+  ↑↓  mover     enter  abrir     d  decidir     tab  sección     ?  ayuda       

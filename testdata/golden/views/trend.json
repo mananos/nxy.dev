@@ -1,0 +1,195 @@
+{
+  "scope": "global",
+  "range": {
+    "since": "2026-11-05",
+    "until": "2026-11-11"
+  },
+  "totals": {
+    "sessions": 2,
+    "turns": 4,
+    "tokens": 122150,
+    "usd": 0.15471000000000001
+  },
+  "days": [
+    {
+      "label": "jue 05",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "vie 06",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "sáb 07",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "dom 08",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "lun 09",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "mar 10",
+      "sessions": 1,
+      "turns": 2,
+      "tokens": 61700,
+      "usd": 0.07575,
+      "cache_hit_pct": 85.85858585858585
+    },
+    {
+      "label": "mié 11",
+      "sessions": 1,
+      "turns": 2,
+      "tokens": 60450,
+      "usd": 0.07896,
+      "cache_hit_pct": 85.21739130434783
+    }
+  ],
+  "weeks": [
+    {
+      "label": "21 sep",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "28 sep",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "05 oct",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "12 oct",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "19 oct",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "26 oct",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "02 nov",
+      "sessions": 0,
+      "turns": 0,
+      "tokens": 0,
+      "usd": 0,
+      "cache_hit_pct": 0
+    },
+    {
+      "label": "09 nov",
+      "sessions": 2,
+      "turns": 4,
+      "tokens": 122150,
+      "usd": 0.15471000000000001,
+      "cache_hit_pct": 85.5431993156544
+    }
+  ],
+  "models": [
+    {
+      "model": "claude-sonnet-4-6",
+      "calls": 10,
+      "usage": {
+        "input": 14200,
+        "cacheWrite5m": 1800,
+        "cacheWrite1h": 0,
+        "cacheRead": 98000,
+        "output": 5050,
+        "thinking": 0
+      },
+      "usd": 0.1545,
+      "cache_hit_pct": 85.96491228070175,
+      "estimated": false
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "calls": 1,
+      "usage": {
+        "input": 900,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 2000,
+        "output": 200,
+        "thinking": 0
+      },
+      "usd": 0.00021,
+      "cache_hit_pct": 68.96551724137932,
+      "estimated": false
+    }
+  ],
+  "agents": [
+    {
+      "role": "implementer",
+      "runs": 4,
+      "avg_ms": 1650000,
+      "usd": 0.43
+    },
+    {
+      "role": "planner",
+      "runs": 2,
+      "avg_ms": 390000,
+      "usd": 0.09
+    },
+    {
+      "role": "fixer",
+      "runs": 1,
+      "avg_ms": 600000,
+      "usd": 0.05
+    },
+    {
+      "role": "scout",
+      "runs": 1,
+      "avg_ms": 180000,
+      "usd": 0.004
+    }
+  ]
+}

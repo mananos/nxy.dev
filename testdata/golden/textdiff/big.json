@@ -1,0 +1,4 @@
+[
+{"name":"big:000","input":{"beforePrefix":"old line ","afterPrefix":"new line ","n":2001,"m":2001},"output":{"added":2001,"removed":2001,"ranges":[[1,2001]],"textLen":57859,"textSha256":"1b1680be9a0bc4d86f9364dd7fa138b8a57c17c1503262ec6d539fcc14c557f5"}},
+{"name":"big:001","input":{"beforePrefix":"same ","afterPrefix":"same ","n":2001,"m":1999},"output":{"added":0,"removed":2,"ranges":[[1997,1999]],"textLen":104,"textSha256":"ab6717b278cae03ca368266c49a71e3648bf43c9664efdd498126d3fa84b54fa"}}
+]

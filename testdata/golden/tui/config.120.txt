@@ -1,0 +1,24 @@
+   nxy      Inicio    Memoria    Gasto   ›Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
+
+   usuario   /srv/dev/nxyhome/config.json       repo   /srv/dev/app/.nxy/config.json                      gana el repo  
+
+    ▌ROLES                                                                 se aplica al próximo agente que se lance   
+     Etapa        Rol             Qué hace                                                 Modelo  Effort  Origen     
+  ›  Planificar   planner         Lee el repo y escribe el plan con sus lotes y pruebas                    default    
+                  scout           Explora el repo con búsquedas baratas para el planner                    default    
+     Implementar  implementer     Escribe el código de un lote hasta que su prueba pasa                    default    
+     Revisar      reviewer        Revisa el diff completo con lentes y marca hallazgos     opus    medium  repo       
+                  reviewer-quick  Revisión corta para cambios chicos                                       default    
+                  refuter         Intenta refutar cada hallazgo antes de que te lo muestre                 default    
+     Documentar   documenter      Actualiza la documentación de lo que cambió                              default    
+
+    ▌MÓDULOS                                                   ▌HERRAMIENTAS                                          
+       Filtro de salida                               sí          ✓ rtk                                      0.39.0   
+       Motor del filtro                             auto          ✓ rg                                       14.1.0   
+                                                                  ○ codegraph                no está    i  instalar   
+                                                                  ○ d2                       no está    i  instalar   
+                                                                  ○ nxy en el PATH           no está    i  instalar   
+
+       Statusline   ○ no instalada                      i  instalar · cambia /srv/dev/userdir/.claude/settings.json   
+       Binario      2.0.0-dev                                                                                         
+  ↑↓  fila     e  modelo     f  effort     r  guardar en el repo     i  instalar     c  copiar     ?  ayuda             

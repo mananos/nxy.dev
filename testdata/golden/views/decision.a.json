@@ -1,0 +1,97 @@
+{
+  "id": "FEAT-A:batch_failed:1",
+  "feature_id": "FEAT-A",
+  "repo": "/srv/dev/app",
+  "kind": "batch_failed",
+  "title": "Lote 3 fallido",
+  "body": [
+    "--- FAIL: TestEndpoint (0.01s)",
+    "    endpoint_test.go:42: want 100.00, got 99.99",
+    "FAIL",
+    "FAIL\tacme/billing\t0.012s"
+  ],
+  "header": "Lote",
+  "question": "nxy feature FEAT-A: el lote 3 falló dos veces — ¿qué hacemos?",
+  "context": [],
+  "multi_select": false,
+  "asked_at": "2026-11-11T11:00:00Z",
+  "fork": null,
+  "ask_id": "ASK-A",
+  "release": {
+    "id": "release",
+    "label": "Contestar en la terminal",
+    "argv": [
+      "nxy",
+      "action",
+      "decide",
+      "--ask",
+      "ASK-A",
+      "--release"
+    ],
+    "confirm": "",
+    "planned": false
+  },
+  "options": [
+    {
+      "label": "Reintentar",
+      "description": "Correr el lote de nuevo",
+      "recommended": false,
+      "action": {
+        "id": "reintentar",
+        "label": "Reintentar",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Reintentar"
+        ],
+        "confirm": "",
+        "planned": false
+      }
+    },
+    {
+      "label": "Seguir",
+      "description": "Aceptarlo como está y pasar al lote siguiente",
+      "recommended": false,
+      "action": {
+        "id": "seguir",
+        "label": "Seguir",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Seguir"
+        ],
+        "confirm": "",
+        "planned": false
+      }
+    },
+    {
+      "label": "Parar",
+      "description": "Terminar la feature",
+      "recommended": false,
+      "action": {
+        "id": "parar",
+        "label": "Parar",
+        "argv": [
+          "nxy",
+          "action",
+          "decide",
+          "--ask",
+          "ASK-A",
+          "--answer",
+          "Parar"
+        ],
+        "confirm": "Termina la feature",
+        "planned": false
+      }
+    }
+  ],
+  "rest": []
+}

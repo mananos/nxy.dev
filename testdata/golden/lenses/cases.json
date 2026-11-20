@@ -1,0 +1,645 @@
+[
+  {
+    "name": "content-create-table",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "tools/init.go",
+          "content": "db.Exec(\"CREATE TABLE t (id int)\")"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "database",
+          "files": [
+            "tools/init.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "content-in-doc-ignored",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "NOTES.md",
+          "content": "@RestController password"
+        },
+        {
+          "path": "main.go",
+          "content": "package main"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "content-password",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/util.go",
+          "content": "var password = \"x\""
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "src/util.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "content-restcontroller",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/Hello.java",
+          "content": "@RestController\nclass Hello {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "api",
+          "files": [
+            "src/Hello.java"
+          ]
+        },
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "deleted-file-by-path",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "internal/auth/old.go",
+          "content": null
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "internal/auth/old.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "deleted-file-no-content",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/util.go",
+          "content": null
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "many-lenses",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/auth/UserController.java",
+          "content": "@Entity"
+        },
+        {
+          "path": "db/migrations/1.sql",
+          "content": "ALTER TABLE t"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "api",
+          "files": [
+            "src/auth/UserController.java"
+          ]
+        },
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "database",
+          "files": [
+            "db/migrations/1.sql"
+          ]
+        },
+        {
+          "name": "persistence",
+          "files": [
+            "src/auth/UserController.java"
+          ]
+        },
+        {
+          "name": "security",
+          "files": [
+            "src/auth/UserController.java"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "no-files",
+    "input": {
+      "repo": [],
+      "files": []
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "only-docs",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "README.md",
+          "content": "password"
+        },
+        {
+          "path": "docs/auth/guide.md",
+          "content": "secret"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-auth-dir",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "internal/auth/login.go",
+          "content": "package auth"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "internal/auth/login.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-auth-name",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/AuthService.java",
+          "content": "class A {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "src/AuthService.java"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-component-tsx",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "web/Button.tsx",
+          "content": "export const B = 1"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "frontend",
+          "files": [
+            "web/Button.tsx"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-controller",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/main/UserController.java",
+          "content": "class U {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "api",
+          "files": [
+            "src/main/UserController.java"
+          ]
+        },
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-entity-dir",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/Entity/User.kt",
+          "content": "class U"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "persistence",
+          "files": [
+            "src/Entity/User.kt"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-migration",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "db/migrations/0001_init.txt",
+          "content": "x"
+        },
+        {
+          "path": "db/migrations/0002_add.go",
+          "content": "package db"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "database",
+          "files": [
+            "db/migrations/0002_add.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-repository",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "src/UserRepository.java",
+          "content": "interface U {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "persistence",
+          "files": [
+            "src/UserRepository.java"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-routes-ts",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "app/users.routes.ts",
+          "content": "export {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "api",
+          "files": [
+            "app/users.routes.ts"
+          ]
+        },
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-sql",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "db/schema.sql",
+          "content": "select 1"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "database",
+          "files": [
+            "db/schema.sql"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "path-uppercase",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "SRC/AUTH/Login.go",
+          "content": "package a"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "SRC/AUTH/Login.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "plain-go",
+    "input": {
+      "repo": [],
+      "files": [
+        {
+          "path": "internal/foo/bar.go",
+          "content": "package foo"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "repo-always-lens",
+    "input": {
+      "repo": [
+        {
+          "name": "house",
+          "text": "---\nname: house\nalways: true\n---\n- house rules\n"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/x.go",
+          "content": "package x"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "house",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "repo-disables-database",
+    "input": {
+      "repo": [
+        {
+          "name": "database",
+          "text": "---\nname: database\nenabled: false\n---\n"
+        }
+      ],
+      "files": [
+        {
+          "path": "db/migrations/1.sql",
+          "content": "CREATE TABLE t"
+        },
+        {
+          "path": "db/schema.sql",
+          "content": "x"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "repo-new-lens-by-content",
+    "input": {
+      "repo": [
+        {
+          "name": "billing",
+          "text": "---\r\nname: billing\r\ntitle: Billing\r\ncontent: invoice, ledger\r\n---\r\n- totals add up\r\n"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/pay.go",
+          "content": "func invoice() {}"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "billing",
+          "files": [
+            "src/pay.go"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "repo-replaces-security",
+    "input": {
+      "repo": [
+        {
+          "name": "security",
+          "text": "---\nname: security\ntitle: Mine\npaths: **/vault/**\n---\n- check the vault\n"
+        }
+      ],
+      "files": [
+        {
+          "path": "internal/auth/login.go",
+          "content": "package auth"
+        },
+        {
+          "path": "src/vault/keys.go",
+          "content": "package v"
+        }
+      ]
+    },
+    "output": {
+      "lenses": [
+        {
+          "name": "base",
+          "files": []
+        },
+        {
+          "name": "security",
+          "files": [
+            "src/vault/keys.go"
+          ]
+        }
+      ]
+    }
+  }
+]

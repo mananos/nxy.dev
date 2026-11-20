@@ -1,0 +1,2 @@
+{"type":"user","uuid":"u1","timestamp":"2026-01-01T10:00:00.000Z","message":{"role":"user","content":"feature F1 batch 1"}}
+{"type":"assistant","uuid":"u2","requestId":"req_1","timestamp":"2026-01-01T10:00:30.000Z","message":{"id":"msg_1","model":"claude-sonnet-4-6","role":"assistant","content":[{"type":"text","text":"done"}],"usage":{"input_tokens":10,"output_tokens":5,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}

@@ -1,0 +1,18 @@
+[
+{"name":"detect:000","input":{"settings":[],"mcp":[],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:001","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":"rtk hook claude"}]}]}}],"mcp":[],"obj":{}},"output":{"rtk":true,"mcp":false,"wiring":false}},
+{"name":"detect:002","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":"C:\\bin\\rtk.exe hook claude"}]}]}}],"mcp":[],"obj":{"mcpServers":{}}},"output":{"rtk":true,"mcp":false,"wiring":false}},
+{"name":"detect:003","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":"myrtk hook"}]}]}}],"mcp":[],"obj":{"mcpServers":{"codegraph":{"command":"codegraph"}}}},"output":{"rtk":false,"mcp":true,"wiring":false}},
+{"name":"detect:004","input":{"settings":[{"hooks":{"PostToolUse":[{"hooks":[{"command":"rtk hook claude"}]}]}}],"mcp":[],"obj":{"mcpServers":{"other":{}}}},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:005","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":42},{"command":null},{}]},{},null]}}],"mcp":[],"obj":{"mcpServers":{"codegraph":null}}},"output":{"rtk":false,"mcp":true,"wiring":false}},
+{"name":"detect:006","input":{"settings":[{"hooks":{"PreToolUse":"rtk hook"}}],"mcp":[],"obj":{"mcpServers":["codegraph"]}},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:007","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":"rtk\nhook"}]}]}}],"mcp":[],"obj":{"mcpServers":"codegraph"}},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:008","input":{"settings":[null,3,"x",[]],"mcp":[null,[]],"obj":[]},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:009","input":{"settings":[{"hooks":{"SessionStart":[{"hooks":[{"command":"node CodeGraph/sync.js"}]}]}}],"mcp":[],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":true}},
+{"name":"detect:010","input":{"settings":[{"hooks":{"PostToolUse":[{"hooks":[{"command":"codegraph sync"},{"command":"other"}]}]}}],"mcp":[{}],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":true}},
+{"name":"detect:011","input":{"settings":[{"hooks":[{"command":"codegraph"}]}],"mcp":[],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:012","input":{"settings":[{"hooks":{"Stop":[{"hooks":"codegraph"}]}}],"mcp":[],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":false}},
+{"name":"detect:013","input":{"settings":[{"theme":"dark"}],"mcp":[{"mcpServers":{"codegraph":{}}}],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":true}},
+{"name":"detect:014","input":{"settings":[{"mcpServers":{"codegraph":{}}}],"mcp":[],"obj":null},"output":{"rtk":false,"mcp":false,"wiring":true}},
+{"name":"detect:015","input":{"settings":[{"hooks":{"PreToolUse":[{"hooks":[{"command":"rtk hook"}]}],"Stop":[{"hooks":[{"command":"codegraph x"}]}]}}],"mcp":[{"projects":{}}],"obj":null},"output":{"rtk":true,"mcp":false,"wiring":true}}
+]

@@ -1,0 +1,32 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+  Inicio › FEAT-P › Plan                                            esc vuelve  
+
+     ←   Notas de crédito en facturación   FEAT-P              TE NECESITA    
+         api + web · feat/notas · 1d 3h · $0.00                               
+
+   ✓ Diseño  ━━  ✓ Plan  ━━  Lotes 2/3  ──  Review  ──  Cierre 
+
+    ▌LOTES                       aprobado hace 2h · el 2 y el 3 en paralelo   
+      ✓ 1 Corregir       api ──┬──›✗ 2 Crédito        api                     
+                               │                                              
+                               └── ○ 3 Pantalla       web                     
+                                                                              
+     Lote 2 · api · Crédito y limpieza       riesgo bajo  ·  intento 2 de 2   
+     accept  go test ./src/ -run TestCredito                    espera al 1   
+
+    ▌OBJETIVO                                                                 
+     Notas de crédito en facturación                                          
+                                                                              
+    ▌CRITERIOS                                                                
+     R1  Notas de crédito en facturación                                      
+                                                                              
+    ▌DECISIONES                                                               
+
+     Impacto · lote 2                                             codegraph   
+                                                                              
+  ›   nuevo   Credito.java                                                    
+      edita   Viejo.java                                                      
+              :3  Crédito y limpieza                                          
+                                                                              
+     ← importa   ✗ test   ↔ contrato                                          
+  ←→  lote     ↑↓  archivo     enter  ver código     a  agentes     ?  ayuda    

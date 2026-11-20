@@ -1,0 +1,84 @@
+{
+  "id": "FEAT-D:approval:2",
+  "feature_id": "FEAT-D",
+  "repo": "acme/pagos",
+  "kind": "approval",
+  "title": "",
+  "body": [
+    "## Migrar pagos a la API v3",
+    "",
+    "### Criterios",
+    "",
+    "- R1: Migrar pagos a la API v3 (tdd)",
+    "",
+    "### Lote 1 — Cliente de la API v3",
+    "- Cubre: R1",
+    "- Cambiar:",
+    "  - src/billing/File.java:10 — Cliente de la API v3",
+    "- Test: TestCliente de la API v3 (nuevo)",
+    "- Accept: `go test ./pay/ -run TestClient`",
+    "- Riesgo: bajo",
+    "",
+    "### Lote 2 — Cambiar el servicio de cobro",
+    "- Cubre: R1",
+    "- Cambiar:",
+    "  - src/billing/File.java:10 — Cambiar el servicio de cobro",
+    "- Test: TestCambiar el servicio de cobro (nuevo)",
+    "- Accept: `go test ./pay/ -run TestCharge`",
+    "- Riesgo: bajo",
+    ""
+  ],
+  "header": "Plan",
+  "question": "¿Aprobás el plan FEAT-D r2 de nxy?",
+  "context": [],
+  "multi_select": false,
+  "asked_at": "2026-11-10T14:00:00Z",
+  "fork": null,
+  "ask_id": "",
+  "release": {
+    "id": "",
+    "label": "",
+    "argv": [],
+    "confirm": "",
+    "planned": false
+  },
+  "options": [
+    {
+      "label": "Aprobar",
+      "description": "Empezar a ejecutar el lote 1",
+      "recommended": false,
+      "action": {
+        "id": "aprobar",
+        "label": "Aprobar",
+        "argv": [],
+        "confirm": "",
+        "planned": false
+      }
+    },
+    {
+      "label": "Cambiar",
+      "description": "Escribí qué cambiar; nxy vuelve a planificar",
+      "recommended": false,
+      "action": {
+        "id": "cambiar",
+        "label": "Cambiar",
+        "argv": [],
+        "confirm": "",
+        "planned": false
+      }
+    },
+    {
+      "label": "Ver completo",
+      "description": "Abrir el plan completo en tu editor",
+      "recommended": false,
+      "action": {
+        "id": "ver_completo",
+        "label": "Ver completo",
+        "argv": [],
+        "confirm": "",
+        "planned": false
+      }
+    }
+  ],
+  "rest": []
+}

@@ -1,0 +1,27 @@
+{
+  "modules": { "filter": true, "metrics": true },
+  "filter": {
+    "engine": "auto",
+    "excludeCommands": [],
+    "onlyCommands": [],
+    "autoAllowWhenOriginalAllowed": true
+  },
+  "metrics": {
+    "projectsDir": null,
+    "subscription": true,
+    "statusline": {
+      "color": true,
+      "preset": "vivid",
+      "layout": "line",
+      "brand": "◆ nxy",
+      "ctxWarnTokens": 100000,
+      "ctxCritTokens": 200000,
+      "turnWarnUsd": 1,
+      "turnCritUsd": 3,
+      "promptCacheTtlMin": 5,
+      "theme": {}
+    },
+    "cacheBreakThreshold": 100000
+  },
+  "gate": { "enabled": true, "contextTokens": 100000, "escapeMinutes": 5, "reads": true }
+}

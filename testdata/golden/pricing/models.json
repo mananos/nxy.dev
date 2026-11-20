@@ -1,0 +1,2174 @@
+[
+  {
+    "name": "id:",
+    "input": {
+      "model": ""
+    },
+    "output": {
+      "normalizeModel": "",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id: <synthetic> ",
+    "input": {
+      "model": " <synthetic> "
+    },
+    "output": {
+      "normalizeModel": " <synthetic> ",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "id:<>",
+    "input": {
+      "model": "<>"
+    },
+    "output": {
+      "normalizeModel": "<>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "id:<a<b>",
+    "input": {
+      "model": "<a<b>"
+    },
+    "output": {
+      "normalizeModel": "<a<b>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:<foo>",
+    "input": {
+      "model": "<foo>"
+    },
+    "output": {
+      "normalizeModel": "<foo>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "id:<multi\nline>",
+    "input": {
+      "model": "<multi\nline>"
+    },
+    "output": {
+      "normalizeModel": "<multi\nline>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "id:<synthetic",
+    "input": {
+      "model": "<synthetic"
+    },
+    "output": {
+      "normalizeModel": "<synthetic",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:<synthetic>",
+    "input": {
+      "model": "<synthetic>"
+    },
+    "output": {
+      "normalizeModel": "<synthetic>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "id:CLAUDE-OPUS-5",
+    "input": {
+      "model": "CLAUDE-OPUS-5"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:Claude-Haiku-4-5",
+    "input": {
+      "model": "Claude-Haiku-4-5"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-4-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:anthropic.claude-sonnet-4-5-v2:0",
+    "input": {
+      "model": "anthropic.claude-sonnet-4-5-v2:0"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:apac.anthropic.claude-sonnet-4-v1:0",
+    "input": {
+      "model": "apac.anthropic.claude-sonnet-4-v1:0"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-3-5-haiku",
+    "input": {
+      "model": "claude-3-5-haiku"
+    },
+    "output": {
+      "normalizeModel": "claude-3-5-haiku",
+      "familyOf": "haiku",
+      "versionOf": [
+        3,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-3-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-3-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-3-5-haiku-20241022",
+    "input": {
+      "model": "claude-3-5-haiku-20241022"
+    },
+    "output": {
+      "normalizeModel": "claude-3-5-haiku",
+      "familyOf": "haiku",
+      "versionOf": [
+        3,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-3-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-3-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-3-5-haiku-latest",
+    "input": {
+      "model": "claude-3-5-haiku-latest"
+    },
+    "output": {
+      "normalizeModel": "claude-3-5-haiku",
+      "familyOf": "haiku",
+      "versionOf": [
+        3,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-3-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-3-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-3-7-sonnet-20250219",
+    "input": {
+      "model": "claude-3-7-sonnet-20250219"
+    },
+    "output": {
+      "normalizeModel": "claude-3-7-sonnet",
+      "familyOf": "sonnet",
+      "versionOf": [
+        3,
+        7
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4",
+        "estimated": true
+      },
+      "estimateBasis": "claude-sonnet-4",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-3-haiku",
+    "input": {
+      "model": "claude-3-haiku"
+    },
+    "output": {
+      "normalizeModel": "claude-3-haiku",
+      "familyOf": "haiku",
+      "versionOf": [
+        3
+      ],
+      "priceFor": {
+        "key": "claude-haiku-3-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-3-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-fable-4",
+    "input": {
+      "model": "claude-fable-4"
+    },
+    "output": {
+      "normalizeModel": "claude-fable-4",
+      "familyOf": "fable",
+      "versionOf": [
+        4
+      ],
+      "priceFor": {
+        "key": "claude-fable-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-fable-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-fable-5",
+    "input": {
+      "model": "claude-fable-5"
+    },
+    "output": {
+      "normalizeModel": "claude-fable-5",
+      "familyOf": "fable",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-fable-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-fable-5-1",
+    "input": {
+      "model": "claude-fable-5-1"
+    },
+    "output": {
+      "normalizeModel": "claude-fable-5-1",
+      "familyOf": "fable",
+      "versionOf": [
+        5,
+        1
+      ],
+      "priceFor": {
+        "key": "claude-fable-5-1",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-fable-5-2",
+    "input": {
+      "model": "claude-fable-5-2"
+    },
+    "output": {
+      "normalizeModel": "claude-fable-5-2",
+      "familyOf": "fable",
+      "versionOf": [
+        5,
+        2
+      ],
+      "priceFor": {
+        "key": "claude-fable-5-1",
+        "estimated": true
+      },
+      "estimateBasis": "claude-fable-5-1",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-haiku-3-5",
+    "input": {
+      "model": "claude-haiku-3-5"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-3-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        3,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-3-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-haiku-4-5",
+    "input": {
+      "model": "claude-haiku-4-5"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-4-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-haiku-5",
+    "input": {
+      "model": "claude-haiku-5"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-4-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-4-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-haiku-5-5",
+    "input": {
+      "model": "claude-haiku-5-5"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-5-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        5,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-5-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-haiku-5-6",
+    "input": {
+      "model": "claude-haiku-5-6"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-5-6",
+      "familyOf": "haiku",
+      "versionOf": [
+        5,
+        6
+      ],
+      "priceFor": {
+        "key": "claude-haiku-5-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-haiku-5-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-instant-1",
+    "input": {
+      "model": "claude-instant-1"
+    },
+    "output": {
+      "normalizeModel": "claude-instant-1",
+      "familyOf": null,
+      "versionOf": [
+        1
+      ],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-mythos-5",
+    "input": {
+      "model": "claude-mythos-5"
+    },
+    "output": {
+      "normalizeModel": "claude-mythos-5",
+      "familyOf": "mythos",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-mythos-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-mythos-5-1",
+    "input": {
+      "model": "claude-mythos-5-1"
+    },
+    "output": {
+      "normalizeModel": "claude-mythos-5-1",
+      "familyOf": "mythos",
+      "versionOf": [
+        5,
+        1
+      ],
+      "priceFor": {
+        "key": "claude-mythos-5-1",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-mythos-5-2",
+    "input": {
+      "model": "claude-mythos-5-2"
+    },
+    "output": {
+      "normalizeModel": "claude-mythos-5-2",
+      "familyOf": "mythos",
+      "versionOf": [
+        5,
+        2
+      ],
+      "priceFor": {
+        "key": "claude-mythos-5-1",
+        "estimated": true
+      },
+      "estimateBasis": "claude-mythos-5-1",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-3",
+    "input": {
+      "model": "claude-opus-3"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-3",
+      "familyOf": "opus",
+      "versionOf": [
+        3
+      ],
+      "priceFor": {
+        "key": "claude-opus-4",
+        "estimated": true
+      },
+      "estimateBasis": "claude-opus-4",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4",
+    "input": {
+      "model": "claude-opus-4"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4",
+      "familyOf": "opus",
+      "versionOf": [
+        4
+      ],
+      "priceFor": {
+        "key": "claude-opus-4",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-1",
+    "input": {
+      "model": "claude-opus-4-1"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-1",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        1
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-1",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-1@20250805",
+    "input": {
+      "model": "claude-opus-4-1@20250805"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-1",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        1
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-1",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-5",
+    "input": {
+      "model": "claude-opus-4-5"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-5",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-5-20251101",
+    "input": {
+      "model": "claude-opus-4-5-20251101"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-5",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-6",
+    "input": {
+      "model": "claude-opus-4-6"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-6",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        6
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-6",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-7",
+    "input": {
+      "model": "claude-opus-4-7"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-7",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        7
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-7",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-8",
+    "input": {
+      "model": "claude-opus-4-8"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-8",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        8
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-8",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-4-9",
+    "input": {
+      "model": "claude-opus-4-9"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-9",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        9
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-8",
+        "estimated": true
+      },
+      "estimateBasis": "claude-opus-4-8",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-5",
+    "input": {
+      "model": "claude-opus-5"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-5-20260401",
+    "input": {
+      "model": "claude-opus-5-20260401"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-5-20260401[1m]",
+    "input": {
+      "model": "claude-opus-5-20260401[1m]"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-5-5",
+    "input": {
+      "model": "claude-opus-5-5"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-5[1m]",
+    "input": {
+      "model": "claude-opus-5[1m]"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-5",
+      "familyOf": "opus",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-opus-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-opus-6",
+    "input": {
+      "model": "claude-opus-6"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-6",
+      "familyOf": "opus",
+      "versionOf": [
+        6
+      ],
+      "priceFor": {
+        "key": "claude-opus-5-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-opus-5-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-4",
+    "input": {
+      "model": "claude-sonnet-4"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-4-20250514",
+    "input": {
+      "model": "claude-sonnet-4-20250514"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-4-5",
+    "input": {
+      "model": "claude-sonnet-4-5"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-4-5@20250929",
+    "input": {
+      "model": "claude-sonnet-4-5@20250929"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-4-6",
+    "input": {
+      "model": "claude-sonnet-4-6"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4-6",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4,
+        6
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4-6",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-5",
+    "input": {
+      "model": "claude-sonnet-5"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-5-5",
+    "input": {
+      "model": "claude-sonnet-5-5"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-5-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        5,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-5-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-5-6",
+    "input": {
+      "model": "claude-sonnet-5-6"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-5-6",
+      "familyOf": "sonnet",
+      "versionOf": [
+        5,
+        6
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-5-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-sonnet-5-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:claude-sonnet-6",
+    "input": {
+      "model": "claude-sonnet-6"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-6",
+      "familyOf": "sonnet",
+      "versionOf": [
+        6
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-5-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-sonnet-5-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:eu.anthropic.claude-opus-4-1-v1:0",
+    "input": {
+      "model": "eu.anthropic.claude-opus-4-1-v1:0"
+    },
+    "output": {
+      "normalizeModel": "claude-opus-4-1",
+      "familyOf": "opus",
+      "versionOf": [
+        4,
+        1
+      ],
+      "priceFor": {
+        "key": "claude-opus-4-1",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:gemini-1.5-pro",
+    "input": {
+      "model": "gemini-1.5-pro"
+    },
+    "output": {
+      "normalizeModel": "gemini-1.5-pro",
+      "familyOf": null,
+      "versionOf": [
+        1,
+        5
+      ],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "input": {
+      "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    },
+    "output": {
+      "normalizeModel": "claude-haiku-4-5",
+      "familyOf": "haiku",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-haiku-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:gpt-4o",
+    "input": {
+      "model": "gpt-4o"
+    },
+    "output": {
+      "normalizeModel": "gpt-4o",
+      "familyOf": null,
+      "versionOf": [
+        4
+      ],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:synthetic>",
+    "input": {
+      "model": "synthetic>"
+    },
+    "output": {
+      "normalizeModel": "synthetic>",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:unknown-model",
+    "input": {
+      "model": "unknown-model"
+    },
+    "output": {
+      "normalizeModel": "unknown-model",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "input": {
+      "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    },
+    "output": {
+      "normalizeModel": "claude-sonnet-4-5",
+      "familyOf": "sonnet",
+      "versionOf": [
+        4,
+        5
+      ],
+      "priceFor": {
+        "key": "claude-sonnet-4-5",
+        "estimated": false
+      },
+      "estimateBasis": null,
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id:x-opus-9",
+    "input": {
+      "model": "x-opus-9"
+    },
+    "output": {
+      "normalizeModel": "x-opus-9",
+      "familyOf": "opus",
+      "versionOf": [
+        9
+      ],
+      "priceFor": {
+        "key": "claude-opus-5-5",
+        "estimated": true
+      },
+      "estimateBasis": "claude-opus-5-5",
+      "isSyntheticModel": false
+    }
+  },
+  {
+    "name": "id: <synthetic>﻿",
+    "input": {
+      "model": " <synthetic>﻿"
+    },
+    "output": {
+      "normalizeModel": " <synthetic>﻿",
+      "familyOf": null,
+      "versionOf": [],
+      "priceFor": null,
+      "estimateBasis": null,
+      "isSyntheticModel": true
+    }
+  },
+  {
+    "name": "table:empty:claude-opus-5",
+    "input": {
+      "models": {},
+      "model": "claude-opus-5"
+    },
+    "output": {
+      "priceIn": null
+    }
+  },
+  {
+    "name": "table:empty:gpt-4o",
+    "input": {
+      "models": {},
+      "model": "gpt-4o"
+    },
+    "output": {
+      "priceIn": null
+    }
+  },
+  {
+    "name": "table:old-order:claude-3-5-haiku-latest",
+    "input": {
+      "models": {
+        "claude-3-5-haiku": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      },
+      "model": "claude-3-5-haiku-latest"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-3-5-haiku",
+        "estimated": false,
+        "price": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        }
+      }
+    }
+  },
+  {
+    "name": "table:old-order:claude-haiku-3",
+    "input": {
+      "models": {
+        "claude-3-5-haiku": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      },
+      "model": "claude-haiku-3"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-3-5-haiku",
+        "estimated": true,
+        "price": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        }
+      }
+    }
+  },
+  {
+    "name": "table:old-order:claude-haiku-4",
+    "input": {
+      "models": {
+        "claude-3-5-haiku": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      },
+      "model": "claude-haiku-4"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-3-5-haiku",
+        "estimated": true,
+        "price": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        }
+      }
+    }
+  },
+  {
+    "name": "table:old-order:claude-haiku-4-5-20251001",
+    "input": {
+      "models": {
+        "claude-3-5-haiku": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      },
+      "model": "claude-haiku-4-5-20251001"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-haiku-4-5",
+        "estimated": false,
+        "price": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      }
+    }
+  },
+  {
+    "name": "table:old-order:claude-haiku-9",
+    "input": {
+      "models": {
+        "claude-3-5-haiku": {
+          "input": 0.8,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1.6,
+          "cache_read": 0.08,
+          "output": 4
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      },
+      "model": "claude-haiku-9"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-haiku-4-5",
+        "estimated": true,
+        "price": {
+          "input": 1,
+          "cache_write_5m": 1.25,
+          "cache_write_1h": 2,
+          "cache_read": 0.1,
+          "output": 5
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-a:claude-opus-4",
+    "input": {
+      "models": {
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        },
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      },
+      "model": "claude-opus-4"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-5",
+        "estimated": true,
+        "price": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-a:claude-opus-5-0",
+    "input": {
+      "models": {
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        },
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      },
+      "model": "claude-opus-5-0"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-5-opus",
+        "estimated": true,
+        "price": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-a:claude-opus-5-1",
+    "input": {
+      "models": {
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        },
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      },
+      "model": "claude-opus-5-1"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-5-opus",
+        "estimated": true,
+        "price": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-b:claude-opus-4",
+    "input": {
+      "models": {
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        },
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      },
+      "model": "claude-opus-4"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-5-opus",
+        "estimated": true,
+        "price": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-b:claude-opus-5-0",
+    "input": {
+      "models": {
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        },
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      },
+      "model": "claude-opus-5-0"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-5",
+        "estimated": true,
+        "price": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "table:tie-b:claude-opus-5-1",
+    "input": {
+      "models": {
+        "claude-5-opus": {
+          "input": 2,
+          "cache_write_5m": 2,
+          "cache_write_1h": 2,
+          "cache_read": 2,
+          "output": 2
+        },
+        "claude-opus-5": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      },
+      "model": "claude-opus-5-1"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-5",
+        "estimated": true,
+        "price": {
+          "input": 1,
+          "cache_write_5m": 1,
+          "cache_write_1h": 1,
+          "cache_read": 1,
+          "output": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-fable-1",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-fable-1"
+    },
+    "output": {
+      "priceIn": null
+    }
+  },
+  {
+    "name": "table:two-families:claude-haiku-4",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-haiku-4"
+    },
+    "output": {
+      "priceIn": null
+    }
+  },
+  {
+    "name": "table:two-families:claude-opus-3",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-opus-3"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-4",
+        "estimated": true,
+        "price": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-opus-4-1",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-opus-4-1"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-4",
+        "estimated": true,
+        "price": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-opus-4-5",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-opus-4-5"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-4-5",
+        "estimated": false,
+        "price": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-opus-9",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-opus-9"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-4-5",
+        "estimated": true,
+        "price": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-sonnet-4",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-sonnet-4"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-sonnet-4",
+        "estimated": false,
+        "price": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      }
+    }
+  },
+  {
+    "name": "table:two-families:claude-sonnet-4-5",
+    "input": {
+      "models": {
+        "claude-opus-4": {
+          "input": 15,
+          "cache_write_5m": 18.75,
+          "cache_write_1h": 30,
+          "cache_read": 1.5,
+          "output": 75
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25
+        },
+        "claude-sonnet-4": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      },
+      "model": "claude-sonnet-4-5"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-sonnet-4",
+        "estimated": true,
+        "price": {
+          "input": 3,
+          "cache_write_5m": 3.75,
+          "cache_write_1h": 6,
+          "cache_read": 0.3,
+          "output": 15
+        }
+      }
+    }
+  },
+  {
+    "name": "table:with-above:claude-haiku-2",
+    "input": {
+      "models": {
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        },
+        "claude-opus-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      },
+      "model": "claude-haiku-2"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-haiku-5-5",
+        "estimated": true,
+        "price": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "table:with-above:claude-haiku-5-5",
+    "input": {
+      "models": {
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        },
+        "claude-opus-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      },
+      "model": "claude-haiku-5-5"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-haiku-5-5",
+        "estimated": false,
+        "price": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "table:with-above:claude-haiku-5-6",
+    "input": {
+      "models": {
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        },
+        "claude-opus-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      },
+      "model": "claude-haiku-5-6"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-haiku-5-5",
+        "estimated": true,
+        "price": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "table:with-above:claude-opus-5-1",
+    "input": {
+      "models": {
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        },
+        "claude-opus-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      },
+      "model": "claude-opus-5-1"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-5",
+        "estimated": true,
+        "price": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "table:with-above:claude-opus-5-20260401",
+    "input": {
+      "models": {
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01,
+          "output": 0.5,
+          "above": {
+            "threshold": 100000,
+            "input": 0.5,
+            "cache_write_5m": 0.625,
+            "cache_write_1h": 1,
+            "cache_read": 0.05,
+            "output": 2.5
+          }
+        },
+        "claude-opus-5": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      },
+      "model": "claude-opus-5-20260401"
+    },
+    "output": {
+      "priceIn": {
+        "key": "claude-opus-5",
+        "estimated": false,
+        "price": {
+          "input": 5,
+          "cache_write_5m": 6.25,
+          "cache_write_1h": 10,
+          "cache_read": 0.5,
+          "output": 25,
+          "fast": {
+            "input": 10,
+            "output": 50
+          }
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — una feature</title>
+<link rel="stylesheet" href="marca/marca.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #070707; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #070707; color: #fff;
+    font-family: 'Archivo', sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; overflow: hidden; background: #070707; }
+  .abs { position: absolute; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .tag2 { position: absolute; left: 72px; top: 64px; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .16em; color: #8C8C8C; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 48px; font-size: 28px; line-height: 1.35; color: #BDBDBD; border-left: 6px solid #FDBF01; padding-left: 20px; }
+  .cap b { color: #fff; }
+  .haz { background: repeating-linear-gradient(-45deg, #FDBF01 0 18px, #070707 18px 36px); }
+  .cf { background: #FDBF01; }
+  .cf .diag { position: absolute; left: -100px; top: -40px; width: 420px; height: 1100px; background: #070707; transform: rotate(-30deg); transform-origin: top left; opacity: .08; }
+  .cf .cab { position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: center; gap: 16px; color: #070707; }
+  .cf .cab img { width: 46px; height: auto; }
+  .cf .cab .t { font-size: 30px; }
+  .cf .cab .s { font-size: 20px; font-weight: 600; }
+  .cf .cab .chip { margin-left: auto; }
+  .cf { --sombra-term: rgba(7,7,7,.38); }
+  .cf .cap2 { position: absolute; left: 40px; right: 52px; background: #070707; color: #DEDBD2; font-size: 26px; line-height: 1.3; padding: 14px 22px; border-left: 8px solid #fff; }
+  .cf .cap2 b { color: #FDBF01; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="feature" data-start="0" data-duration="50" data-width="1280" data-height="720" data-fps="30">
+
+  <!-- 0-5 Portada A -->
+  <section class="clip scene" id="s1" data-start="0" data-duration="5">
+    <div class="abs" style="left:-260px;top:-80px;width:220px;height:1100px;background:#FDBF01;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:-60px;top:-80px;width:90px;height:1100px;background:#FDBF01;opacity:.55;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:150px;top:-80px;width:26px;height:1100px;background:#FDBF01;opacity:.3;transform:rotate(-38deg);transform-origin:top left"></div>
+    <img class="abs" src="marca/perro-banner.png" alt="" style="left:0;bottom:0;height:720px;width:auto">
+    <div class="abs" style="left:640px;top:0;width:640px;height:720px;background:linear-gradient(90deg,rgba(7,7,7,0) 0,#070707 22%)"></div>
+    <div class="abs mono" data-in="0.1" style="left:720px;top:56px;display:flex;gap:12px;align-items:center;font-size:14px;letter-spacing:.14em;color:#8C8C8C">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:4px 10px">EP.01</span><span>UNA FEATURE · 0:50</span>
+    </div>
+    <div class="abs" data-in="0.4" style="left:716px;top:170px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:120px;line-height:.9;font-weight:900;font-stretch:125%;letter-spacing:-.04em;display:flex;align-items:baseline">
+        <span>nxy</span><span style="display:inline-block;width:26px;height:26px;background:#FDBF01;margin:0 6px 0 4px"></span><span style="color:#9A9A9A;font-weight:500">dev</span>
+      </div>
+      <div style="font-size:15px;font-weight:600;letter-spacing:.42em;color:#D8D8D8;margin-top:14px">BUILD <span style="color:#FDBF01">•</span> AUTOMATE <span style="color:#FDBF01">•</span> SCALE</div>
+    </div>
+    <div class="abs" data-in="1.1" style="left:716px;top:400px;width:500px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:52px;line-height:1;font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em">Una feature,<br><span style="color:#FDBF01">paso a paso.</span></div>
+      <div style="font-size:20px;line-height:1.4;color:#BDBDBD">Del pedido al cierre, con vos decidiendo en los puntos que importan.</div>
+    </div>
+    <div class="abs mono" data-in="2" style="left:716px;bottom:56px;display:flex;align-items:center;font-size:18px">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:12px 14px">&gt;_</span>
+      <span style="border:2px solid #2A2A2A;border-left:none;padding:10px 18px;color:#fff">/nxy:feature &lt;pedido&gt;</span>
+    </div>
+    <div class="scan"></div>
+    <div class="esquinas" style="right:28px;top:28px"></div>
+    <div class="esquinas" style="right:28px;bottom:28px;transform:rotate(90deg)"></div>
+  </section>
+
+  <!-- 5-13 01 Planner -->
+  <section class="clip scene" id="s2" data-start="5" data-duration="8">
+    <div class="tag2" data-in="0">01 — PLANNER</div>
+    <div class="chat" style="left:72px;top:120px;width:600px">
+      <div class="msg" data-in="0.4"><span class="av">vos</span><div class="bub u">/nxy:feature alta de clientes corporativos con validación de CUIT</div></div>
+      <div class="msg" data-in="1.4"><span class="av">nxy</span><div class="bub">Guardo tu pedido tal cual y despacho al <b>planner</b> (Opus, high).</div></div>
+      <div class="msg" data-in="2.4"><span class="av">nxy</span><div class="bub">Busca con <b>nxy locate</b>, lee las reglas del repo y valida el plan.</div></div>
+    </div>
+    <div class="abs" data-in="3" style="left:60px;top:430px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">El plan.</div><div class="sub">nxy: criterios R1…Rn y un test por lote</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="riel" style="left:760px;top:110px;width:440px">
+      <div class="paso ahora"><span class="n">01</span><span class="p">Plan</span><span class="e">armando ●</span></div>
+      <div class="paso"><span class="n">02</span><span class="p">Lotes</span></div>
+      <div class="paso"><span class="n">03</span><span class="p">Review</span></div>
+      <div class="paso"><span class="n">04</span><span class="p">Cierre</span></div>
+    </div>
+    <div class="cap" data-in="4.8">Plan por lotes: criterios R1…Rn y, por lote, qué cambia, con qué test se prueba y qué riesgo tiene.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 13-21 02 Aprobar -->
+  <section class="clip scene" id="s3" data-start="13" data-duration="8">
+    <div class="tag2" data-in="0">02 — APROBAR</div>
+    <div class="chat" style="left:72px;top:120px;width:600px">
+      <div class="msg" data-in="0.4"><span class="av">nxy</span><div class="bub u">¿Aprobás el plan 3f9a1c2e r1 de nxy?<br><span class="opt sel">Aprobar</span><span class="opt">Cambiar</span><span class="opt">Ver completo</span></div></div>
+      <div class="msg" data-in="2.2"><span class="av">nxy</span><div class="bub">Cambiar pide una nota y sube la revisión: <b>r2</b>, <b>r3</b>…</div></div>
+    </div>
+    <div class="abs" data-in="3" style="left:60px;top:340px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">Vos aprobás.</div><div class="sub">hasta que aprobás no se escribe una línea</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="riel" style="left:760px;top:110px;width:440px">
+      <div class="paso ahora"><span class="n">01</span><span class="p">Plan</span><span class="e">decidís ●</span></div>
+      <div class="paso"><span class="n">02</span><span class="p">Lotes</span></div>
+      <div class="paso"><span class="n">03</span><span class="p">Review</span></div>
+      <div class="paso"><span class="n">04</span><span class="p">Cierre</span></div>
+    </div>
+    <div class="cap" data-in="4">Hasta que aprobás no se escribe una línea. Y Claude puede hacer la pregunta, pero no contestarla por vos.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 21-29 03 Lotes verificados (marco de captura) -->
+  <section class="clip scene cf" id="s4" data-start="21" data-duration="8">
+    <div class="diag"></div>
+    <div class="cab">
+      <img src="marca/perro-chico.png" alt="">
+      <span class="t titulo">Lotes verificados</span>
+      <span class="s">· el 2 y el 3 en paralelo</span>
+      <span class="chip">nxy tui</span>
+    </div>
+    <div class="term" data-in="0.2" style="top:160px;height:340.8px">
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> nxy </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">    </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> Inicio </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Memoria </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Gasto </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Config </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(199,150,0);background:rgb(253,191,1)">╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> ● 2 DECISIONES </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)">hoy </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">$99.97</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">Inicio</span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> › </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">F7K2</span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> › </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">Plan</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">                                                                                      </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)">esc vuelve</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">←</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">Notas de crédito parciales</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">F7K2</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                            </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> TE NECESITA </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">       </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">facturacion-api + facturacion-web · feat/notas-credito · 23m · $4.62</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                         </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> <span class="g">✓</span> Diseño </span><span style="color:rgb(253,191,1);background:rgb(7,7,7)"> ━━ </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> <span class="g">✓</span> Plan </span><span style="color:rgb(253,191,1);background:rgb(7,7,7)"> ━━ </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700;text-decoration:underline">Lotes 3/4</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> ── </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Review </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> ── </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Cierre </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">LOTES</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                              </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">aprobado hace 21m · el 2 y el 3 en paralelo</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(127,209,154);background:rgb(20,48,28);font-weight:700"> <span class="g">✓</span> 1 Contrato       api </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">──┬──</span><span style="color:rgb(127,209,154);background:rgb(20,48,28);font-weight:700"> <span class="g">✓</span> 2 Servicio       api </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">──┐  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                       </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                           </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">  │  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                        </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">  ├──</span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> ○ 4 Integración    web </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                               </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                           </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">  └──</span><span style="color:rgb(138,28,18);background:rgb(253,191,1);font-weight:700"> <span class="g">✗</span> 3 Componente    web </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">──┘  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                       </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                                                                                    </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">Lote 3</span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> · web · </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">Componente de nota parcial                                      </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">riesgo </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">medio</span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">  ·  </span><span style="color:rgb(255,138,128);background:rgb(14,14,13)">intento 2 de 2</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">accept  </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">npm test -- notas-credito</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                               </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">espera al 1  ·  lo espera el 4</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+    </div>
+    <div class="cap2" data-in="2.5" style="top:548px">Un implementer por lote prueba con <b>nxy batch</b>. Los lotes independientes corren en paralelo.</div>
+  </section>
+
+  <!-- 29-36 04 Si un lote falla -->
+  <section class="clip scene" id="s5" data-start="29" data-duration="7">
+    <div class="tag2" data-in="0">04 — SI UN LOTE FALLA</div>
+    <div class="chat" style="left:72px;top:120px;width:600px">
+      <div class="msg" data-in="0.4"><span class="av">nxy</span><div class="bub u">El <b>lote 3</b> falló su Accept.<br>nota-credito.component.spec.ts:42 · TS2345</div></div>
+      <div class="msg" data-in="1.4"><span class="av">nxy</span><div class="bub">Reintento una vez solo, con la falla a la vista.</div></div>
+      <div class="msg" data-in="2.4"><span class="av">nxy</span><div class="bub u">Sigue en rojo. ¿Cómo seguimos?<br><span class="opt sel">Reintentar</span><span class="opt">Seguir</span><span class="opt">Parar</span></div></div>
+    </div>
+    <div class="abs" data-in="3" style="left:60px;top:440px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">Elegís vos.</div><div class="sub">rojo no se esconde ni se da por bueno</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="riel" style="left:760px;top:110px;width:440px">
+      <div class="paso hecho"><span class="n">01</span><span class="p">Plan</span><span class="e">✓ aprobado</span></div>
+      <div class="paso ahora"><span class="n">02</span><span class="p">Lotes</span><span class="e">lote 3 ●</span></div>
+      <div class="paso"><span class="n">03</span><span class="p">Review</span></div>
+      <div class="paso"><span class="n">04</span><span class="p">Cierre</span></div>
+    </div>
+    <div class="cap" data-in="3.4">nxy reintenta una vez solo. Si sigue en rojo, elegís vos.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 36-44 05 Afectados y review -->
+  <section class="clip scene" id="s6" data-start="36" data-duration="8">
+    <div class="tag2" data-in="0">05 — AFECTADOS Y REVIEW</div>
+    <div class="chat" style="left:72px;top:120px;width:600px">
+      <div class="msg" data-in="0.4"><span class="av">nxy</span><div class="bub">Todos los lotes en verde: corro los <b>tests afectados</b>.</div></div>
+      <div class="msg" data-in="1.4"><span class="av">nxy</span><div class="bub">Review según el riesgo: hallazgos <b>H1</b>, <b>H2</b>… cada uno con su escenario.</div></div>
+      <div class="msg" data-in="2.6"><span class="av">nxy</span><div class="bub u">¿Cuáles arreglamos?<br><span class="opt sel">H1</span><span class="opt">H2</span><span class="opt">Ninguno</span></div></div>
+    </div>
+    <div class="abs" data-in="3.2" style="left:60px;top:430px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">Sin verificar no es verde.</div><div class="sub">vos elegís qué hallazgos se arreglan</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="riel" style="left:760px;top:110px;width:440px">
+      <div class="paso hecho"><span class="n">01</span><span class="p">Plan</span><span class="e">✓ aprobado</span></div>
+      <div class="paso hecho"><span class="n">02</span><span class="p">Lotes</span><span class="e">✓ en verde</span></div>
+      <div class="paso ahora"><span class="n">03</span><span class="p">Review</span><span class="e">elegís ●</span></div>
+      <div class="paso"><span class="n">04</span><span class="p">Cierre</span></div>
+    </div>
+    <div class="cap" data-in="4">«Sin verificar» nunca cuenta como verde. Vos elegís qué hallazgos se arreglan.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 44-50 06 Docs y cierre -->
+  <section class="clip scene" id="s7" data-start="44" data-duration="6">
+    <div class="tag2" data-in="0">06 — DOCS Y CIERRE</div>
+    <div class="chat" style="left:72px;top:120px;width:600px">
+      <div class="msg" data-in="0.4"><span class="av">nxy</span><div class="bub u">Un doc nombra lo que cambió. ¿Lo actualizo?<br><span class="opt sel">Actualizar docs</span><span class="opt">Dejar</span></div></div>
+      <div class="msg" data-in="1.5"><span class="av">nxy</span><div class="bub">Listo. R1 pasa con <b>test_alta_corporativa</b>, R2 con <b>test_cuit_invalido</b>.</div></div>
+    </div>
+    <div class="abs" data-in="2.2" style="left:60px;top:350px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">Vos commiteás.</div><div class="sub">nxy nunca commitea ni pushea</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="riel" style="left:760px;top:110px;width:440px">
+      <div class="paso hecho"><span class="n">01</span><span class="p">Plan</span><span class="e">✓ aprobado</span></div>
+      <div class="paso hecho"><span class="n">02</span><span class="p">Lotes</span><span class="e">✓ en verde</span></div>
+      <div class="paso hecho"><span class="n">03</span><span class="p">Review</span><span class="e">✓ hecho</span></div>
+      <div class="paso ahora"><span class="n">04</span><span class="p">Cierre</span><span class="e">docs ●</span></div>
+    </div>
+    <div class="cap" data-in="2.6">Vos mirás el diff, commiteás y abrís el PR. nxy nunca commitea ni pushea.</div>
+    <div class="scan"></div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["feature"] = tl;
+</script>
+</body>
+</html>

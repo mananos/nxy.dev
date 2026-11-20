@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagrama: una feature en varios repos</title>
+<link rel="stylesheet" href="../brand/marca.css">
+</head>
+<body>
+<div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#070707;font-family:'Archivo',sans-serif;color:#fff">
+  <div style="position:absolute;left:64px;top:36px;display:flex;align-items:baseline;gap:18px">
+    <span class="titulo" style="font-size:40px">Varios repos</span>
+    <span style="font-size:20px;color:#9A9A9A">una feature, un contrato, un review</span>
+  </div>
+
+  <div class="caja" style="left:64px;top:210px;width:200px;height:140px">
+    <span class="num">00</span><span class="nombre">Plan</span>
+    <span class="texto">Toca varios repos</span>
+  </div>
+  <div class="flecha-h" style="left:266px;top:277px;width:36px"></div>
+  <div class="caja" style="left:310px;top:210px;width:220px;height:140px">
+    <span class="num">01</span><span class="nombre" style="font-size:24px">Contrato</span>
+    <span class="texto">API y tipos compartidos</span>
+  </div>
+
+  <div style="position:absolute;left:530px;top:277px;width:35px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:562px;top:187px;width:6px;height:186px;background:#FDBF01"></div>
+  <div class="flecha-h" style="left:565px;top:187px;width:37px"></div>
+  <div class="flecha-h" style="left:565px;top:367px;width:37px"></div>
+
+  <div class="caja caja--en-curso" style="left:610px;top:110px;width:250px;height:150px">
+    <span class="num">02</span><span class="nombre">Repo A</span>
+    <span class="texto">Depende: 1</span>
+  </div>
+  <div class="caja caja--en-curso" style="left:610px;top:300px;width:250px;height:150px">
+    <span class="num">03</span><span class="nombre">Repo B</span>
+    <span class="texto">Depende: 1</span>
+  </div>
+  <div class="sticker" style="left:690px;top:267px">EN PARALELO</div>
+
+  <div style="position:absolute;left:860px;top:187px;width:38px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:860px;top:367px;width:38px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:895px;top:187px;width:6px;height:186px;background:#FDBF01"></div>
+  <div class="flecha-h" style="left:898px;top:277px;width:34px"></div>
+
+  <div class="caja caja--guardado" style="left:940px;top:210px;width:276px;height:140px">
+    <span class="num">04</span><span class="nombre">Review</span>
+    <span class="texto">De todos los repos, con lente de contrato</span>
+  </div>
+
+  <div class="caja" style="left:64px;top:476px;width:1152px;height:216px;padding:16px 24px;gap:8px">
+    <span class="num" style="color:#FDBF01">AL APROBAR</span>
+    <span class="nombre" style="font-size:22px">Rama y base de cada repo</span>
+    <div style="display:flex;gap:18px;margin-top:4px;align-items:stretch">
+      <div style="flex:1;border:2px solid #2E2E2E;padding:10px 14px;display:flex;flex-direction:column;gap:4px"><span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">1 repo</span><span class="texto" style="font-size:15px">La rama se crea en tu carpeta</span></div>
+      <div style="flex:1;border:2px solid #2E2E2E;padding:10px 14px;display:flex;flex-direction:column;gap:4px"><span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">2 o más repos</span><span class="texto" style="font-size:15px">Un worktree por repo: <span class="mono" style="font-size:13px">&lt;repo&gt;.worktrees/&lt;rama&gt;</span></span></div>
+      <div style="flex:2.6;border:2px solid #2E2E2E;padding:10px 14px;display:flex;flex-direction:column;gap:8px"><span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">Repo ocupado por otra feature</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="chip" style="background:#FDBF01;color:#070707;font-size:13px">pausar la otra</span>
+          <span class="chip" style="background:#FDBF01;color:#070707;font-size:13px">abrir en un worktree (un solo repo)</span>
+          <span class="chip" style="background:#FDBF01;color:#070707;font-size:13px">dejar el repo afuera (varios)</span>
+          <span class="chip" style="background:#FDBF01;color:#070707;font-size:13px">parar esta feature</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sticker" style="left:1060px;top:462px">VOS APROBÁS</div>
+
+  <div class="leyenda" style="left:64px;top:380px;width:240px;gap:6px">
+    <b>LEYENDA</b>
+    <span><i class="en-curso"></i>en paralelo</span>
+    <span><i></i>decidís vos</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+  Inicio › FEAT-E › Ingeniero                                       esc vuelve  
+
+     ←   cobrar por suscripción   FEAT-E                         ingeniero    
+         api · 3h 00m · $0.00                                                 
+
+   Diseño  ──  Plan  ──  Lotes  ──  Review  ──  Cierre 
+
+   ✓ Dónde vive el cobro  ━━  ● Cómo se reintenta 
+   ✓ Formato de los recibos  ──  Moneda 
+
+    ▌CÓMO SE REINTENTA                                                        
+     bifurcación 2 de 4 · ninguna elegida                                     
+                                                                              
+     ¿Cómo se reintenta un cobro fallido?                                     
+                                                                              
+  ›  ▸  A   Cola de reintentos                                                
+            Un worker reintenta con espera creciente.                         
+        B   Reintento en línea                                                
+            El mismo pedido reintenta tres veces.                             
+                                                                              
+      ?   Otra: escribila en el chat                                          
+                                                                              
+      c   qué elegiría Claude                                                 
+                                                                              
+
+     A  Cola de reintentos                                         A   hoy    
+                                                                              
+     [cola: Cola]                                                             
+                                                                              
+     + No bloquea                                                             
+     − Una pieza más                                                          
+     toca src/billing/                                                        
+                                                                              
+  ↑↓  opción     enter  contesta cuando Claude pregunte     ?  ayuda            

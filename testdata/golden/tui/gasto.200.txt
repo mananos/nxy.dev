@@ -1,0 +1,19 @@
+   nxy      Inicio    Memoria   ›Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
+
+  ›Sesión   Tendencia                                                                                                                                                                     -srv-dev-app  
+
+    Gasto                                            Cache                                            Llamadas                                         Turnos                                       
+    $0.08                                            85 %                                             6                                                2                                            
+    sonnet 100 %                                     leído de cache                                   3.0 por turno                                    en esta sesión                               
+
+     Modelo                          Llamadas   Entrada   Salida   Cache        $                                                                                                                     
+     sonnet-4.6                             5      6.8k     2.8k    86 %    $0.08                                                                                                                     
+     haiku-5.5                              1       900      200    69 %    $0.00                                                                                                                     
+
+    ▌FORMA DE LA SESIÓN                                                                                                                                                                               
+     por turno  3.0 llamadas     del hilo  1.5     contexto  15k     subagentes  25 %                                                                                                                 
+
+    ▌FILTRO Y BÚSQUEDAS                                                                                                                                                                               
+     El filtro todavía no sacó nada de esta sesión.                                                                                                                                                   
+     ninguna búsqueda amplia frenada                                                                                                                                                                  
+  tab  tendencia     s  otra sesión     ?  ayuda                                                                                                                                                        

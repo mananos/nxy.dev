@@ -1,0 +1,21 @@
+[
+{"name":"names:000","input":{"input":{"name":"Login Google","base":"main"},"mainPath":"/srv/dev/repo"},"output":{"ok":true,"create":true,"slug":"login_google","branch":"feature/login_google","base":"main","path":"/srv/dev/repo.worktrees/login_google","error":""}},
+{"name":"names:001","input":{"input":{"name":"Login Google","base":"main","issue":"14"},"mainPath":"/srv/dev/repo"},"output":{"ok":true,"create":true,"slug":"14_login_google","branch":"feature/#14_login_google","base":"main","path":"/srv/dev/repo.worktrees/14_login_google","error":""}},
+{"name":"names:002","input":{"input":{"name":"Login Google","base":" develop "},"mainPath":"/srv/dev/repo/"},"output":{"ok":true,"create":true,"slug":"login_google","branch":"feature/login_google","base":"develop","path":"/srv/dev/repo.worktrees/login_google","error":""}},
+{"name":"names:003","input":{"input":{"name":"","base":"main"},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"poné un nombre para el feature (letras o números)"}},
+{"name":"names:004","input":{"input":{"name":"!!!","base":"main"},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"poné un nombre para el feature (letras o números)"}},
+{"name":"names:005","input":{"input":{"name":"x"},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"elegí la rama base"}},
+{"name":"names:006","input":{"input":{"name":"x","base":"   "},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"elegí la rama base"}},
+{"name":"names:007","input":{"input":{"branch":"feature/login"},"mainPath":"/srv/dev/repo"},"output":{"ok":true,"create":false,"slug":"login","branch":"feature/login","base":null,"path":"/srv/dev/repo.worktrees/login","error":""}},
+{"name":"names:008","input":{"input":{"branch":"fix/typo en README"},"mainPath":"C:\\work\\dev\\repo"},"output":{"ok":true,"create":false,"slug":"fix_typo_en_readme","branch":"fix/typo en README","base":null,"path":"C:/work/dev/repo.worktrees/fix_typo_en_readme","error":""}},
+{"name":"names:009","input":{"input":{"branch":"  main  "},"mainPath":"C:/work/dev/repo"},"output":{"ok":true,"create":false,"slug":"main","branch":"main","base":null,"path":"C:/work/dev/repo.worktrees/main","error":""}},
+{"name":"names:010","input":{"input":{"branch":""},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"elegí una rama"}},
+{"name":"names:011","input":{"input":{"branch":"feature/"},"mainPath":"/srv/dev/repo"},"output":{"ok":false,"create":false,"slug":"","branch":"","base":null,"path":"","error":"elegí una rama"}},
+{"name":"names:012","input":{"input":{"branch":"ñ"},"mainPath":"/srv/dev/repo"},"output":{"ok":true,"create":false,"slug":"n","branch":"ñ","base":null,"path":"/srv/dev/repo.worktrees/n","error":""}},
+{"name":"names:013","input":{"input":{"name":"A","branch":"b","base":"main"},"mainPath":"/srv/dev/repo"},"output":{"ok":true,"create":true,"slug":"a","branch":"feature/a","base":"main","path":"/srv/dev/repo.worktrees/a","error":""}},
+{"name":"names:014","input":{"input":{"name":"Login","base":"main"},"mainPath":"/repo"},"output":{"ok":true,"create":true,"slug":"login","branch":"feature/login","base":"main","path":"/repo.worktrees/login","error":""}},
+{"name":"names:015","input":{"input":{"name":"Login","base":"main"},"mainPath":"repo"},"output":{"ok":true,"create":true,"slug":"login","branch":"feature/login","base":"main","path":"./repo.worktrees/login","error":""}},
+{"name":"names:016","input":{"input":{"name":"Login","base":"main"},"mainPath":"/"},"output":{"ok":true,"create":true,"slug":"login","branch":"feature/login","base":"main","path":"./.worktrees/login","error":""}},
+{"name":"names:017","input":{"input":{"name":"Login","base":"main"},"mainPath":""},"output":{"ok":true,"create":true,"slug":"login","branch":"feature/login","base":"main","path":"./.worktrees/login","error":""}},
+{"name":"names:018","input":{"input":{"branch":"feature/#14_login"},"mainPath":"D:/work/repo"},"output":{"ok":true,"create":false,"slug":"14_login","branch":"feature/#14_login","base":null,"path":"D:/work/repo.worktrees/14_login","error":""}}
+]

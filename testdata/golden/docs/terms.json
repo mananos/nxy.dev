@@ -1,0 +1,12 @@
+[
+{"name":"terms:000","input":{"paths":[]},"output":{"terms":[]}},
+{"name":"terms:001","input":{"paths":["src/ClienteService.ts"]},"output":{"terms":["ClienteService"]}},
+{"name":"terms:002","input":{"paths":["src/cliente.component.ts","src/cliente.component.html","src/cliente.component.spec.ts"]},"output":{"terms":["cliente.component"]}},
+{"name":"terms:003","input":{"paths":["index.js","utils.ts","main.go","app.py","x.go","abc.go"]},"output":{"terms":[]}},
+{"name":"terms:004","input":{"paths":["internal/greet/greet.go","internal/greet/greet_test.go","README.md","docs/guide.md"]},"output":{"terms":["greet"]}},
+{"name":"terms:005","input":{"paths":["src/Settings.ts","src/SETUP.js","lib/Helpers.rb","lib/models.py"]},"output":{"terms":[]}},
+{"name":"terms:006","input":{"paths":["a/b/OrderController.java","c/OrderController.java","d/PaymentGateway.java"]},"output":{"terms":["OrderController","PaymentGateway"]}},
+{"name":"terms:007","input":{"paths":["archivo.tar.gz","noext","dir/.hidden","src/ñandúService.ts","src/日本語ファイル.ts"]},"output":{"terms":["archivo.tar","noext","ñandúService","日本語ファイル"]}},
+{"name":"terms:008","input":{"paths":["tests/Foo.test.js","src/__tests__/Bar.js","src/FooBarBaz.spec.ts","cmd/nxy/review.go"]},"output":{"terms":["review"]}},
+{"name":"terms:009","input":{"paths":["src/v1.2.3.js","src/a.b.c.d.e.js","Dockerfile","Makefile","package.json"]},"output":{"terms":["v1.2.3","a.b.c.d.e","Dockerfile","Makefile"]}}
+]

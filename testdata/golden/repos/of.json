@@ -1,0 +1,10 @@
+[
+{"name":"of:000","input":{"roots":["/work/api","/work/web"],"file":"/work/api/src/Main.java"},"output":{"index":0}},
+{"name":"of:001","input":{"roots":["/work/api","/work/web"],"file":"/work/web/src/app.ts"},"output":{"index":1}},
+{"name":"of:002","input":{"roots":["/work/api","/work/web"],"file":"/work/api"},"output":{"index":0}},
+{"name":"of:003","input":{"roots":["/work/api","/work/web"],"file":"/work/apix/a.js"},"output":{"index":null}},
+{"name":"of:004","input":{"roots":["/work/api","/work/web"],"file":"/other/zzz/a.js"},"output":{"index":null}},
+{"name":"of:005","input":{"roots":["/work","/work/api"],"file":"/work/api/a.go"},"output":{"index":1}},
+{"name":"of:006","input":{"roots":["/work","/work/api"],"file":"/work/web/a.go"},"output":{"index":0}},
+{"name":"of:007","input":{"roots":["/work/api","/work/api/vendor/lib"],"file":"/work/api/vendor/lib/x.go"},"output":{"index":1}}
+]

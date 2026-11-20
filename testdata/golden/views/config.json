@@ -1,0 +1,730 @@
+{
+  "layers": [
+    {
+      "name": "user",
+      "path": "/srv/dev/nxyhome/config.json",
+      "exists": true
+    },
+    {
+      "name": "repo",
+      "path": "/srv/dev/app/.nxy/config.json",
+      "exists": true
+    }
+  ],
+  "roles": [
+    {
+      "role": "planner",
+      "stage": "Planificar",
+      "does": "Lee el repo y escribe el plan con sus lotes y pruebas",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.planner.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.planner.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.planner.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.planner.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "scout",
+      "stage": "Planificar",
+      "does": "Explora el repo con búsquedas baratas para el planner",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.scout.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.scout.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.scout.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.scout.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "implementer",
+      "stage": "Implementar",
+      "does": "Escribe el código de un lote hasta que su prueba pasa",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.implementer.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.implementer.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.implementer.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.implementer.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "reviewer",
+      "stage": "Revisar",
+      "does": "Revisa el diff completo con lentes y marca hallazgos",
+      "model": "opus",
+      "effort": "medium",
+      "source": "repo",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "reviewer-quick",
+      "stage": "Revisar",
+      "does": "Revisión corta para cambios chicos",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer-quick.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer-quick.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer-quick.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.reviewer-quick.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "refuter",
+      "stage": "Revisar",
+      "does": "Intenta refutar cada hallazgo antes de que te lo muestre",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.refuter.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.refuter.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.refuter.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.refuter.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "role": "documenter",
+      "stage": "Documentar",
+      "does": "Actualiza la documentación de lo que cambió",
+      "model": "",
+      "effort": "",
+      "source": "default",
+      "models": [
+        "haiku",
+        "sonnet",
+        "opus",
+        "fable"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "actions": [
+        {
+          "id": "model",
+          "label": "Modelo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.documenter.model",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "effort",
+          "label": "Esfuerzo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.documenter.effort",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "model_repo",
+          "label": "Modelo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.documenter.model",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        },
+        {
+          "id": "effort_repo",
+          "label": "Esfuerzo en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "roles.documenter.effort",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "id": "modules.filter",
+      "label": "Filtro de salida",
+      "value": true,
+      "source": "default",
+      "options": [
+        true,
+        false
+      ],
+      "actions": [
+        {
+          "id": "set",
+          "label": "Cambiar",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "modules.filter",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "set_repo",
+          "label": "Cambiar en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "modules.filter",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "filter.engine",
+      "label": "Motor del filtro",
+      "value": "auto",
+      "source": "default",
+      "options": [
+        "auto",
+        "rtk",
+        "off"
+      ],
+      "actions": [
+        {
+          "id": "set",
+          "label": "Cambiar",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "filter.engine",
+            "{value}"
+          ],
+          "confirm": "Guarda en ~/.nxy/config.json",
+          "planned": false
+        },
+        {
+          "id": "set_repo",
+          "label": "Cambiar en este repo",
+          "argv": [
+            "nxy",
+            "config",
+            "set",
+            "filter.engine",
+            "{value}",
+            "--repo"
+          ],
+          "confirm": "Guarda en .nxy/config.json del repo",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "statusline": {
+    "installed": false,
+    "settings_path": "/srv/dev/userdir/.claude/settings.json",
+    "install": {
+      "id": "install",
+      "label": "Instalar",
+      "argv": [
+        "nxy",
+        "statusline",
+        "setup",
+        "install"
+      ],
+      "confirm": "Escribe la statusline en ~/.claude/settings.json (queda un backup)",
+      "planned": false
+    },
+    "remove": {
+      "id": "remove",
+      "label": "Quitar",
+      "argv": [
+        "nxy",
+        "statusline",
+        "setup",
+        "remove"
+      ],
+      "confirm": "Quita la statusline de ~/.claude/settings.json",
+      "planned": false
+    }
+  },
+  "tools": [
+    {
+      "name": "rtk",
+      "found": true,
+      "version": "0.39.0",
+      "path": "/usr/local/bin/rtk",
+      "install": null
+    },
+    {
+      "name": "rg",
+      "found": true,
+      "version": "14.1.0",
+      "path": "/usr/bin/rg",
+      "install": null
+    },
+    {
+      "name": "codegraph",
+      "found": false,
+      "version": "",
+      "path": "",
+      "install": {
+        "id": "install",
+        "label": "Instalar codegraph",
+        "argv": [
+          "nxy",
+          "setup",
+          "run",
+          "codegraph",
+          "--yes"
+        ],
+        "confirm": "Instala codegraph",
+        "planned": false
+      }
+    },
+    {
+      "name": "d2",
+      "found": false,
+      "version": "",
+      "path": "",
+      "install": {
+        "id": "install",
+        "label": "Instalar d2",
+        "argv": [
+          "nxy",
+          "setup",
+          "run",
+          "d2",
+          "--yes"
+        ],
+        "confirm": "Instala d2",
+        "planned": false
+      }
+    },
+    {
+      "name": "nxy",
+      "found": false,
+      "version": "",
+      "path": "",
+      "install": {
+        "id": "install",
+        "label": "Poner nxy en el PATH",
+        "argv": [
+          "nxy",
+          "setup",
+          "run",
+          "path",
+          "--yes"
+        ],
+        "confirm": "nxy setup run path --yes",
+        "planned": false
+      }
+    }
+  ],
+  "binary": {
+    "installed": "2.0.0-dev",
+    "wanted": "2.0.0-dev",
+    "path": "~/.nxy/bin/nxy",
+    "download": "none",
+    "manual_command": ""
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-11-08T14:32:10Z",
+  "totals": { "active": 4, "needs_you": 2, "cost_today_usd": 99.97 },
+  "features": [
+    {
+      "id": "F7K2",
+      "title": "Notas de crédito parciales",
+      "status": "needs_you",
+      "phase": "Implementando",
+      "stage": "batches",
+      "stage_detail": "3/4",
+      "closed_at": "",
+      "repos": [
+        { "name": "facturacion-api", "path": "/srv/dev/facturacion-api.worktrees/notas-credito", "role": "api (Spring)", "branch": "feat/notas-credito", "worktree": true },
+        { "name": "facturacion-web", "path": "/srv/dev/facturacion-web.worktrees/notas-credito", "role": "web (Angular)", "branch": "feat/notas-credito", "worktree": true }
+      ],
+      "batch": 3,
+      "batches": 4,
+      "elapsed_ms": 1380000,
+      "cost_usd": 4.62,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [3],
+      "last_event": "Lote 3 (web) en rojo tras el reintento",
+      "tokens_in": 412800,
+      "tokens_out": 38400,
+      "decision": {
+        "feature_id": "F7K2",
+        "header": "Lote 3 falló",
+        "question": "El lote 3 (web) sigue en rojo después del reintento. ¿Cómo seguimos?"
+      },
+      "actions": [
+        { "id": "retry", "label": "Reintentar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--answer", "Reintentar"], "confirm": "", "planned": false },
+        { "id": "pause", "label": "Pausar", "argv": ["nxy", "feature", "pause", "--feature", "F7K2"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "id": "F7K1",
+      "title": "Importar datos de la 1.x",
+      "status": "working",
+      "phase": "Implementando",
+      "stage": "batches",
+      "stage_detail": "1/2",
+      "closed_at": "",
+      "repos": [
+        { "name": "nxy.dev", "path": "/srv/dev/nxy.dev.worktrees/importar-1x", "role": "cli (Go)", "branch": "feat/import-1x", "worktree": true }
+      ],
+      "batch": 1,
+      "batches": 2,
+      "elapsed_ms": 720000,
+      "cost_usd": 1.66,
+      "cost_estimated": true,
+      "running": [1],
+      "failed": [],
+      "last_event": "implementer · Edit internal/legacy/memory.go",
+      "tokens_in": 143900,
+      "tokens_out": 12300,
+      "decision": null,
+      "actions": [
+        { "id": "pause", "label": "Pausar", "argv": ["nxy", "feature", "pause", "--feature", "F7K1"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "id": "F7K9",
+      "title": "Reintentos de pagos con backoff",
+      "status": "needs_you",
+      "phase": "Diseño",
+      "stage": "design",
+      "stage_detail": "2/4",
+      "closed_at": "",
+      "repos": [
+        { "name": "pagos-worker", "path": "/srv/dev/pagos-worker", "role": "worker (Play/Scala)", "branch": "feat/backoff-cobros", "worktree": false }
+      ],
+      "batch": 0,
+      "batches": 3,
+      "elapsed_ms": 540000,
+      "cost_usd": 0.84,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [],
+      "last_event": "ingeniero · elegí cómo sigue la bifurcación 2",
+      "tokens_in": 61200,
+      "tokens_out": 7900,
+      "decision": {
+        "feature_id": "F7K9",
+        "header": "Bifurcación 2 de 4",
+        "question": "¿Dónde vive el backoff?"
+      },
+      "actions": [
+        { "id": "approve", "label": "Aprobar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K9", "--answer", "En PagosClient, con sleep"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "id": "F7K5",
+      "title": "Gate de lecturas por repo",
+      "status": "verifying",
+      "phase": "Review",
+      "stage": "review",
+      "stage_detail": "",
+      "closed_at": "",
+      "repos": [
+        { "name": "nxy.dev", "path": "/srv/dev/nxy.dev", "role": "cli (Go)", "branch": "feat/gate-umbral", "worktree": false }
+      ],
+      "batch": 3,
+      "batches": 3,
+      "elapsed_ms": 2460000,
+      "cost_usd": 3.18,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [],
+      "last_event": "reviewer · 412 líneas con 3 lentes",
+      "tokens_in": 298100,
+      "tokens_out": 24700,
+      "decision": null,
+      "actions": [
+        { "id": "pause", "label": "Pausar", "argv": ["nxy", "feature", "pause", "--feature", "F7K5"], "confirm": "", "planned": false }
+      ]
+    },
+    {
+      "id": "F7J8",
+      "title": "Exportar memoria a JSON",
+      "status": "done",
+      "phase": "Cerrada",
+      "stage": "close",
+      "stage_detail": "",
+      "closed_at": "2026-11-08T12:30:10Z",
+      "repos": [
+        { "name": "nxy.dev", "path": "/srv/dev/nxy.dev", "role": "cli (Go)", "branch": "feat/exportar-memoria", "worktree": false }
+      ],
+      "batch": 1,
+      "batches": 1,
+      "elapsed_ms": 1800000,
+      "cost_usd": 2.1,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [],
+      "last_event": "cerrada con 2 reglas nuevas",
+      "tokens_in": 201300,
+      "tokens_out": 18100,
+      "decision": null,
+      "actions": []
+    }
+  ],
+  "worktrees": [
+    { "repo": "facturacion-api", "path": "/srv/dev/facturacion-api.worktrees/notas-credito", "branch": "feat/notas-credito", "feature_id": "F7K2", "state": "active", "dirty": true, "ahead": 3, "behind": 0 },
+    { "repo": "facturacion-web", "path": "/srv/dev/facturacion-web.worktrees/notas-credito", "branch": "feat/notas-credito", "feature_id": "F7K2", "state": "active", "dirty": false, "ahead": 1, "behind": 0 },
+    { "repo": "nxy.dev", "path": "/srv/dev/nxy.dev.worktrees/importar-1x", "branch": "feat/import-1x", "feature_id": "F7K1", "state": "active", "dirty": true, "ahead": 0, "behind": 0 },
+    { "repo": "pagos-worker", "path": "/srv/dev/pagos-worker.worktrees/timeout", "branch": "fix/timeout", "feature_id": "", "state": "orphan", "dirty": false, "ahead": 0, "behind": 4 }
+  ]
+}

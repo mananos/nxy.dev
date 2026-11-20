@@ -1,0 +1,872 @@
+[
+  {
+    "name": "absolute-target",
+    "input": {
+      "command": "echo x > /abs/out.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "../../abs/out.txt"
+      ],
+      "contentTargets": [
+        "../../abs/out.txt"
+      ]
+    }
+  },
+  {
+    "name": "brace-target",
+    "input": {
+      "command": "echo x > f{1,2}",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cd-chain",
+    "input": {
+      "command": "cd sub && echo x > f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "sub/f"
+      ],
+      "contentTargets": [
+        "sub/f"
+      ]
+    }
+  },
+  {
+    "name": "cd-dash",
+    "input": {
+      "command": "cd - && echo x > rel",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cd-dotdot",
+    "input": {
+      "command": "cd sub && cd .. && echo x > f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "cd-home",
+    "input": {
+      "command": "cd ~ && echo x > rel",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cd-var",
+    "input": {
+      "command": "cd $DIR && echo x > rel",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cp",
+    "input": {
+      "command": "cp a b",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "b"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cp-dir-slash",
+    "input": {
+      "command": "cp a b dir/",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "dir/a",
+        "dir/b"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cp-single-dir-slash",
+    "input": {
+      "command": "cp a dir/",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "dir/a"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cp-t",
+    "input": {
+      "command": "cp -t dir a b",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "dir/a",
+        "dir/b"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "cp-unresolvable-source",
+    "input": {
+      "command": "cp *.txt dir/",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "dd",
+    "input": {
+      "command": "dd if=a of=b",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "b"
+      ],
+      "contentTargets": [
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "dedupe",
+    "input": {
+      "command": "echo a > f && echo b >> f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "dev-null",
+    "input": {
+      "command": "cmd >/dev/null 2>&1",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "dup-stderr",
+    "input": {
+      "command": "cmd 2>&1",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "empty",
+    "input": {
+      "command": "",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "env-prefix",
+    "input": {
+      "command": "env X=1 tee out.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "exe-suffix",
+    "input": {
+      "command": "sed.exe -i s/a/b/ f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "glob-target",
+    "input": {
+      "command": "ls *.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "heredoc-body",
+    "input": {
+      "command": "cat <<EOF\nfoo > x\nEOF",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "heredoc-dash",
+    "input": {
+      "command": "cat >> out.txt <<-EOF\n\tfoo > x\n\tEOF",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "heredoc-quoted-word",
+    "input": {
+      "command": "cat > out.txt <<'EOF'\nfoo > x\nEOF\necho y > after.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt",
+        "after.txt"
+      ],
+      "contentTargets": [
+        "out.txt",
+        "after.txt"
+      ]
+    }
+  },
+  {
+    "name": "heredoc-with-redirect",
+    "input": {
+      "command": "cat > out.txt <<EOF\nfoo > x\nEOF",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "herestring",
+    "input": {
+      "command": "cat <<< x > out.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "mv",
+    "input": {
+      "command": "mv a b",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "b",
+        "a"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "mv-dir-slash",
+    "input": {
+      "command": "mv a b out/",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out/a",
+        "out/b",
+        "a",
+        "b"
+      ],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "nul",
+    "input": {
+      "command": "cmd > NUL",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "nul-lower",
+    "input": {
+      "command": "cmd > nul",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "order",
+    "input": {
+      "command": "echo a > z && echo b > a && echo c > m",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "z",
+        "a",
+        "m"
+      ],
+      "contentTargets": [
+        "z",
+        "a",
+        "m"
+      ]
+    }
+  },
+  {
+    "name": "perl-Mstrict",
+    "input": {
+      "command": "perl -Mstrict -e 'print 1' f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "perl-no-inplace",
+    "input": {
+      "command": "perl script.pl f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "perl-pi",
+    "input": {
+      "command": "perl -pi -e 's/a/b/' f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "prefixes",
+    "input": {
+      "command": "FOO=1 sudo rtk sed -i s/a/b/ f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "ps-add-content-literal",
+    "input": {
+      "command": "Add-Content -LiteralPath a.txt -Value x",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "a.txt"
+      ],
+      "contentTargets": [
+        "a.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps-out-file",
+    "input": {
+      "command": "'x' | Out-File o.txt",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "o.txt"
+      ],
+      "contentTargets": [
+        "o.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps-redirect",
+    "input": {
+      "command": "echo x > a.txt",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "a.txt"
+      ],
+      "contentTargets": [
+        "a.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps-sed-ignored",
+    "input": {
+      "command": "sed -i s/a/b/ f",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "ps-set-content",
+    "input": {
+      "command": "Set-Content -Path out.txt -Value x",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps-set-content-positional",
+    "input": {
+      "command": "Set-Content out.txt x",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps-set-location",
+    "input": {
+      "command": "Set-Location sub; Set-Content f x",
+      "tool": "PowerShell"
+    },
+    "output": {
+      "targets": [
+        "sub/f"
+      ],
+      "contentTargets": [
+        "sub/f"
+      ]
+    }
+  },
+  {
+    "name": "quoted-gt",
+    "input": {
+      "command": "echo \"a > b\"",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "quoted-multiline-double",
+    "input": {
+      "command": "echo \"line one\na > x\" ",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "quoted-multiline-single",
+    "input": {
+      "command": "echo 'line one\na > x'",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "quoted-target",
+    "input": {
+      "command": "echo x > \"my file.txt\"",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "my file.txt"
+      ],
+      "contentTargets": [
+        "my file.txt"
+      ]
+    }
+  },
+  {
+    "name": "redirect",
+    "input": {
+      "command": "echo x > a.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "a.txt"
+      ],
+      "contentTargets": [
+        "a.txt"
+      ]
+    }
+  },
+  {
+    "name": "redirect-append",
+    "input": {
+      "command": "echo x >> a.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "a.txt"
+      ],
+      "contentTargets": [
+        "a.txt"
+      ]
+    }
+  },
+  {
+    "name": "redirect-both",
+    "input": {
+      "command": "cmd &> all.log",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "all.log"
+      ],
+      "contentTargets": [
+        "all.log"
+      ]
+    }
+  },
+  {
+    "name": "redirect-clobber",
+    "input": {
+      "command": "echo x >| a.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "redirect-input-only",
+    "input": {
+      "command": "sort < in.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "redirect-non-ascii",
+    "input": {
+      "command": "echo x > cafà/à.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "cafà/à.txt"
+      ],
+      "contentTargets": [
+        "cafà/à.txt"
+      ]
+    }
+  },
+  {
+    "name": "redirect-stderr",
+    "input": {
+      "command": "cmd 2> err.log",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "err.log"
+      ],
+      "contentTargets": [
+        "err.log"
+      ]
+    }
+  },
+  {
+    "name": "sed-cluster",
+    "input": {
+      "command": "sed -ni 's/a/b/p' f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "sed-inplace",
+    "input": {
+      "command": "sed -i 's/a/b/' f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "sed-inplace-suffix-expr",
+    "input": {
+      "command": "sed -i.bak -e s/a/b/ f g",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f",
+        "g"
+      ],
+      "contentTargets": [
+        "f",
+        "g"
+      ]
+    }
+  },
+  {
+    "name": "sed-long-inplace",
+    "input": {
+      "command": "sed --in-place=.bak s/a/b/ f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "sed-no-inplace",
+    "input": {
+      "command": "sed s/a/b/ f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "tee",
+    "input": {
+      "command": "echo x | tee -a out.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "out.txt"
+      ],
+      "contentTargets": [
+        "out.txt"
+      ]
+    }
+  },
+  {
+    "name": "tilde-inside-cd",
+    "input": {
+      "command": "cd RUNNER~1 && echo x > f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "RUNNER~1/f"
+      ],
+      "contentTargets": [
+        "RUNNER~1/f"
+      ]
+    }
+  },
+  {
+    "name": "tilde-inside-word",
+    "input": {
+      "command": "sed -i s/a/b/ RUNNER~1/f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "RUNNER~1/f"
+      ],
+      "contentTargets": [
+        "RUNNER~1/f"
+      ]
+    }
+  },
+  {
+    "name": "tilde-start",
+    "input": {
+      "command": "echo x > ~/out.txt",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  },
+  {
+    "name": "truncate",
+    "input": {
+      "command": "truncate -s 0 f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "two-lines",
+    "input": {
+      "command": "echo a\necho b > f",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [
+        "f"
+      ],
+      "contentTargets": [
+        "f"
+      ]
+    }
+  },
+  {
+    "name": "variable-target",
+    "input": {
+      "command": "echo x > \"$OUT\"",
+      "tool": "Bash"
+    },
+    "output": {
+      "targets": [],
+      "contentTargets": []
+    }
+  }
+]

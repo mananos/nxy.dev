@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — demo</title>
+<link rel="stylesheet" href="marca/marca.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #070707; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #070707; color: #fff;
+    font-family: 'Archivo', sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; overflow: hidden; background: #070707; }
+  .abs { position: absolute; }
+  .tag2 { position: absolute; left: 72px; top: 64px; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .16em; color: #8C8C8C; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 48px; font-size: 28px; line-height: 1.35; color: #BDBDBD; border-left: 6px solid #FDBF01; padding-left: 20px; }
+  .cap b { color: #fff; }
+  .haz { background: repeating-linear-gradient(-45deg, #FDBF01 0 18px, #070707 18px 36px); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .opt { display: inline-block; margin-right: 14px; padding: 8px 18px; border: 2px solid #2E2E2E; color: #BDBDBD; font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+  .opt.sel { background: #FDBF01; border-color: #FDBF01; color: #070707; }
+  .cf { background: #FDBF01; }
+  .cf .diag { position: absolute; left: -100px; top: -40px; width: 420px; height: 1100px; background: #070707; transform: rotate(-30deg); transform-origin: top left; opacity: .08; }
+  .cf .cab { position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: center; gap: 16px; color: #070707; }
+  .cf .cab img { width: 46px; height: auto; }
+  .cf .cab .t { font-size: 30px; }
+  .cf .cab .s { font-size: 20px; font-weight: 600; }
+  .cf .cab .chip { margin-left: auto; }
+  .cf { --sombra-term: rgba(7,7,7,.38); }
+  .cf .cap2 { position: absolute; left: 40px; right: 52px; bottom: 36px; background: #070707; color: #DEDBD2; font-size: 26px; line-height: 1.3; padding: 14px 22px; border-left: 8px solid #fff; }
+  .cf .cap2 b { color: #FDBF01; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="demo" data-start="0" data-duration="44" data-width="1280" data-height="720" data-fps="30">
+
+  <!-- 0-5 Portada A -->
+  <section class="clip scene" id="s1" data-start="0" data-duration="5">
+    <div class="abs" style="left:-260px;top:-80px;width:220px;height:1100px;background:#FDBF01;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:-60px;top:-80px;width:90px;height:1100px;background:#FDBF01;opacity:.55;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:150px;top:-80px;width:26px;height:1100px;background:#FDBF01;opacity:.3;transform:rotate(-38deg);transform-origin:top left"></div>
+    <img class="abs" src="marca/perro-banner.png" alt="" style="left:0;bottom:0;height:720px;width:auto">
+    <div class="abs" style="left:640px;top:0;width:640px;height:720px;background:linear-gradient(90deg,rgba(7,7,7,0) 0,#070707 22%)"></div>
+    <div class="abs mono" data-in="0.1" style="left:720px;top:56px;display:flex;gap:12px;align-items:center;font-size:14px;letter-spacing:.14em;color:#8C8C8C">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:4px 10px">EP.00</span><span>DEMO · 0:44</span>
+    </div>
+    <div class="abs" data-in="0.4" style="left:716px;top:170px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:120px;line-height:.9;font-weight:900;font-stretch:125%;letter-spacing:-.04em;display:flex;align-items:baseline">
+        <span>nxy</span><span style="display:inline-block;width:26px;height:26px;background:#FDBF01;margin:0 6px 0 4px"></span><span style="color:#9A9A9A;font-weight:500">dev</span>
+      </div>
+      <div style="font-size:15px;font-weight:600;letter-spacing:.42em;color:#D8D8D8;margin-top:14px">BUILD <span style="color:#FDBF01">•</span> AUTOMATE <span style="color:#FDBF01">•</span> SCALE</div>
+    </div>
+    <div class="abs" data-in="1.1" style="left:716px;top:400px;width:500px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:52px;line-height:1;font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em">Claude Code<br><span style="color:#FDBF01">con correa.</span></div>
+      <div style="font-size:20px;line-height:1.4;color:#BDBDBD">Plan antes de tocar código, memoria que no se olvida y el gasto a la vista.</div>
+    </div>
+    <div class="abs mono" data-in="2" style="left:716px;bottom:56px;display:flex;align-items:center;font-size:18px">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:12px 14px">&gt;_</span>
+      <span style="border:2px solid #2A2A2A;border-left:none;padding:10px 18px;color:#fff">/plugin install nxy@nxy-dev</span>
+    </div>
+    <div class="scan"></div>
+    <div class="esquinas" style="right:28px;top:28px"></div>
+    <div class="esquinas" style="right:28px;bottom:28px;transform:rotate(90deg)"></div>
+  </section>
+
+  <!-- 5-12 01 El problema -->
+  <section class="clip scene" id="s2" data-start="5" data-duration="7">
+    <div class="abs" style="right:-120px;top:-60px;width:180px;height:900px;background:#FDBF01;transform:rotate(24deg)"></div>
+    <div class="tag2" data-in="0">01 — EL PROBLEMA</div>
+    <div class="abs" data-in="0.4" style="left:72px;top:118px;font-size:44px;font-weight:700;font-stretch:105%;color:#D8D8D8">Tu sesión de Claude Code hoy:</div>
+    <div class="abs" data-in="1" style="left:60px;top:170px;display:flex;align-items:flex-start;gap:8px">
+      <span style="font-size:120px;font-weight:900;font-stretch:125%;color:#FDBF01;line-height:1;margin-top:28px">$</span>
+      <span style="font-size:300px;font-weight:900;font-stretch:125%;letter-spacing:-.06em;line-height:.9;text-shadow:6px 0 0 rgba(253,191,1,.55)">99,97</span>
+    </div>
+    <div class="abs" data-in="2.4" style="left:72px;top:470px;font-size:64px;font-weight:900;font-stretch:118%;text-transform:uppercase;letter-spacing:-.01em">y no sabés <span style="background:#FDBF01;color:#070707;padding:0 14px">en qué.</span></div>
+    <div class="abs mono" data-in="3.8" style="left:72px;top:600px;display:flex;gap:14px;font-size:16px">
+      <span style="border:2px solid #2A2A2A;padding:8px 14px;color:#BDBDBD">¿cuánto contexto releyó?</span>
+      <span style="border:2px solid #2A2A2A;padding:8px 14px;color:#BDBDBD">¿qué subagente gastó más?</span>
+      <span style="border:2px solid #2A2A2A;padding:8px 14px;color:#BDBDBD">¿se cortó el cache?</span>
+    </div>
+    <div class="abs mono" style="right:120px;bottom:44px;font-size:12px;color:#5E5E5E;letter-spacing:.1em">MONTO DE EJEMPLO</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 12-20 02 nxy entra -->
+  <section class="clip scene" id="s3" data-start="12" data-duration="8">
+    <div class="tag2" data-in="0">02 — NXY ENTRA</div>
+    <div class="abs mono" style="left:72px;top:120px;width:560px;display:flex;flex-direction:column;gap:18px">
+      <div data-in="0.4" style="display:flex;gap:12px;align-items:flex-start">
+        <span style="flex:none;width:34px;height:34px;background:#2A2A2A;color:#BDBDBD;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px">vos</span>
+        <div style="background:#141414;border:1px solid #262626;padding:14px 16px;font-size:17px;line-height:1.45;color:#E6E6E6">/nxy:feature alta de clientes corporativos con validación de CUIT</div>
+      </div>
+      <div data-in="1.4" style="display:flex;gap:12px;align-items:flex-start">
+        <span style="flex:none;width:34px;height:34px;background:#2A2A2A;color:#BDBDBD;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px">nxy</span>
+        <div style="background:#141414;border:1px solid #262626;padding:14px 16px;font-size:17px;line-height:1.45;color:#9A9A9A">Guardo tu pedido y despacho al <span style="color:#fff">planner</span>: busca con <span style="color:#fff">nxy locate</span> y arma el plan.</div>
+      </div>
+    </div>
+    <div class="abs" data-in="2.4" style="left:60px;top:400px;width:600px">
+      <div style="transform:rotate(-3deg)">
+        <div class="haz" style="height:16px"></div>
+        <div style="background:#FDBF01;color:#070707;padding:18px 24px;display:flex;align-items:center;gap:18px">
+          <img src="marca/perro-chico.png" alt="" style="width:70px;height:auto;flex:none">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:46px;line-height:.95;font-weight:900;font-stretch:120%;text-transform:uppercase">Primero el plan.</span>
+            <span class="mono" style="font-size:15px;font-weight:700">nxy: 3 lotes, un Accept por lote — aprobalo y arranco</span>
+          </div>
+        </div>
+        <div class="haz" style="height:16px"></div>
+      </div>
+    </div>
+    <div class="abs" style="left:760px;top:110px;width:440px;display:flex;flex-direction:column;gap:14px">
+      <div data-in="3.2" style="display:flex;align-items:center;gap:16px;background:#fff;color:#070707;padding:16px 20px">
+        <span class="mono" style="font-weight:700;font-size:18px">01</span><span style="font-size:32px;font-weight:900;font-stretch:118%;text-transform:uppercase;flex:1">Plan</span><span class="mono" style="font-size:14px;font-weight:700">✓ listo</span>
+      </div>
+      <div data-in="3.8" style="display:flex;align-items:center;gap:16px;background:#FDBF01;color:#070707;padding:16px 20px">
+        <span class="mono" style="font-weight:700;font-size:18px">02</span><span style="font-size:32px;font-weight:900;font-stretch:118%;text-transform:uppercase;flex:1">Lotes</span><span class="mono" style="font-size:14px;font-weight:700">tests ●</span>
+      </div>
+      <div data-in="4.4" style="display:flex;align-items:center;gap:16px;border:2px solid #2E2E2E;padding:14px 18px;color:#6E6E6E">
+        <span class="mono" style="font-weight:700;font-size:18px">03</span><span style="font-size:32px;font-weight:900;font-stretch:118%;text-transform:uppercase;flex:1">Review</span>
+      </div>
+      <div data-in="5" style="display:flex;align-items:center;gap:16px;border:2px solid #2E2E2E;padding:14px 18px;color:#6E6E6E">
+        <span class="mono" style="font-weight:700;font-size:18px">04</span><span style="font-size:32px;font-weight:900;font-stretch:118%;text-transform:uppercase;flex:1">Cierre</span>
+      </div>
+    </div>
+    <div class="abs" data-in="6" style="left:760px;top:520px;width:440px;font-size:22px;line-height:1.35;color:#BDBDBD">Cada lote se prueba solo. <span style="color:#fff;font-weight:700">Si falla, no pasa.</span></div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 20-27 03 Vos aprobás -->
+  <section class="clip scene" id="s4" data-start="20" data-duration="7">
+    <div class="tag2" data-in="0">03 — VOS APROBÁS</div>
+    <div class="abs mono" data-in="0.4" style="left:72px;top:120px;width:1136px;background:#141414;border:2px solid #2E2E2E;padding:22px 28px;font-size:21px;line-height:1.7;color:#BDBDBD">
+      <div style="color:#fff">¿Aprobás el plan 3f9a1c2e r1 de nxy?</div>
+      <div data-in="1" style="margin-top:8px">Lote 1  Contrato del DTO          <span style="color:#FDBF01">Accept:</span> go test ./cuit/...</div>
+      <div data-in="1.5">Lote 2  Servicio de alta          <span style="color:#FDBF01">Accept:</span> go test ./clientes/...</div>
+      <div data-in="2">Lote 3  Pantalla de alta          <span style="color:#FDBF01">Accept:</span> npm test -- clientes</div>
+    </div>
+    <div class="abs" data-in="3" style="left:72px;top:420px;width:340px">
+      <div style="transform:rotate(-3deg);background:#FDBF01;color:#070707;padding:18px 26px;font-size:46px;font-weight:900;font-stretch:120%;text-transform:uppercase;box-shadow:8px 8px 0 #2E2E2E">Aprobar</div>
+    </div>
+    <div class="abs" data-in="3.4" style="left:470px;top:432px"><span class="opt">Cambiar</span><span class="opt">Ver completo</span></div>
+    <div class="cap" data-in="4.4">Los <b>Accept:</b> son comandos que nxy va a correr: leelos antes de aprobar.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 27-37 04 Los lotes (marco de captura) -->
+  <section class="clip scene cf" id="s5" data-start="27" data-duration="10">
+    <div class="diag"></div>
+    <div class="cab">
+      <img src="marca/perro-chico.png" alt="">
+      <span class="t titulo">Lotes</span>
+      <span class="s">· cada uno lo prueba su Accept</span>
+      <span class="chip">nxy tui</span>
+    </div>
+    <div class="term" data-in="0.2" style="height:467.52px">
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> nxy </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">    </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> Inicio </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Memoria </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Gasto </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Config </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(199,150,0);background:rgb(253,191,1)">╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> ● 2 DECISIONES </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)">hoy </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">$99.97</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">Inicio</span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> › </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">F7K2</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">                                                                                             </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)">esc vuelve</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">←</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">Notas de crédito parciales</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">F7K2</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                            </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> TE NECESITA </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">       </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">facturacion-api + facturacion-web · feat/notas-credito · 23m · $4.62</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                         </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> <span class="g">✓</span> Diseño </span><span style="color:rgb(253,191,1);background:rgb(7,7,7)"> ━━ </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> <span class="g">✓</span> Plan </span><span style="color:rgb(253,191,1);background:rgb(7,7,7)"> ━━ </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700;text-decoration:underline">Lotes 3/4</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> ── </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Review </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)"> ── </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Cierre </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(127,209,154);background:rgb(14,14,13)"><span class="g">✓</span></span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  1  Contrato NotaCreditoDto       </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">api</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">sonnet-4.6 · medium</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">     </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">4m</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   $0.52   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                  </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(127,209,154);background:rgb(14,14,13)"><span class="g">✓</span></span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  2  Servicio de notas parciales   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">api</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">sonnet-4.6 · high</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">       </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">5m</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   $1.12   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                  </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(138,28,18);background:rgb(253,191,1)"><span class="g">✗</span></span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">  3  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">Componente de nota parcial</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">    </span><span style="color:rgb(74,59,0);background:rgb(253,191,1)">web</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(74,59,0);background:rgb(253,191,1)">sonnet-4.6 · high</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">       </span><span style="color:rgb(74,59,0);background:rgb(253,191,1)">8m</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   $1.54   </span><span style="color:rgb(138,28,18);background:rgb(253,191,1)">intento 2</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">                         </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">○</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  4  </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">Integración y e2e</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">             </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">web</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                          </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">           </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">espera a 3</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                        </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">   </span><span style="color:rgb(255,138,128);background:rgb(58,20,20);font-weight:700"> Lote 3 </span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">   </span><span style="color:rgb(143,139,128);background:rgb(58,20,20)">intento 2 de 2 · sonnet-4.6 high · 8m</span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">                                                                 </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">              </span><span style="color:rgb(143,139,128);background:rgb(58,20,20)">nota-credito.component.spec.ts:42</span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">                                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">              TS2345: el tipo NotaCredito no se puede asignar a NotaParcial                                         </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">              </span><span style="color:rgb(143,139,128);background:rgb(58,20,20)">recibió </span><span style="color:rgb(222,219,210);background:rgb(58,20,20);font-weight:700">K7</span><span style="color:rgb(143,139,128);background:rgb(58,20,20)"> (no la citó) y </span><span style="color:rgb(222,219,210);background:rgb(58,20,20);font-weight:700">A5</span><span style="color:rgb(143,139,128);background:rgb(58,20,20)">  ·  no aprendió nada</span><span style="color:rgb(222,219,210);background:rgb(58,20,20)">                                                     </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">     </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">Hilo principal</span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">   opus-5.5 · high · esperando tu decisión</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">   $0.74</span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">     </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">Planner</span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">   opus-5.5 · high · 3m</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">   $0.68      </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">scout</span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">   haiku-4.5 · low · 38s</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">   $0.02                                  </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> d </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> decidir</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> a </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> agentes</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> p </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> plan</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> enter </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> ir al agente</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> ↑↓ </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> lote</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> space </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> pausar/reanudar</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> ? </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> ayuda</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span></div>
+    </div>
+    <div class="cap2" data-in="2.4">Cada lote lo prueba su <b>Accept</b>. Lo corre nxy, no el modelo: el veredicto no es opinión.</div>
+  </section>
+
+  <!-- 37-44 05 Cierre -->
+  <section class="clip scene" id="s6" data-start="37" data-duration="7">
+    <div class="abs" style="left:-420px;top:-80px;width:130px;height:1100px;background:#FDBF01;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="tag2" data-in="0" style="left:300px">05 — EL CIERRE</div>
+    <div class="abs" data-in="0.4" style="left:300px;top:150px;width:900px;font-size:60px;line-height:1.05;font-weight:900;font-stretch:112%;text-transform:uppercase">Vos mirás el diff <span style="color:#FDBF01">y commiteás.</span></div>
+    <div class="abs mono" data-in="1.4" style="left:300px;top:340px;width:900px;font-size:22px;line-height:1.6;color:#BDBDBD">
+      Listo · R1 <span style="color:#FDBF01">✔</span> test_alta_corporativa · R2 <span style="color:#FDBF01">✔</span> test_cuit_invalido<br>nxy nunca commitea ni pushea.
+    </div>
+    <div class="abs" data-in="2.6" style="left:300px;top:470px;font-size:30px;font-weight:600;color:#D8D8D8">Todo está en el README y en la carpeta docs/.</div>
+    <div class="abs mono" data-in="3.4" style="left:300px;bottom:90px;display:flex;align-items:center;font-size:22px">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:12px 16px">&gt;_</span>
+      <span style="border:2px solid #2A2A2A;border-left:none;padding:10px 20px;color:#fff">github.com/mananos/nxy.dev</span>
+    </div>
+    <div class="scan"></div>
+    <div class="esquinas" style="right:28px;top:28px"></div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["demo"] = tl;
+</script>
+</body>
+</html>

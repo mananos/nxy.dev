@@ -1,0 +1,36 @@
+   nxy      Inicio   ›Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+
+   Global   │   app                                               [ ]  cambiar  
+
+    ▌PROPUESTAS                              nxy las arma, vos aceptás o no   
+      borrar       K2  La recibieron 10 veces y n…  y  borrar    n  dejarla   
+      promover     A2  Se vio 2 veces: ya parec…  y  promover    n  dejarla   
+
+    ▌REGLAS                                                               3   
+  ›  K2   Los endpoints devuelven 422 ante datos inválidos        sin citar   
+     K1   Usar BigDecimal para los importes                                   
+     K3   Cada migración trae su rollback                                     
+                                                                              
+    ▌APRENDIZAJES                                                         2   
+     A2   Los importes se guardan en centavos                       visto 2   
+     A1   El redondeo de IVA va por línea, no por total            obsoleto   
+                                                                              
+     ▸ FEATURES CERRADAS                                                  1   
+
+     K2   regla                                                    del repo   
+                                                                              
+     Los endpoints devuelven 422 ante datos inválidos                         
+                                                                              
+     pregunta   ¿Qué código devuelve un endpoint ante datos inválidos?        
+     aplica a                                                                 
+     vino de    chat · 06/10                                                  
+                                                                              
+     entregada  10 veces                                                      
+     citada     nunca                                                         
+                                                                              
+     nxy propone borrarla                                                     
+      y  borrar    n  dejarla                                                 
+                                                                              
+      e  editar    x  borrar                                                  
+                                                                              
+  ↑↓  mover     /  buscar     e  editar     x  borrar     +  nueva     ?  ayuda 

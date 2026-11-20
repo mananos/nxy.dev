@@ -1,0 +1,19 @@
+[
+{"name":"issue:000","input":{"text":""},"output":{"ok":true,"issue":"","error":""}},
+{"name":"issue:001","input":{"text":"   "},"output":{"ok":true,"issue":"","error":""}},
+{"name":"issue:002","input":{"text":"#"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos (14 o #14)"}},
+{"name":"issue:003","input":{"text":" # "},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos (14 o #14)"}},
+{"name":"issue:004","input":{"text":"14"},"output":{"ok":true,"issue":"14","error":""}},
+{"name":"issue:005","input":{"text":"#14"},"output":{"ok":true,"issue":"14","error":""}},
+{"name":"issue:006","input":{"text":"# 14"},"output":{"ok":true,"issue":"14","error":""}},
+{"name":"issue:007","input":{"text":" 14 "},"output":{"ok":true,"issue":"14","error":""}},
+{"name":"issue:008","input":{"text":"1234567"},"output":{"ok":true,"issue":"1234567","error":""}},
+{"name":"issue:009","input":{"text":"12345678"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:010","input":{"text":"#12345678"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:011","input":{"text":"abc"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:012","input":{"text":"1a"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:013","input":{"text":"14.5"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:014","input":{"text":"-3"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:015","input":{"text":"##5"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}},
+{"name":"issue:016","input":{"text":"٣٤"},"output":{"ok":false,"issue":"","error":"el n.º de issue son solo dígitos, hasta 7 (14 o #14)"}}
+]

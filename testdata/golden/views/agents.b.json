@@ -1,0 +1,270 @@
+{
+  "feature": {
+    "id": "FEAT-B",
+    "title": "Exportar facturas a CSV",
+    "status": "working",
+    "phase": "Ejecutando lote",
+    "stage": "batches",
+    "stage_detail": "2/4",
+    "closed_at": "",
+    "repos": [
+      {
+        "name": "app",
+        "path": "/srv/dev/app",
+        "role": "",
+        "branch": "",
+        "worktree": false
+      }
+    ],
+    "batch": 2,
+    "batches": 4,
+    "elapsed_ms": 10800000,
+    "cost_usd": 0.18245999999999998,
+    "cost_estimated": false
+  },
+  "root": {
+    "id": "main",
+    "role": "main",
+    "label": "Hilo principal",
+    "title": "",
+    "batch": 0,
+    "repo": "",
+    "status": "",
+    "model": "claude-sonnet-4-6",
+    "effort": "high",
+    "after": [],
+    "waiting_on": [],
+    "attempt": 0,
+    "attempts": 0,
+    "failure": null,
+    "current_tool": {
+      "name": "Agent",
+      "arg": "lote 2"
+    },
+    "tools": [
+      {
+        "name": "Agent",
+        "count": 1,
+        "detail": ""
+      }
+    ],
+    "tokens_in": 3000,
+    "tokens_out": 850,
+    "cache_read": 23000,
+    "cache_write": 800,
+    "cache_hit_pct": 85.82089552238806,
+    "elapsed_ms": 10800000,
+    "cost_usd": 0.03165,
+    "cost_estimated": false,
+    "received": [],
+    "learned": [],
+    "children": [
+      {
+        "id": "b-plan",
+        "role": "planner",
+        "label": "Planner",
+        "title": "",
+        "batch": 0,
+        "repo": "",
+        "status": "green",
+        "model": "claude-sonnet-4-6",
+        "effort": "high",
+        "after": [],
+        "waiting_on": [],
+        "attempt": 0,
+        "attempts": 0,
+        "failure": null,
+        "current_tool": null,
+        "tools": [],
+        "tokens_in": 2500,
+        "tokens_out": 900,
+        "cache_read": 7000,
+        "cache_write": 0,
+        "cache_hit_pct": 73.68421052631578,
+        "elapsed_ms": 360000,
+        "cost_usd": 0.04,
+        "cost_estimated": false,
+        "received": [],
+        "learned": [],
+        "children": [
+          {
+            "id": "bscout",
+            "role": "scout",
+            "label": "Scout",
+            "title": "",
+            "batch": 0,
+            "repo": "",
+            "status": "green",
+            "model": "claude-haiku-5-5",
+            "effort": "",
+            "after": [],
+            "waiting_on": [],
+            "attempt": 0,
+            "attempts": 0,
+            "failure": null,
+            "current_tool": null,
+            "tools": [],
+            "tokens_in": 900,
+            "tokens_out": 200,
+            "cache_read": 2000,
+            "cache_write": 0,
+            "cache_hit_pct": 68.96551724137932,
+            "elapsed_ms": 180000,
+            "cost_usd": 0.00021,
+            "cost_estimated": false,
+            "received": [],
+            "learned": [],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "b1impl",
+        "role": "implementer",
+        "label": "Lote 1",
+        "title": "Formato CSV",
+        "batch": 1,
+        "repo": "",
+        "status": "green",
+        "model": "claude-sonnet-4-6",
+        "effort": "medium",
+        "after": [],
+        "waiting_on": [],
+        "attempt": 1,
+        "attempts": 2,
+        "failure": null,
+        "current_tool": null,
+        "tools": [],
+        "tokens_in": 1200,
+        "tokens_out": 1500,
+        "cache_read": 11000,
+        "cache_write": 0,
+        "cache_hit_pct": 90.1639344262295,
+        "elapsed_ms": 1200000,
+        "cost_usd": 0.08,
+        "cost_estimated": false,
+        "received": [],
+        "learned": [],
+        "children": []
+      },
+      {
+        "id": "b2live",
+        "role": "implementer",
+        "label": "Lote 2",
+        "title": "Servicio de exportación",
+        "batch": 2,
+        "repo": "",
+        "status": "running",
+        "model": "claude-sonnet-4-6",
+        "effort": "medium",
+        "after": [
+          1
+        ],
+        "waiting_on": [],
+        "attempt": 1,
+        "attempts": 2,
+        "failure": null,
+        "current_tool": {
+          "name": "Edit",
+          "arg": "ExportService.java"
+        },
+        "tools": [
+          {
+            "name": "Read",
+            "count": 1,
+            "detail": ""
+          },
+          {
+            "name": "Edit",
+            "count": 1,
+            "detail": ""
+          }
+        ],
+        "tokens_in": 1300,
+        "tokens_out": 1600,
+        "cache_read": 9000,
+        "cache_write": 0,
+        "cache_hit_pct": 87.37864077669903,
+        "elapsed_ms": 3600000,
+        "cost_usd": 0.0306,
+        "cost_estimated": false,
+        "received": [
+          {
+            "id": "K1",
+            "kind": "rule",
+            "text": "Usar BigDecimal para los importes",
+            "cited": false
+          }
+        ],
+        "learned": [],
+        "children": []
+      },
+      {
+        "id": "batch-3",
+        "role": "implementer",
+        "label": "Lote 3",
+        "title": "Comando de exportación",
+        "batch": 3,
+        "repo": "",
+        "status": "running",
+        "model": "",
+        "effort": "",
+        "after": [
+          1
+        ],
+        "waiting_on": [],
+        "attempt": 1,
+        "attempts": 2,
+        "failure": null,
+        "current_tool": null,
+        "tools": [],
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_hit_pct": null,
+        "elapsed_ms": 3000000,
+        "cost_usd": 0,
+        "cost_estimated": false,
+        "received": [],
+        "learned": [],
+        "children": []
+      },
+      {
+        "id": "batch-4",
+        "role": "implementer",
+        "label": "Lote 4",
+        "title": "Documentación",
+        "batch": 4,
+        "repo": "",
+        "status": "pending",
+        "model": "",
+        "effort": "",
+        "after": [
+          2,
+          3
+        ],
+        "waiting_on": [
+          2,
+          3
+        ],
+        "attempt": 0,
+        "attempts": 2,
+        "failure": null,
+        "current_tool": null,
+        "tools": [],
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_hit_pct": null,
+        "elapsed_ms": -1,
+        "cost_usd": 0,
+        "cost_estimated": false,
+        "received": [],
+        "learned": [],
+        "children": []
+      }
+    ]
+  }
+}

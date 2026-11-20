@@ -1,309 +1,179 @@
 # Cómo funciona nxy por dentro
 
-El [README](../README.md) cuenta qué hace nxy y cómo usarlo. Esta página explica cómo decide cada pieza, para cuando querés saber por qué pasó algo.
+Para quien quiere tocar el código: cómo viaja un evento de Claude Code hasta el binario, cómo está organizado el código y qué reglas hace cumplir un test, dónde vive el estado, cómo se arma una pantalla de la TUI, y cómo correr la suite y regenerar las capturas y diagramas de la documentación. Cómo usar cada cosa está en la documentación por feature, que arranca en el [README](../README.md).
 
-- [La idea de fondo](#la-idea-de-fondo)
-- [El filtro de comandos](#el-filtro-de-comandos)
-- [Las métricas](#las-métricas)
-- [El scout y el índice](#el-scout-y-el-índice)
-- [El freno de escritura](#el-freno-de-escritura)
-- [El handoff](#el-handoff)
-- [La memoria y los punteros](#la-memoria-y-los-punteros)
-- [El plan](#el-plan)
-- [La verificación de cada lote](#la-verificación-de-cada-lote)
-- [La review](#la-review)
-- [Escapes, convenciones y docs](#escapes-convenciones-y-docs)
-- [Los hooks](#los-hooks)
-- [Estructura del código](#estructura-del-código)
+## Para qué sirve
 
-## La idea de fondo
+nxy decide con código, no con un modelo: reglas sobre números, SQLite y el transcript. Los únicos lugares donde un modelo decide algo son los subagentes, y cada uno devuelve un resumen corto. Esta página te ubica para encontrar *dónde* se decide cada cosa y *qué reglas* tenés que respetar al cambiarla.
 
-El costo de una sesión es **contexto por llamada × llamadas por turno**. Cada llamada a la API reenvía todo el contexto acumulado; casi todo se lee de la cache (a un décimo del precio), pero con 150k encima cada paso sigue costando mucho más que con 20k. En sesiones reales, las lecturas de cache son el 92–97 % de los tokens.
+## Qué ves
 
-De ahí salen las piezas de nxy:
+Un solo binario Go (`cmd/nxy`) más los archivos que Claude Code busca en la raíz del plugin:
 
-- lo que entra al contexto principal tiene que ser poco (filtro, scout, punteros de una línea);
-- el trabajo que lee mucho (buscar, editar, correr tests, revisar) lo hace un subagente que arranca limpio, paga lo que lee una vez y se descarta;
-- cortar la sesión tiene que ser barato (handoff), porque es lo único que baja el contexto por llamada.
+```
+.claude-plugin/          # plugin.json y marketplace.json
+agents/  commands/  skills/  hooks/hooks.json   # lo que Claude Code carga del plugin
+bin/nxy.cmd              # el lanzador (shim) que corre el binario
+cmd/nxy/                 # el único lugar que conecta adaptadores con casos de uso: un archivo por comando
+internal/                # todo el código, por capas (abajo)
+testdata/                # golden files y datos de la demo de la TUI
+docs/                    # esta documentación y docs/assets (capturas, diagramas, videos)
+```
 
-Todo lo que nxy decide lo decide código (reglas sobre números, SQLite, el transcript), no un modelo. Los únicos lugares donde un modelo decide algo son los subagentes, y cada uno devuelve un resumen corto.
+## Qué significa
 
-## El filtro de comandos
+### De un hook al binario
 
-1. **Al abrir la sesión** (`SessionStart`), nxy resuelve el motor una vez: si está `rtk`, qué versión, y si rtk tiene su propio hook instalado. Lo guarda en `~/.nxy/cache/engine.json` para que el hook de cada comando no tenga que volver a preguntar. En el mismo momento mantiene al día el lanzador de la statusline (`~/.nxy/statusline.mjs`) y, si venías de nxy 0.1.x con un comando que apunta directo a la caché del plugin, lo reescribe una vez para que use el lanzador (con backup de `settings.json` y un aviso).
-2. **Antes de cada comando** (`PreToolUse` de Bash y PowerShell) decide si lo reescribe. **Nunca** toca:
-   - comandos con `NXY_RAW=1` (al inicio o en cualquier segmento: `cd api && NXY_RAW=1 grep …`) o con `# raw`;
-   - lo que ya empieza con `rtk`, heredocs, `$(...)`, redirecciones a archivo (`> out.log`; `2>&1` y `>/dev/null` sí se permiten: descartan, no escriben), `&` al final, `cd`/`export` solos;
-   - interactivos (`vim`, `ssh`, `docker exec -it`, `node`/`python` sin argumentos…) y `sudo`;
-   - `git commit|push|rebase|merge|checkout|stash|reset|tag`: nxy no ejecuta nada por su cuenta, sólo deja pasar.
+Todos los eventos de Claude Code pasan por el mismo camino:
 
-   Lo demás va a `rtk rewrite "<cmd>"` y, si rtk tiene filtro para ese comando, se reemplaza por `rtk <cmd>`:
-   - Cadenas: `cd api && export JAVA_HOME=… && ./mvnw test` → `cd api && export JAVA_HOME=… && rtk mvn test`. Un segmento que rtk no conoce queda intacto, comillas incluidas. Una cadena que es sólo `cd` + scripts (`cd x && node -e "…"`) ni se le pregunta a rtk (`opaque` en las métricas).
-   - Ortografías que rtk no reconoce se normalizan sólo para preguntarle: `./mvnw.cmd` → `mvnw`, `npm test` → `npm run test`, `pnpm build` → `pnpm run build`.
-   - Un `| head -N` / `| tail -n N` final con N ≤ 20 deja el comando sin filtrar (`capped`): la salida ya está acotada. Con N mayor (`mvn test 2>&1 | tail -n 150`) el límite se saca para preguntarle a rtk y se vuelve a poner.
-   - PowerShell: `Set-Location …; $env:JAVA_HOME = …; .\mvnw.cmd test` → mismos prefijos + `rtk mvn test`. Scripts reales (`foreach`, pipes, variables) no se tocan.
-   - Lo que rtk cubre hoy (v0.48): git, gh, ls/cat/grep/find, mvn/mvnw, gradle/gradlew, npm run/pnpm run/bun, jest/vitest/playwright/pytest/cargo/go test, eslint/tsc/prettier/biome, next/vite, docker, kubectl. No: `ng` global, `yarn`, `npm install`.
-   - Medido en un proyecto Spring Boot: `./mvnw test` pasó de 84 líneas / 9.197 caracteres a 8 líneas / 319 (−96 %).
-3. **Permisos.** Si el comando original estaba permitido por tus reglas `permissions.allow` (`Bash(git status:*)`), el reescrito hereda el permiso y no aparece un prompt nuevo. Si no había regla, Claude Code te pregunta por `rtk git status` como te habría preguntado por `git status`. Si el original está en `permissions.deny`, no se reescribe.
-   - Una cadena hereda el permiso sólo si **cada parte** está permitida, igual que en Claude Code: con `Bash(git status:*)` permitido, `git status && rm -rf build` te sigue preguntando. Si alguna parte está denegada, la cadena no se reescribe. Un comando con `$(…)` o backticks nunca hereda el permiso.
-4. **Después de cada comando** (`PostToolUse`) nxy registra una fila en `<repo>/.nxy/local/metrics/filter.jsonl`: motor, tipo de comando, líneas y caracteres devueltos, hash de `rtk recall`. Los secretos obvios se enmascaran antes de escribir.
-5. **El aviso de rtk.** `[rtk] /!\ No hook installed — run rtk init -g` no aplica a nxy, y en Windows aparecía en cada comando: rtk lo limita a uno por día con la fecha de un archivo vacío, y NTFS no actualiza esa fecha al reescribir 0 bytes. nxy toca ese archivo cuando tiene más de 23 h (un `stat` por comando, una escritura por día) y el aviso deja de ocupar contexto.
-6. **La salida completa.** La skill `nxy-filter` le indica a Claude `rtk recall <hash>` o, como último recurso, `NXY_RAW=1 <cmd>`.
+1. `hooks/hooks.json` registra, para cada evento, el comando `. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd"; exit $LASTEXITCODE`.
+2. **`bin/nxy.cmd`** es un archivo que sirve a la vez para PowerShell/cmd y para `sh`. La primera vez que corre, baja el binario de la versión desde el release de GitHub (con un tope de 8 s en total: 6 s el binario, 2 s los checksums, por debajo del timeout de 10 s de cada hook), verifica su SHA-256 y lo deja en `~/.nxy/bin/<versión>/`. Sólo un hook descarga a la vez (una carpeta `nxy.exe.lock` al lado del destino); los otros imprimen una línea `nxy:` y no hacen nada. Un lock de más de un minuto y los temporales de más de un día, de corridas muertas, se borran al próximo arranque. Con `NXY_BIN` corre un binario tuyo en vez de bajar uno. **Límite conocido:** el SHA-256 de `checksums.txt` sale del mismo release que el binario: protege de corrupción y truncado, no de un release comprometido.
+3. El shim ejecuta **`nxy hook`** (`runHook` en `cmd/nxy/main.go`). `internal/host/claudecode` decodifica el JSON del evento a un `app.HookEvent`; `internal/app` (`Hooks.Handle`) decide y devuelve una `HookResponse` (`Deny`, `AllowReason`, `Rewrite`, `Notice`, `Context`, `Ask`, `Next`); y el adaptador la codifica de vuelta al formato de Claude Code.
+4. **Falla abierto**: ante cualquier error (un panic, un JSON que no entiende, la base ocupada) `nxy hook` sale con 0 y sin nada en stdout, así que Claude hace lo que iba a hacer. La causa sale por stderr (la ves con `claude --debug`).
 
-**Qué no se puede filtrar.** `Read`, `Grep` y `Glob` son herramientas internas de Claude Code: no pasan por Bash y ningún hook puede cambiar lo que devuelven. Para eso están el scout (que lee afuera del contexto principal) y el freno de escritura.
+Fuera de una feature y sin nada que filtrar no ves nada: ni salida de hook, ni herramienta bloqueada, ni texto extra.
 
-## Las métricas
-
-Cada respuesta de la API deja en el transcript (`~/.claude/projects/**/*.jsonl`) el `usage` que Anthropic factura: input, cache write (5 min y 1 h), cache read, output. nxy sólo lo lee. El único cálculo es el precio en USD, con la [tabla oficial](https://platform.claude.com/docs/en/about-claude/pricing) guardada en `core/pricing.json`. Para mantenerla: `npm run pricing:check` baja esa página, la compara con la tabla y lista qué modelo falta o qué precio cambió; no escribe nada y el plugin nunca lo corre (nxy no sale a internet). Los modelos que se cobran según el largo del prompt (hoy Haiku 5.5) traen en la tabla un tramo opcional `above` con su `threshold`; `costFor` elige el tramo por pedido con `tierFor` (largo = entrada + escrituras + lecturas de cache de ese pedido, estrictamente mayor que el umbral). Los llamadores que pasan un usage parcial (cache breaks, deltas de streaming) pasan `promptTokens`. Las tarjetas de agentes del Mod usan el tramo base: el usage de `turn.complete` es la suma de varias respuestas del turno, así que son un mínimo. `pricing:check` también compara esos tramos.
-
-- **La statusline** es incremental: guarda por sesión hasta dónde leyó cada transcript y en cada refresco lee sólo lo nuevo.
-- **`stats` y `trend`** leen los transcripts enteros del período. Una línea `<synthetic>` (mensaje interno de Claude Code, usage en cero) no cuenta como llamada. Un modelo que no está en la tabla de precios se marca como parcial en vez de inventar un precio.
-- **`rtk saved`** sale del registro propio de rtk (`history.db`), porque nxy sólo ve la salida ya filtrada. Necesita Node ≥ 22.13 (`node:sqlite`); si no, `trend --by day` usa los totales diarios de `rtk gain`.
-
-**La forma de una sesión** (`shape` en `stats`, columnas en `trend`):
-
-| Dato | Qué es |
+| Evento | Qué hace |
 | --- | --- |
-| `calls/turn` | Llamadas a la API por mensaje tuyo. Cada herramienta que Claude usa es una llamada más |
-| `main context avg` / `peak` | Contexto medio y máximo de cada llamada del agente principal |
-| `subagents %` | Qué parte de los tokens gastaron subagentes |
-| `files edited (by main)` | Archivos distintos escritos con `Edit`/`Write`; `by main`, los que editó el principal. Las ediciones vía Bash no se ven |
+| `SessionStart` | Importa los datos de la 1.x una vez por repo; resuelve el motor del filtro; re-inyecta el paso de la feature activa (sobrevive a `/clear`); ofrece las notas de la carpeta; avisa si quedó una feature de la 1.x a medias o si hay una 1.x activa; en auto mode, le pide a Claude que anteponga `rtk` |
+| `UserPromptSubmit` | Arranca la feature de `/nxy:feature` y `/nxy:engineer` (guarda tu pedido tal cual); guarda tus mensajes como referencias del diseño; entrega un paso pendiente; el aviso de «siempre / nunca» para proponer una regla; la pregunta de las notas |
+| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk ([rtk](rtk.md)); frena las escrituras por consola y las búsquedas amplias del hilo principal ([gate](gate.md)); rechaza `nxy action decide` |
+| `PreToolUse` Grep/Glob | El freno de lectura |
+| `PreToolUse` Edit/Write/NotebookEdit/MultiEdit | El freno de escritura; cuenta las escrituras del implementer y verifica que su lote nombre el archivo |
+| `PreToolUse` Agent/Task | Escribe el prompt del implementer, del reviewer, etc. a partir del plan guardado; aplica el modelo y el effort por rol; inyecta las reglas |
+| `PreToolUse` AskUserQuestion | Retiene la pregunta si hay una TUI viva (hasta 25 min); timeout de 1800 s ([decidir](decidir.md)) |
+| `PostToolUse` Bash/PowerShell | Suma la llamada al resumen del filtro |
+| `PostToolUse` Agent/Task | Decide el veredicto del lote cuando el subagente vuelve, y el paso siguiente |
+| `PostToolUse` AskUserQuestion | Registra la respuesta (la aprobación del plan, las decisiones) |
+| `SubagentStop` | El veredicto de un subagente en segundo plano, que se entrega una sola vez |
+| `Stop` | Entrega un paso pendiente (un checkpoint) al terminar el turno; si trabajaste en una carpeta sin feature, ofrece dejar una nota |
+| `SessionEnd` | Registra en la base cómo terminó la sesión |
 
-**Reconstrucciones de cache.** Una llamada que escribe en cache más de `cacheBreakThreshold` tokens (100k por default) es una reconstrucción, y nxy le asigna una causa mirando lo que pasó antes:
+Cuando un paso pendiente llega justo al terminar el turno, Claude Code lo rotula «Stop hook error»: el rótulo es de Claude Code, no es un error; nxy usa ese camino para que Claude siga.
 
-| Causa | Qué pasó | Qué la evita |
-| --- | --- | --- |
-| `idle` | Pasó más tiempo que la vida de la cache sin llamadas | Volver con handoff + `/clear` en vez de retomar una sesión grande; o TTL de 1 h |
-| `subagent` | El principal esperó a un subagente más de lo que dura su cache | Lotes más cortos, o TTL de 1 h |
-| `compact` | Una compactación reescribió el historial | Nada: es un prefijo nuevo |
-| `start` | Primera llamada de la sesión | Nada |
-| `other` | El prefijo cambió con la cache viva (cambio de modelo, instrucciones editadas) | Revisar qué cambió a mitad de sesión |
+### Las capas
 
-`avoidable by warming` suma `idle` + `subagent`: es el techo de lo que ahorraría una cache que no vence.
+```
+cmd/nxy/                 # cablea adaptadores con casos de uso
+internal/
+  domain/ flow/ plan/    # el modelo (feature, plan, lote) y la máquina de estados del flujo
+  review/ gate/ filter/  # review (lentes, riesgo, hallazgos), frenos, decisión del filtro
+  affected/ design/ docs/ memory/ legacy/ ...  # tests afectados, modo ingeniero, docs, memoria, datos de la 1.x
+  metrics/ pricing/ report/ promptcache/ format/  # costos y reportes de stats, trend y statusline
+  scout/ repomap/ searchscope/ setup/ configedit/ worktree/ repos/ ask/  # búsqueda, instalación, config, worktrees
+  app/                   # los casos de uso: hooks, stats, trend, memoria, review...
+  host/claudecode/       # lo específico de Claude Code: transcripts, settings, formato de los hooks
+  store/sqlite/          # la base ~/.nxy/nxy.db y sus migraciones
+  platform/              # archivos, git, config, rutas, shell
+  tools/                 # rtk, rg, codegraph, d2
+  views/ tui/            # las pantallas como datos, y la TUI que las dibuja
+  jscompat/              # semántica de JavaScript que el código portado de la 1.x necesita
+  runner/ update/        # reservados para correr procesos y actualizar el binario
+  archtest/              # el test que hace cumplir las reglas de abajo
+```
 
-**¿Conviene la cache de 1 hora?** (`core/metrics/cache-ttl.mjs`). Claude Code elige el TTL por separado para la conversación principal (`promptCacheTtl`) y para los subagentes (`subagentPromptCacheTtl`). Para la principal, nxy recalcula cada llamada que escribió con 5 minutos: esa escritura se paga a la tarifa de 1 hora (1,6× la de 5 minutos) y, si la llamada vino después de una pausa de 5 a 60 minutos, el prefijo que había dejado la llamada anterior pasa a ser lectura (un décimo del input) y sólo se escribe lo nuevo. Una pausa de más de una hora o una compactación reescriben igual con cualquier TTL. Con eso compara los dos totales: si la hora ahorra 1 % o más dice **worth it** y la línea exacta para `~/.claude/settings.json`; si cuesta más, **not worth it here**; en el medio, **about the same**. El umbral del 1 % es fijo: no hay nada que calibrar.
+**Reglas de capas** (`internal/archtest/rules.go`; las verifica `go test ./...`):
 
-**Tiempo por subagente** (`core/metrics/timing.mjs`). `/nxy:stats` imprime `SUBAGENT TIME` y `/nxy:trend --by agent` hace lo mismo sobre todo el período: para cada tipo de subagente (implementer, planner, scout...) dice cuántas corridas hubo, la mediana, el p90 y el máximo, y en qué se fue el tiempo. Sale de los transcripts de los subagentes, sin medir nada aparte:
+- Los paquetes «puros» (el modelo, `flow`, `plan`, `review`, `gate`, `filter`, `memory`, `affected`, `metrics`, `report`...) sólo pueden depender de otros puros y de la biblioteca estándar, y nunca de `os/exec`, `net`, `net/http` ni `database/sql`: no hacen entrada/salida.
+- `internal/memory` además no puede depender de ningún host: no sabe qué es Claude Code.
+- `internal/app` (los casos de uso) sólo importa paquetes puros y la biblioteca estándar: habla con el mundo a través de interfaces que declara en `ports.go`.
+- Los adaptadores (`store/sqlite`, `host/claudecode`, `tools`, `tui`...) y los de apoyo (`platform`, `views`) no se importan entre sí: sólo `cmd/nxy` los conecta.
+- `internal/tui` sólo puede importar `views` y paquetes puros que no sean de un host.
 
-| Columna | Qué es |
+Consecuencia práctica: una regla de negocio nueva va en un paquete puro y se prueba sin tocar disco; la parte que toca archivos, git o la base va en un adaptador y se cablea en `cmd/nxy`. Soportar otro agente de código es escribir otro adaptador en `internal/host/`, sin tocar los casos de uso.
+
+### La base y sus migraciones
+
+El estado de nxy (features, plan, lotes, review, memoria, notas, resumen del filtro, costos por agente) vive en un solo archivo SQLite, `~/.nxy/nxy.db` (`NXY_HOME` lo mueve), con el driver `modernc.org/sqlite` (Go puro: no hace falta cgo). Se abre en modo WAL con espera de 5 s por bloqueo; los hooks que no deben demorar (el resumen del filtro en `PostToolUse`) usan una conexión con espera corta y descartan la fila antes que bloquear.
+
+- **Migraciones.** `internal/store/sqlite/migrations/NNNN_nombre.sql`, numeradas, embebidas en el binario. Al abrir, si la base está en una versión vieja, nxy hace un backup (`nxy.db.bak`, con `VACUUM INTO`) y aplica las que faltan en una transacción. Para cambiar el esquema agregás la siguiente migración (nunca editás una ya publicada) y su test.
+- **Base más nueva que el binario.** Si la base tiene una versión que este binario no conoce, se niega a tocarla: `la base de datos es de un nxy más nuevo que este binario`. `nxy tui` lo dice como «la db es de un nxy más nuevo: abrí la TUI de esa versión».
+- **Lo que no está en la base.** El registro del freno y los permisos `once` (`<repo>/.nxy/local/`), la cache del filtro (`~/.nxy/cache/`), el plan y la review en markdown (`~/.nxy/plans/`, `~/.nxy/reviews/`). La lista completa, en [Configuración](configuracion.md#dónde-guarda-nxy-sus-cosas).
+
+### El contrato de pantallas (views)
+
+`internal/views` es el contrato entre los datos y la TUI: un struct por pantalla (`Cockpit`, `Agents`, `Decision`, `Memory`, `Stats`, `Trend`, `Config`, `Plan`, `File`, `Engineer`), con tags JSON en snake_case, y una interfaz `Source` que devuelve cada uno. Los constructores (`Build*`) son puros: reciben datos de dominio, memoria y reportes más la hora, y no leen base, archivos ni reloj.
+
+- La fuente **real** vive en `cmd/nxy/viewsource.go` (y `viewplan.go`, `viewfile.go`, `viewengineer.go`): lee la base y arma cada pantalla.
+- La fuente **de la demo** (`nxy tui --demo`) lee `testdata/views/*.json`, que se decodifican de forma estricta. Esos archivos son la base de los tests de la TUI: no se editan para hacer lucir una captura.
+- `nxy view <pantalla> --json` imprime esa misma estructura con tus datos reales (sólo lee); sirve para depurar y para escribir tests. Pantallas: `cockpit`, `agents`, `decision`, `memory`, `stats`, `trend`, `config`, `plan`, `file` (con `--path`) y `engineer`.
+
+### La TUI
+
+`internal/tui` es una aplicación de [Bubble Tea](https://github.com/charmbracelet/bubbletea) (v2) con [Lip Gloss](https://github.com/charmbracelet/lipgloss) para el estilo. Una pantalla por archivo (`screen_*.go`); `app.go` maneja las teclas y las rutas; `load.go` pide los datos a la `Source` y `refresh.go` los renueva cuando cambia la base (mira cada medio segundo); `frame.go` dibuja el marco.
+
+- **Sólo lee de `views`.** Nunca importa la base, el host ni `app`. Las acciones (pausar una feature, instalar una herramienta, contestar una decisión) corren como un subproceso del mismo `nxy`, en segundo plano; las que cambian algo fuera de la TUI piden `y`/`n` y dicen qué archivo tocan. Cada una se corta a los 10 minutos.
+- **Contestar desde la TUI.** Una TUI viva escribe una señal `~/.nxy/run/tui-<pid>` cada 2 s; con ella el hook de `AskUserQuestion` retiene la pregunta en vez de mostrar el diálogo. El modelo no puede contestarse solo: `nxy action decide` sólo lo corre la TUI (con un nonce propio) y el hook de Bash y PowerShell rechaza ese comando. Detalle para usuarios: [Decidir desde la TUI](decidir.md).
+- **Tests.** `nxy tui --dump <pantalla> --width 80 --plain` imprime una pantalla como texto y sale; los tests de `internal/tui` la comparan contra golden files.
+
+### Costos, métricas y transcripts
+
+Cada respuesta de la API deja en el transcript (`~/.claude/projects/**/*.jsonl`) el `usage` que Anthropic factura. nxy sólo lo lee: `internal/host/claudecode/transcript` lo parsea (deriva del plugin `session-report` de Anthropic), `internal/metrics` lo suma, `internal/pricing` le pone precio con una tabla embebida (`pricing.json`; nxy nunca sale a internet para actualizarla) y `internal/report` imprime `stats`, `trend` y la statusline. Un modelo que no está en la tabla se estima por familia y se marca con `*`; nunca se inventa un precio. Los números tal como los ve el usuario: [Ver en qué se gasta](gasto.md).
+
+## Qué hacer
+
+### Desarrollo
+
+nxy es Go (la versión de `go.mod`: 1.27). El plugin vive en la raíz del repo.
+
+```
+go build ./... && go vet ./... && go test ./...
+```
+
+Esa es la suite. Para probar el plugin entero sin esperar un release:
+
+```
+go build -o <carpeta>/nxy.exe ./cmd/nxy        # sin el .exe en Linux y macOS
+NXY_BIN=<carpeta>/nxy.exe claude --plugin-dir .
+```
+
+`NXY_BIN` le dice al lanzador que corra ese binario en lugar de bajar el de la versión (en PowerShell: `$env:NXY_BIN = "<carpeta>/nxy.exe"`). Ojo: un `NXY_BIN` olvidado corre un build viejo sin avisar; para probar el camino de la descarga, sacalo. Con la 1.x instalada, desactivala mientras cargás el repo con `--plugin-dir`: las dos responderían a los mismos hooks.
+
+- **Golden files.** Muchos tests comparan contra archivos de `testdata/golden/` (y de los `testdata` de cada paquete). `NXY_WRITE_GOLDEN=1 go test ./...` reescribe los que cambiaron; revisá el diff antes de commitear.
+- **Agregar un comando.** Una entrada en el mapa `commands` de `cmd/nxy/main.go`, un archivo `cmd/nxy/<nombre>.go` con su `run<Nombre>` y, si es un comando de Claude Code, `commands/<nombre>.md`. El comando de chat sólo corre `nxy <nombre> $ARGUMENTS` y le pide a Claude que muestre el resultado tal cual.
+- **El hook.** `nxy bench hook [-n 20] [-command "git status"] [-shim bin/nxy.cmd] [-bin <nxy>]` corre el hook real y muestra mínimo, mediana, p90 y máximo en ms contra un umbral de 50 ms, con el filtro apagado, prendido sin cache y prendido con cache. Siempre sale con 0.
+- **CI** (`.github/workflows/ci.yml`), en Ubuntu y Windows: `go vet ./...`, `go test ./...`, compila el binario en la carpeta versionada, imprime la tabla del bench en el resumen del job, y prueba que cada evento de hook, pasando por el shim (en Windows, también bajo Windows PowerShell), no responde nada ni imprime errores `nxy:`. Un job aparte corre GoReleaser en modo `--snapshot` y verifica que los nombres de los binarios coincidan con lo que descarga el shim.
+- **Releases.** Un tag `v2.*` dispara `.github/workflows/release.yml`: verifica que el tag coincida con la versión fijada en `bin/nxy.cmd`, corre `go vet` y `go test` y publica con GoReleaser los binarios `nxy_<versión>_<os>_<arch>[.exe]` (Windows, Linux y macOS, amd64 y arm64) y `checksums.txt`. La versión del binario sale del tag (`internal/version`). El dueño del repo en GitHub es `mananos/nxy.dev`: el módulo de Go, GoReleaser y las URLs del shim tienen que decir lo mismo, y un test (`internal/archtest`) lo verifica.
+
+### Regenerar las capturas, diagramas y videos de la documentación
+
+Los visuales de `docs/` están en `docs/assets/` y se regeneran con un solo comando, que corre todo en Docker (no instala nada en tu máquina):
+
+```
+sh docs/assets/render.sh [--dry-run] [todo|capturas|diagramas|videos] [nombres...]
+powershell -File docs/assets/render.ps1 [-DryRun] [todo|capturas|diagramas|videos] [nombres...]
+```
+
+Sin nombres regenera todo el grupo; con nombres, sólo esos (`sh docs/assets/render.sh capturas plan`). **Conviene regenerar por nombre**: cada PNG regenerado agrega su tamaño completo al historial de git, aunque no haya cambiado nada visible. `--dry-run` imprime cada comando sin correr Docker ni `go run`.
+
+| Qué | Fuente | Salida | Se commitea | Imagen de Docker |
+| --- | --- | --- | --- | --- |
+| Capturas de la TUI (5) | `docs/assets/capturas/capturas.tsv` (el manifiesto), `nxy tui --demo --dump` y el marco `docs/assets/brand/captura-fondo.html` | `docs/assets/capturas/*.png` (2560 de ancho) | Sí (unos 1,2 MB en total) | `nxy-docs-video:0.9.10` |
+| Portada | `docs/assets/brand/banner.html` | `docs/assets/brand/banner.png` (2560×1440) | Sí (unos 1,5 MB) | `nxy-docs-video:0.9.10` |
+| Diagramas (4) | `docs/assets/diagrams/*.html` (cajas y flechas con `brand/marca.css`) | `docs/assets/diagrams/*.png` (2560×1440) | Sí (unos 1 MB en total) | `nxy-docs-video:0.9.10` |
+| Videos (4) | `docs/assets/video/<nombre>/index.html` ([HyperFrames](https://hyperframes.heygen.com) 0.9.10) | `docs/assets/video/<nombre>.mp4` (unos 2 MB cada uno, 38–50 s) | Sí; además se suben a mano a GitHub y su URL de user-attachments va debajo del link `▶ Video`, para que se vea el reproductor; si se re-renderiza un video, hay que subirlo de nuevo y cambiar la URL. Antes de cada render se copia `docs/assets/brand` a `marca/` dentro de la carpeta del video y se borra al terminar; las fuentes vienen de Google Fonts | `nxy-docs-video:0.9.10`, que se construye con `docs/assets/video/Dockerfile` (node 22 + chromium + ffmpeg + fuentes Noto; unos 2 GB en disco) |
+
+El script **nunca baja ni construye una imagen por su cuenta**: si falta una, imprime el comando exacto (`docker build -t nxy-docs-video:0.9.10 docs/assets/video`) con su tamaño y sale con código 2; si Docker no responde, te pide que lo inicies. Las capturas no necesitan un binario de Linux: los volcados (`nxy tui --demo --dump <pantalla> --width 120`, con color) corren con `go run` en tu máquina, igual en Windows y en Linux, y quedan en `docs/assets/.build/dumps/` (unos 60 KB, ignorados por git). Chromium los pasa a HTML (`ansiAHtml` en `captura.cjs`), los pone en el marco de marca con el título, el subtítulo y el chip de cada fila del manifiesto y comprueba que cada fila mida exactamente 120 celdas de JetBrains Mono: si un glifo cayera a otra fuente, la captura falla en vez de salir desalineada.
+
+Un test de la raíz (`go test -run TestDoc .`) verifica sin Docker que cada enlace e imagen de `README.md` y `docs/*.md` apunte a un archivo que existe, que cada fila de `capturas.tsv` tenga su PNG (y al revés), que todas las capturas midan 2560 de ancho y la portada 2560×1440, que cada diagrama `.html` tenga su `.png` de 2560×1440 (y al revés), cada video su `index.html`, y que cada `/nxy:<comando>` nombrado exista en `commands/`.
+
+## Comandos y config
+
+| Comando | Qué hace |
 | --- | --- |
-| `model %` | El modelo generando (de la última cosa que recibió hasta su último fragmento de respuesta) |
-| `bash %` | Comandos de Bash/PowerShell, del pedido a su resultado |
-| `tools %` | Las demás herramientas (Read, Grep, Edit...) |
-| `waiting %` | Todo lo demás: tiempo sin nada en curso |
-| `locate` | `X/N`: en cuántas de las N corridas se usó `locate.mjs` |
+| `go build ./... && go vet ./... && go test ./...` | La suite completa |
+| `go test -run TestDoc .` | Sólo los enlaces, imágenes y comandos de la documentación |
+| `NXY_WRITE_GOLDEN=1 go test ./...` | Reescribe los golden files que cambiaron |
+| `nxy bench hook` | Mide cuánto tarda el hook real |
+| `nxy view <pantalla> --json` | Una pantalla de la TUI como JSON, con tus datos |
+| `nxy tui --dump <pantalla> --width 80 --plain` | Una pantalla de la TUI como texto |
+| `sh docs/assets/render.sh [--dry-run] …` · `render.ps1 [-DryRun] …` | Regenera capturas, diagramas y videos |
 
-Los cuatro porcentajes suman el 100 % del tiempo de pared. Si un comando corre mientras el modelo sigue escribiendo, se cuenta una sola vez, como comando. Debajo van los comandos más lentos (los 5 mayores, con su tipo de agente): ahí se ve, por ejemplo, que un `./mvnw test` se llevó 4 minutos del lote. Cuando el servicio frena por límite de uso, esa pausa (a veces horas) no es trabajo del agente: se excluye del tiempo y se cuenta aparte en `usage-limit stops excluded: N`, que sólo aparece si N > 0. Qué hacer: si domina `bash %`, mirá los comandos lentos; si domina `waiting %`, hay agentes esperando algo ajeno al modelo.
+Las variables que afectan al desarrollo (`NXY_HOME`, `NXY_BIN`, `NXY_RELEASE_URL`, `NXY_DEBUG`, `NXY_WRITE_GOLDEN`): [Configuración](configuracion.md#variables-de-entorno).
 
-## El scout y el índice
+## Relacionados
 
-`/nxy:locate` despacha el agente `scout` (Haiku), que antes de leer nada corre `locate.mjs`, tres buscadores que no gastan tokens:
-
-| Capa | Qué resuelve |
-| --- | --- |
-| Índice de nxy | Dónde está definido un símbolo |
-| `rg` | Texto exacto: literales, rutas como string, nombres de bean |
-| codegraph (opcional) | Relaciones: quién llama a qué, qué se rompe si toco esto |
-
-Con esos candidatos lee 2 o 3 archivos con `offset`/`limit` y devuelve hasta 5 `path:line` en ~500 tokens.
-
-**El índice** vive en `.nxy/local/index/`, respeta `.gitignore`, se arma solo la primera vez y después relee sólo los archivos que cambiaron (por fecha y tamaño). Extrae símbolos con expresiones regulares por lenguaje: JS/TS/JSX/TSX, Java, Scala, Python, Go y C#. Un lenguaje que no conoce no rompe nada: `rg` sigue funcionando.
-
-**El aviso al planner.** El planner también puede perderse en un `grep` de todo el repo. Si su primera búsqueda es un grep amplio (`Grep` sin archivo, o `rg`/`grep -r`/`git grep` por Bash) y todavía no corrió `locate.mjs`, el hook la rechaza una vez con el comando exacto de `locate.mjs` ya armado (el mensaje empieza con `nxy locate nudge:`). Después deja pasar todo: si el planner corrió `locate.mjs` o cualquier otra búsqueda antes, no se lo avisa. Nunca se aplica al principal ni a otros agentes. El estado es `.nxy/local/planner-nudge.json` (una entrada por ejecución del planner, las de más de 24 h se borran al escribir: unos pocos cientos de bytes). El planner se identifica por `agent_type` o, si falta, por el `.meta.json` de su transcript. En `/nxy:stats` la columna `locate` te dice en cuántas corridas del planner se usó `locate.mjs`.
-
-**codegraph** se usa sólo por CLI y sólo desde adentro del scout, donde su salida muere con el subagente. Conectado como servidor MCP (`codegraph install`) sumaría la descripción de su herramienta a cada turno del principal.
-
-**Instalar y reinstalar** (`/nxy:setup`, Config › Herramientas). `core/setup.mjs` arma un plan puro por herramienta, sistema operativo y gestor de paquetes (winget; brew; apt-get, dnf o pacman, en ese orden), con los instaladores oficiales del README. El choque se detecta reusando `detectRtkHook` del filtro (rtk) y buscando `codegraph` en `mcpServers` o en comandos de hooks (codegraph). La celda distingue tres choques: `choca: hook de rtk` (`rtk init -g --uninstall` si es global; nota manual si está en el proyecto), `choca: servidor MCP de codegraph` (`claude mcp remove codegraph -s <ámbito donde se detectó>`) y `choca: hook en settings` (sólo aviso, nxy no edita settings ajenos). Reinstalar = quitar lo que choca (salvo el aviso) + actualizar. Antes de correr, el panel y el comando muestran la línea exacta y esperan el sí. En Linux/WSL los pasos con permisos van con `sudo -n`: sin terminal no se puede escribir la contraseña, así que si la pide el paso falla y se imprime el comando para pegarlo a mano. Nunca se llama desde hooks.
-
-## El freno de escritura
-
-Antes de cada `Edit`/`Write` del principal, el hook lee el final del transcript (los últimos 256 KB) y toma el contexto de la última llamada. Por debajo de `gate.contextTokens` no escribe nada: cero tokens. Por encima, rechaza la edición y le dice a Claude que delegue en el implementer con el `path:line`, el cambio y un criterio de aceptación.
-
-Nunca frena a un subagente (el implementer tiene que poder escribir), nunca frena si no hay implementer configurado, y ante cualquier dato que no puede leer deja pasar: un gate que falla cerrado te rompe el editor.
-
-`/nxy:gate once` deja un permiso de una sola edición que vence a los `escapeMinutes`. `/nxy:gate status` muestra cuántas ediciones frenó y cómo se distribuye el contexto al editar (p10/p50/p90).
-
-**Freno de lectura (1.3.0).** Con `gate.reads` (por defecto `true`), el hook de búsqueda y el de Bash frenan una búsqueda amplia del principal (`Grep`/`Glob` sin ruta de archivo, o `rg`, `grep -r`, `find`, `fd`, `gci -r`, `sls` sin ruta de archivo) cuando el contexto está en `gate.contextTokens` o por encima, hay rol `scout` y no hay permiso de búsqueda. Nunca frena `Read`, subagentes ni búsquedas sobre un archivo; ante un dato desconocido deja pasar. El rechazo empieza con `nxy read gate:` y manda a un scout o a acotar; la primera vez de cada sesión (`read-gate-hint.json`) agrega cómo apagarlo. La clasificación es sólo de strings: una búsqueda angosta sale sin leer config, transcript ni escape; una amplia lee la config y los últimos 256 KB del transcript. Cada búsqueda frenada o dejada pasar por el permiso suma una fila `kind: "read"` a `metrics/gate.jsonl`. `/nxy:gate once search` arma un permiso propio (`gate-escape-search.json`, una búsqueda, vence a los `escapeMinutes`), separado del de edición; `/nxy:gate reads off|on` escribe `gate.reads` en la config del repo. `/nxy:gate status` muestra `reads: on|off` y la línea `searches:`. Límite conocido: un directorio con un punto en el nombre (`v1.2`) se toma por archivo y su búsqueda no se frena. `gate.jsonl` tiene tope de 256 KB: al pasarlo se descartan las filas de más de 90 días, y si aun así pasa el tope quedan las más nuevas hasta 128 KB (un error al reescribir deja el archivo como estaba).
-
-**Lectura en observación.** nxy además mide las lecturas desde los transcripts (no cuenta las que el freno rechazó). Cuando pedís `/nxy:gate status` o `/nxy:stats`, nxy recorre los transcripts de las sesiones principales: toma el contexto de cada mensaje del asistente (input + cache read + cache creation) y sus llamadas a herramientas, y cuenta las búsquedas amplias hechas con un contexto igual o mayor que `gate.contextTokens`. Cuenta como amplia: un `Grep` que no apunta a un solo archivo, cualquier `Glob`, un `Read` de archivo entero (sin `offset` ni `limit`) y sus equivalentes por Bash/PowerShell (`rg`, `grep -r`, `git grep`, `find`/`fd`, `Get-ChildItem -Recurse`, `Select-String` sobre una carpeta). Leer un archivo con `offset`/`limit`, o `grep` sobre un solo archivo, no cuenta.
-
-No hay hook ni archivo de registro: mientras trabajás cuesta 0, y como se lee de los transcripts también cubre sesiones pasadas (por ejemplo, justo después de instalar 1.2.0). El costo es el del reporte: ~0,4 s para 65 sesiones / 93 MiB en este repo. Las rutas se resuelven contra el cwd de la sesión; una ruta que no existe y tiene extensión se cuenta como archivo. Un `.nxy/local/metrics/reads.jsonl` viejo se ignora y nxy no lo borra. No se muestra nada al modelo y nunca se frena. Corre aunque el freno esté apagado.
-
-Dónde se ve: `/nxy:gate status --since 30d` (por default 30 días) muestra cuántas búsquedas amplias hubo, de qué tipo y la suma del tamaño del contexto principal en esas búsquedas; y `/nxy:stats` suma una línea por sesión. Esa suma es una cota superior de lo que costó cada llamada, no los tokens que un scout habría ahorrado (no se registra el tamaño del resultado). Si es alta, considerá delegar la búsqueda con `/nxy:locate`.
-
-## El handoff
-
-Uno por tarea, en la memoria local, tipo `handoff`. La tarea nace al guardar el plan (a partir de su Goal), sigue al checkout y queda fijada a la rama con la primera edición. Un segundo plan nunca reemplaza en silencio una tarea viva: se rechaza, o se lleva a un worktree nuevo (Features → Nuevo). `handoff done` la archiva como feature buscable, y desde el panel se pueden borrar handoffs viejos. Guardarlo de nuevo lo reemplaza. Tiene forma fija (~20 líneas):
-
-```
-route: implementer        # inline | implementer — quién escribe el código
-## Done
-## Next
-## Files
-## Decisions
-```
-
-Si hay un plan, va adentro del handoff (`## Plan`), y un guardado sin plan conserva el que había.
-
-- **Al abrir sesión** (también después de `/clear` o una compactación) y en modo `assisted`, una línea de ~40 tokens si la rama tiene handoff. En `proactive`, el handoff entero; en `manual`, nada.
-- **Obligatorio pasado el umbral.** Si la sesión pasó `gate.contextTokens` y la rama no tiene handoff, nxy frena la primera edición del principal o el primer despacho del implementer hasta que Claude lo guarde. El mensaje trae el comando y la plantilla. Se apaga con `memory.handoff.required: false`, o junto con el freno (`/nxy:gate off`).
-- **Viaja al implementer.** El hook de `Agent` antepone al prompt del implementer un bloque `<nxy-context>` con el handoff, el avance del plan y las convenciones del repo (las del área de sus archivos primero, hasta ~1.600 caracteres). Al scout no se lo pasa: un buscador tiene que buscar sin que le digan dónde.
-- **No queda viejo.** El hook `Stop`: si la rama tiene handoff y en esta sesión se editó algo después del último guardado, Claude no termina el turno sin actualizarlo. Una vez por estado, nunca dos seguidas, nunca en una tarea sin handoff.
-- **`Progress:`** (*batch 1 ✔, 2 ✘ (Exit code 1), 3 pending · review 3fa9c1: 2 from the change, 1 chosen to fix*) la arma nxy con lo que registró; el modelo no la escribe.
-
-## La memoria y los punteros
-
-**Storage.** SQLite (`node:sqlite`, sin dependencias) en `~/.nxy/memory/memory.db`, con FTS5 y BM25 sobre título, cuerpo y keywords. La búsqueda ignora las palabras vacías en español e inglés.
-
-**Proyecto.** Se identifica por el remote de git normalizado (leído de `.git/config`, sin ejecutar git). Sin remote, por la ruta, y te avisa que esas memorias no te van a seguir a otra PC.
-
-**Intercambio.** `export` escribe un Markdown con frontmatter por memoria en `<repo>/.nxy/memory/`. `import` es idempotente, gana el `updated` más nuevo y nunca borra lo local. Lo `global` y lo `--private` no salen nunca.
-
-**Punteros por mensaje** (`UserPromptSubmit`). Una memoria recibe un puntero cuando:
-
-- está atada a un archivo que nombraste o que la sesión viene editando (nxy la ata sola cuando su cuerpo menciona una ruta que existe en el repo);
-- tu mensaje contiene una palabra entera de sus `--keywords`.
-
-Las palabras del título o del cuerpo no cuentan: sin archivo ni keyword no hay puntero. Hasta 3 por mensaje, cada memoria una vez por sesión, las reemplazadas nunca. Un mensaje que empieza con `/` no dispara punteros.
-
-**Tareas cerradas por archivo.** Antes de armar el plan, el planner corre `mem related <archivos>`: devuelve hasta 3 tareas ya cerradas que tocaron esos mismos archivos, con sus decisiones. Sigue las `[repo]` salvo que tu pedido las contradiga.
-
-**Preguntas de convención.** En un plan, cada decisión se marca `[repo]` (una regla que una tarea futura de este repo debería seguir) o `[task]` (lo que hace esta tarea). Solo las `[repo]` se ofrecen como convención; las `[task]` quedan en el plan y en la tarea archivada. Además, al cerrar la tarea (checkpoint 2 de la review, o `handoff done` si no hubo review) el hilo principal revisa el chat y, si dijiste reglas de las que valen para el repo ("siempre", "nunca", "prefiero"), te las ofrece en una sola pregunta para guardarlas como convención. Se pregunta una vez por tarea.
-
-**Cómo saber si sirve** (`mem status`):
-
-- `recall 30d: N pointers … M loaded (P%)`: cuántos punteros se siguieron. Cerca de 0% quiere decir que las memorias no tienen archivos ni keywords.
-- `conventions 30d: N offered (P from plans, C from the chat), S saved`: cuántas reglas se ofrecieron (distintas, sin contar repeticiones) y cuántas guardaste. Muchas ofrecidas y pocas guardadas quiere decir que se está ofreciendo de más.
-- `related 30d: N planner lookups, M closed tasks delivered`: si el planner usa de verdad `mem related`.
-
-**Relaciones.** Salen de cuatro lados: archivos compartidos, links `[[id]]` en el cuerpo, memorias que se cargan juntas, y el **librarian** (Haiku), que al guardar decide si la nueva *reemplaza*, *contradice* o *se relaciona* con las parecidas. Esa decisión se toma una vez y viaja con el export; las de archivos y links se recalculan al importar; las de "se cargan juntas" nunca salen de tu máquina. `CONFLICTS with` quiere decir que dos memorias se contradicen y alguien tiene que resolverlo.
-
-`roles.librarian.provider` está pensado para un modelo externo (API compatible con OpenAI o local) que no gaste tokens de tu sesión; todavía no está implementado.
-
-## El plan
-
-El **planner** (Opus, effort high) lee las convenciones del repo, busca con `locate.mjs`, se fija qué existe para reutilizar y guarda el plan con `mem handoff plan`, que valida la forma y rechaza prosa:
-
-```
-## Plan
-Goal: se pueden dar de alta clientes corporativos
-### Batch 1 — api: validación
-- `src/main/java/app/ClienteService.java:88` — llamar a CuitValidator antes de persistir
-Accept: `./mvnw -q test -Dtest=ClienteServiceTest`
-### Batch 2 — api: endpoint
-- `src/main/java/app/ClienteController.java` — POST /clientes/corporativos
-Accept: `./mvnw -q test -Dtest=ClienteControllerTest`
-```
-
-- **Repos.** Si el trabajo toca otros repos, el plan puede declararlos en una sección opcional `### Repos`, una línea por repo: `` - `/ruta/al/otro-repo` — rol (api, web, lib compartida) ``. La review, las copias, las convenciones, las lentes y los docs se aplican por el repo de cada archivo, y los frenos valen para archivos bajo la carpeta del proyecto o bajo la raíz de un repo git (`.nxy/` incluido).
-- **Hash.** Cada plan tiene un hash; si el plan cambia, cambia el hash y hay que aprobarlo de nuevo.
-- **Aprobación.** La verifica nxy en el transcript: busca tu respuesta a la pregunta `Approve nxy plan <hash>?` sobre ese hash. Claude puede hacerte la pregunta, pero no contestarla por vos. Hasta entonces se deniega toda edición del principal y todo despacho del implementer.
-- **Preguntas.** Si el borrador tiene `### Questions`, no se puede aprobar ni ejecutar. `mem handoff next` las imprime listas para preguntarte; con las respuestas el planner termina el plan y agrega `Decisions:`. En la misma pregunta del Approve se ofrece guardar esas decisiones como convenciones del repo.
-- **Plan activo.** Con el plan aprobado el principal no edita: cada lote va a un implementer, que es lo que se verifica. `/nxy:gate once` es la salida para algo fuera del plan.
-- **Dependencias.** `Depends: 1` (o `none`) permite lotes en paralelo; un lote en rojo frena sólo a los que dependen de él.
-
-## La verificación de cada lote
-
-- Cada `Accept:` es un comando en backticks: el test más chico que prueba el lote (una clase o un archivo, no la suite), o `manual — <qué mirar>`.
-- El implementer lo corre después de su último cambio. Al terminar, el hook `SubagentStop` lee **el transcript del implementer** (no su resumen) y verifica que el comando haya corrido después del último `Edit`, tal como está escrito (sin pipe) y con salida 0. Acepta formas equivalentes del comando (barras `/` o `\`, comillas, `./` al principio, `.exe`, `& ` de PowerShell, un argumento de ruta escrito absoluto que resuelve al mismo archivo dentro de la raíz del proyecto, un `cd <raíz> &&` al principio, rutas de archivos de test agregadas al final, por ejemplo un test nuevo), pero nunca las que llevan pipe, `;` o `||`: en ese caso el veredicto dice por qué no cuenta. Un flag u otro texto agregado al final tampoco cuenta, y el veredicto dice `extra arguments after the command: …`. El planner no escribe rutas con barra invertida en `Accept:`, porque corre en Bash.
-- Si no lo corrió o falló, a un agente en primer plano lo manda de vuelta **una vez** (exit 2) con el comando exacto (en segundo plano no hay vuelta, ver abajo). La segunda vez lo deja terminar y el lote queda en rojo.
-- Los veredictos quedan en `.nxy/local/verify/<plan>/`, un archivo por lote reemplazado de forma atómica, para que dos lotes en paralelo que terminan juntos no se pisen. Una carpeta sin veredictos nuevos en 30 días se borra sola.
-- Mientras un lote esté en rojo no se despachan los que dependen de él, salvo que elijas **Continue anyway**.
-- **Orquestador (con Mods).** Tras el Approve, una máquina de estados pura (`core/orchestrator.mjs`) decide los pasos: lanza los lotes en paralelo según `Depends:`, luego el tester y el reviewer, mediante agentes del módulo, y devuelve la conversación al principal sólo en el checkpoint 2 o ante una decisión que el panel no puede tomar. Mientras corre, los hooks de `PreToolUse` rechazan los despachos a mano del hilo principal. Se apaga con `flow.orchestrator: "off"`; sin Mods nada cambia. Detalle de uso en el README.
-- **Arreglos de la review.** Cada uno se verifica con el `Accept:` de su lote o con la línea `Suite:` del plan, lo que haya pasado después del último cambio. Los hallazgos elegidos se despachan de a uno, no en paralelo.
-- Con todos en verde, nxy indica despachar el **tester** (Haiku) una vez: corre la suite completa de cada repo tocado (o la línea `Suite:` del plan) y devuelve sólo lo que falló. Es informativo: no frena nada.
-- **Agentes en segundo plano.** Al lanzarlos nxy sólo avisa "lanzado en segundo plano" y no calcula veredicto. El veredicto se calcula en `SubagentStop` y se entrega una sola vez al principal, por el hook `Stop` (exit 2), el próximo prompt o el próximo Bash. Un agente en segundo plano nunca se manda de vuelta: su parada es final, porque no continúa. Un lote, un suite fix o una review sin probar quedan registrados y el principal recibe una nota con lo que pasó y el paso siguiente (despachar de nuevo `Batch N — ` sólo para correr el Accept, porque el código puede estar bien). Si en el checkpoint 2 elegís varios hallazgos, cada uno es su propio fix: la nota nombra el hallazgo (`Review fix R1 of review <id> done`) y dice que el resto se despacha a continuación. La nota del reviewer dice que la review quedó registrada. Las notas son un archivo cada una en `.nxy/local/notes/`, se reclaman por rename y se descartan al día. Un lote en curso figura `running` y sus dependientes quedan `pending`; un lote que muere sin `SubagentStop` sigue así hasta que se despacha de nuevo.
-- **Suite en rojo.** Un único implementer con prompt `Suite fix — <qué falló>`, sólo permitido con todos los lotes verificados y la suite terminada. nxy lo verifica corriendo de nuevo las líneas `Suite:` del plan (o, sin ellas, los comandos que fallaron en el tester); se manda de vuelta una vez como un lote. Después viene la review. El reviewer se deniega mientras la suite corre, y si termina sin registrar la review se lo manda de vuelta una vez (sólo en primer plano; en segundo plano se informa directamente).
-
-## La review
-
-- **Qué se revisa.** Sólo lo que cambió el plan. La primera vez que un lote toca un archivo, nxy guarda una copia (`.nxy/local/baseline/<rama>/`); el diff es esa copia contra el archivo actual. Además, al aprobar el plan nxy anota qué archivos ya tenían cambios sin commitear (con un `git status` de sólo lectura: nunca escribe dentro de `.git`). Un archivo que cambió después sin tener copia aparece marcado `(git)` y se compara contra HEAD; un archivo que ya estaba modificado al aprobar y no tiene copia se nombra como "no revisado", porque no se puede separar lo del plan de lo tuyo. Sin git, o fuera de un repo, la review lo dice y revisa sólo las copias. Al aprobar, nxy también copia de antemano los archivos que el plan nombra, así que un cambio hecho fuera de los hooks de edición (un `sed`, un script) igual tiene su "antes". Para las carpetas sin git (la del proyecto o un repo declarado) toma un inventario liviano con hash del contenido: al aprobar lee cada archivo una vez (unos 0,3 a 1 s para 5.000 archivos / ~30 MB; unos 110 bytes por archivo en `inventory.json`; tope de 20.000 archivos por carpeta) y en la review sólo vuelve a leer los que cambiaron de tamaño o fecha. Un archivo con otra fecha pero igual contenido no cuenta; uno nuevo, borrado o distinto aparece como "cambiado fuera de las copias del plan", sin "antes". El paquete agrega una nota de cobertura con lo que no pudo verse. Esa lista, el inventario y las copias se toman una vez por tarea y se borran con `handoff done`.
-- **Escrituras por consola.** Con un plan activo, `sed -i`, las redirecciones (`>`, `>>`), `tee`, `cp`/`mv`, `truncate`, `dd of=` (y `Set-Content`/`Add-Content`/`Out-File` en PowerShell) también se copian antes de correr, igual que una edición. No se reconocen los scripts, `xargs`, `python -c`, rutas con variables ni comodines: esos casos los cubre la lista de git.
-- **El paquete.** `review.mjs packet` guarda el paquete completo en `.nxy/local/baseline/<rama>/review-packet.md` (unos 130 KB para un diff de 2.000 líneas; un solo archivo, reemplazado en cada review, borrado con `handoff done`) y sólo imprime un índice: encabezado, ruta, tamaño, secciones y offsets de cada archivo (código primero, tests al final), lo no revisado y el formato de respuesta. El reviewer lo lee con `Read` por partes de unas 300 líneas. `packet --full` imprime todo.
-- **Cuándo.** Una vez, al final, después del tester. Si sólo cambiaron docs o tests, no hay review.
-- **Lentes**, elegidas por qué archivos cambiaron, nunca por cuántas líneas:
-
-| Si cambió… | Lente |
-| --- | --- |
-| cualquier código | **base**: alcance vs. el plan, que el `Accept:` pruebe lo que dice, reutilización, convenciones, tests, restos de debug |
-| entidades, repositorios, `@Entity`, `@Transactional` | **persistence**: N+1, lazy fuera de transacción, transacciones, consultas |
-| controllers, rutas, DTOs | **api**: validación, contratos, errores, autorización |
-| componentes Angular / React / Solid | **frontend**: reutilización, estado, suscripciones, render |
-| SQL, migraciones, evolutions | **database**: índices, locks, orden y reversibilidad |
-| rutas con auth, security, payment, webhook, token… | **security**: autorización, secretos, inyección, datos personales |
-
-- **Del cambio o preexistente.** Un hallazgo es del cambio si apunta a una línea que el plan modificó; si no, es preexistente y se muestra como información. Lo decide nxy por código, no el reviewer.
-- **Checkpoint 2.** Una pregunta de selección múltiple con los hallazgos del cambio. Cada uno elegido lo arregla un implementer y su `Accept:` se vuelve a verificar. Hay **una sola ronda**.
-
-## Escapes, convenciones y docs
-
-- **Convenciones al implementer.** Cada implementer recibe los títulos de las convenciones del repo en su `<nxy-context>` (primero las del área de sus archivos). Si hay más de las que entran, recibe el comando para verlas.
-- **Escapes.** `/nxy:review escape "<regla>" --as convention|lens` registra algo que la review no vio y lo guarda como convención (la siguen planner e implementers) o como lente del repo en `.nxy/lenses/repo.md` (la mira toda review futura). En una rama ya revisada, Claude recibe una línea por sesión para ofrecértelo.
-- **Docs.** Sólo se ofrecen documentos para usuarios: `.md` en la raíz, `README*`, y lo que esté bajo `docs/`, `doc/`, `documentation/` o `wiki/` (o `docs.paths` si lo configurás); `agents/`, `skills/`, `commands/`, `lenses/` y carpetas con punto no cuentan. Se muestran los 3 con más menciones y "+N más". Si alguno de esos `.md` nombra un archivo o una clase que el plan cambió (lo busca nxy con `rg`, sin tokens), el checkpoint 2 suma **Update docs / Leave docs**. El **documenter** (Sonnet, effort low) edita sólo esos `.md` en la misma rama. Si tu CI publica una carpeta a una wiki (Wiki.js, Azure DevOps), nxy la detecta.
-- `/nxy:review status` muestra por lente, en 30 días: hallazgos del cambio, elegidos para arreglar, preexistentes y escapes.
-
-## El panel (con Mods)
-
-- **Qué ves al abrir la sesión.** Con `ui.panel: "auto"` el panel `nxy` se abre solo y **ya lleno**: el Mod corre `orch.mjs release --snapshot`, el mismo proceso de node que ya liberaba la marca del orquestador, y ese proceso devuelve también el estado (plan, lotes con su título, veredictos, handoff y la config de `gate` y `filter`). No hay un segundo arranque de node ni nada que apretar para que aparezcan los datos. Con `"off"` no se abre solo; `/nxy-panel` lo abre igual.
-- **Pestañas.** `1` **Inicio**: lote N de M con el ciclo (plan › aprobado › lotes › tester › review › cierre), línea de plan y handoff (`desactualizado` si hay un veredicto más nuevo), tarjetas Contexto (barra contra el umbral del gate, o la ventana si el gate está apagado; cambia de color al 70 % y al 90 %), Costo (sesión y modelo) y Cache (hit %, `vence en …`, o `❄ fría` con el costo de reescribirla), una franja de segmentos, «Ahora» con los agentes en curso y las acciones. `2` **Plan**: objetivo, lotes desplegables (archivos, accept, veredicto), suite completa, review y el checkpoint 2 con hallazgos marcables y **Arreglar N** (`z`). `4` **Stats**: sesión, costo por rol y por modelo, what-if de cache 1 h, ventanas 5h/7d (sólo con suscripción), tendencia y, al cerrar un feature, su resumen. `3` **Agentes**: todos los agentes de la sesión con detalle y campo de mensaje. `5` **Config**: editable. «Guardar en» elige `~/.nxy/config.json` (usuario, por defecto) o `.nxy/config.json` (repo; si define la clave, «el repo manda»). Cambia con ‹ › modelo y effort por rol (`roles.<rol>.model` y `.effort`, que el hook de PreToolUse(Agent) aplica en cada despacho con `updatedInput`), flujo, gate, filtro y panel; además cache 1 h, statusline y Actualizar nxy, con confirmación. Cada cambio corre un node y escribe ~1 KB de forma atómica; un archivo roto no se pisa. Un lote en rojo o una pausa entre tandas aparecen como pregunta con sus botones.
-- **Arreglar N.** Con hallazgos marcados y el orquestador sin correr el plan, manda al hilo principal «Arreglar los hallazgos R1, R2 del review ID…». Sin marcados no hace nada.
-- **Botones de Home.** Cada uno corre un comando de nxy y muestra su salida en un recuadro (`d` lo cierra): **Gate once** (`g`, deja pasar una edición aunque el gate la rechace: plan, umbral de contexto o falta de handoff), **Handoff** (`h`, lo muestra), **Terminar plan** (`e`, pide `y`/`n`; archiva el handoff y cierra el plan; sólo aparece si hay plan o handoff y el orquestador no está corriendo), **Filter ● on / ○ off** (`f`; dice sólo **Filter** hasta que el panel leyó la config; prende o apaga el filtro escribiendo `modules.filter` donde diga «Guardar en» de Config, por defecto tu usuario, el que se commitea). Stats y Trend ya no son botones: Stats está dibujada en su pestaña y `/nxy:stats` y `/nxy:trend` quedan para quien no usa Mods. `r` vuelve a leer el estado.
-- **De dónde sale cada número de Cache y Stats.**
-  - *TTL:* se lee de la transcripción, en `cache_creation.ephemeral_1h_input_tokens` / `ephemeral_5m_input_tokens` de la última respuesta del hilo principal que escribió cache (lee los últimos 512 KB, dentro del node que ya corre). Si no hay dato, respaldo `promptCacheTtl` de `~/.claude/settings.json`; si la cache sobrevive a una pausa mayor al TTL, se infiere 1 h (nunca baja). El observado manda siempre.
-  - *Vida:* hora de la última respuesta del hilo principal (`turn.complete`) + TTL. Mods no expone la vida exacta, así que es una estimación; los subagentes no la mueven.
-  - *Costo en frío:* tokens del contexto de esa respuesta × tarifa de escritura de cache del TTL (5 min o 1 h). Con `*` si el precio del modelo se estima por familia.
-  - *Hit %:* cache_read / (input + cache_read + cache_creation) del último turno del hilo principal.
-  - *Avisos:* dos temporizadores `$.clock.after` (a TTL − 60 s y al vencer), cancelados y rearmados en cada turno; cero polling. El cambio de modelo llega por `classic.PreModelSwitch` / `classic.PostModelSwitch` (no hay un evento propio de Mods) y trae el costo estimado de reescribir.
-  - *Effort:* de `classic.Stop`, una vez por turno terminado.
-  - *Tiempo por lote:* la hora de despacho la guarda el hook de `Agent` en el `batch-N.json` y el hook de `SubagentStop` la copia al veredicto (`launched`); la duración es veredicto − despacho, también en flujo manual. Un lote anterior a esta versión no la tiene y muestra «—».
-  - *Agentes:* la lista sale de `$.agent.list()` (se consulta cada 2 s sólo con algo corriendo). *Modelo:* el del `agent.spawn` que devolvió el motor o, al terminar el turno, el `usage.model` real. *Effort:* el de la config (`roles.<rol>.effort`) si lo hay y, si no, el del frontmatter de `agents/*.md`; el snapshot trae ambos en `roles`; sólo existe para los roles de nxy. *Costo:* los cuatro conteos de `turn.complete.usage` × los precios de `price-table` (con `~` si el precio es estimado); hasta que el agente termina su turno dice `…`. *Qué hace:* un gancho `tool.call` registrado aparte que sólo observa; si no llega, respaldo con `$.session.messages` (a lo sumo una vez cada 2 s por agente vivo); sin ninguno, «trabajando… Ns». *Mensajes:* `$.session.send`; quedan «en cola» hasta el siguiente evento del agente («recibido») o «no entregado: motivo».
-  - *Stats y Tendencia:* `entries/stats.mjs --json` y `entries/trend.mjs --json`, cacheados en el Mod; el resumen de un feature (`orch.mjs summary`) parte la sesión en la hora de aprobación del plan.
-- **Memoria y lanzar agentes.** La pestaña `6` corre `mem.mjs search|get|list|handoff show --json` y `locate.mjs --json` (un node de ~100-300 ms cada uno, en el carril de los botones). Mirar una nota no llama a `noteFetch` ni `bumpCoUse`: no cuenta como recuerdo. Locate no usa modelo y agrega una fila de ~150 bytes a `metrics/locate.jsonl`. El bloque «Preguntarle a un agente» de Agentes llama a `$.agent.spawn` con `nxy:scout` o `nxy:librarian` y lo anota en el libro (`spawnedBy: "nxy"`); como el motor se salta el hook del propio spawn, el driver aplica el `model` de `roles.*` pero `agent.spawn` no acepta `effort`: rige el del agente. La respuesta se lee del libro cuando el agente termina; uno a la vez.
-- **Features (worktrees).** La pestaña `7` corre `entries/features.mjs` con las acciones `list`, `new` (`--name <n> [--issue <n>] --base <rama>` o `--branch <rama>`), `pause`, `resume` y `close`, todas por `--path` (cada fila se identifica por su ruta, sin estado atado a la sesión: es la base para una idea opcional posterior, orquestar desde un solo panel). Reusa lo que ya había: `lookupHandoff` (handoff), `readVerify`/`readSuite`/`readReview` y `extractPlan` (progreso), `readActive` (plan corriendo), `gitBranch` y `gitResult` (`gitstate.mjs`, que ahora devuelve status, stdout y stderr). `core/featuresview.mjs` es puro (sin `node:*`) y arma nombres, argv y textos. **El comando que se ve es el que corre:** la confirmación muestra `commandText(addArgv(...))` y el entry ejecuta ese mismo argv. La base es siempre explícita en `git worktree add -b <rama> <ruta> <base>`, así que el resultado no depende del HEAD de la sesión. La base es la rama **local**, sin fetch. La preseleccionada sale de `defaultBranchOf` (función pura sobre lo que devuelve git): `origin/HEAD` si esa rama existe local, si no la rama del worktree principal, si no `main` o `master`. **Ramas libres y ocupadas** (`branchChoices`): ocupada es la que cualquier worktree, el principal incluido, tiene abierta; git no permite la misma rama en dos, así que no se elige como «rama existente» (se lista aparte con su ruta y `addWorktree` la vuelve a rechazar), pero sí sirve de base. La carpeta es `<repo>.worktrees/<slug de la rama sin feature/>` en los dos casos; dos ramas con el mismo slug chocan y se rechaza. El issue es opcional y reemplaza a la heurística «si el nombre empieza con número»: `feature/#<issue>_<slug>` con issue, `feature/<slug>` sin él. **Pausar** escribe `.nxy/local/features/paused.json` (~100 bytes) y muestra el handoff existente: lo escribe el modelo, el panel no puede generarlo; si falta o es anterior al último cambio (mtime de hasta 200 archivos sucios) lo avisa. **Cerrar** nunca usa `--force` por su cuenta, se niega con el principal, el de la sesión y uno con plan corriendo, y no toca la rama. **Abrir** usa `$.ui.copy` porque la API no abre sesiones ni terminales. En la UI, la rama existente y la base se eligen con un `Select` (pueden ser decenas) y el issue y el nombre con un `Input` en dos pasos: un bloque admite un solo `Input` y no tiene `disabled`, de ahí el orden issue, nombre, base. «Esta sesión» y la búsqueda de un worktree por ruta comparan con `realpathSync.native`, que expande las rutas 8.3 de Windows (la versión no nativa las deja cortas). Los commits sin pushear se cuentan sólo si el repo tiene algún remoto (un `git for-each-ref refs/remotes` por lista); sin remotos el conteo es 0 y la línea no se muestra.
-- **No frena al orquestador.** Los comandos de los botones corren en su propio carril: un Trend lento no demora el despacho del lote siguiente.
-- **Debajo del prompt.** Una entrada de estado: `● ready`, `▶ batch N/M`, `▶ tester`, `▶ review`, `⏸ paused after batch N` o `✘ batch N needs you`. Claude Code le antepone el nombre del plugin, por eso la ves como `⚠ nxy: ● ready`.
-- **Por dentro.** `core/panel.mjs` arma la vista con datos puros: cada pestaña es una lista de bloques tipados (`hero`, `tiles`, `now`, `batches`, `checkpoint`, `kv`...) y agregar una pestaña es agregar datos. `core/raster.mjs` genera las celdas de las barras y la franja de progreso. El Mod (`hosts/claude-code/mod/`) sólo dibuja los bloques en una columna centrada de hasta 78 columnas, sin cortar etiquetas; sin pantalla interactiva `/nxy-panel` imprime la misma vista como texto. El snapshot trae además objetivo, archivos y accept por lote y el detalle de la review, en el mismo proceso de node de siempre. La animación corre sólo mientras hay un agente en curso.
-
-## Los hooks
-
-| Evento | Qué hace | Tokens |
-| --- | --- | --- |
-| `SessionStart` | Resuelve el motor del filtro; una línea si la rama tiene handoff; migra la statusline de 0.1.x (aviso una sola vez) | ~40 si hay handoff |
-| `UserPromptSubmit` | Punteros a memorias; recordatorio de escape en rama revisada | ~30 por puntero |
-| `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk; con un plan activo, copia antes los archivos que el comando va a escribir (`sed -i`, `>`, `tee`, `cp`/`mv`); un `rg`/`grep -r`/`find` amplio dispara el aviso al planner (no se registra nada) | 0 salvo el aviso al planner |
-| `PreToolUse` Grep/Glob | Sólo el aviso al planner: una vez, si su primera búsqueda es un grep de todo el repo. El principal no hace nada acá | 0 salvo el aviso al planner |
-| `PreToolUse` AskUserQuestion | Hook `pretooluse-ask.mjs` (poco frecuente) | 0 |
-| `PreToolUse` Edit/Write | Freno de escritura, handoff obligatorio, checkpoint del plan, copia para la review | 0 salvo que frene |
-| `PreToolUse` Agent | Modelo por rol; handoff + avance + convenciones al implementer; orden de los lotes | El bloque del implementer (~20–60 líneas) |
-| `PostToolUse` Bash/PowerShell | Una fila de métricas | 0 |
-| `PostToolUse` Agent | Veredicto del lote, siguiente paso (tester, reviewer), sugerencia de corte | Una o dos líneas |
-| `SubagentStop` | Verifica el `Accept:` del lote en el transcript del implementer | 0 salvo que lo mande de vuelta |
-| `Stop` | Handoff viejo al terminar el turno | 0 salvo que frene |
-
-Todos fallan abiertos: ante cualquier error dejan pasar lo que Claude iba a hacer. `NXY_DEBUG=1` muestra la causa en stderr.
-
-## Estructura del código
-
-```
-core/                    # nada acá sabe qué es Claude Code
-  config, paths, format, jsonl, shell, text, rg, pricing
-  search-scope.mjs       # clasifica una búsqueda (grep/glob/find/read) y si es amplia
-  filter/                # decide qué comando pasa por rtk, y cómo; el ledger
-  metrics/aggregate.mjs  # suma llamadas, las tarifa, sigue el pico de contexto (tipo Call)
-  metrics/timing.mjs     # tiempo por subagente: modelo / Bash / otras herramientas / espera
-  index/ scout/          # índice de símbolos, búsqueda sin modelo, codegraph
-  memory/                # store SQLite, ámbitos, recall, grafo, handoff, intercambio, convenciones
-  gate, plan, verify, review, diff, docs
-  orchestrator, panel    # la máquina de estados del plan y la vista del panel (puras)
-hosts/claude-code/       # todo lo específico de Claude Code
-  transcripts.mjs        # ~/.claude/projects/*.jsonl -> Call[]
-  hooks/                 # un archivo por evento (pretooluse-search.mjs: Grep/Glob)
-  search-observe.mjs     # el aviso al planner
-  search-history.mjs     # las búsquedas amplias del principal, calculadas desde los transcripts
-  entries/               # los scripts detrás de cada /nxy:<comando>
-  mod/                   # el Mod: dibuja el panel y despacha los agentes del orquestador
-  statusline, permissions, settings, roles, *-state (estado en .nxy/local/)
-agents/ commands/ skills/ hooks/ lenses/ .claude-plugin/   # en la raíz porque Claude Code los busca ahí
-```
-
-El contrato entre los dos lados es el tipo `Call` (`core/metrics/aggregate.mjs`): un host adapta lo que su herramienta escribe en disco a `Call[]` y todo lo demás (sumar, tarifar, formatear, filtrar) ya funciona. **`core/` nunca importa de `hosts/`.**
+- [Configuración](configuracion.md): claves, variables de entorno y dónde guarda nxy sus cosas.
+- [La TUI](tui.md) · [Decidir desde la TUI](decidir.md): lo que ve el usuario de lo que describe esta página.
+- [El freno](gate.md) · [El filtro](rtk.md) · [Memoria](memoria.md): las piezas que deciden dentro de los hooks.
+- [Si venís de la 1.x](si-venis-de-la-1x.md): el código portado y los datos que importa.

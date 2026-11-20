@@ -1,0 +1,25 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+  Inicio › FEAT-A                                                   esc vuelve  
+
+     ←   Notas de crédito en facturación   FEAT-A              TE NECESITA    
+         api + web · feat/notas · 21h 00m · $0.46                             
+
+   ✓ Diseño  ━━  ✓ Plan  ━━  Lotes 3/4  ──  Review  ──  Cierre 
+
+     ✓  1  Modelo de nota de crédito     api     20m   $0.12                  
+     ✓  2  Pantalla de notas             web           $0.00                  
+  ›  ✗  3  Endpoint de notas             api     40m   $0.25   intento 2      
+     ○  4  Listado en la web             web                   espera a 3     
+
+      Lote 3    intento 2 de 2 · sonnet-4.6 medium · 40m                      
+                go test ./internal/billing/ -run TestEndpoint                 
+                --- FAIL: TestEndpoint (0.01s)                                
+                    endpoint_test.go:42: want 100.00, got 99.99               
+                FAIL                                                          
+                FAIL	acme/billing	0.012s                                        
+                no recibió reglas  ·  no aprendió nada                        
+
+     Hilo principal   sonnet-4.6 · high · esperando tu decisión   $0.03
+     Planner   sonnet-4.6 · high · 7m   $0.05                                   
+     scout   haiku-5.5 · low · 3m   $0.00                                       
+  d  decidir     a  agentes     p  plan     enter  ir al agente     ?  ayuda    

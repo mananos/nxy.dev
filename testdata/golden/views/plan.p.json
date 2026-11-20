@@ -1,0 +1,211 @@
+{
+  "feature": {
+    "id": "FEAT-P",
+    "title": "Notas de crédito en facturación",
+    "status": "needs_you",
+    "phase": "Lote fallido",
+    "stage": "batches",
+    "stage_detail": "2/3",
+    "closed_at": "",
+    "repos": [
+      {
+        "name": "api",
+        "path": "/srv/dev/api",
+        "role": "",
+        "branch": "feat/notas",
+        "worktree": false
+      },
+      {
+        "name": "web",
+        "path": "/srv/dev/web",
+        "role": "",
+        "branch": "feat/notas",
+        "worktree": false
+      }
+    ],
+    "batch": 2,
+    "batches": 3,
+    "elapsed_ms": 97200000,
+    "cost_usd": 0,
+    "cost_estimated": false
+  },
+  "state": "running",
+  "approved_at": "2026-11-11T10:00:00Z",
+  "goal": "Notas de crédito en facturación",
+  "repos": [
+    {
+      "name": "api",
+      "path": "/srv/dev/api",
+      "role": "",
+      "branch": "feat/notas",
+      "worktree": false
+    },
+    {
+      "name": "web",
+      "path": "/srv/dev/web",
+      "role": "",
+      "branch": "feat/notas",
+      "worktree": false
+    }
+  ],
+  "criteria": [
+    {
+      "id": "R1",
+      "text": "Notas de crédito en facturación",
+      "test": "tdd"
+    }
+  ],
+  "decisions": [],
+  "batches": [
+    {
+      "n": 1,
+      "title": "Corregir la nota",
+      "repo": "api",
+      "status": "green",
+      "depends": [],
+      "risk": "low",
+      "risk_why": "",
+      "attempt": 1,
+      "attempts": 2,
+      "accept": "go test ./src/ -run TestNota",
+      "changes": [
+        {
+          "at": "src/billing/Nota.java:12",
+          "what": "Corregir la nota"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "Crédito y limpieza",
+      "repo": "api",
+      "status": "failed",
+      "depends": [
+        1
+      ],
+      "risk": "low",
+      "risk_why": "",
+      "attempt": 2,
+      "attempts": 2,
+      "accept": "go test ./src/ -run TestCredito",
+      "changes": [
+        {
+          "at": "src/billing/Credito.java (new)",
+          "what": "Crédito y limpieza"
+        },
+        {
+          "at": "src/billing/Viejo.java:3",
+          "what": "Crédito y limpieza"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "title": "Pantalla de notas",
+      "repo": "web",
+      "status": "pending",
+      "depends": [
+        1
+      ],
+      "risk": "low",
+      "risk_why": "",
+      "attempt": 0,
+      "attempts": 2,
+      "accept": "npm test -- nota",
+      "changes": [
+        {
+          "at": "src/nota.ts:5",
+          "what": "Pantalla de notas"
+        }
+      ]
+    }
+  ],
+  "risks": [],
+  "impact": {
+    "source": "codegraph",
+    "files": [
+      {
+        "path": "src/billing/Nota.java",
+        "repo": "api",
+        "batch": 1,
+        "kind": "edit",
+        "lines": [
+          {
+            "line": 12,
+            "what": "Corregir la nota"
+          }
+        ],
+        "imported_by": [
+          "Factura.java",
+          "Listado.java"
+        ],
+        "tests": [
+          {
+            "path": "src/test/NotaTest.java",
+            "status": "fail"
+          },
+          {
+            "path": "src/test/NotaServiceTest.java",
+            "status": "none"
+          }
+        ],
+        "contract": null
+      },
+      {
+        "path": "src/billing/Credito.java",
+        "repo": "api",
+        "batch": 2,
+        "kind": "new",
+        "lines": [],
+        "imported_by": [],
+        "tests": [],
+        "contract": null
+      },
+      {
+        "path": "src/billing/Viejo.java",
+        "repo": "api",
+        "batch": 2,
+        "kind": "edit",
+        "lines": [
+          {
+            "line": 3,
+            "what": "Crédito y limpieza"
+          }
+        ],
+        "imported_by": [],
+        "tests": [],
+        "contract": null
+      },
+      {
+        "path": "src/nota.ts",
+        "repo": "web",
+        "batch": 3,
+        "kind": "edit",
+        "lines": [
+          {
+            "line": 5,
+            "what": "Pantalla de notas"
+          }
+        ],
+        "imported_by": [],
+        "tests": [],
+        "contract": null
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "pause",
+      "label": "Pausar",
+      "argv": [
+        "nxy",
+        "feature",
+        "pause",
+        "--feature",
+        "FEAT-P"
+      ],
+      "confirm": "",
+      "planned": false
+    }
+  ]
+}

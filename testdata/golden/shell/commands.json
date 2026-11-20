@@ -1,0 +1,6874 @@
+[
+  {
+    "name": "e01-tab",
+    "input": {
+      "command": "git\tstatus"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git\tstatus"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git\tstatus",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e02-trailing-tab",
+    "input": {
+      "command": "git status\t"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status\t",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e03-npm-tab-test",
+    "input": {
+      "command": "npm\ttest"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm\ttest"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm\ttest",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "e04-crlf-chain",
+    "input": {
+      "command": "mvn test\r\nls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test\r\nls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test\r\nls",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e05-trailing-crlf",
+    "input": {
+      "command": "echo a\r\n"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo a"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo a\r\n",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e06-nbsp-between",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e07-nbsp-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "e08-nbsp-tail",
+    "input": {
+      "command": "ls -la | tail -n 150"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls -la",
+        "tail -n 150"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls -la",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e09-nbsp-edges",
+    "input": {
+      "command": " git status "
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": " git status ",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e10-em-space-trailing",
+    "input": {
+      "command": "git status "
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status ",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e11-bom-leading",
+    "input": {
+      "command": "﻿git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "﻿git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e12-line-separator",
+    "input": {
+      "command": "ls -la"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls -la"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls -la",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e13-ideographic-space",
+    "input": {
+      "command": "　ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "　ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e14-zero-width-not-space",
+    "input": {
+      "command": "mvn​test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn​test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn​test",
+      "isBackgrounded": false,
+      "firstToken": "mvn​test",
+      "firstTokens": [
+        "mvn​test"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "mvn​test"
+    }
+  },
+  {
+    "name": "e15-only-nbsp",
+    "input": {
+      "command": " "
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": " ",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "e16-only-tabs-newlines",
+    "input": {
+      "command": "\t\n"
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "\t\n",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "e17-nel-and-vt",
+    "input": {
+      "command": "gitstatus\u000bgit"
+    },
+    "output": {
+      "splitTopLevel": [
+        "gitstatus\u000bgit"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "gitstatus\u000bgit",
+      "isBackgrounded": false,
+      "firstToken": "gitstatus",
+      "firstTokens": [
+        "gitstatus"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "gitstatus"
+    }
+  },
+  {
+    "name": "e18-escaped-quotes",
+    "input": {
+      "command": "echo \"a \\\"b\\\" > c\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"a \\\"b\\\" > c\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"a \\\"b\\\" > c\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e19-single-quote-escape",
+    "input": {
+      "command": "echo 'it'\\''s' > x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo 'it'\\''s' > x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "echo 'it'\\''s' > x",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e20-escaped-gt",
+    "input": {
+      "command": "echo \\> not"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \\> not"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \\> not",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep",
+    "input": {
+      "command": "grep -rn \\\"x\\\" ."
+    },
+    "output": {
+      "splitTopLevel": [
+        "grep -rn \\\"x\\\" ."
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "grep -rn \\\"x\\\" .",
+      "isBackgrounded": false,
+      "firstToken": "grep",
+      "firstTokens": [
+        "grep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "e22-unbalanced-double",
+    "input": {
+      "command": "echo \"abc > f"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"abc > f"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"abc > f",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e23-unbalanced-single",
+    "input": {
+      "command": "echo 'abc | def"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo 'abc | def"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo 'abc | def",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e24-trailing-backslash",
+    "input": {
+      "command": "echo a\\"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo a\\"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo a\\",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e25-merge-stderr",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test 2>&1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test 2>&1",
+        "tail -n 100"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e27-gt-amp-2",
+    "input": {
+      "command": "echo x >&2"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo x >&2"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "echo x >&2",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e28-1gt-amp-2",
+    "input": {
+      "command": "echo x 1>&2"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo x 1>&2"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "echo x 1>&2",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull",
+    "input": {
+      "command": "ls &>/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls &>/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls &>/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e30-gt-devnull",
+    "input": {
+      "command": "ls >/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls >/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls >/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e31-append-devnull",
+    "input": {
+      "command": "ls >>/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls >>/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls >>/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e32-gt-space-devnull",
+    "input": {
+      "command": "ls > /dev/null 2>&1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls > /dev/null 2>&1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls > /dev/null 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e33-devnull-suffix",
+    "input": {
+      "command": "ls 2>/dev/nullx"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls 2>/dev/nullx"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "ls 2>/dev/nullx",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e34-devnull-semicolon",
+    "input": {
+      "command": "ls >/dev/null;ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls >/dev/null",
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls >/dev/null;ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e35-devnull-paren",
+    "input": {
+      "command": "(ls >/dev/null)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "(ls >/dev/null)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "(ls >/dev/null)",
+      "isBackgrounded": false,
+      "firstToken": "(ls",
+      "firstTokens": [
+        "(ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "(ls"
+    }
+  },
+  {
+    "name": "e36-devnull-andand",
+    "input": {
+      "command": "ls 2>/dev/null&&ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls 2>/dev/null",
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls 2>/dev/null&&ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e37-devnulls",
+    "input": {
+      "command": "ls > /dev/nulls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls > /dev/nulls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "ls > /dev/nulls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e38-gt-gt-file",
+    "input": {
+      "command": "echo a >> log.txt"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo a >> log.txt"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "echo a >> log.txt",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e39-input-and-heredoc-mix",
+    "input": {
+      "command": "cat <in >out"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat <in >out"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "cat <in >out",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "e40-process-subst",
+    "input": {
+      "command": "diff <(ls a) <(ls b)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "diff <(ls a) <(ls b)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "diff <(ls a) <(ls b)",
+      "isBackgrounded": false,
+      "firstToken": "diff",
+      "firstTokens": [
+        "diff"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "diff"
+    }
+  },
+  {
+    "name": "e41-raw-env-ps-in-bash",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\"; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:NXY_RAW=\"1\"",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:NXY_RAW=\"1\"; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "$env:NXY_RAW=\"1\";",
+      "firstTokens": [
+        "$env:NXY_RAW=\"1\"",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e42-raw-env-single-quote",
+    "input": {
+      "command": "$env:NXY_RAW = '1'"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:NXY_RAW = '1'"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:NXY_RAW = '1'",
+      "isBackgrounded": false,
+      "firstToken": "$env:NXY_RAW",
+      "firstTokens": [
+        "$env:NXY_RAW"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
+    }
+  },
+  {
+    "name": "e43-raw-env-zero",
+    "input": {
+      "command": "NXY_RAW=0 mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "NXY_RAW=0 mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "NXY_RAW=0 mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {
+        "NXY_RAW": "0"
+      },
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e44-raw-env-only",
+    "input": {
+      "command": "NXY_RAW=1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "NXY_RAW=1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "NXY_RAW=1",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [
+        ""
+      ],
+      "leadingAssignments": {
+        "NXY_RAW": "1"
+      },
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "e45-raw-env-second-assign",
+    "input": {
+      "command": "FOO=1 NXY_RAW=1 grep x f"
+    },
+    "output": {
+      "splitTopLevel": [
+        "FOO=1 NXY_RAW=1 grep x f"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "FOO=1 NXY_RAW=1 grep x f",
+      "isBackgrounded": false,
+      "firstToken": "grep",
+      "firstTokens": [
+        "grep"
+      ],
+      "leadingAssignments": {
+        "FOO": "1",
+        "NXY_RAW": "1"
+      },
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "e46-raw-comment-alone",
+    "input": {
+      "command": "# raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "# raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "# raw",
+      "isBackgrounded": false,
+      "firstToken": "#",
+      "firstTokens": [
+        "#"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "#"
+    }
+  },
+  {
+    "name": "e47-nxy-raw-comment-echo",
+    "input": {
+      "command": "echo # nxy:raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo # nxy:raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo # nxy:raw",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e48-raw-comment-no-space",
+    "input": {
+      "command": "echo #raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo #raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo #raw",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e49-rawness-not-escape",
+    "input": {
+      "command": "echo # rawness"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo # rawness"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo # rawness",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e50-raw-in-quotes",
+    "input": {
+      "command": "echo \"# raw\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"# raw\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"# raw\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e51-hash-glued",
+    "input": {
+      "command": "echo a#raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo a#raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo a#raw",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "e52-head-n-20",
+    "input": {
+      "command": "ls | head -n 20"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head -n 20"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e53-head-n-21",
+    "input": {
+      "command": "ls | head -n 21"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head -n 21"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e54-tail-minus-20",
+    "input": {
+      "command": "ls | tail -20"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -20"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e55-tail-minus-21",
+    "input": {
+      "command": "ls | tail -21"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -21"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e56-tail-lines-eq-21",
+    "input": {
+      "command": "ls | tail --lines=21"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail --lines=21"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e57-tail-lines-space-5",
+    "input": {
+      "command": "ls | tail --lines 5"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail --lines 5"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e58-bare-head",
+    "input": {
+      "command": "ls | head"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e59-head-n20-glued",
+    "input": {
+      "command": "ls | head -n20"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head -n20"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e60-tail-n-100",
+    "input": {
+      "command": "ls | tail -n 100"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -n 100"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e61-tail-trailing-space",
+    "input": {
+      "command": "ls | tail -n 150 "
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -n 150"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e62-head-minus-100",
+    "input": {
+      "command": "ls | head -100"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head -100"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e63-tail-wide-spaces",
+    "input": {
+      "command": "ls | tail  -n  300"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail  -n  300"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e64-headx-not-a-limit",
+    "input": {
+      "command": "ls | headx"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "headx"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls | headx",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "headx"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e65-tail-f",
+    "input": {
+      "command": "ls | tail -f"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -f"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls | tail -f",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e66-tight-pipe-tail",
+    "input": {
+      "command": "ls |tail -n 99"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -n 99"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e67-head-then-other",
+    "input": {
+      "command": "ls | head -n 99 | wc -l"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "head -n 99",
+        "wc -l"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls | head -n 99 | wc -l",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "head",
+        "wc"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e68-tail-n-0",
+    "input": {
+      "command": "ls | tail -n 0"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail -n 0"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e69-long-chain",
+    "input": {
+      "command": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd a",
+        "cd b",
+        "ls -la",
+        "git status",
+        "git diff --stat",
+        "cat",
+        "echo done",
+        "true"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "cd",
+        "ls",
+        "git",
+        "git",
+        "cat",
+        "echo",
+        "true"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e70-gradlew-win",
+    "input": {
+      "command": ".\\gradlew.bat build"
+    },
+    "output": {
+      "splitTopLevel": [
+        ".\\gradlew.bat build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": ".\\gradlew.bat build",
+      "isBackgrounded": false,
+      "firstToken": "gradlew",
+      "firstTokens": [
+        "gradlew"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
+    }
+  },
+  {
+    "name": "e71-gradlew-unix",
+    "input": {
+      "command": "./gradlew test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./gradlew test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./gradlew test",
+      "isBackgrounded": false,
+      "firstToken": "gradlew",
+      "firstTokens": [
+        "gradlew"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "gradle-test"
+    }
+  },
+  {
+    "name": "e72-mvnw-no-ext",
+    "input": {
+      "command": ".\\mvnw clean"
+    },
+    "output": {
+      "splitTopLevel": [
+        ".\\mvnw clean"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": ".\\mvnw clean",
+      "isBackgrounded": false,
+      "firstToken": "mvnw",
+      "firstTokens": [
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-clean"
+    }
+  },
+  {
+    "name": "e73-mvnw-bare-cmd",
+    "input": {
+      "command": "./mvnw.cmd"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./mvnw.cmd"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./mvnw.cmd",
+      "isBackgrounded": false,
+      "firstToken": "mvnw",
+      "firstTokens": [
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven"
+    }
+  },
+  {
+    "name": "e74-mvnw-exe-not-wrapper",
+    "input": {
+      "command": "./mvnw.exe test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./mvnw.exe test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./mvnw.exe test",
+      "isBackgrounded": false,
+      "firstToken": "mvnw",
+      "firstTokens": [
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "e75-pnpm-test",
+    "input": {
+      "command": "pnpm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm test",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-test"
+    }
+  },
+  {
+    "name": "e76-pnpm-lint-fix",
+    "input": {
+      "command": "pnpm lint --fix"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm lint --fix"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm lint --fix",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-lint"
+    }
+  },
+  {
+    "name": "e77-pnpm-t",
+    "input": {
+      "command": "pnpm t"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm t"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm t",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-t"
+    }
+  },
+  {
+    "name": "e78-npm-t",
+    "input": {
+      "command": "npm t"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm t"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm t",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-t"
+    }
+  },
+  {
+    "name": "e79-npm-test-colon",
+    "input": {
+      "command": "npm test:unit"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test:unit"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test:unit",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test:unit"
+    }
+  },
+  {
+    "name": "e80-pnpm-builder",
+    "input": {
+      "command": "pnpm builder"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm builder"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm builder",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-builder"
+    }
+  },
+  {
+    "name": "e81-quoted-env-npm-test",
+    "input": {
+      "command": "FOO=\"a b\" npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "FOO=\"a b\" npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "FOO=\"a b\" npm test",
+      "isBackgrounded": false,
+      "firstToken": "b\"",
+      "firstTokens": [
+        "b\""
+      ],
+      "leadingAssignments": {
+        "FOO": "\"a"
+      },
+      "commandKind": "b\""
+    }
+  },
+  {
+    "name": "e82-two-env-pnpm-dev",
+    "input": {
+      "command": "A=1 B='x y' pnpm dev"
+    },
+    "output": {
+      "splitTopLevel": [
+        "A=1 B='x y' pnpm dev"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "A=1 B='x y' pnpm dev",
+      "isBackgrounded": false,
+      "firstToken": "y'",
+      "firstTokens": [
+        "y'"
+      ],
+      "leadingAssignments": {
+        "A": "1",
+        "B": "'x"
+      },
+      "commandKind": "y'"
+    }
+  },
+  {
+    "name": "e83-semicolon-npm-twice",
+    "input": {
+      "command": "cd x; npm test; npm t"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd x",
+        "npm test",
+        "npm t"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd x; npm test; npm t",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "npm",
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "e84-or-npm-test",
+    "input": {
+      "command": "ls || npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls || npm test",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "e85-npm-test-tab-arg",
+    "input": {
+      "command": "npm test\t--watch"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test\t--watch"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test\t--watch",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "e86-pnpm-all-words",
+    "input": {
+      "command": "pnpm build && pnpm lint && pnpm start && pnpm dev && pnpm check && pnpm typecheck && pnpm format"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm build",
+        "pnpm lint",
+        "pnpm start",
+        "pnpm dev",
+        "pnpm check",
+        "pnpm typecheck",
+        "pnpm format"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm build && pnpm lint && pnpm start && pnpm dev && pnpm check && pnpm typecheck && pnpm format",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm",
+        "pnpm",
+        "pnpm",
+        "pnpm",
+        "pnpm",
+        "pnpm",
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-build"
+    }
+  },
+  {
+    "name": "e87-docker-run-no-it",
+    "input": {
+      "command": "docker run --rm alpine"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker run --rm alpine"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker run --rm alpine",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-run"
+    }
+  },
+  {
+    "name": "e88-docker-exec-plain",
+    "input": {
+      "command": "docker exec web ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker exec web ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker exec web ls",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
+    }
+  },
+  {
+    "name": "e89-docker-exec-ti",
+    "input": {
+      "command": "docker exec -ti web sh"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker exec -ti web sh"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker exec -ti web sh",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
+    }
+  },
+  {
+    "name": "e90-docker-exec-t",
+    "input": {
+      "command": "docker exec -t web ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker exec -t web ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker exec -t web ls",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
+    }
+  },
+  {
+    "name": "e91-git-c-config-status",
+    "input": {
+      "command": "git -c core.x=1 status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git -c core.x=1 status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git -c core.x=1 status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "e92-git-C-log",
+    "input": {
+      "command": "git -C repo log"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git -C repo log"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git -C repo log",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "e93-git-stash-list",
+    "input": {
+      "command": "git stash list"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git stash list"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git stash list",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-stash"
+    }
+  },
+  {
+    "name": "e94-git-add-i",
+    "input": {
+      "command": "git add -i"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git add -i"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git add -i",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-add"
+    }
+  },
+  {
+    "name": "e95-git-add-patch",
+    "input": {
+      "command": "git add --patch"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git add --patch"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git add --patch",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-add"
+    }
+  },
+  {
+    "name": "e96-git-add-dot",
+    "input": {
+      "command": "git add ."
+    },
+    "output": {
+      "splitTopLevel": [
+        "git add ."
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git add .",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-add"
+    }
+  },
+  {
+    "name": "e97-bare-git",
+    "input": {
+      "command": "git"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git"
+    }
+  },
+  {
+    "name": "e98-git-dangling-C",
+    "input": {
+      "command": "git -C"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git -C"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git -C",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git"
+    }
+  },
+  {
+    "name": "e99-git-tag-list",
+    "input": {
+      "command": "git tag -l"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git tag -l"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git tag -l",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-tag"
+    }
+  },
+  {
+    "name": "f01-git-switch",
+    "input": {
+      "command": "git switch x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git switch x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git switch x",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-switch"
+    }
+  },
+  {
+    "name": "f02-git-reset-hard",
+    "input": {
+      "command": "git reset --hard"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git reset --hard"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git reset --hard",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-reset"
+    }
+  },
+  {
+    "name": "f03-git-cherry-pick",
+    "input": {
+      "command": "git cherry-pick abc"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git cherry-pick abc"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git cherry-pick abc",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-cherry-pick"
+    }
+  },
+  {
+    "name": "f04-time-npm-test",
+    "input": {
+      "command": "time npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "time npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "time npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "f05-nice-make",
+    "input": {
+      "command": "nice -n 5 make"
+    },
+    "output": {
+      "splitTopLevel": [
+        "nice -n 5 make"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "nice -n 5 make",
+      "isBackgrounded": false,
+      "firstToken": "-n",
+      "firstTokens": [
+        "-n"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "-n"
+    }
+  },
+  {
+    "name": "f06-command-ls",
+    "input": {
+      "command": "command ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "command ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "command ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f07-exec-bash",
+    "input": {
+      "command": "exec bash"
+    },
+    "output": {
+      "splitTopLevel": [
+        "exec bash"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "exec bash",
+      "isBackgrounded": false,
+      "firstToken": "bash",
+      "firstTokens": [
+        "bash"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "bash"
+    }
+  },
+  {
+    "name": "f08-env-time-vim",
+    "input": {
+      "command": "FOO=1 time vim x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "FOO=1 time vim x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "FOO=1 time vim x",
+      "isBackgrounded": false,
+      "firstToken": "vim",
+      "firstTokens": [
+        "vim"
+      ],
+      "leadingAssignments": {
+        "FOO": "1"
+      },
+      "commandKind": "vim"
+    }
+  },
+  {
+    "name": "f09-node-bin-jest",
+    "input": {
+      "command": "./node_modules/.bin/jest"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./node_modules/.bin/jest"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./node_modules/.bin/jest",
+      "isBackgrounded": false,
+      "firstToken": "node_modules/.bin/jest",
+      "firstTokens": [
+        "node_modules/.bin/jest"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node_modules/.bin/jest"
+    }
+  },
+  {
+    "name": "f10-windows-cmd-script",
+    "input": {
+      "command": ".\\script.cmd arg"
+    },
+    "output": {
+      "splitTopLevel": [
+        ".\\script.cmd arg"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": ".\\script.cmd arg",
+      "isBackgrounded": false,
+      "firstToken": "script",
+      "firstTokens": [
+        "script"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "script"
+    }
+  },
+  {
+    "name": "f11-windows-abs-exe",
+    "input": {
+      "command": "C:\\tools\\x.exe a"
+    },
+    "output": {
+      "splitTopLevel": [
+        "C:\\tools\\x.exe a"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "C:\\tools\\x.exe a",
+      "isBackgrounded": false,
+      "firstToken": "C:\\tools\\x",
+      "firstTokens": [
+        "C:\\tools\\x"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "C:\\tools\\x"
+    }
+  },
+  {
+    "name": "f12-sh-script",
+    "input": {
+      "command": "./a.sh"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./a.sh"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./a.sh",
+      "isBackgrounded": false,
+      "firstToken": "a.sh",
+      "firstTokens": [
+        "a.sh"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a.sh"
+    }
+  },
+  {
+    "name": "f13-heredoc-dash",
+    "input": {
+      "command": "cat <<-EOF\nhi\nEOF"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat <<-EOF\nhi\nEOF"
+      ],
+      "hasHeredoc": true,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat <<-EOF\nhi\nEOF",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "f14-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo \"<<\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"<<\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"<<\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f15-single-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo '<<x'"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo '<<x'"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo '<<x'",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f16-input-redirect-glued",
+    "input": {
+      "command": "cat <in"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat <in"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "cat <in",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "f17-herestring-bare",
+    "input": {
+      "command": "a <<< b"
+    },
+    "output": {
+      "splitTopLevel": [
+        "a <<< b"
+      ],
+      "hasHeredoc": true,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "a <<< b",
+      "isBackgrounded": false,
+      "firstToken": "a",
+      "firstTokens": [
+        "a"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a"
+    }
+  },
+  {
+    "name": "f18-single-quoted-subst",
+    "input": {
+      "command": "echo '$(x)'"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo '$(x)'"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo '$(x)'",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f19-double-quoted-subst",
+    "input": {
+      "command": "echo \"$(x)\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"$(x)\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"$(x)\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f20-escaped-subst",
+    "input": {
+      "command": "echo \\$(x)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \\$(x)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \\$(x)",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f21-plain-var",
+    "input": {
+      "command": "echo $HOME"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo $HOME"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo $HOME",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f22-brace-var",
+    "input": {
+      "command": "echo ${X}"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo ${X}"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo ${X}",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f23-lone-dollar",
+    "input": {
+      "command": "echo $"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo $"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo $",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f24-escaped-backtick-in-dq",
+    "input": {
+      "command": "echo \"\\`x\\`\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"\\`x\\`\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"\\`x\\`\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f25-sleep-background",
+    "input": {
+      "command": "sleep 1 &"
+    },
+    "output": {
+      "splitTopLevel": [
+        "sleep 1 &"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "sleep 1 &",
+      "isBackgrounded": true,
+      "firstToken": "sleep",
+      "firstTokens": [
+        "sleep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "sleep"
+    }
+  },
+  {
+    "name": "f26-chain-background",
+    "input": {
+      "command": "a && b &"
+    },
+    "output": {
+      "splitTopLevel": [
+        "a",
+        "b &"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "a && b &",
+      "isBackgrounded": true,
+      "firstToken": "a",
+      "firstTokens": [
+        "a",
+        "b"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a"
+    }
+  },
+  {
+    "name": "f27-trailing-andand",
+    "input": {
+      "command": "a &&"
+    },
+    "output": {
+      "splitTopLevel": [
+        "a"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "a &&",
+      "isBackgrounded": false,
+      "firstToken": "a",
+      "firstTokens": [
+        "a"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle",
+    "input": {
+      "command": "a & b"
+    },
+    "output": {
+      "splitTopLevel": [
+        "a & b"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "a & b",
+      "isBackgrounded": false,
+      "firstToken": "a",
+      "firstTokens": [
+        "a"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a"
+    }
+  },
+  {
+    "name": "f29-amp-word",
+    "input": {
+      "command": "a &amp"
+    },
+    "output": {
+      "splitTopLevel": [
+        "a &amp"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "a &amp",
+      "isBackgrounded": false,
+      "firstToken": "a",
+      "firstTokens": [
+        "a"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "a"
+    }
+  },
+  {
+    "name": "f30-cd-cd",
+    "input": {
+      "command": "cd a && cd b"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd a",
+        "cd b"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd a && cd b",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "cd"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cd"
+    }
+  },
+  {
+    "name": "f31-cd-bare",
+    "input": {
+      "command": "cd"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cd"
+    }
+  },
+  {
+    "name": "f32-set-e",
+    "input": {
+      "command": "set -e"
+    },
+    "output": {
+      "splitTopLevel": [
+        "set -e"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "set -e",
+      "isBackgrounded": false,
+      "firstToken": "set",
+      "firstTokens": [
+        "set"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "set"
+    }
+  },
+  {
+    "name": "f33-source-only",
+    "input": {
+      "command": "source x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "source x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "source x",
+      "isBackgrounded": false,
+      "firstToken": "source",
+      "firstTokens": [
+        "source"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "source"
+    }
+  },
+  {
+    "name": "f34-unset-only",
+    "input": {
+      "command": "unset A"
+    },
+    "output": {
+      "splitTopLevel": [
+        "unset A"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "unset A",
+      "isBackgrounded": false,
+      "firstToken": "unset",
+      "firstTokens": [
+        "unset"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "unset"
+    }
+  },
+  {
+    "name": "f35-env-bare-node",
+    "input": {
+      "command": "FOO=1 node"
+    },
+    "output": {
+      "splitTopLevel": [
+        "FOO=1 node"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "FOO=1 node",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {
+        "FOO": "1"
+      },
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "f36-node-version",
+    "input": {
+      "command": "node -v"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node -v"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node -v",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "f37-bare-python",
+    "input": {
+      "command": "python"
+    },
+    "output": {
+      "splitTopLevel": [
+        "python"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "python",
+      "isBackgrounded": false,
+      "firstToken": "python",
+      "firstTokens": [
+        "python"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "f38-python-c",
+    "input": {
+      "command": "python -c \"x\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "python -c \"x\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "python -c \"x\"",
+      "isBackgrounded": false,
+      "firstToken": "python",
+      "firstTokens": [
+        "python"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "f39-env-bare-python3",
+    "input": {
+      "command": "A=1 python3"
+    },
+    "output": {
+      "splitTopLevel": [
+        "A=1 python3"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "A=1 python3",
+      "isBackgrounded": false,
+      "firstToken": "python3",
+      "firstTokens": [
+        "python3"
+      ],
+      "leadingAssignments": {
+        "A": "1"
+      },
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "f40-node-and-python",
+    "input": {
+      "command": "node a.js && python3 b.py"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node a.js",
+        "python3 b.py"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node a.js && python3 b.py",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node",
+        "python3"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "f41-ls-nxy-dir",
+    "input": {
+      "command": "ls .nxy/"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls .nxy/"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls .nxy/",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f42-nxy-backslash-quoted",
+    "input": {
+      "command": "cat '.nxy\\x'"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat '.nxy\\x'"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat '.nxy\\x'",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "f43-nxy-glued",
+    "input": {
+      "command": "echo a.nxy/x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo a.nxy/x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo a.nxy/x",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f44-nxy-dot-slash",
+    "input": {
+      "command": "cat ./.nxy/c"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat ./.nxy/c"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat ./.nxy/c",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "f45-accented",
+    "input": {
+      "command": "echo héllo"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo héllo"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo héllo",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f46-cjk-head-50",
+    "input": {
+      "command": "echo \"日本語\" | head -n 50"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"日本語\"",
+        "head -n 50"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"日本語\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f47-grep-enye",
+    "input": {
+      "command": "grep -rn \"ñ\" src"
+    },
+    "output": {
+      "splitTopLevel": [
+        "grep -rn \"ñ\" src"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "grep -rn \"ñ\" src",
+      "isBackgrounded": false,
+      "firstToken": "grep",
+      "firstTokens": [
+        "grep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "f48-emoji",
+    "input": {
+      "command": "echo 😀 > f"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo 😀 > f"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "echo 😀 > f",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f49-rtk-quoted-abs",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "\"/opt/rtk/rtk\" git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "\"/opt/rtk/rtk\" git status",
+      "isBackgrounded": false,
+      "firstToken": "\"/opt/rtk/rtk\"",
+      "firstTokens": [
+        "\"/opt/rtk/rtk\""
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f50-rtk-env-prefix",
+    "input": {
+      "command": "A=1 rtk git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "A=1 rtk git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "A=1 rtk git status",
+      "isBackgrounded": false,
+      "firstToken": "rtk",
+      "firstTokens": [
+        "rtk"
+      ],
+      "leadingAssignments": {
+        "A": "1"
+      },
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f51-rtk-windows-path",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "\"D:\\tools\\rtk.exe\" git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "\"D:\\tools\\rtk.exe\" git status",
+      "isBackgrounded": false,
+      "firstToken": "\"D:\\tools\\rtk.exe\"",
+      "firstTokens": [
+        "\"D:\\tools\\rtk.exe\""
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f52-rtk-uppercase",
+    "input": {
+      "command": "RTK git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "RTK git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "RTK git status",
+      "isBackgrounded": false,
+      "firstToken": "RTK",
+      "firstTokens": [
+        "RTK"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f53-rtk-alone",
+    "input": {
+      "command": "rtk"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rtk"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rtk",
+      "isBackgrounded": false,
+      "firstToken": "rtk",
+      "firstTokens": [
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "rtk"
+    }
+  },
+  {
+    "name": "f54-rtk-prefix-word",
+    "input": {
+      "command": "rtkx git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rtkx git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rtkx git status",
+      "isBackgrounded": false,
+      "firstToken": "rtkx",
+      "firstTokens": [
+        "rtkx"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "rtkx"
+    }
+  },
+  {
+    "name": "f55-echo-rtk",
+    "input": {
+      "command": "echo rtk git"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo rtk git"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo rtk git",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f56-rtk-in-pipe",
+    "input": {
+      "command": "ls | rtk grep x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "rtk grep x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls | rtk grep x",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f57-rtk-pin-chain",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd x",
+        "JAVA_HOME=\"/j\" rtk mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd x && JAVA_HOME=\"/j\" rtk mvn test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "f58-rtk-after-or",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "rtk git status",
+        "rtk.exe ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls || rtk git status; rtk.exe ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "rtk",
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed",
+    "input": {
+      "command": "git status\nls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status\nls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status\nls",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe",
+    "input": {
+      "command": "git status; git log | head -n 50"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status",
+        "git log",
+        "head -n 50"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status; git log",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "git",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f61-quoted-andand",
+    "input": {
+      "command": "echo \"a && b\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"a && b\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"a && b\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f62-ls",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh",
+    "input": {
+      "command": "curl x | sh"
+    },
+    "output": {
+      "splitTopLevel": [
+        "curl x",
+        "sh"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "curl x | sh",
+      "isBackgrounded": false,
+      "firstToken": "curl",
+      "firstTokens": [
+        "curl",
+        "sh"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "curl"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build",
+    "input": {
+      "command": "rm -rf build"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rm -rf build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rm -rf build",
+      "isBackgrounded": false,
+      "firstToken": "rm",
+      "firstTokens": [
+        "rm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "rm"
+    }
+  },
+  {
+    "name": "f65-status-then-rm",
+    "input": {
+      "command": "git status && rm -rf build"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status",
+        "rm -rf build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status && rm -rf build",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "rm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f66-echo-hi",
+    "input": {
+      "command": "echo hi"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo hi"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo hi",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot",
+    "input": {
+      "command": "grep -rn \"a.b\" ."
+    },
+    "output": {
+      "splitTopLevel": [
+        "grep -rn \"a.b\" ."
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "grep -rn \"a.b\" .",
+      "isBackgrounded": false,
+      "firstToken": "grep",
+      "firstTokens": [
+        "grep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "f68-ls-tail",
+    "input": {
+      "command": "ls | tail"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "tail"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike",
+    "input": {
+      "command": "git status-x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status-x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status-x",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status-x"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag",
+    "input": {
+      "command": "npm run test -- --grep x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm run test -- --grep x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm run test -- --grep x",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-run"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git log --oneline"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git log --oneline",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed",
+    "input": {
+      "command": "git status $(pwd)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status $(pwd)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status $(pwd)",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f73-git-push-chain",
+    "input": {
+      "command": "git status && git push"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status",
+        "git push"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status && git push",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect",
+    "input": {
+      "command": "ls 2>&1 & ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls 2>&1 & ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls 2>&1 & ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect",
+    "input": {
+      "command": "ls |& cat"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "& cat"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls |& cat",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "&"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "f76-empty-perm",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "f77-spaces-perm",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "   ",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm",
+    "input": {
+      "command": "git status\r\nls\r\n"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status\r\nls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status\r\nls\r\n",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd api",
+        "npm test",
+        "cd ..",
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd api && npm test && cd .. && ls",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "npm",
+        "cd",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "f80-sudo-chain",
+    "input": {
+      "command": "sudo ls && ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "sudo ls",
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "sudo ls && ls",
+      "isBackgrounded": false,
+      "firstToken": "sudo",
+      "firstTokens": [
+        "sudo",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "sudo"
+    }
+  },
+  {
+    "name": "ps01-mvnw",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location \"C:/x/api\"",
+        ".\\mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location \"C:/x/api\"; .\\mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps02-multiline-env",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps03-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "ps04-cd-npm-test",
+    "input": {
+      "command": "cd api; npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd api",
+        "npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd api; npm test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "ps05-script-foreach",
+    "input": {
+      "command": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$candidates = @()",
+        "Get-ChildItem \"C:/x\"",
+        "ForEach-Object { $_ }"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }",
+      "isBackgrounded": false,
+      "firstToken": "$candidates",
+      "firstTokens": [
+        "$candidates",
+        "Get-ChildItem",
+        "ForEach-Object"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
+    }
+  },
+  {
+    "name": "ps06-set-location-only",
+    "input": {
+      "command": "Set-Location \"C:/x\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location \"C:/x\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location \"C:/x\"",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "Set-Location"
+    }
+  },
+  {
+    "name": "ps07-env-only",
+    "input": {
+      "command": "$env:JAVA_HOME = \"C:/j\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:JAVA_HOME = \"C:/j\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:JAVA_HOME = \"C:/j\"",
+      "isBackgrounded": false,
+      "firstToken": "$env:JAVA_HOME",
+      "firstTokens": [
+        "$env:JAVA_HOME"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
+    }
+  },
+  {
+    "name": "ps08-pipe",
+    "input": {
+      "command": "Get-Content x | Select-Object -First 5"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Get-Content x",
+        "Select-Object -First 5"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Get-Content x | Select-Object -First 5",
+      "isBackgrounded": false,
+      "firstToken": "Get-Content",
+      "firstTokens": [
+        "Get-Content",
+        "Select-Object"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "Get-Content"
+    }
+  },
+  {
+    "name": "ps09-already-rtk",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location \"C:/x\"",
+        "rtk mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location \"C:/x\"; rtk mvn test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps10-raw-env",
+    "input": {
+      "command": "$env:NXY_RAW = \"1\"; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:NXY_RAW = \"1\"",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:NXY_RAW = \"1\"; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "$env:NXY_RAW",
+      "firstTokens": [
+        "$env:NXY_RAW",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps11-raw-env-middle",
+    "input": {
+      "command": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location \"C:/x\"",
+        "$env:NXY_RAW = \"1\"",
+        ".\\mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; .\\mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "$env:NXY_RAW",
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps12-redirect",
+    "input": {
+      "command": "mvn test > out.txt"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test > out.txt"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "mvn test > out.txt",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps13-code-3",
+    "input": {
+      "command": "Set-Location x; git log"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location x",
+        "git log"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location x; git log",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "ps14-crlf",
+    "input": {
+      "command": "Set-Location x\r\n.\\gradlew.bat build\r\n"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location x\r\n.\\gradlew.bat build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location x\r\n.\\gradlew.bat build\r\n",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
+    }
+  },
+  {
+    "name": "ps15-tail-limit",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test 2>&1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps16-assign-eqeq",
+    "input": {
+      "command": "echo $a == b"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo $a == b"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo $a == b",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "ps17-assign-script",
+    "input": {
+      "command": "$a = 1; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$a = 1",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$a = 1; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "$a",
+      "firstTokens": [
+        "$a",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
+    }
+  },
+  {
+    "name": "ps18-if",
+    "input": {
+      "command": "if ($a) { mvn test }"
+    },
+    "output": {
+      "splitTopLevel": [
+        "if ($a) { mvn test }"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "if ($a) { mvn test }",
+      "isBackgrounded": false,
+      "firstToken": "if",
+      "firstTokens": [
+        "if"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "if"
+    }
+  },
+  {
+    "name": "ps19-try",
+    "input": {
+      "command": "try { mvn test } catch { }"
+    },
+    "output": {
+      "splitTopLevel": [
+        "try { mvn test } catch { }"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "try { mvn test } catch { }",
+      "isBackgrounded": false,
+      "firstToken": "try",
+      "firstTokens": [
+        "try"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "try"
+    }
+  },
+  {
+    "name": "ps20-function",
+    "input": {
+      "command": "function f { mvn test }"
+    },
+    "output": {
+      "splitTopLevel": [
+        "function f { mvn test }"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "function f { mvn test }",
+      "isBackgrounded": false,
+      "firstToken": "function",
+      "firstTokens": [
+        "function"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "function"
+    }
+  },
+  {
+    "name": "ps21-subexpr",
+    "input": {
+      "command": "echo $(Get-Date)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo $(Get-Date)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo $(Get-Date)",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "ps22-array",
+    "input": {
+      "command": "echo @(1,2)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo @(1,2)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo @(1,2)",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "ps23-backtick",
+    "input": {
+      "command": "mvn `\n test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn `\n test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn `\n test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-"
+    }
+  },
+  {
+    "name": "ps24-empty-segment",
+    "input": {
+      "command": "Set-Location x;; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location x",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location x;; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps25-state-last",
+    "input": {
+      "command": "mvn test; Set-Location x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test",
+        "Set-Location x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test; Set-Location x",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn",
+        "Set-Location"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps26-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "ps27-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "ps28-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "ps29-raw-alone",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:NXY_RAW=\"1\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:NXY_RAW=\"1\"",
+      "isBackgrounded": false,
+      "firstToken": "$env:NXY_RAW=\"1\"",
+      "firstTokens": [
+        "$env:NXY_RAW=\"1\""
+      ],
+      "leadingAssignments": {},
+      "commandKind": "powershell-script"
+    }
+  },
+  {
+    "name": "ps30-raw-lowercase-prefix",
+    "input": {
+      "command": "$env:nxy_raw = 1; ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "$env:nxy_raw = 1",
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "$env:nxy_raw = 1; ls",
+      "isBackgrounded": false,
+      "firstToken": "$env:nxy_raw",
+      "firstTokens": [
+        "$env:nxy_raw",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "ps31-upper-set-location",
+    "input": {
+      "command": "SET-LOCATION x; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "SET-LOCATION x",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "SET-LOCATION x; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "SET-LOCATION",
+      "firstTokens": [
+        "SET-LOCATION",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps32-node-eval",
+    "input": {
+      "command": "node -e \"1\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "node -e \"1\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node -e \"1\"",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "ps33-bare-python",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "splitTopLevel": [
+        "python3"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "python3",
+      "isBackgrounded": false,
+      "firstToken": "python3",
+      "firstTokens": [
+        "python3"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "ps34-pushd",
+    "input": {
+      "command": "pushd x\nmvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pushd x\nmvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pushd x\nmvn test",
+      "isBackgrounded": false,
+      "firstToken": "pushd",
+      "firstTokens": [
+        "pushd"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps35-push-location",
+    "input": {
+      "command": "Push-Location x; Get-ChildItem"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Push-Location x",
+        "Get-ChildItem"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Push-Location x; Get-ChildItem",
+      "isBackgrounded": false,
+      "firstToken": "Push-Location",
+      "firstTokens": [
+        "Push-Location",
+        "Get-ChildItem"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "Get-ChildItem"
+    }
+  },
+  {
+    "name": "ps36-deny",
+    "input": {
+      "command": "rm -rf x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rm -rf x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rm -rf x",
+      "isBackgrounded": false,
+      "firstToken": "rm",
+      "firstTokens": [
+        "rm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "rm"
+    }
+  },
+  {
+    "name": "ps37-throw",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps38-unchanged",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps39-nbsp",
+    "input": {
+      "command": "Set-Location x; mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "Set-Location x",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "Set-Location x; mvn test",
+      "isBackgrounded": false,
+      "firstToken": "Set-Location",
+      "firstTokens": [
+        "Set-Location",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "ps40-interactive-docker",
+    "input": {
+      "command": "docker run -it ubuntu"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker run -it ubuntu"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker run -it ubuntu",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-run"
+    }
+  },
+  {
+    "name": "ps41-unknown-tool",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "r01-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "r02-mvn-test",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r03-env-prefix-npm-test",
+    "input": {
+      "command": "FOO=1 npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "FOO=1 npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "FOO=1 npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {
+        "FOO": "1"
+      },
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test",
+    "input": {
+      "command": "cd src && npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src",
+        "npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src && npm test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "r05-tail-50",
+    "input": {
+      "command": "npm test | tail -50"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test",
+        "tail -50"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test 2>&1",
+        "tail -n 150"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r07-pipe-grep-tail-21",
+    "input": {
+      "command": "git log | grep x | tail -n 21"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git log",
+        "grep x",
+        "tail -n 21"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git log | grep x",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "grep",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "r08-windows-wrapper-chain",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && ./mvnw.cmd -B test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd \"C:\\x\\api\"",
+        "export JAVA_HOME=\"C:\\j\"",
+        "./mvnw.cmd -B test 2>&1",
+        "tail -n 150"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && ./mvnw.cmd -B test 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "export",
+        "mvnw",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r09-add-status",
+    "input": {
+      "command": "git add . && git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git add .",
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git add . && git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-add"
+    }
+  },
+  {
+    "name": "r10-quoted-gt",
+    "input": {
+      "command": "echo \"a > b\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"a > b\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"a > b\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "r11-devnull-stderr",
+    "input": {
+      "command": "ls -la 2>/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls -la 2>/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls -la 2>/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "r12-where-java",
+    "input": {
+      "command": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    },
+    "output": {
+      "splitTopLevel": [
+        "where java 2>/dev/null",
+        "ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null",
+      "isBackgrounded": false,
+      "firstToken": "where",
+      "firstTokens": [
+        "where",
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "where"
+    }
+  },
+  {
+    "name": "r13-node-eval-then-grep",
+    "input": {
+      "command": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node -e \"const a=1&&2; console.log(a|3)\"",
+        "grep -n foo README.md"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node",
+        "grep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "r14-python-in-chain",
+    "input": {
+      "command": "cd api && python3 gen.py && git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd api",
+        "python3 gen.py",
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd api && python3 gen.py && git status",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "python3",
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "r15-ask-code-3",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git log --oneline"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git log --oneline",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "r16-only-mvn",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r17-docker-ps",
+    "input": {
+      "command": "docker ps"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker ps"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker ps",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-ps"
+    }
+  },
+  {
+    "name": "r18-git-diff-exclude-curl",
+    "input": {
+      "command": "git diff"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git diff"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git diff",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-diff"
+    }
+  },
+  {
+    "name": "r19-mvnw-cmd-unix",
+    "input": {
+      "command": "./mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "mvnw",
+      "firstTokens": [
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r20-mvnw-cmd-win",
+    "input": {
+      "command": ".\\mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        ".\\mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": ".\\mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "mvnw",
+      "firstTokens": [
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r21-env-then-mvnw",
+    "input": {
+      "command": "cd api && JAVA_HOME=\"/c/x\" ./mvnw.cmd test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd api",
+        "JAVA_HOME=\"/c/x\" ./mvnw.cmd test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd api && JAVA_HOME=\"/c/x\" ./mvnw.cmd test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r22-gradlew-bat",
+    "input": {
+      "command": "./gradlew.bat build"
+    },
+    "output": {
+      "splitTopLevel": [
+        "./gradlew.bat build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "./gradlew.bat build",
+      "isBackgrounded": false,
+      "firstToken": "gradlew",
+      "firstTokens": [
+        "gradlew"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "gradle-build"
+    }
+  },
+  {
+    "name": "r23-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "r24-pnpm-test-args",
+    "input": {
+      "command": "pnpm test -- --run"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm test -- --run"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm test -- --run",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-test"
+    }
+  },
+  {
+    "name": "r25-pnpm-build",
+    "input": {
+      "command": "pnpm build"
+    },
+    "output": {
+      "splitTopLevel": [
+        "pnpm build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "pnpm build",
+      "isBackgrounded": false,
+      "firstToken": "pnpm",
+      "firstTokens": [
+        "pnpm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "pnpm-build"
+    }
+  },
+  {
+    "name": "r26-npm-run-build",
+    "input": {
+      "command": "npm run build"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm run build"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm run build",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-run"
+    }
+  },
+  {
+    "name": "r27-quoted-cd-mvnw",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && ./mvnw test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd \"C:\\x\\api\"",
+        "export JAVA_HOME=\"/c/j\"",
+        "./mvnw test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && ./mvnw test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "export",
+        "mvnw"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "r28-source-then-mvn",
+    "input": {
+      "command": "source ~/.bashrc && mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "source ~/.bashrc",
+        "mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "source ~/.bashrc && mvn test",
+      "isBackgrounded": false,
+      "firstToken": "source",
+      "firstTokens": [
+        "source",
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "s01-empty",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "s02-spaces",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "splitTopLevel": [],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "   ",
+      "isBackgrounded": false,
+      "firstToken": "",
+      "firstTokens": [],
+      "leadingAssignments": {},
+      "commandKind": "unknown"
+    }
+  },
+  {
+    "name": "s03-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s04-raw-env",
+    "input": {
+      "command": "NXY_RAW=1 mvn test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "NXY_RAW=1 mvn test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "NXY_RAW=1 mvn test",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {
+        "NXY_RAW": "1"
+      },
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "s05-raw-env-in-chain",
+    "input": {
+      "command": "cd api && NXY_RAW=1 grep -n foo README.md"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd api",
+        "NXY_RAW=1 grep -n foo README.md"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd api && NXY_RAW=1 grep -n foo README.md",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "grep"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "s06-raw-comment",
+    "input": {
+      "command": "mvn test # raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test # raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test # raw",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "s07-raw-comment-nxy",
+    "input": {
+      "command": "mvn test #nxy:raw"
+    },
+    "output": {
+      "splitTopLevel": [
+        "mvn test #nxy:raw"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "mvn test #nxy:raw",
+      "isBackgrounded": false,
+      "firstToken": "mvn",
+      "firstTokens": [
+        "mvn"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "maven-test"
+    }
+  },
+  {
+    "name": "s08-already-rtk",
+    "input": {
+      "command": "rtk git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rtk git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rtk git status",
+      "isBackgrounded": false,
+      "firstToken": "rtk",
+      "firstTokens": [
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s09-already-rtk-exe",
+    "input": {
+      "command": "rtk.exe git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rtk.exe git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rtk.exe git status",
+      "isBackgrounded": false,
+      "firstToken": "rtk",
+      "firstTokens": [
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s10-already-rtk-chain",
+    "input": {
+      "command": "cd src && rtk npm test"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src",
+        "rtk npm test"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src && rtk npm test",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "rtk"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "s11-excluded",
+    "input": {
+      "command": "curl -s https://x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "curl -s https://x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "curl -s https://x",
+      "isBackgrounded": false,
+      "firstToken": "curl",
+      "firstTokens": [
+        "curl"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "curl"
+    }
+  },
+  {
+    "name": "s12-excluded-in-chain",
+    "input": {
+      "command": "npm test && curl x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test",
+        "curl x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test && curl x",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm",
+        "curl"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "s13-not-in-only",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "s14-heredoc",
+    "input": {
+      "command": "cat <<'X'\nhi\nX"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat <<'X'\nhi\nX"
+      ],
+      "hasHeredoc": true,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat <<'X'\nhi\nX",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "s15-herestring",
+    "input": {
+      "command": "cat <<< \"hi\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat <<< \"hi\""
+      ],
+      "hasHeredoc": true,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat <<< \"hi\"",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar",
+    "input": {
+      "command": "echo $(date)"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo $(date)"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo $(date)",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "s17-substitution-backtick",
+    "input": {
+      "command": "echo `date`"
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo `date`"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo `date`",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "s18-substitution-brace",
+    "input": {
+      "command": "echo \"${HOME}\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "echo \"${HOME}\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": true,
+      "hasRedirect": false,
+      "stripTrailingLimit": "echo \"${HOME}\"",
+      "isBackgrounded": false,
+      "firstToken": "echo",
+      "firstTokens": [
+        "echo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "echo"
+    }
+  },
+  {
+    "name": "s19-redirect-file",
+    "input": {
+      "command": "ls > out.txt"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls > out.txt"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "ls > out.txt",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "s20-redirect-and-merge",
+    "input": {
+      "command": "npm test > out.log 2>&1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test > out.log 2>&1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "npm test > out.log 2>&1",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "s21-redirect-input",
+    "input": {
+      "command": "sort < in.txt"
+    },
+    "output": {
+      "splitTopLevel": [
+        "sort < in.txt"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": true,
+      "stripTrailingLimit": "sort < in.txt",
+      "isBackgrounded": false,
+      "firstToken": "sort",
+      "firstTokens": [
+        "sort"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "sort"
+    }
+  },
+  {
+    "name": "s22-background",
+    "input": {
+      "command": "npm start &"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm start &"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm start &",
+      "isBackgrounded": true,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-start"
+    }
+  },
+  {
+    "name": "s23-capped-head-3",
+    "input": {
+      "command": "grep -rn \"nxy\" README.md | head -3"
+    },
+    "output": {
+      "splitTopLevel": [
+        "grep -rn \"nxy\" README.md",
+        "head -3"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "grep -rn \"nxy\" README.md",
+      "isBackgrounded": false,
+      "firstToken": "grep",
+      "firstTokens": [
+        "grep",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "grep"
+    }
+  },
+  {
+    "name": "s24-capped-tail-20",
+    "input": {
+      "command": "npm test | tail -20"
+    },
+    "output": {
+      "splitTopLevel": [
+        "npm test",
+        "tail -20"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "npm test",
+      "isBackgrounded": false,
+      "firstToken": "npm",
+      "firstTokens": [
+        "npm",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "npm-test"
+    }
+  },
+  {
+    "name": "s25-capped-bare-tail",
+    "input": {
+      "command": "ls -la | tail"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls -la",
+        "tail"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls -la",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "tail"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "s26-capped-head-n-10",
+    "input": {
+      "command": "git log --oneline | head -n 10"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git log --oneline",
+        "head -n 10"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git log --oneline",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git",
+        "head"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-log"
+    }
+  },
+  {
+    "name": "s27-cd-only",
+    "input": {
+      "command": "cd src"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cd"
+    }
+  },
+  {
+    "name": "s28-export-only",
+    "input": {
+      "command": "export A=1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "export A=1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "export A=1",
+      "isBackgrounded": false,
+      "firstToken": "export",
+      "firstTokens": [
+        "export"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "export"
+    }
+  },
+  {
+    "name": "s29-state-chain",
+    "input": {
+      "command": "cd src && export A=1"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src",
+        "export A=1"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src && export A=1",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "export"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cd"
+    }
+  },
+  {
+    "name": "s30-sudo",
+    "input": {
+      "command": "sudo apt install x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "sudo apt install x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "sudo apt install x",
+      "isBackgrounded": false,
+      "firstToken": "sudo",
+      "firstTokens": [
+        "sudo"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "sudo"
+    }
+  },
+  {
+    "name": "s31-vim",
+    "input": {
+      "command": "vim file.txt"
+    },
+    "output": {
+      "splitTopLevel": [
+        "vim file.txt"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "vim file.txt",
+      "isBackgrounded": false,
+      "firstToken": "vim",
+      "firstTokens": [
+        "vim"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "vim"
+    }
+  },
+  {
+    "name": "s32-ssh",
+    "input": {
+      "command": "ssh host"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ssh host"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ssh host",
+      "isBackgrounded": false,
+      "firstToken": "ssh",
+      "firstTokens": [
+        "ssh"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ssh"
+    }
+  },
+  {
+    "name": "s33-bare-node",
+    "input": {
+      "command": "node"
+    },
+    "output": {
+      "splitTopLevel": [
+        "node"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "s34-bare-python3",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "splitTopLevel": [
+        "python3"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "python3",
+      "isBackgrounded": false,
+      "firstToken": "python3",
+      "firstTokens": [
+        "python3"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "s35-cd-bare-node",
+    "input": {
+      "command": "cd src && node"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src",
+        "node"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src && node",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "s36-node-eval",
+    "input": {
+      "command": "node -e \"console.log(1)\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "node -e \"console.log(1)\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "node -e \"console.log(1)\"",
+      "isBackgrounded": false,
+      "firstToken": "node",
+      "firstTokens": [
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "s37-node-test-after-cd",
+    "input": {
+      "command": "cd src && node --test tests/x.test.mjs"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cd src",
+        "node --test tests/x.test.mjs"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cd src && node --test tests/x.test.mjs",
+      "isBackgrounded": false,
+      "firstToken": "cd",
+      "firstTokens": [
+        "cd",
+        "node"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "node"
+    }
+  },
+  {
+    "name": "s38-python-script",
+    "input": {
+      "command": "python3 tool.py --flag"
+    },
+    "output": {
+      "splitTopLevel": [
+        "python3 tool.py --flag"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "python3 tool.py --flag",
+      "isBackgrounded": false,
+      "firstToken": "python3",
+      "firstTokens": [
+        "python3"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "python"
+    }
+  },
+  {
+    "name": "s39-git-commit",
+    "input": {
+      "command": "git commit -m \"x\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "git commit -m \"x\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git commit -m \"x\"",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-commit"
+    }
+  },
+  {
+    "name": "s40-git-C-commit",
+    "input": {
+      "command": "git -C . commit -m \"x\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "git -C . commit -m \"x\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git -C . commit -m \"x\"",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-commit"
+    }
+  },
+  {
+    "name": "s41-git-push",
+    "input": {
+      "command": "git push origin main"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git push origin main"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git push origin main",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-push"
+    }
+  },
+  {
+    "name": "s42-git-rebase-i",
+    "input": {
+      "command": "git rebase -i HEAD~3"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git rebase -i HEAD~3"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git rebase -i HEAD~3",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-rebase"
+    }
+  },
+  {
+    "name": "s43-git-add-p",
+    "input": {
+      "command": "git add -p"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git add -p"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git add -p",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-add"
+    }
+  },
+  {
+    "name": "s44-git-checkout",
+    "input": {
+      "command": "git checkout main"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git checkout main"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git checkout main",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-checkout"
+    }
+  },
+  {
+    "name": "s45-docker-exec-it",
+    "input": {
+      "command": "docker exec -it web sh"
+    },
+    "output": {
+      "splitTopLevel": [
+        "docker exec -it web sh"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "docker exec -it web sh",
+      "isBackgrounded": false,
+      "firstToken": "docker",
+      "firstTokens": [
+        "docker"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "docker-exec"
+    }
+  },
+  {
+    "name": "s46-chain-with-commit",
+    "input": {
+      "command": "ls && git commit -m x"
+    },
+    "output": {
+      "splitTopLevel": [
+        "ls",
+        "git commit -m x"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "ls && git commit -m x",
+      "isBackgrounded": false,
+      "firstToken": "ls",
+      "firstTokens": [
+        "ls",
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "ls"
+    }
+  },
+  {
+    "name": "s47-nxy-internal",
+    "input": {
+      "command": "cat .nxy/metrics/filter.jsonl"
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat .nxy/metrics/filter.jsonl"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat .nxy/metrics/filter.jsonl",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "s48-nxy-internal-quoted",
+    "input": {
+      "command": "cat \"./.nxy/config.json\""
+    },
+    "output": {
+      "splitTopLevel": [
+        "cat \"./.nxy/config.json\""
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "cat \"./.nxy/config.json\"",
+      "isBackgrounded": false,
+      "firstToken": "cat",
+      "firstTokens": [
+        "cat"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "cat"
+    }
+  },
+  {
+    "name": "s49-rtk-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s50-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s51-rtk-none",
+    "input": {
+      "command": "weird-cmd"
+    },
+    "output": {
+      "splitTopLevel": [
+        "weird-cmd"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "weird-cmd",
+      "isBackgrounded": false,
+      "firstToken": "weird-cmd",
+      "firstTokens": [
+        "weird-cmd"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "weird-cmd"
+    }
+  },
+  {
+    "name": "s52-rtk-deny",
+    "input": {
+      "command": "rm -rf /"
+    },
+    "output": {
+      "splitTopLevel": [
+        "rm -rf /"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "rm -rf /",
+      "isBackgrounded": false,
+      "firstToken": "rm",
+      "firstTokens": [
+        "rm"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "rm"
+    }
+  },
+  {
+    "name": "s53-rtk-error",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s54-rtk-unchanged",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  },
+  {
+    "name": "s55-rtk-empty-stdout",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "splitTopLevel": [
+        "git status"
+      ],
+      "hasHeredoc": false,
+      "hasSubstitution": false,
+      "hasRedirect": false,
+      "stripTrailingLimit": "git status",
+      "isBackgrounded": false,
+      "firstToken": "git",
+      "firstTokens": [
+        "git"
+      ],
+      "leadingAssignments": {},
+      "commandKind": "git-status"
+    }
+  }
+]

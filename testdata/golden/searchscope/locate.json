@@ -1,0 +1,15 @@
+[
+{"name":"locate:000","input":{"cmd":"node plugin/locate.mjs foo"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:001","input":{"cmd":"node locate.mjs"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:002","input":{"cmd":"locate.js"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:003","input":{"cmd":"locatexmjs"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:004","input":{"cmd":"LOCATE.MJS"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:005","input":{"cmd":""},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:006","input":{"cmd":"echo locate.mjs | cat"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:007","input":{"cmd":"rg foo"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:008","input":{"cmd":"nxy locate foo"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:009","input":{"cmd":"/home/u/.nxy/bin/nxy.exe locate foo"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:010","input":{"cmd":". \"${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd\" locate foo"},"output":{"locate":true,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:011","input":{"cmd":"nxy locatex"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}},
+{"name":"locate:012","input":{"cmd":"grep locate foo"},"output":{"locate":false,"nudge":"nxy locate nudge:","gate":"nxy read gate:"}}
+]

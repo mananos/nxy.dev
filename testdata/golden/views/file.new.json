@@ -1,0 +1,53 @@
+{
+  "path": "src/billing/Credito.java",
+  "repo": "api",
+  "source": "codegraph",
+  "language": "java",
+  "edited_by": "lo edita el lote 2",
+  "diff_label": "diff de la feature",
+  "hunks": [
+    {
+      "old_start": 0,
+      "new_start": 1,
+      "lines": [
+        {
+          "kind": "add",
+          "old": 0,
+          "new": 1,
+          "text": "class Credito {"
+        },
+        {
+          "kind": "add",
+          "old": 0,
+          "new": 2,
+          "text": "}"
+        }
+      ]
+    }
+  ],
+  "content": [
+    "class Credito {",
+    "}"
+  ],
+  "notes": [],
+  "imported_by": [],
+  "tests": [],
+  "rules": [
+    {
+      "id": "K1",
+      "kind": "rule",
+      "text": "Usar BigDecimal para los importes",
+      "cited": false
+    }
+  ],
+  "learnings": [],
+  "features": [
+    {
+      "id": "FEAT-P",
+      "title": "Notas de crédito en facturación",
+      "batch": 2,
+      "state": "failed",
+      "closed_at": ""
+    }
+  ]
+}

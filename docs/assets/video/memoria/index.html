@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>nxy — la memoria</title>
+<link rel="stylesheet" href="marca/marca.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; background: #070707; overflow: hidden; }
+  #root { position: relative; width: 1280px; height: 720px; background: #070707; color: #fff;
+    font-family: 'Archivo', sans-serif; overflow: hidden; }
+  .scene { position: absolute; inset: 0; overflow: hidden; background: #070707; }
+  .abs { position: absolute; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .tag2 { position: absolute; left: 72px; top: 64px; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .16em; color: #8C8C8C; }
+  .cap { position: absolute; left: 72px; right: 72px; bottom: 48px; font-size: 28px; line-height: 1.35; color: #BDBDBD; border-left: 6px solid #FDBF01; padding-left: 20px; }
+  .cap b { color: #fff; }
+  .dim { color: #7A7A7A; }
+  .acc { color: #FDBF01; }
+  .cf { background: #FDBF01; }
+  .cf .diag { position: absolute; left: -100px; top: -40px; width: 420px; height: 1100px; background: #070707; transform: rotate(-30deg); transform-origin: top left; opacity: .08; }
+  .cf .cab { position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: center; gap: 16px; color: #070707; }
+  .cf .cab img { width: 46px; height: auto; }
+  .cf .cab .t { font-size: 30px; }
+  .cf .cab .s { font-size: 20px; font-weight: 600; }
+  .cf .cab .chip { margin-left: auto; }
+  .cf { --sombra-term: rgba(7,7,7,.38); }
+  .cf .cap2 { position: absolute; left: 40px; right: 52px; background: #070707; color: #DEDBD2; font-size: 26px; line-height: 1.3; padding: 14px 22px; border-left: 8px solid #fff; }
+  .cf .cap2 b { color: #FDBF01; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="memoria" data-start="0" data-duration="38" data-width="1280" data-height="720" data-fps="30">
+
+  <!-- 0-5 Portada A -->
+  <section class="clip scene" id="s1" data-start="0" data-duration="5">
+    <div class="abs" style="left:-260px;top:-80px;width:220px;height:1100px;background:#FDBF01;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:-60px;top:-80px;width:90px;height:1100px;background:#FDBF01;opacity:.55;transform:rotate(-38deg);transform-origin:top left"></div>
+    <div class="abs" style="left:150px;top:-80px;width:26px;height:1100px;background:#FDBF01;opacity:.3;transform:rotate(-38deg);transform-origin:top left"></div>
+    <img class="abs" src="marca/perro-banner.png" alt="" style="left:0;bottom:0;height:720px;width:auto">
+    <div class="abs" style="left:640px;top:0;width:640px;height:720px;background:linear-gradient(90deg,rgba(7,7,7,0) 0,#070707 22%)"></div>
+    <div class="abs mono" data-in="0.1" style="left:720px;top:56px;display:flex;gap:12px;align-items:center;font-size:14px;letter-spacing:.14em;color:#8C8C8C">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:4px 10px">EP.02</span><span>MEMORIA · 0:38</span>
+    </div>
+    <div class="abs" data-in="0.4" style="left:716px;top:170px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:120px;line-height:.9;font-weight:900;font-stretch:125%;letter-spacing:-.04em;display:flex;align-items:baseline">
+        <span>nxy</span><span style="display:inline-block;width:26px;height:26px;background:#FDBF01;margin:0 6px 0 4px"></span><span style="color:#9A9A9A;font-weight:500">dev</span>
+      </div>
+      <div style="font-size:15px;font-weight:600;letter-spacing:.42em;color:#D8D8D8;margin-top:14px">BUILD <span style="color:#FDBF01">•</span> AUTOMATE <span style="color:#FDBF01">•</span> SCALE</div>
+    </div>
+    <div class="abs" data-in="1.1" style="left:716px;top:400px;width:500px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:52px;line-height:1;font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em">La memoria<br><span style="color:#FDBF01">que no se va.</span></div>
+      <div style="font-size:20px;line-height:1.4;color:#BDBDBD">Lo que decidiste no se va con el /clear.</div>
+    </div>
+    <div class="abs mono" data-in="2" style="left:716px;bottom:56px;display:flex;align-items:center;font-size:18px">
+      <span style="background:#FDBF01;color:#070707;font-weight:700;padding:12px 14px">&gt;_</span>
+      <span style="border:2px solid #2A2A2A;border-left:none;padding:10px 18px;color:#fff">nxy mem show</span>
+    </div>
+    <div class="scan"></div>
+    <div class="esquinas" style="right:28px;top:28px"></div>
+    <div class="esquinas" style="right:28px;bottom:28px;transform:rotate(90deg)"></div>
+  </section>
+
+  <!-- 5-14 01 Tres cosas distintas -->
+  <section class="clip scene" id="s2" data-start="5" data-duration="9">
+    <div class="tag2" data-in="0">01 — TRES COSAS DISTINTAS</div>
+    <div class="caja" data-in="0.5" style="left:72px;top:130px;width:352px;height:420px;background:#fff;border-color:#fff;color:#070707">
+      <span class="num" style="color:#070707;font-weight:700">K3</span>
+      <span class="nombre">Regla del repo</span>
+      <span class="texto" style="color:#070707;font-weight:600;font-size:19px;line-height:1.4">Una decisión que las tareas futuras de este repo tienen que seguir. Dice la pregunta que resuelve.</span>
+      <span style="margin-top:auto;font-size:190px;font-weight:900;font-stretch:125%;line-height:.78;color:#070707">K</span>
+    </div>
+    <div class="caja caja--en-curso" data-in="1.7" style="left:464px;top:130px;width:352px;height:420px">
+      <span class="num">A7</span>
+      <span class="nombre">Aprendizaje</span>
+      <span class="texto" style="font-size:19px;line-height:1.4">Algo que notaste y todavía no es regla. Repetirlo suma «visto N veces».</span>
+      <span style="margin-top:auto;font-size:190px;font-weight:900;font-stretch:125%;line-height:.78;color:#FDBF01">A</span>
+    </div>
+    <div class="caja" data-in="2.9" style="left:856px;top:130px;width:352px;height:420px">
+      <span class="num">G2</span>
+      <span class="nombre">Regla global</span>
+      <span class="texto" style="font-size:19px;line-height:1.4">Tuya, para todos tus repos.</span>
+      <span style="margin-top:auto;font-size:190px;font-weight:900;font-stretch:125%;line-height:.78;color:#fff">G</span>
+    </div>
+    <div class="cap" data-in="4.5">Una base local (SQLite, sin servidor). El número no se reutiliza nunca, ni al borrar.</div>
+    <div class="scan"></div>
+  </section>
+
+  <!-- 14-23 02 En la TUI (marco de captura) -->
+  <section class="clip scene cf" id="s3" data-start="14" data-duration="9">
+    <div class="diag"></div>
+    <div class="cab">
+      <img src="marca/perro-chico.png" alt="">
+      <span class="t titulo">Memoria</span>
+      <span class="s">· reglas que no se olvidan</span>
+      <span class="chip">nxy tui</span>
+    </div>
+    <div class="term" data-in="0.2" style="top:150px;height:361.92px">
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> nxy </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">    </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Inicio </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> Memoria </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Gasto </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Config </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(199,150,0);background:rgb(253,191,1)">╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> ● 2 DECISIONES </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)">hoy </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">$99.97</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Global </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)">  │  </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700;text-decoration:underline">facturacion-api</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> facturacion-web </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> nxy.dev </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> pagos-worker </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">                               </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">[ ]</span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">  cambiar</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">PROPUESTAS</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                                      </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">nxy las arma, vos aceptás o no</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(255,138,128);background:rgb(58,20,20);font-weight:700"> borrar    </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K9</span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">  se entregó 9 veces y nadie la citó</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                  </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> y </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)"> borrar   </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> n </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)"> dejarla</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(127,209,154);background:rgb(20,48,28);font-weight:700"> promover  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">A2</span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">  lo aprendieron 3 features distintas</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                               </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> y </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)"> promover   </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> n </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)"> dejarlo</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">REGLAS</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                               </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">14</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">K9</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">regla</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                             </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">del repo</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">K9</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   Los logs de facturación usan el MDC con… </span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">sin citar</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K3</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   Los DTO de la API se versionan en /v2 y no se rom…   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   Los logs de facturación usan el MDC con el id     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K8</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   Los importes van en BigDecimal con escala 2          </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   de factura                                        </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K11</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  Las fechas viajan en ISO 8601 con zona               </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K13</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  Un endpoint nuevo lleva su test de contrato          </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">pregunta</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">¿Cómo se loguea una factura?</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">           </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">        </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">↓ 9 más</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                              </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">aplica a</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">src/main/java/ar/dev/facturacion/**</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">    </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">vino de</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">    </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">bootstrap · 14/09</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                      </span></div>
+    </div>
+    <div class="cap2" data-in="3" style="top:558px">Listás, editás, borrás y creás sin escribir comandos. nxy te propone limpiar lo que nadie cita.</div>
+  </section>
+
+  <!-- 23-30 03 Buscar (marco de captura) -->
+  <section class="clip scene cf" id="s4" data-start="23" data-duration="7">
+    <div class="diag"></div>
+    <div class="cab">
+      <img src="marca/perro-chico.png" alt="">
+      <span class="t titulo">Buscar</span>
+      <span class="s">· en este repo o en todos</span>
+      <span class="chip">nxy tui</span>
+    </div>
+    <div class="term" data-in="0.2" style="height:467.52px">
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700"> nxy </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">    </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Inicio </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> Memoria </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Gasto </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">  </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)"> Config </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(199,150,0);background:rgb(253,191,1)">╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700"> ● 2 DECISIONES </span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span><span style="color:rgb(92,72,0);background:rgb(253,191,1)">hoy </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">$99.97</span><span style="color:rgb(222,219,210);background:rgb(253,191,1)">   </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> Global </span><span style="color:rgb(91,88,80);background:rgb(7,7,7)">  │  </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(7,7,7);font-weight:700;text-decoration:underline">facturacion-api</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> facturacion-web </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> nxy.dev </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)"> pagos-worker </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">                               </span><span style="color:rgb(222,219,210);background:rgb(7,7,7);font-weight:700">[ ]</span><span style="color:rgb(143,139,128);background:rgb(7,7,7)">  cambiar</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">/ </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">dto</span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▏</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">4 resultados     este repo  ·  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">todos</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(25,25,22)"> tab </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)"> cambia</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">REGLAS</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">2</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">K3</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">regla</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                      </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">facturacion-api</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">K3</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   Los </span><span style="color:rgb(7,7,7);background:rgb(253,191,1);font-weight:700">DTO</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)"> de la API se versionan en… </span><span style="color:rgb(107,86,0);background:rgb(253,191,1)">facturacion-api</span><span style="color:rgb(7,7,7);background:rgb(253,191,1)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">K12</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  Los </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">DTO</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)"> del front salen del contr… </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">facturacion-web</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   Los DTO de la API se versionan en /v2 y no se     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   rompen                                            </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">APRENDIZAJES</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                          </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">1</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">A4</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   Los </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">DTO</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)"> se regeneran con ./gradle… </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">facturacion-api</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">pregunta</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">¿Se puede romper un DTO?</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">               </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">aplica a</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">src/main/java/**/dto/**</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(253,191,1);background:rgb(14,14,13)">▌</span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">FEATURES CERRADAS</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                     </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">1</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">vino de</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">    </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">cierre de F6A1 · 21/10</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                 </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(14,14,13);font-weight:700">F6A1</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)"> Versionar los </span><span style="color:rgb(253,191,1);background:rgb(14,14,13);font-weight:700">DTO</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)"> de facturas en … </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">facturacion-api</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">entregada</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">  </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">8 veces</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">citada</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">     </span><span style="color:rgb(143,139,128);background:rgb(14,14,13)">5 · la última, 08/11</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                   </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                     </span></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                                                             </span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">  </span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">   </span><span style="color:rgb(91,88,80);background:rgb(14,14,13)">enter te lleva a la lista</span><span style="color:rgb(222,219,210);background:rgb(14,14,13)">                         </span></div>
+<div class="fila"></div>
+<div class="fila"><span style="color:rgb(222,219,210);background:rgb(7,7,7)"> </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> abc </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> filtra</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> ↑↓ </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> mover</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> enter </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> ir</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> tab </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> este repo o todos</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> esc </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> cerrar</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">    </span><span style="color:rgb(253,191,1);background:rgb(42,40,34);font-weight:700"> ? </span><span style="color:rgb(143,139,128);background:rgb(7,7,7)"> ayuda</span><span style="color:rgb(222,219,210);background:rgb(7,7,7)">                       </span></div>
+    </div>
+    <div class="cap2" data-in="2" style="top:596px">Buscás en este repo o en todos, y enter te lleva a la lista.</div>
+  </section>
+
+  <!-- 30-38 04 Quién la lee -->
+  <section class="clip scene" id="s5" data-start="30" data-duration="8">
+    <div class="tag2" data-in="0">04 — QUIÉN LA LEE</div>
+    <div class="riel" style="left:72px;top:110px;width:1136px">
+      <div class="paso hecho" data-in="0.4"><span class="p" style="flex:none;width:330px">Planner</span><span class="e" style="font-size:20px">todas las reglas del repo</span></div>
+      <div class="paso ahora" data-in="1.4"><span class="p" style="flex:none;width:330px">Implementer</span><span class="e" style="font-size:20px">las reglas y aprendizajes del área que toca</span></div>
+      <div class="paso" data-in="2.4" style="color:#DEDBD2"><span class="p" style="flex:none;width:330px">Reviewer</span><span class="e" style="font-size:20px">las del área del diff</span></div>
+    </div>
+    <div class="abs" data-in="3.2" style="left:60px;top:420px;width:600px">
+      <div class="carta"><div class="hz"></div><div class="cuerpo"><img src="marca/perro-chico.png" alt=""><div><div class="gran">Ya lo decidiste.</div><div class="sub">nadie te lo pide dos veces</div></div></div><div class="hz"></div></div>
+    </div>
+    <div class="nota" data-in="3.7" style="left:760px;top:440px;width:440px">Las globales llegan después, <b>a los roles que cada una elige.</b></div>
+    <div class="cap" data-in="4.7">El planner, el implementer y el reviewer respetan lo que ya decidiste sin que se lo repitas.</div>
+    <div class="scan"></div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  const tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".scene").forEach((scene) => {
+    const t0 = parseFloat(scene.dataset.start);
+    scene.querySelectorAll("[data-in]").forEach((el) => {
+      tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45 }, t0 + parseFloat(el.dataset.in));
+    });
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["memoria"] = tl;
+</script>
+</body>
+</html>

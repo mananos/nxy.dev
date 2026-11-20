@@ -1,0 +1,7 @@
+[
+{"name":"add:000","input":{"branch":"feature/x","path":"/r.worktrees/x","create":true,"base":"main"},"output":{"argv":["git","worktree","add","-b","feature/x","/r.worktrees/x","main"]}},
+{"name":"add:001","input":{"branch":"feature/x","path":"/r.worktrees/x","create":true,"base":null},"output":{"error":"para crear una rama nueva hace falta una base explícita"}},
+{"name":"add:002","input":{"branch":"feature/x","path":"/r.worktrees/x","create":true,"base":""},"output":{"error":"para crear una rama nueva hace falta una base explícita"}},
+{"name":"add:003","input":{"branch":"feature/x","path":"/r.worktrees/x","create":false,"base":null},"output":{"argv":["git","worktree","add","/r.worktrees/x","feature/x"]}},
+{"name":"add:004","input":{"branch":"feature/x","path":"/r.worktrees/x","create":false,"base":"main"},"output":{"argv":["git","worktree","add","/r.worktrees/x","feature/x"]}}
+]

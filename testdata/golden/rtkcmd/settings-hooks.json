@@ -1,0 +1,276 @@
+[
+  {
+    "name": "command-not-string",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": 5
+                  },
+                  null
+                ]
+              },
+              null
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "hook-word-without-rtk",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node hook.js"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "none",
+    "input": {
+      "settings": []
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "null-and-empty",
+    "input": {
+      "settings": [
+        null,
+        {},
+        {
+          "hooks": {}
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "other-hook",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node ${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/hooks/pretooluse-bash.mjs"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "rtk-exe-hook-abs",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "\"C:/tools/bin/rtk.exe\" hook claude"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": true
+    }
+  },
+  {
+    "name": "rtk-hook",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "rtk hook claude"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": true
+    }
+  },
+  {
+    "name": "rtk-hook-in-second-file",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": []
+          }
+        },
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "~/.claude/hooks/rtk-rewrite.sh hook"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": true
+    }
+  },
+  {
+    "name": "rtk-hook-wrong-event",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PostToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "rtk hook claude"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "rtk-multiline-command",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "rtk\nhook"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "rtk-substring-word",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "myrtk hook"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  },
+  {
+    "name": "rtk-without-hook-word",
+    "input": {
+      "settings": [
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "rtk gain"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "detectRtkHook": false
+    }
+  }
+]

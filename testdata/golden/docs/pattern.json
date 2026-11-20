@@ -1,0 +1,7 @@
+[
+{"name":"pattern:000","input":{"terms":["ClienteService"]},"output":{"pattern":"\\bClienteService\\b"}},
+{"name":"pattern:001","input":{"terms":["cliente.component","OrderController"]},"output":{"pattern":"\\bcliente\\.component\\b|\\bOrderController\\b"}},
+{"name":"pattern:002","input":{"terms":["a+b","c*d","(x)","[y]","{z}","p|q","^r$","s?t","u\\v"]},"output":{"pattern":"\\ba\\+b\\b|\\bc\\*d\\b|\\b\\(x\\)\\b|\\b\\[y\\]\\b|\\b\\{z\\}\\b|\\bp\\|q\\b|\\b\\^r\\$\\b|\\bs\\?t\\b|\\bu\\\\v\\b"}},
+{"name":"pattern:003","input":{"terms":["ñandúService","日本語ファイル"]},"output":{"pattern":"\\bñandúService\\b|\\b日本語ファイル\\b"}},
+{"name":"pattern:004","input":{"terms":[]},"output":{"pattern":""}}
+]

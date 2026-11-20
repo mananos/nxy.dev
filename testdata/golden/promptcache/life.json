@@ -1,0 +1,16 @@
+[
+{"name":"life:000","input":{"lastTs":1000000,"ttlMs":300000,"now":1000000},"output":{"leftMs":300000,"state":"warm"}},
+{"name":"life:001","input":{"lastTs":1000000,"ttlMs":300000,"now":1299999},"output":{"leftMs":1,"state":"warm"}},
+{"name":"life:002","input":{"lastTs":1000000,"ttlMs":300000,"now":1300000},"output":{"leftMs":0,"state":"cold"}},
+{"name":"life:003","input":{"lastTs":1000000,"ttlMs":300000,"now":1300001},"output":{"leftMs":0,"state":"cold"}},
+{"name":"life:004","input":{"lastTs":1000000,"ttlMs":3600000,"now":4599999},"output":{"leftMs":1,"state":"warm"}},
+{"name":"life:005","input":{"lastTs":1000000,"ttlMs":3600000,"now":4600000},"output":{"leftMs":0,"state":"cold"}},
+{"name":"life:006","input":{"lastTs":1000000,"ttlMs":300000,"now":900000},"output":{"leftMs":400000,"state":"warm"}},
+{"name":"life:007","input":{"lastTs":null,"ttlMs":300000,"now":1000000},"output":{"leftMs":null,"state":"unknown"}},
+{"name":"life:008","input":{"lastTs":1000000,"ttlMs":null,"now":1000000},"output":{"leftMs":null,"state":"unknown"}},
+{"name":"life:009","input":{"lastTs":null,"ttlMs":null,"now":1000000},"output":{"leftMs":null,"state":"unknown"}},
+{"name":"life:010","input":{"lastTs":0,"ttlMs":300000,"now":100000},"output":{"leftMs":200000,"state":"warm"}},
+{"name":"life:011","input":{"lastTs":0,"ttlMs":300000,"now":300000},"output":{"leftMs":0,"state":"cold"}},
+{"name":"life:012","input":{"lastTs":1700000000000,"ttlMs":300000,"now":1700000123456},"output":{"leftMs":176544,"state":"warm"}},
+{"name":"life:013","input":{"lastTs":1700000000000.5,"ttlMs":300000,"now":1700000100000.25},"output":{"leftMs":200000.25,"state":"warm"}}
+]

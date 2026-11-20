@@ -1,0 +1,1396 @@
+[
+  {
+    "name": "cause:after=compact,gap=0,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=0,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=299999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=299999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=300000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=300000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=3599999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=3599999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=3600000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=3600000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=7200000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=7200000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=null,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=compact,gap=null,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": "compact"
+      }
+    },
+    "output": {
+      "cause": "compact"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=0,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=0,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=299999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=299999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=300000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=300000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=3599999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=3599999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=3600000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=3600000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=7200000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=7200000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "idle"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=null,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "start"
+    }
+  },
+  {
+    "name": "cause:after=null,gap=null,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": null
+      }
+    },
+    "output": {
+      "cause": "start"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=0,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=0,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 0,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=299999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=299999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 299999,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=300000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=300000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 300000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=3599999,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=3599999,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3599999,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "other"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=3600000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=3600000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 3600000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=7200000,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=7200000,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": 7200000,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "subagent"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=null,1h=0",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 0,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "start"
+    }
+  },
+  {
+    "name": "cause:after=subagent,gap=null,1h=5",
+    "input": {
+      "call": {
+        "key": "req_0",
+        "ts": 1788256800000,
+        "model": "claude-opus-5",
+        "usage": {
+          "input": 10,
+          "cacheWrite5m": 0,
+          "cacheWrite1h": 5,
+          "cacheRead": 0,
+          "output": 0,
+          "thinking": 0,
+          "speed": "standard"
+        },
+        "effort": null,
+        "skill": null,
+        "promptKey": null,
+        "agentId": null,
+        "gapMs": null,
+        "after": "subagent"
+      }
+    },
+    "output": {
+      "cause": "start"
+    }
+  },
+  {
+    "name": "summary:empty",
+    "input": {
+      "breaks": []
+    },
+    "output": {
+      "summary": {
+        "byCause": {
+          "idle": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "subagent": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "compact": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "start": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "other": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          }
+        },
+        "ttl": {
+          "5m": 0,
+          "1h": 0
+        },
+        "avoidableUsd": 0
+      }
+    }
+  },
+  {
+    "name": "summary:mixed",
+    "input": {
+      "breaks": [
+        {
+          "ts": 1788256800000,
+          "uncached": 120000,
+          "total": 150000,
+          "agentType": null,
+          "cause": "idle",
+          "ttl": "5m",
+          "usd": 0.75
+        },
+        {
+          "ts": 1788256900000,
+          "uncached": 130000,
+          "total": 150000,
+          "agentType": "Explore",
+          "cause": "subagent",
+          "ttl": "1h",
+          "usd": 1.1
+        },
+        {
+          "ts": 1788257000000,
+          "uncached": 110000,
+          "total": 110000,
+          "agentType": null,
+          "cause": "compact",
+          "ttl": "5m",
+          "usd": 0.3
+        },
+        {
+          "ts": 1788257100000,
+          "uncached": 105000,
+          "total": 105000,
+          "agentType": null,
+          "cause": "start",
+          "ttl": "5m",
+          "usd": null
+        },
+        {
+          "ts": 1788257200000,
+          "uncached": 101000,
+          "total": 200000,
+          "agentType": null,
+          "cause": "other",
+          "ttl": "5m",
+          "usd": 0.2
+        },
+        {
+          "ts": 1788257300000,
+          "uncached": 100001,
+          "total": 200000,
+          "agentType": null,
+          "cause": "idle",
+          "ttl": "weird",
+          "usd": 0.1
+        },
+        {
+          "ts": 1788257400000,
+          "uncached": 100002,
+          "total": 200000,
+          "agentType": null,
+          "cause": "idle",
+          "ttl": "5m",
+          "usd": 0.2
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "byCause": {
+          "idle": {
+            "count": 3,
+            "tokens": 320003,
+            "usd": 1.05
+          },
+          "subagent": {
+            "count": 1,
+            "tokens": 130000,
+            "usd": 1.1
+          },
+          "compact": {
+            "count": 1,
+            "tokens": 110000,
+            "usd": 0.3
+          },
+          "start": {
+            "count": 1,
+            "tokens": 105000,
+            "usd": 0
+          },
+          "other": {
+            "count": 1,
+            "tokens": 101000,
+            "usd": 0.2
+          }
+        },
+        "ttl": {
+          "5m": 6,
+          "1h": 1
+        },
+        "avoidableUsd": 2.1500000000000004
+      }
+    }
+  },
+  {
+    "name": "summary:unknown-cause-and-no-price",
+    "input": {
+      "breaks": [
+        {
+          "ts": 1,
+          "uncached": 100500,
+          "total": 100500,
+          "agentType": null,
+          "cause": "mystery",
+          "ttl": "1h",
+          "usd": 0.4
+        },
+        {
+          "ts": 2,
+          "uncached": 100500,
+          "total": 100500,
+          "agentType": null,
+          "cause": "subagent",
+          "ttl": "1h",
+          "usd": null
+        },
+        {
+          "ts": 3,
+          "uncached": 100500,
+          "total": 100500,
+          "agentType": null,
+          "cause": "other",
+          "ttl": "5m",
+          "usd": 0
+        }
+      ]
+    },
+    "output": {
+      "summary": {
+        "byCause": {
+          "idle": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "subagent": {
+            "count": 1,
+            "tokens": 100500,
+            "usd": 0
+          },
+          "compact": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "start": {
+            "count": 0,
+            "tokens": 0,
+            "usd": 0
+          },
+          "other": {
+            "count": 2,
+            "tokens": 201000,
+            "usd": 0.4
+          }
+        },
+        "ttl": {
+          "5m": 1,
+          "1h": 2
+        },
+        "avoidableUsd": 0
+      }
+    }
+  }
+]

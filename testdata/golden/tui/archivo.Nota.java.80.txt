@@ -1,0 +1,42 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+  Inicio › FEAT-P › Plan › Nota.java                                esc vuelve  
+
+     ←   Nota.java   api                                         codegraph    
+         src/billing/Nota.java · lo edita el lote 1                           
+
+      diff de la feature   archivo                    v  alterna  o  editor   
+                                                                              
+     ▸  9   linea I                                                           
+       10   linea J                                                           
+       11   linea K                                                           
+       12 - linea L                                                           
+       12 + linea nueva 12                                                    
+       13   linea M                                                           
+       14   linea N                                                           
+       15   linea O                                                           
+         ··· 1 línea sin cambios ···                                          
+       17   linea Q                                                           
+       18   linea R                                                           
+       19   linea S                                                           
+       20 - linea T                                                           
+       20 + linea nueva 20                                                    
+                                                                              
+     ✗ src/billing/Nota.java:12: se esperaba 100.00 y dio 99.99               
+
+    ▌IMPORTADO POR                                                            
+     ›Factura.java                                                      :30   
+      Listado.java                                                       :7   
+                                                                              
+    ▌TESTS                                                                    
+     ✗ NotaTest.java                                                          
+     ○ NotaServiceTest.java                                                   
+                                                                              
+    ▌MEMORIA ANCLADA                                                          
+     K1  Usar BigDecimal para los importes                                    
+     A1  Los importes se guardan en centavos                                  
+                                                                              
+    ▌FEATURES                                                                 
+     FEAT-P  lote 1 · en curso                                                
+     FEAT-Q  lote 1 · por empezar                                             
+     CF-NOTA  cerrada hace 5d                                                 
+  n N  otro cambio     v  archivo entero     o  editor     ?  ayuda             

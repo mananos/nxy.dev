@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagrama: flujo de una feature</title>
+<link rel="stylesheet" href="../brand/marca.css">
+</head>
+<body>
+<div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#070707;font-family:'Archivo',sans-serif;color:#fff">
+  <div style="position:absolute;left:64px;top:52px;display:flex;align-items:baseline;gap:18px">
+    <span class="titulo" style="font-size:40px">Una feature</span>
+    <span style="font-size:20px;color:#9A9A9A">del pedido al cierre</span>
+  </div>
+
+  <div class="caja" style="left:64px;top:150px;width:250px;height:190px">
+    <span class="num">00</span><span class="nombre">Pedido</span>
+    <span class="texto"><span class="mono">/nxy:feature</span> y lo que querés</span>
+  </div>
+  <div class="flecha-h" style="left:314px;top:242px;width:66px"></div>
+
+  <div class="caja caja--decidis" style="left:390px;top:150px;width:250px;height:190px">
+    <span class="num">01</span><span class="nombre">Plan</span>
+    <span class="texto">Archivos, lotes y el test de cada uno</span>
+  </div>
+  <div class="sticker" style="left:418px;top:324px">VOS APROBÁS</div>
+  <div class="flecha-h" style="left:640px;top:242px;width:66px"></div>
+
+  <div class="caja caja--en-curso" style="left:716px;top:150px;width:250px;height:190px">
+    <span class="num">02</span><span class="nombre">Lotes</span>
+    <span class="texto">Un implementer por lote; nxy corre su Accept y reintenta una vez</span>
+  </div>
+  <div class="flecha-h" style="left:966px;top:242px;width:66px"></div>
+
+  <div class="caja" style="left:1042px;top:150px;width:176px;height:190px">
+    <span class="num">03</span><span class="nombre" style="font-size:26px">Tests</span>
+    <span class="texto" style="font-size:15px">Los afectados</span>
+  </div>
+
+  <div style="position:absolute;left:1127px;top:340px;width:6px;height:80px;background:#FDBF01"></div>
+  <div style="position:absolute;left:507px;top:414px;width:626px;height:6px;background:#FDBF01"></div>
+  <div class="flecha-v" style="left:507px;top:414px;height:56px"></div>
+
+  <div class="caja" style="left:390px;top:480px;width:250px;height:190px">
+    <span class="num">04</span><span class="nombre">Review</span>
+    <span class="texto">Lentes según el riesgo; vos elegís qué se arregla</span>
+  </div>
+  <div class="flecha-h" style="left:640px;top:572px;width:66px"></div>
+
+  <div class="caja caja--guardado" style="left:716px;top:480px;width:250px;height:190px">
+    <span class="num">05</span><span class="nombre">Cierre</span>
+    <span class="texto">Docs al día y las reglas <span class="mono" style="font-size:14px">[repo]</span> que elijas</span>
+  </div>
+
+  <img src="../brand/perro-diagrama.png" alt="" aria-hidden="true" style="position:absolute;left:1030px;top:480px;width:150px;height:auto">
+
+  <div class="leyenda" style="left:64px;top:480px;width:280px">
+    <b>LEYENDA</b>
+    <span><i></i>decidís vos</span>
+    <span><i class="en-curso"></i>en curso</span>
+    <span><i class="guardado"></i>queda guardado</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+name: release
+
+# Only 2.x tags: 1.x tags never trigger this workflow.
+on:
+  push:
+    tags: ["v2.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: tag must equal the version pinned in bin/nxy.cmd
+        run: |
+          pinned=$(sed -n 's/^NXY_VERSION=//p' bin/nxy.cmd | head -n 1)
+          tag="${GITHUB_REF_NAME#v}"
+          test -n "$pinned" || { echo "no NXY_VERSION line in bin/nxy.cmd"; exit 1; }
+          test "$pinned" = "$tag" || { echo "tag $tag != shim version $pinned"; exit 1; }
+      - run: go vet ./...
+      - run: go test ./...
+      - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
+        with:
+          version: "v2.18.3"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

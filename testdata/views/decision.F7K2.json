@@ -1,0 +1,44 @@
+{
+  "id": "D-F7K2-1",
+  "feature_id": "F7K2",
+  "repo": "facturacion-web",
+  "kind": "batch_failed",
+  "title": "Lote 3 fallido",
+  "body": [
+    "nota-credito.component.spec.ts:42",
+    "TS2345: el tipo NotaCredito no se puede asignar a NotaParcial"
+  ],
+  "rest": [],
+  "header": "Lote 3 falló",
+  "question": "El lote 3 sigue en rojo después del reintento. ¿Cómo seguimos?",
+  "context": [
+    "nota-credito.component.spec.ts:42",
+    "TS2345: el tipo NotaCredito no se puede asignar a NotaParcial",
+    "el lote 2 ya está en verde y no queda nada corriendo"
+  ],
+  "multi_select": false,
+  "asked_at": "2026-11-08T14:31:52Z",
+  "fork": null,
+  "ask_id": "ASK-F7K2",
+  "release": { "id": "release", "label": "Contestar en la terminal", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--release"], "confirm": "", "planned": false },
+  "options": [
+    {
+      "label": "Reintentar",
+      "description": "otro intento con la falla",
+      "recommended": true,
+      "action": { "id": "retry", "label": "Reintentar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--answer", "Reintentar"], "confirm": "", "planned": false }
+    },
+    {
+      "label": "Seguir",
+      "description": "el 4 queda frenado y se revisa lo demás",
+      "recommended": false,
+      "action": { "id": "continue", "label": "Seguir", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--answer", "Seguir"], "confirm": "", "planned": false }
+    },
+    {
+      "label": "Parar",
+      "description": "la feature queda pausada con su nota",
+      "recommended": false,
+      "action": { "id": "stop", "label": "Parar", "argv": ["nxy", "action", "decide", "--ask", "ASK-F7K2", "--answer", "Parar"], "confirm": "Pasa la feature a pausada", "planned": false }
+    }
+  ]
+}

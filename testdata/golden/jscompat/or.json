@@ -1,0 +1,161 @@
+[
+  {
+    "name": "all falsy returns last",
+    "input": {
+      "items": [
+        0,
+        "",
+        null
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": null
+    }
+  },
+  {
+    "name": "empty array is truthy",
+    "input": {
+      "items": [
+        [],
+        "z"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": []
+    }
+  },
+  {
+    "name": "false then zero",
+    "input": {
+      "items": [
+        false,
+        0
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": 0
+    }
+  },
+  {
+    "name": "first truthy",
+    "input": {
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": "a"
+    }
+  },
+  {
+    "name": "last undefined",
+    "input": {
+      "items": [
+        0,
+        {
+          "$undefined": true
+        }
+      ]
+    },
+    "output": {
+      "undefined": true,
+      "value": null
+    }
+  },
+  {
+    "name": "none",
+    "input": {
+      "items": []
+    },
+    "output": {
+      "undefined": true,
+      "value": null
+    }
+  },
+  {
+    "name": "object is truthy",
+    "input": {
+      "items": [
+        0,
+        {},
+        "z"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": {}
+    }
+  },
+  {
+    "name": "single",
+    "input": {
+      "items": [
+        null
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": null
+    }
+  },
+  {
+    "name": "skips empty string",
+    "input": {
+      "items": [
+        "",
+        "b"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": "b"
+    }
+  },
+  {
+    "name": "skips undefined",
+    "input": {
+      "items": [
+        {
+          "$undefined": true
+        },
+        "x"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": "x"
+    }
+  },
+  {
+    "name": "skips zero and null",
+    "input": {
+      "items": [
+        0,
+        null,
+        5
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": 5
+    }
+  },
+  {
+    "name": "string zero is truthy",
+    "input": {
+      "items": [
+        "0",
+        "z"
+      ]
+    },
+    "output": {
+      "undefined": false,
+      "value": "0"
+    }
+  }
+]

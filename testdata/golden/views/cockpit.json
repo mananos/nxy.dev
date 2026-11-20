@@ -1,0 +1,259 @@
+{
+  "generated_at": "2026-11-11T12:00:00Z",
+  "totals": {
+    "active": 3,
+    "needs_you": 2,
+    "cost_today_usd": 0.07896
+  },
+  "features": [
+    {
+      "id": "FEAT-A",
+      "title": "Notas de crédito en facturación",
+      "status": "needs_you",
+      "phase": "Lote fallido",
+      "stage": "batches",
+      "stage_detail": "3/4",
+      "closed_at": "",
+      "repos": [
+        {
+          "name": "api",
+          "path": "/srv/dev/app",
+          "role": "",
+          "branch": "feat/notas",
+          "worktree": false
+        },
+        {
+          "name": "web",
+          "path": "/srv/dev/web-feat-notas",
+          "role": "",
+          "branch": "feat/notas",
+          "worktree": true
+        }
+      ],
+      "batch": 3,
+      "batches": 4,
+      "elapsed_ms": 75600000,
+      "cost_usd": 0.45685000000000003,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [
+        3
+      ],
+      "last_event": "Te necesita: decidir, el lote 3 falló",
+      "tokens_in": 11100,
+      "tokens_out": 6500,
+      "decision": {
+        "feature_id": "FEAT-A",
+        "header": "Lote",
+        "question": "nxy feature FEAT-A: el lote 3 falló dos veces — ¿qué hacemos?"
+      },
+      "actions": [
+        {
+          "id": "reintentar",
+          "label": "Reintentar",
+          "argv": [
+            "nxy",
+            "action",
+            "decide",
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Reintentar"
+          ],
+          "confirm": "",
+          "planned": false
+        },
+        {
+          "id": "seguir",
+          "label": "Seguir",
+          "argv": [
+            "nxy",
+            "action",
+            "decide",
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Seguir"
+          ],
+          "confirm": "",
+          "planned": false
+        },
+        {
+          "id": "parar",
+          "label": "Parar",
+          "argv": [
+            "nxy",
+            "action",
+            "decide",
+            "--ask",
+            "ASK-A",
+            "--answer",
+            "Parar"
+          ],
+          "confirm": "Termina la feature",
+          "planned": false
+        },
+        {
+          "id": "pause",
+          "label": "Pausar",
+          "argv": [
+            "nxy",
+            "feature",
+            "pause",
+            "--feature",
+            "FEAT-A"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "FEAT-D",
+      "title": "Migrar pagos a la API v3",
+      "status": "needs_you",
+      "phase": "Aprobación del plan",
+      "stage": "plan",
+      "stage_detail": "",
+      "closed_at": "",
+      "repos": [
+        {
+          "name": "pagos",
+          "path": "/srv/dev/pagos-wt",
+          "role": "",
+          "branch": "feat/pagos-v3",
+          "worktree": true
+        }
+      ],
+      "batch": 0,
+      "batches": 2,
+      "elapsed_ms": 165600000,
+      "cost_usd": 0,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [],
+      "last_event": "Te necesita: aprobar plan",
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "decision": {
+        "feature_id": "FEAT-D",
+        "header": "Plan",
+        "question": "¿Aprobás el plan FEAT-D r2 de nxy?"
+      },
+      "actions": [
+        {
+          "id": "resume",
+          "label": "Reanudar",
+          "argv": [
+            "nxy",
+            "feature",
+            "resume",
+            "--feature",
+            "FEAT-D"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "FEAT-B",
+      "title": "Exportar facturas a CSV",
+      "status": "working",
+      "phase": "Ejecutando lote",
+      "stage": "batches",
+      "stage_detail": "2/4",
+      "closed_at": "",
+      "repos": [
+        {
+          "name": "app",
+          "path": "/srv/dev/app",
+          "role": "",
+          "branch": "",
+          "worktree": false
+        }
+      ],
+      "batch": 2,
+      "batches": 4,
+      "elapsed_ms": 10800000,
+      "cost_usd": 0.18245999999999998,
+      "cost_estimated": false,
+      "running": [
+        2,
+        3
+      ],
+      "failed": [],
+      "last_event": "Esperando lotes 2 y 3",
+      "tokens_in": 8900,
+      "tokens_out": 5050,
+      "decision": null,
+      "actions": [
+        {
+          "id": "pause",
+          "label": "Pausar",
+          "argv": [
+            "nxy",
+            "feature",
+            "pause",
+            "--feature",
+            "FEAT-B"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "FEAT-C",
+      "title": "Corregir el redondeo de IVA",
+      "status": "done",
+      "phase": "Listo",
+      "stage": "close",
+      "stage_detail": "",
+      "closed_at": "2026-11-11T05:00:00Z",
+      "repos": [
+        {
+          "name": "app",
+          "path": "/srv/dev/app",
+          "role": "",
+          "branch": "",
+          "worktree": false
+        }
+      ],
+      "batch": 0,
+      "batches": 1,
+      "elapsed_ms": 32400000,
+      "cost_usd": 0.03,
+      "cost_estimated": false,
+      "running": [],
+      "failed": [],
+      "last_event": "Listo",
+      "tokens_in": 800,
+      "tokens_out": 900,
+      "decision": null,
+      "actions": []
+    }
+  ],
+  "worktrees": [
+    {
+      "repo": "pagos",
+      "path": "/srv/dev/pagos-wt",
+      "branch": "feat/pagos-v3",
+      "feature_id": "FEAT-D",
+      "state": "paused",
+      "dirty": true,
+      "ahead": 1,
+      "behind": 0
+    },
+    {
+      "repo": "pagos",
+      "path": "/srv/dev/pagos-old",
+      "branch": "fix/viejo",
+      "feature_id": "",
+      "state": "orphan",
+      "dirty": false,
+      "ahead": 0,
+      "behind": 0
+    }
+  ]
+}

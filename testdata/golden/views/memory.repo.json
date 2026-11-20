@@ -1,0 +1,398 @@
+{
+  "scope": "repo",
+  "repo": {
+    "name": "app",
+    "path": "/srv/dev/app",
+    "role": "",
+    "branch": "",
+    "worktree": false
+  },
+  "rules": [
+    {
+      "id": "K2",
+      "text": "Los endpoints devuelven 422 ante datos inválidos",
+      "question": "¿Qué código devuelve un endpoint ante datos inválidos?",
+      "paths": [],
+      "origin": "chat",
+      "origin_ref": "",
+      "created_at": "2026-10-06T10:00:00Z",
+      "flag": "uncited",
+      "cited": 0,
+      "last_cited": "",
+      "delivered": 10,
+      "updated_at": "2026-10-06T10:00:00Z",
+      "roles": [],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "K2",
+            "--text",
+            "{text}",
+            "--question",
+            "{question}",
+            "--paths",
+            "{paths}"
+          ],
+          "confirm": "Cambia K2",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "K2"
+          ],
+          "confirm": "Borra la regla K2",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "K2"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "K1",
+      "text": "Usar BigDecimal para los importes",
+      "question": "¿Con qué tipo se representan los importes?",
+      "paths": [
+        "src/billing/**"
+      ],
+      "origin": "closing",
+      "origin_ref": "FEAT-C",
+      "created_at": "2026-10-05T10:00:00Z",
+      "flag": "",
+      "cited": 2,
+      "last_cited": "2026-11-09T10:00:00Z",
+      "delivered": 4,
+      "updated_at": "2026-10-05T10:00:00Z",
+      "roles": [],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "K1",
+            "--text",
+            "{text}",
+            "--question",
+            "{question}",
+            "--paths",
+            "{paths}"
+          ],
+          "confirm": "Cambia K1",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "K1"
+          ],
+          "confirm": "Borra la regla K1",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "K1"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "K3",
+      "text": "Cada migración trae su rollback",
+      "question": "¿Qué lleva una migración?",
+      "paths": [],
+      "origin": "closing",
+      "origin_ref": "FEAT-A",
+      "created_at": "2026-10-07T10:00:00Z",
+      "flag": "",
+      "cited": 0,
+      "last_cited": "",
+      "delivered": 3,
+      "updated_at": "2026-10-07T10:00:00Z",
+      "roles": [],
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "K3",
+            "--text",
+            "{text}",
+            "--question",
+            "{question}",
+            "--paths",
+            "{paths}"
+          ],
+          "confirm": "Cambia K3",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "K3"
+          ],
+          "confirm": "Borra la regla K3",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "K3"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "learnings": [
+    {
+      "id": "A2",
+      "text": "Los importes se guardan en centavos",
+      "files": [
+        "src/billing/Nota.java"
+      ],
+      "seen": 2,
+      "stale": false,
+      "flag": "seen",
+      "features": [
+        "FEAT-A"
+      ],
+      "delivered": 0,
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "A2",
+            "--text",
+            "{text}",
+            "--files",
+            "{files}"
+          ],
+          "confirm": "Cambia A2",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "A2"
+          ],
+          "confirm": "Borra el aprendizaje A2",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "A2"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    },
+    {
+      "id": "A1",
+      "text": "El redondeo de IVA va por línea, no por total",
+      "files": [
+        "src/billing/Iva.java"
+      ],
+      "seen": 1,
+      "stale": true,
+      "flag": "stale",
+      "features": [
+        "FEAT-C"
+      ],
+      "delivered": 0,
+      "actions": [
+        {
+          "id": "edit",
+          "label": "Editar",
+          "argv": [
+            "nxy",
+            "mem",
+            "edit",
+            "A1",
+            "--text",
+            "{text}",
+            "--files",
+            "{files}"
+          ],
+          "confirm": "Cambia A1",
+          "planned": false
+        },
+        {
+          "id": "delete",
+          "label": "Borrar",
+          "argv": [
+            "nxy",
+            "mem",
+            "rm",
+            "A1"
+          ],
+          "confirm": "Borra el aprendizaje A1",
+          "planned": false
+        },
+        {
+          "id": "restore",
+          "label": "Deshacer",
+          "argv": [
+            "nxy",
+            "mem",
+            "restore",
+            "A1"
+          ],
+          "confirm": "",
+          "planned": false
+        }
+      ]
+    }
+  ],
+  "closed": [
+    {
+      "id": "CF-IVA",
+      "title": "Corregir el redondeo de IVA",
+      "closed_at": "2026-11-10T21:05:00Z",
+      "outcome": "success",
+      "files": [
+        "src/billing/Iva.java"
+      ]
+    }
+  ],
+  "proposals": [
+    {
+      "id": "delete:K2",
+      "kind": "delete",
+      "target": "K2",
+      "text": "Los endpoints devuelven 422 ante datos inválidos",
+      "why": "La recibieron 10 veces y nadie la citó",
+      "accept": {
+        "id": "accept",
+        "label": "Borrarla",
+        "argv": [
+          "nxy",
+          "mem",
+          "rm",
+          "K2"
+        ],
+        "confirm": "Borra la regla K2",
+        "planned": false
+      },
+      "reject": {
+        "id": "reject",
+        "label": "Dejarla",
+        "argv": [
+          "nxy",
+          "mem",
+          "keep",
+          "K2"
+        ],
+        "confirm": "",
+        "planned": false
+      }
+    },
+    {
+      "id": "promote:A2",
+      "kind": "promote",
+      "target": "A2",
+      "text": "Los importes se guardan en centavos",
+      "why": "Se vio 2 veces: ya parece una regla",
+      "accept": {
+        "id": "accept",
+        "label": "Hacerla regla",
+        "argv": [
+          "nxy",
+          "mem",
+          "promote",
+          "A2",
+          "--question",
+          "{question}"
+        ],
+        "confirm": "Convierte A2 en una regla",
+        "planned": false
+      },
+      "reject": {
+        "id": "reject",
+        "label": "Dejarla",
+        "argv": [
+          "nxy",
+          "mem",
+          "keep",
+          "A2"
+        ],
+        "confirm": "",
+        "planned": false
+      }
+    }
+  ],
+  "create": {
+    "id": "create",
+    "label": "Nueva regla",
+    "argv": [
+      "nxy",
+      "mem",
+      "rule",
+      "{text}",
+      "--question",
+      "{question}",
+      "--paths",
+      "{paths}"
+    ],
+    "confirm": "",
+    "planned": false
+  }
+}

@@ -1,0 +1,8229 @@
+[
+  {
+    "name": "e01-tab",
+    "input": {
+      "command": "git\tstatus"
+    },
+    "output": {
+      "commandSegments": [
+        "git\tstatus"
+      ]
+    }
+  },
+  {
+    "name": "e02-trailing-tab",
+    "input": {
+      "command": "git status\t"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "e03-npm-tab-test",
+    "input": {
+      "command": "npm\ttest"
+    },
+    "output": {
+      "commandSegments": [
+        "npm\ttest"
+      ]
+    }
+  },
+  {
+    "name": "e04-crlf-chain",
+    "input": {
+      "command": "mvn test\r\nls"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "e05-trailing-crlf",
+    "input": {
+      "command": "echo a\r\n"
+    },
+    "output": {
+      "commandSegments": [
+        "echo a"
+      ]
+    }
+  },
+  {
+    "name": "e06-nbsp-between",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "e07-nbsp-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test"
+      ]
+    }
+  },
+  {
+    "name": "e08-nbsp-tail",
+    "input": {
+      "command": "ls -la | tail -n 150"
+    },
+    "output": {
+      "commandSegments": [
+        "ls -la",
+        "tail -n 150"
+      ]
+    }
+  },
+  {
+    "name": "e09-nbsp-edges",
+    "input": {
+      "command": " git status "
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "e10-em-space-trailing",
+    "input": {
+      "command": "git status "
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "e11-bom-leading",
+    "input": {
+      "command": "﻿git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "e12-line-separator",
+    "input": {
+      "command": "ls -la"
+    },
+    "output": {
+      "commandSegments": [
+        "ls -la"
+      ]
+    }
+  },
+  {
+    "name": "e13-ideographic-space",
+    "input": {
+      "command": "　ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "e14-zero-width-not-space",
+    "input": {
+      "command": "mvn​test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn​test"
+      ]
+    }
+  },
+  {
+    "name": "e15-only-nbsp",
+    "input": {
+      "command": " "
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "e16-only-tabs-newlines",
+    "input": {
+      "command": "\t\n"
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "e17-nel-and-vt",
+    "input": {
+      "command": "gitstatus\u000bgit"
+    },
+    "output": {
+      "commandSegments": [
+        "gitstatus\u000bgit"
+      ]
+    }
+  },
+  {
+    "name": "e18-escaped-quotes",
+    "input": {
+      "command": "echo \"a \\\"b\\\" > c\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"a \\\"b\\\" > c\""
+      ]
+    }
+  },
+  {
+    "name": "e19-single-quote-escape",
+    "input": {
+      "command": "echo 'it'\\''s' > x"
+    },
+    "output": {
+      "commandSegments": [
+        "echo 'it'\\''s' > x"
+      ]
+    }
+  },
+  {
+    "name": "e20-escaped-gt",
+    "input": {
+      "command": "echo \\> not"
+    },
+    "output": {
+      "commandSegments": [
+        "echo \\> not"
+      ]
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep",
+    "input": {
+      "command": "grep -rn \\\"x\\\" ."
+    },
+    "output": {
+      "commandSegments": [
+        "grep -rn \\\"x\\\" ."
+      ]
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@bash-all",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@deny-only",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@empty",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@exact",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@mixed",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@odd-forms",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@prefix",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e21-escaped-dquote-grep@wildcard",
+    "input": {
+      "command": "grep -rn \\\"x\\\" .",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e22-unbalanced-double",
+    "input": {
+      "command": "echo \"abc > f"
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"abc > f"
+      ]
+    }
+  },
+  {
+    "name": "e23-unbalanced-single",
+    "input": {
+      "command": "echo 'abc | def"
+    },
+    "output": {
+      "commandSegments": [
+        "echo 'abc | def"
+      ]
+    }
+  },
+  {
+    "name": "e24-trailing-backslash",
+    "input": {
+      "command": "echo a\\"
+    },
+    "output": {
+      "commandSegments": [
+        "echo a\\"
+      ]
+    }
+  },
+  {
+    "name": "e25-merge-stderr",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test 2>&1"
+      ]
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test 2>&1",
+        "tail -n 100"
+      ]
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@bash-all",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@deny-only",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@empty",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@exact",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@mixed",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@odd-forms",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@prefix",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e26-merge-stderr-tail-100@wildcard",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 100",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e27-gt-amp-2",
+    "input": {
+      "command": "echo x >&2"
+    },
+    "output": {
+      "commandSegments": [
+        "echo x >&2"
+      ]
+    }
+  },
+  {
+    "name": "e28-1gt-amp-2",
+    "input": {
+      "command": "echo x 1>&2"
+    },
+    "output": {
+      "commandSegments": [
+        "echo x 1>&2"
+      ]
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull",
+    "input": {
+      "command": "ls &>/dev/null"
+    },
+    "output": {
+      "commandSegments": [
+        "ls &>/dev/null"
+      ]
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@bash-all",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@deny-only",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@empty",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@exact",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@mixed",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@odd-forms",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@prefix",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e29-amp-gt-devnull@wildcard",
+    "input": {
+      "command": "ls &>/dev/null",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "e30-gt-devnull",
+    "input": {
+      "command": "ls >/dev/null"
+    },
+    "output": {
+      "commandSegments": [
+        "ls >/dev/null"
+      ]
+    }
+  },
+  {
+    "name": "e31-append-devnull",
+    "input": {
+      "command": "ls >>/dev/null"
+    },
+    "output": {
+      "commandSegments": [
+        "ls >>/dev/null"
+      ]
+    }
+  },
+  {
+    "name": "e32-gt-space-devnull",
+    "input": {
+      "command": "ls > /dev/null 2>&1"
+    },
+    "output": {
+      "commandSegments": [
+        "ls > /dev/null 2>&1"
+      ]
+    }
+  },
+  {
+    "name": "e33-devnull-suffix",
+    "input": {
+      "command": "ls 2>/dev/nullx"
+    },
+    "output": {
+      "commandSegments": [
+        "ls 2>/dev/nullx"
+      ]
+    }
+  },
+  {
+    "name": "e34-devnull-semicolon",
+    "input": {
+      "command": "ls >/dev/null;ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls >/dev/null",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "e35-devnull-paren",
+    "input": {
+      "command": "(ls >/dev/null)"
+    },
+    "output": {
+      "commandSegments": [
+        "(ls >/dev/null)"
+      ]
+    }
+  },
+  {
+    "name": "e36-devnull-andand",
+    "input": {
+      "command": "ls 2>/dev/null&&ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls 2>/dev/null",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "e37-devnulls",
+    "input": {
+      "command": "ls > /dev/nulls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls > /dev/nulls"
+      ]
+    }
+  },
+  {
+    "name": "e38-gt-gt-file",
+    "input": {
+      "command": "echo a >> log.txt"
+    },
+    "output": {
+      "commandSegments": [
+        "echo a >> log.txt"
+      ]
+    }
+  },
+  {
+    "name": "e39-input-and-heredoc-mix",
+    "input": {
+      "command": "cat <in >out"
+    },
+    "output": {
+      "commandSegments": [
+        "cat <in >out"
+      ]
+    }
+  },
+  {
+    "name": "e40-process-subst",
+    "input": {
+      "command": "diff <(ls a) <(ls b)"
+    },
+    "output": {
+      "commandSegments": [
+        "diff <(ls a) <(ls b)"
+      ]
+    }
+  },
+  {
+    "name": "e41-raw-env-ps-in-bash",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\"; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "$env:NXY_RAW=\"1\"",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "e42-raw-env-single-quote",
+    "input": {
+      "command": "$env:NXY_RAW = '1'"
+    },
+    "output": {
+      "commandSegments": [
+        "$env:NXY_RAW = '1'"
+      ]
+    }
+  },
+  {
+    "name": "e43-raw-env-zero",
+    "input": {
+      "command": "NXY_RAW=0 mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "NXY_RAW=0 mvn test"
+      ]
+    }
+  },
+  {
+    "name": "e44-raw-env-only",
+    "input": {
+      "command": "NXY_RAW=1"
+    },
+    "output": {
+      "commandSegments": [
+        "NXY_RAW=1"
+      ]
+    }
+  },
+  {
+    "name": "e45-raw-env-second-assign",
+    "input": {
+      "command": "FOO=1 NXY_RAW=1 grep x f"
+    },
+    "output": {
+      "commandSegments": [
+        "FOO=1 NXY_RAW=1 grep x f"
+      ]
+    }
+  },
+  {
+    "name": "e46-raw-comment-alone",
+    "input": {
+      "command": "# raw"
+    },
+    "output": {
+      "commandSegments": [
+        "# raw"
+      ]
+    }
+  },
+  {
+    "name": "e47-nxy-raw-comment-echo",
+    "input": {
+      "command": "echo # nxy:raw"
+    },
+    "output": {
+      "commandSegments": [
+        "echo # nxy:raw"
+      ]
+    }
+  },
+  {
+    "name": "e48-raw-comment-no-space",
+    "input": {
+      "command": "echo #raw"
+    },
+    "output": {
+      "commandSegments": [
+        "echo #raw"
+      ]
+    }
+  },
+  {
+    "name": "e49-rawness-not-escape",
+    "input": {
+      "command": "echo # rawness"
+    },
+    "output": {
+      "commandSegments": [
+        "echo # rawness"
+      ]
+    }
+  },
+  {
+    "name": "e50-raw-in-quotes",
+    "input": {
+      "command": "echo \"# raw\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"# raw\""
+      ]
+    }
+  },
+  {
+    "name": "e51-hash-glued",
+    "input": {
+      "command": "echo a#raw"
+    },
+    "output": {
+      "commandSegments": [
+        "echo a#raw"
+      ]
+    }
+  },
+  {
+    "name": "e52-head-n-20",
+    "input": {
+      "command": "ls | head -n 20"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head -n 20"
+      ]
+    }
+  },
+  {
+    "name": "e53-head-n-21",
+    "input": {
+      "command": "ls | head -n 21"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head -n 21"
+      ]
+    }
+  },
+  {
+    "name": "e54-tail-minus-20",
+    "input": {
+      "command": "ls | tail -20"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -20"
+      ]
+    }
+  },
+  {
+    "name": "e55-tail-minus-21",
+    "input": {
+      "command": "ls | tail -21"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -21"
+      ]
+    }
+  },
+  {
+    "name": "e56-tail-lines-eq-21",
+    "input": {
+      "command": "ls | tail --lines=21"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail --lines=21"
+      ]
+    }
+  },
+  {
+    "name": "e57-tail-lines-space-5",
+    "input": {
+      "command": "ls | tail --lines 5"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail --lines 5"
+      ]
+    }
+  },
+  {
+    "name": "e58-bare-head",
+    "input": {
+      "command": "ls | head"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head"
+      ]
+    }
+  },
+  {
+    "name": "e59-head-n20-glued",
+    "input": {
+      "command": "ls | head -n20"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head -n20"
+      ]
+    }
+  },
+  {
+    "name": "e60-tail-n-100",
+    "input": {
+      "command": "ls | tail -n 100"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -n 100"
+      ]
+    }
+  },
+  {
+    "name": "e61-tail-trailing-space",
+    "input": {
+      "command": "ls | tail -n 150 "
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -n 150"
+      ]
+    }
+  },
+  {
+    "name": "e62-head-minus-100",
+    "input": {
+      "command": "ls | head -100"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head -100"
+      ]
+    }
+  },
+  {
+    "name": "e63-tail-wide-spaces",
+    "input": {
+      "command": "ls | tail  -n  300"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail  -n  300"
+      ]
+    }
+  },
+  {
+    "name": "e64-headx-not-a-limit",
+    "input": {
+      "command": "ls | headx"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "headx"
+      ]
+    }
+  },
+  {
+    "name": "e65-tail-f",
+    "input": {
+      "command": "ls | tail -f"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -f"
+      ]
+    }
+  },
+  {
+    "name": "e66-tight-pipe-tail",
+    "input": {
+      "command": "ls |tail -n 99"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -n 99"
+      ]
+    }
+  },
+  {
+    "name": "e67-head-then-other",
+    "input": {
+      "command": "ls | head -n 99 | wc -l"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "head -n 99",
+        "wc -l"
+      ]
+    }
+  },
+  {
+    "name": "e68-tail-n-0",
+    "input": {
+      "command": "ls | tail -n 0"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail -n 0"
+      ]
+    }
+  },
+  {
+    "name": "e69-long-chain",
+    "input": {
+      "command": "cd a && cd b && ls -la && git status && git diff --stat | cat; echo done || true"
+    },
+    "output": {
+      "commandSegments": [
+        "cd a",
+        "cd b",
+        "ls -la",
+        "git status",
+        "git diff --stat",
+        "cat",
+        "echo done",
+        "true"
+      ]
+    }
+  },
+  {
+    "name": "e70-gradlew-win",
+    "input": {
+      "command": ".\\gradlew.bat build"
+    },
+    "output": {
+      "commandSegments": [
+        ".\\gradlew.bat build"
+      ]
+    }
+  },
+  {
+    "name": "e71-gradlew-unix",
+    "input": {
+      "command": "./gradlew test"
+    },
+    "output": {
+      "commandSegments": [
+        "./gradlew test"
+      ]
+    }
+  },
+  {
+    "name": "e72-mvnw-no-ext",
+    "input": {
+      "command": ".\\mvnw clean"
+    },
+    "output": {
+      "commandSegments": [
+        ".\\mvnw clean"
+      ]
+    }
+  },
+  {
+    "name": "e73-mvnw-bare-cmd",
+    "input": {
+      "command": "./mvnw.cmd"
+    },
+    "output": {
+      "commandSegments": [
+        "./mvnw.cmd"
+      ]
+    }
+  },
+  {
+    "name": "e74-mvnw-exe-not-wrapper",
+    "input": {
+      "command": "./mvnw.exe test"
+    },
+    "output": {
+      "commandSegments": [
+        "./mvnw.exe test"
+      ]
+    }
+  },
+  {
+    "name": "e75-pnpm-test",
+    "input": {
+      "command": "pnpm test"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm test"
+      ]
+    }
+  },
+  {
+    "name": "e76-pnpm-lint-fix",
+    "input": {
+      "command": "pnpm lint --fix"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm lint --fix"
+      ]
+    }
+  },
+  {
+    "name": "e77-pnpm-t",
+    "input": {
+      "command": "pnpm t"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm t"
+      ]
+    }
+  },
+  {
+    "name": "e78-npm-t",
+    "input": {
+      "command": "npm t"
+    },
+    "output": {
+      "commandSegments": [
+        "npm t"
+      ]
+    }
+  },
+  {
+    "name": "e79-npm-test-colon",
+    "input": {
+      "command": "npm test:unit"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test:unit"
+      ]
+    }
+  },
+  {
+    "name": "e80-pnpm-builder",
+    "input": {
+      "command": "pnpm builder"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm builder"
+      ]
+    }
+  },
+  {
+    "name": "e81-quoted-env-npm-test",
+    "input": {
+      "command": "FOO=\"a b\" npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "FOO=\"a b\" npm test"
+      ]
+    }
+  },
+  {
+    "name": "e82-two-env-pnpm-dev",
+    "input": {
+      "command": "A=1 B='x y' pnpm dev"
+    },
+    "output": {
+      "commandSegments": [
+        "A=1 B='x y' pnpm dev"
+      ]
+    }
+  },
+  {
+    "name": "e83-semicolon-npm-twice",
+    "input": {
+      "command": "cd x; npm test; npm t"
+    },
+    "output": {
+      "commandSegments": [
+        "cd x",
+        "npm test",
+        "npm t"
+      ]
+    }
+  },
+  {
+    "name": "e84-or-npm-test",
+    "input": {
+      "command": "ls || npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "npm test"
+      ]
+    }
+  },
+  {
+    "name": "e85-npm-test-tab-arg",
+    "input": {
+      "command": "npm test\t--watch"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test\t--watch"
+      ]
+    }
+  },
+  {
+    "name": "e86-pnpm-all-words",
+    "input": {
+      "command": "pnpm build && pnpm lint && pnpm start && pnpm dev && pnpm check && pnpm typecheck && pnpm format"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm build",
+        "pnpm lint",
+        "pnpm start",
+        "pnpm dev",
+        "pnpm check",
+        "pnpm typecheck",
+        "pnpm format"
+      ]
+    }
+  },
+  {
+    "name": "e87-docker-run-no-it",
+    "input": {
+      "command": "docker run --rm alpine"
+    },
+    "output": {
+      "commandSegments": [
+        "docker run --rm alpine"
+      ]
+    }
+  },
+  {
+    "name": "e88-docker-exec-plain",
+    "input": {
+      "command": "docker exec web ls"
+    },
+    "output": {
+      "commandSegments": [
+        "docker exec web ls"
+      ]
+    }
+  },
+  {
+    "name": "e89-docker-exec-ti",
+    "input": {
+      "command": "docker exec -ti web sh"
+    },
+    "output": {
+      "commandSegments": [
+        "docker exec -ti web sh"
+      ]
+    }
+  },
+  {
+    "name": "e90-docker-exec-t",
+    "input": {
+      "command": "docker exec -t web ls"
+    },
+    "output": {
+      "commandSegments": [
+        "docker exec -t web ls"
+      ]
+    }
+  },
+  {
+    "name": "e91-git-c-config-status",
+    "input": {
+      "command": "git -c core.x=1 status"
+    },
+    "output": {
+      "commandSegments": [
+        "git -c core.x=1 status"
+      ]
+    }
+  },
+  {
+    "name": "e92-git-C-log",
+    "input": {
+      "command": "git -C repo log"
+    },
+    "output": {
+      "commandSegments": [
+        "git -C repo log"
+      ]
+    }
+  },
+  {
+    "name": "e93-git-stash-list",
+    "input": {
+      "command": "git stash list"
+    },
+    "output": {
+      "commandSegments": [
+        "git stash list"
+      ]
+    }
+  },
+  {
+    "name": "e94-git-add-i",
+    "input": {
+      "command": "git add -i"
+    },
+    "output": {
+      "commandSegments": [
+        "git add -i"
+      ]
+    }
+  },
+  {
+    "name": "e95-git-add-patch",
+    "input": {
+      "command": "git add --patch"
+    },
+    "output": {
+      "commandSegments": [
+        "git add --patch"
+      ]
+    }
+  },
+  {
+    "name": "e96-git-add-dot",
+    "input": {
+      "command": "git add ."
+    },
+    "output": {
+      "commandSegments": [
+        "git add ."
+      ]
+    }
+  },
+  {
+    "name": "e97-bare-git",
+    "input": {
+      "command": "git"
+    },
+    "output": {
+      "commandSegments": [
+        "git"
+      ]
+    }
+  },
+  {
+    "name": "e98-git-dangling-C",
+    "input": {
+      "command": "git -C"
+    },
+    "output": {
+      "commandSegments": [
+        "git -C"
+      ]
+    }
+  },
+  {
+    "name": "e99-git-tag-list",
+    "input": {
+      "command": "git tag -l"
+    },
+    "output": {
+      "commandSegments": [
+        "git tag -l"
+      ]
+    }
+  },
+  {
+    "name": "f01-git-switch",
+    "input": {
+      "command": "git switch x"
+    },
+    "output": {
+      "commandSegments": [
+        "git switch x"
+      ]
+    }
+  },
+  {
+    "name": "f02-git-reset-hard",
+    "input": {
+      "command": "git reset --hard"
+    },
+    "output": {
+      "commandSegments": [
+        "git reset --hard"
+      ]
+    }
+  },
+  {
+    "name": "f03-git-cherry-pick",
+    "input": {
+      "command": "git cherry-pick abc"
+    },
+    "output": {
+      "commandSegments": [
+        "git cherry-pick abc"
+      ]
+    }
+  },
+  {
+    "name": "f04-time-npm-test",
+    "input": {
+      "command": "time npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "time npm test"
+      ]
+    }
+  },
+  {
+    "name": "f05-nice-make",
+    "input": {
+      "command": "nice -n 5 make"
+    },
+    "output": {
+      "commandSegments": [
+        "nice -n 5 make"
+      ]
+    }
+  },
+  {
+    "name": "f06-command-ls",
+    "input": {
+      "command": "command ls"
+    },
+    "output": {
+      "commandSegments": [
+        "command ls"
+      ]
+    }
+  },
+  {
+    "name": "f07-exec-bash",
+    "input": {
+      "command": "exec bash"
+    },
+    "output": {
+      "commandSegments": [
+        "exec bash"
+      ]
+    }
+  },
+  {
+    "name": "f08-env-time-vim",
+    "input": {
+      "command": "FOO=1 time vim x"
+    },
+    "output": {
+      "commandSegments": [
+        "FOO=1 time vim x"
+      ]
+    }
+  },
+  {
+    "name": "f09-node-bin-jest",
+    "input": {
+      "command": "./node_modules/.bin/jest"
+    },
+    "output": {
+      "commandSegments": [
+        "./node_modules/.bin/jest"
+      ]
+    }
+  },
+  {
+    "name": "f10-windows-cmd-script",
+    "input": {
+      "command": ".\\script.cmd arg"
+    },
+    "output": {
+      "commandSegments": [
+        ".\\script.cmd arg"
+      ]
+    }
+  },
+  {
+    "name": "f11-windows-abs-exe",
+    "input": {
+      "command": "C:\\tools\\x.exe a"
+    },
+    "output": {
+      "commandSegments": [
+        "C:\\tools\\x.exe a"
+      ]
+    }
+  },
+  {
+    "name": "f12-sh-script",
+    "input": {
+      "command": "./a.sh"
+    },
+    "output": {
+      "commandSegments": [
+        "./a.sh"
+      ]
+    }
+  },
+  {
+    "name": "f13-heredoc-dash",
+    "input": {
+      "command": "cat <<-EOF\nhi\nEOF"
+    },
+    "output": {
+      "commandSegments": [
+        "cat <<-EOF",
+        "hi",
+        "EOF"
+      ]
+    }
+  },
+  {
+    "name": "f14-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo \"<<\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"<<\""
+      ]
+    }
+  },
+  {
+    "name": "f15-single-quoted-heredoc-lookalike",
+    "input": {
+      "command": "echo '<<x'"
+    },
+    "output": {
+      "commandSegments": [
+        "echo '<<x'"
+      ]
+    }
+  },
+  {
+    "name": "f16-input-redirect-glued",
+    "input": {
+      "command": "cat <in"
+    },
+    "output": {
+      "commandSegments": [
+        "cat <in"
+      ]
+    }
+  },
+  {
+    "name": "f17-herestring-bare",
+    "input": {
+      "command": "a <<< b"
+    },
+    "output": {
+      "commandSegments": [
+        "a <<< b"
+      ]
+    }
+  },
+  {
+    "name": "f18-single-quoted-subst",
+    "input": {
+      "command": "echo '$(x)'"
+    },
+    "output": {
+      "commandSegments": [
+        "echo '$(x)'"
+      ]
+    }
+  },
+  {
+    "name": "f19-double-quoted-subst",
+    "input": {
+      "command": "echo \"$(x)\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"$(x)\""
+      ]
+    }
+  },
+  {
+    "name": "f20-escaped-subst",
+    "input": {
+      "command": "echo \\$(x)"
+    },
+    "output": {
+      "commandSegments": [
+        "echo \\$(x)"
+      ]
+    }
+  },
+  {
+    "name": "f21-plain-var",
+    "input": {
+      "command": "echo $HOME"
+    },
+    "output": {
+      "commandSegments": [
+        "echo $HOME"
+      ]
+    }
+  },
+  {
+    "name": "f21-plain-var@bash-all",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f21-plain-var@deny-only",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f21-plain-var@empty",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f21-plain-var@exact",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f21-plain-var@mixed",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f21-plain-var@odd-forms",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f21-plain-var@prefix",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f21-plain-var@wildcard",
+    "input": {
+      "command": "echo $HOME",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f22-brace-var",
+    "input": {
+      "command": "echo ${X}"
+    },
+    "output": {
+      "commandSegments": [
+        "echo ${X}"
+      ]
+    }
+  },
+  {
+    "name": "f23-lone-dollar",
+    "input": {
+      "command": "echo $"
+    },
+    "output": {
+      "commandSegments": [
+        "echo $"
+      ]
+    }
+  },
+  {
+    "name": "f24-escaped-backtick-in-dq",
+    "input": {
+      "command": "echo \"\\`x\\`\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"\\`x\\`\""
+      ]
+    }
+  },
+  {
+    "name": "f25-sleep-background",
+    "input": {
+      "command": "sleep 1 &"
+    },
+    "output": {
+      "commandSegments": [
+        "sleep 1"
+      ]
+    }
+  },
+  {
+    "name": "f26-chain-background",
+    "input": {
+      "command": "a && b &"
+    },
+    "output": {
+      "commandSegments": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "f27-trailing-andand",
+    "input": {
+      "command": "a &&"
+    },
+    "output": {
+      "commandSegments": [
+        "a"
+      ]
+    }
+  },
+  {
+    "name": "f28-single-amp-middle",
+    "input": {
+      "command": "a & b"
+    },
+    "output": {
+      "commandSegments": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@bash-all",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@deny-only",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@empty",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@exact",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@mixed",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@odd-forms",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@prefix",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f28-single-amp-middle@wildcard",
+    "input": {
+      "command": "a & b",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f29-amp-word",
+    "input": {
+      "command": "a &amp"
+    },
+    "output": {
+      "commandSegments": [
+        "a",
+        "amp"
+      ]
+    }
+  },
+  {
+    "name": "f30-cd-cd",
+    "input": {
+      "command": "cd a && cd b"
+    },
+    "output": {
+      "commandSegments": [
+        "cd a",
+        "cd b"
+      ]
+    }
+  },
+  {
+    "name": "f31-cd-bare",
+    "input": {
+      "command": "cd"
+    },
+    "output": {
+      "commandSegments": [
+        "cd"
+      ]
+    }
+  },
+  {
+    "name": "f32-set-e",
+    "input": {
+      "command": "set -e"
+    },
+    "output": {
+      "commandSegments": [
+        "set -e"
+      ]
+    }
+  },
+  {
+    "name": "f33-source-only",
+    "input": {
+      "command": "source x"
+    },
+    "output": {
+      "commandSegments": [
+        "source x"
+      ]
+    }
+  },
+  {
+    "name": "f34-unset-only",
+    "input": {
+      "command": "unset A"
+    },
+    "output": {
+      "commandSegments": [
+        "unset A"
+      ]
+    }
+  },
+  {
+    "name": "f35-env-bare-node",
+    "input": {
+      "command": "FOO=1 node"
+    },
+    "output": {
+      "commandSegments": [
+        "FOO=1 node"
+      ]
+    }
+  },
+  {
+    "name": "f36-node-version",
+    "input": {
+      "command": "node -v"
+    },
+    "output": {
+      "commandSegments": [
+        "node -v"
+      ]
+    }
+  },
+  {
+    "name": "f37-bare-python",
+    "input": {
+      "command": "python"
+    },
+    "output": {
+      "commandSegments": [
+        "python"
+      ]
+    }
+  },
+  {
+    "name": "f38-python-c",
+    "input": {
+      "command": "python -c \"x\""
+    },
+    "output": {
+      "commandSegments": [
+        "python -c \"x\""
+      ]
+    }
+  },
+  {
+    "name": "f39-env-bare-python3",
+    "input": {
+      "command": "A=1 python3"
+    },
+    "output": {
+      "commandSegments": [
+        "A=1 python3"
+      ]
+    }
+  },
+  {
+    "name": "f40-node-and-python",
+    "input": {
+      "command": "node a.js && python3 b.py"
+    },
+    "output": {
+      "commandSegments": [
+        "node a.js",
+        "python3 b.py"
+      ]
+    }
+  },
+  {
+    "name": "f41-ls-nxy-dir",
+    "input": {
+      "command": "ls .nxy/"
+    },
+    "output": {
+      "commandSegments": [
+        "ls .nxy/"
+      ]
+    }
+  },
+  {
+    "name": "f42-nxy-backslash-quoted",
+    "input": {
+      "command": "cat '.nxy\\x'"
+    },
+    "output": {
+      "commandSegments": [
+        "cat '.nxy\\x'"
+      ]
+    }
+  },
+  {
+    "name": "f43-nxy-glued",
+    "input": {
+      "command": "echo a.nxy/x"
+    },
+    "output": {
+      "commandSegments": [
+        "echo a.nxy/x"
+      ]
+    }
+  },
+  {
+    "name": "f44-nxy-dot-slash",
+    "input": {
+      "command": "cat ./.nxy/c"
+    },
+    "output": {
+      "commandSegments": [
+        "cat ./.nxy/c"
+      ]
+    }
+  },
+  {
+    "name": "f45-accented",
+    "input": {
+      "command": "echo héllo"
+    },
+    "output": {
+      "commandSegments": [
+        "echo héllo"
+      ]
+    }
+  },
+  {
+    "name": "f46-cjk-head-50",
+    "input": {
+      "command": "echo \"日本語\" | head -n 50"
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"日本語\"",
+        "head -n 50"
+      ]
+    }
+  },
+  {
+    "name": "f47-grep-enye",
+    "input": {
+      "command": "grep -rn \"ñ\" src"
+    },
+    "output": {
+      "commandSegments": [
+        "grep -rn \"ñ\" src"
+      ]
+    }
+  },
+  {
+    "name": "f48-emoji",
+    "input": {
+      "command": "echo 😀 > f"
+    },
+    "output": {
+      "commandSegments": [
+        "echo 😀 > f"
+      ]
+    }
+  },
+  {
+    "name": "f49-rtk-quoted-abs",
+    "input": {
+      "command": "\"/opt/rtk/rtk\" git status"
+    },
+    "output": {
+      "commandSegments": [
+        "\"/opt/rtk/rtk\" git status"
+      ]
+    }
+  },
+  {
+    "name": "f50-rtk-env-prefix",
+    "input": {
+      "command": "A=1 rtk git status"
+    },
+    "output": {
+      "commandSegments": [
+        "A=1 rtk git status"
+      ]
+    }
+  },
+  {
+    "name": "f51-rtk-windows-path",
+    "input": {
+      "command": "\"D:\\tools\\rtk.exe\" git status"
+    },
+    "output": {
+      "commandSegments": [
+        "\"D:\\tools\\rtk.exe\" git status"
+      ]
+    }
+  },
+  {
+    "name": "f52-rtk-uppercase",
+    "input": {
+      "command": "RTK git status"
+    },
+    "output": {
+      "commandSegments": [
+        "RTK git status"
+      ]
+    }
+  },
+  {
+    "name": "f53-rtk-alone",
+    "input": {
+      "command": "rtk"
+    },
+    "output": {
+      "commandSegments": [
+        "rtk"
+      ]
+    }
+  },
+  {
+    "name": "f54-rtk-prefix-word",
+    "input": {
+      "command": "rtkx git status"
+    },
+    "output": {
+      "commandSegments": [
+        "rtkx git status"
+      ]
+    }
+  },
+  {
+    "name": "f55-echo-rtk",
+    "input": {
+      "command": "echo rtk git"
+    },
+    "output": {
+      "commandSegments": [
+        "echo rtk git"
+      ]
+    }
+  },
+  {
+    "name": "f56-rtk-in-pipe",
+    "input": {
+      "command": "ls | rtk grep x"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "rtk grep x"
+      ]
+    }
+  },
+  {
+    "name": "f57-rtk-pin-chain",
+    "input": {
+      "command": "cd x && JAVA_HOME=\"/j\" rtk mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd x",
+        "JAVA_HOME=\"/j\" rtk mvn test"
+      ]
+    }
+  },
+  {
+    "name": "f58-rtk-after-or",
+    "input": {
+      "command": "ls || rtk git status; rtk.exe ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "rtk git status",
+        "rtk.exe ls"
+      ]
+    }
+  },
+  {
+    "name": "f59-multiline-allowed",
+    "input": {
+      "command": "git status\nls"
+    },
+    "output": {
+      "commandSegments": [
+        "git status",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@bash-all",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@deny-only",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@empty",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@exact",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@mixed",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@odd-forms",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@prefix",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f59-multiline-allowed@wildcard",
+    "input": {
+      "command": "git status\nls",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe",
+    "input": {
+      "command": "git status; git log | head -n 50"
+    },
+    "output": {
+      "commandSegments": [
+        "git status",
+        "git log",
+        "head -n 50"
+      ]
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@bash-all",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@deny-only",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@empty",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@exact",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@mixed",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@odd-forms",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@prefix",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f60-semicolon-and-pipe@wildcard",
+    "input": {
+      "command": "git status; git log | head -n 50",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f61-quoted-andand",
+    "input": {
+      "command": "echo \"a && b\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"a && b\""
+      ]
+    }
+  },
+  {
+    "name": "f61-quoted-andand@bash-all",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@deny-only",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@empty",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@exact",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@mixed",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@odd-forms",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@prefix",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f61-quoted-andand@wildcard",
+    "input": {
+      "command": "echo \"a && b\"",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f62-ls",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f62-ls@bash-all",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f62-ls@deny-only",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f62-ls@empty",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f62-ls@exact",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f62-ls@mixed",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f62-ls@odd-forms",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f62-ls@prefix",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f62-ls@wildcard",
+    "input": {
+      "command": "ls",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh",
+    "input": {
+      "command": "curl x | sh"
+    },
+    "output": {
+      "commandSegments": [
+        "curl x",
+        "sh"
+      ]
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@bash-all",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@deny-only",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@empty",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@exact",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@mixed",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@odd-forms",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@prefix",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f63-curl-pipe-sh@wildcard",
+    "input": {
+      "command": "curl x | sh",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build",
+    "input": {
+      "command": "rm -rf build"
+    },
+    "output": {
+      "commandSegments": [
+        "rm -rf build"
+      ]
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@bash-all",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@deny-only",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@empty",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@exact",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@mixed",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@odd-forms",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@prefix",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f64-rm-rf-build@wildcard",
+    "input": {
+      "command": "rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f65-status-then-rm",
+    "input": {
+      "command": "git status && rm -rf build"
+    },
+    "output": {
+      "commandSegments": [
+        "git status",
+        "rm -rf build"
+      ]
+    }
+  },
+  {
+    "name": "f65-status-then-rm@bash-all",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@deny-only",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@empty",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@exact",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@mixed",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@odd-forms",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@prefix",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f65-status-then-rm@wildcard",
+    "input": {
+      "command": "git status && rm -rf build",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f66-echo-hi",
+    "input": {
+      "command": "echo hi"
+    },
+    "output": {
+      "commandSegments": [
+        "echo hi"
+      ]
+    }
+  },
+  {
+    "name": "f66-echo-hi@bash-all",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f66-echo-hi@deny-only",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f66-echo-hi@empty",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f66-echo-hi@exact",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f66-echo-hi@mixed",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f66-echo-hi@odd-forms",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f66-echo-hi@prefix",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f66-echo-hi@wildcard",
+    "input": {
+      "command": "echo hi",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot",
+    "input": {
+      "command": "grep -rn \"a.b\" ."
+    },
+    "output": {
+      "commandSegments": [
+        "grep -rn \"a.b\" ."
+      ]
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@bash-all",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@deny-only",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@empty",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@exact",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@mixed",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@odd-forms",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@prefix",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f67-grep-regex-dot@wildcard",
+    "input": {
+      "command": "grep -rn \"a.b\" .",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f68-ls-tail",
+    "input": {
+      "command": "ls | tail"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "tail"
+      ]
+    }
+  },
+  {
+    "name": "f68-ls-tail@bash-all",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f68-ls-tail@deny-only",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f68-ls-tail@empty",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f68-ls-tail@exact",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f68-ls-tail@mixed",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f68-ls-tail@odd-forms",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f68-ls-tail@prefix",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f68-ls-tail@wildcard",
+    "input": {
+      "command": "ls | tail",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike",
+    "input": {
+      "command": "git status-x"
+    },
+    "output": {
+      "commandSegments": [
+        "git status-x"
+      ]
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@bash-all",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@deny-only",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@empty",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@exact",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@mixed",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@odd-forms",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@prefix",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f69-git-status-prefix-lookalike@wildcard",
+    "input": {
+      "command": "git status-x",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag",
+    "input": {
+      "command": "npm run test -- --grep x"
+    },
+    "output": {
+      "commandSegments": [
+        "npm run test -- --grep x"
+      ]
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@bash-all",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@deny-only",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@empty",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@exact",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@mixed",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@odd-forms",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@prefix",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f70-npm-run-test-flag@wildcard",
+    "input": {
+      "command": "npm run test -- --grep x",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "commandSegments": [
+        "git log --oneline"
+      ]
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@bash-all",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@deny-only",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@empty",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@exact",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@mixed",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@odd-forms",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@prefix",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f71-git-log-oneline-wild@wildcard",
+    "input": {
+      "command": "git log --oneline",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed",
+    "input": {
+      "command": "git status $(pwd)"
+    },
+    "output": {
+      "commandSegments": [
+        "git status $(pwd)"
+      ]
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@bash-all",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@deny-only",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@empty",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@exact",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@mixed",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@odd-forms",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@prefix",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f72-subst-in-allowed@wildcard",
+    "input": {
+      "command": "git status $(pwd)",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f73-git-push-chain",
+    "input": {
+      "command": "git status && git push"
+    },
+    "output": {
+      "commandSegments": [
+        "git status",
+        "git push"
+      ]
+    }
+  },
+  {
+    "name": "f73-git-push-chain@bash-all",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@deny-only",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@empty",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@exact",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@mixed",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@odd-forms",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@prefix",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f73-git-push-chain@wildcard",
+    "input": {
+      "command": "git status && git push",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect",
+    "input": {
+      "command": "ls 2>&1 & ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls 2>&1",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@bash-all",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@deny-only",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@empty",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@exact",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@mixed",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@odd-forms",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@prefix",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f74-amp-pair-redirect@wildcard",
+    "input": {
+      "command": "ls 2>&1 & ls",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect",
+    "input": {
+      "command": "ls |& cat"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "cat"
+      ]
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@bash-all",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@deny-only",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@empty",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@exact",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@mixed",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@odd-forms",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@prefix",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f75-pipe-amp-redirect@wildcard",
+    "input": {
+      "command": "ls |& cat",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "f76-empty-perm@bash-all",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@deny-only",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@empty",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@exact",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@mixed",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@odd-forms",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@prefix",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f76-empty-perm@wildcard",
+    "input": {
+      "command": "",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "f77-spaces-perm@bash-all",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@deny-only",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@empty",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@exact",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@mixed",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@odd-forms",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@prefix",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f77-spaces-perm@wildcard",
+    "input": {
+      "command": "   ",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm",
+    "input": {
+      "command": "git status\r\nls\r\n"
+    },
+    "output": {
+      "commandSegments": [
+        "git status",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@bash-all",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@deny-only",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@empty",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@exact",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@mixed",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@odd-forms",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@prefix",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f78-crlf-lines-perm@wildcard",
+    "input": {
+      "command": "git status\r\nls\r\n",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls"
+    },
+    "output": {
+      "commandSegments": [
+        "cd api",
+        "npm test",
+        "cd ..",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@bash-all",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@deny-only",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@empty",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@exact",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@mixed",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@odd-forms",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@prefix",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f79-cd-prefix-chain@wildcard",
+    "input": {
+      "command": "cd api && npm test && cd .. && ls",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f80-sudo-chain",
+    "input": {
+      "command": "sudo ls && ls"
+    },
+    "output": {
+      "commandSegments": [
+        "sudo ls",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "f80-sudo-chain@bash-all",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@deny-only",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@empty",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@exact",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@mixed",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@odd-forms",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@prefix",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "f80-sudo-chain@wildcard",
+    "input": {
+      "command": "sudo ls && ls",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "ps01-mvnw",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location \"C:/x/api\"",
+        ".\\mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "ps02-multiline-env",
+    "input": {
+      "command": "Set-Location \"C:/x/api\"\n$env:JAVA_HOME = \"C:/j\"\n.\\mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location \"C:/x/api\"",
+        "$env:JAVA_HOME = \"C:/j\"",
+        ".\\mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "ps03-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "ps04-cd-npm-test",
+    "input": {
+      "command": "cd api; npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd api",
+        "npm test"
+      ]
+    }
+  },
+  {
+    "name": "ps05-script-foreach",
+    "input": {
+      "command": "$candidates = @(); Get-ChildItem \"C:/x\" | ForEach-Object { $_ }"
+    },
+    "output": {
+      "commandSegments": [
+        "$candidates = @()",
+        "Get-ChildItem \"C:/x\"",
+        "ForEach-Object { $_ }"
+      ]
+    }
+  },
+  {
+    "name": "ps06-set-location-only",
+    "input": {
+      "command": "Set-Location \"C:/x\""
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location \"C:/x\""
+      ]
+    }
+  },
+  {
+    "name": "ps07-env-only",
+    "input": {
+      "command": "$env:JAVA_HOME = \"C:/j\""
+    },
+    "output": {
+      "commandSegments": [
+        "$env:JAVA_HOME = \"C:/j\""
+      ]
+    }
+  },
+  {
+    "name": "ps08-pipe",
+    "input": {
+      "command": "Get-Content x | Select-Object -First 5"
+    },
+    "output": {
+      "commandSegments": [
+        "Get-Content x",
+        "Select-Object -First 5"
+      ]
+    }
+  },
+  {
+    "name": "ps09-already-rtk",
+    "input": {
+      "command": "Set-Location \"C:/x\"; rtk mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location \"C:/x\"",
+        "rtk mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps10-raw-env",
+    "input": {
+      "command": "$env:NXY_RAW = \"1\"; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "$env:NXY_RAW = \"1\"",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps11-raw-env-middle",
+    "input": {
+      "command": "Set-Location \"C:/x\"; $env:NXY_RAW = \"1\"; .\\mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location \"C:/x\"",
+        "$env:NXY_RAW = \"1\"",
+        ".\\mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "ps12-redirect",
+    "input": {
+      "command": "mvn test > out.txt"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test > out.txt"
+      ]
+    }
+  },
+  {
+    "name": "ps13-code-3",
+    "input": {
+      "command": "Set-Location x; git log"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location x",
+        "git log"
+      ]
+    }
+  },
+  {
+    "name": "ps14-crlf",
+    "input": {
+      "command": "Set-Location x\r\n.\\gradlew.bat build\r\n"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location x",
+        ".\\gradlew.bat build"
+      ]
+    }
+  },
+  {
+    "name": "ps15-tail-limit",
+    "input": {
+      "command": "mvn test 2>&1"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test 2>&1"
+      ]
+    }
+  },
+  {
+    "name": "ps16-assign-eqeq",
+    "input": {
+      "command": "echo $a == b"
+    },
+    "output": {
+      "commandSegments": [
+        "echo $a == b"
+      ]
+    }
+  },
+  {
+    "name": "ps17-assign-script",
+    "input": {
+      "command": "$a = 1; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "$a = 1",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps18-if",
+    "input": {
+      "command": "if ($a) { mvn test }"
+    },
+    "output": {
+      "commandSegments": [
+        "if ($a) { mvn test }"
+      ]
+    }
+  },
+  {
+    "name": "ps19-try",
+    "input": {
+      "command": "try { mvn test } catch { }"
+    },
+    "output": {
+      "commandSegments": [
+        "try { mvn test } catch { }"
+      ]
+    }
+  },
+  {
+    "name": "ps20-function",
+    "input": {
+      "command": "function f { mvn test }"
+    },
+    "output": {
+      "commandSegments": [
+        "function f { mvn test }"
+      ]
+    }
+  },
+  {
+    "name": "ps21-subexpr",
+    "input": {
+      "command": "echo $(Get-Date)"
+    },
+    "output": {
+      "commandSegments": [
+        "echo $(Get-Date)"
+      ]
+    }
+  },
+  {
+    "name": "ps22-array",
+    "input": {
+      "command": "echo @(1,2)"
+    },
+    "output": {
+      "commandSegments": [
+        "echo @(1,2)"
+      ]
+    }
+  },
+  {
+    "name": "ps23-backtick",
+    "input": {
+      "command": "mvn `\n test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn `",
+        "test"
+      ]
+    }
+  },
+  {
+    "name": "ps24-empty-segment",
+    "input": {
+      "command": "Set-Location x;; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location x",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps25-state-last",
+    "input": {
+      "command": "mvn test; Set-Location x"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test",
+        "Set-Location x"
+      ]
+    }
+  },
+  {
+    "name": "ps26-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "ps27-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "ps28-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "ps29-raw-alone",
+    "input": {
+      "command": "$env:NXY_RAW=\"1\""
+    },
+    "output": {
+      "commandSegments": [
+        "$env:NXY_RAW=\"1\""
+      ]
+    }
+  },
+  {
+    "name": "ps30-raw-lowercase-prefix",
+    "input": {
+      "command": "$env:nxy_raw = 1; ls"
+    },
+    "output": {
+      "commandSegments": [
+        "$env:nxy_raw = 1",
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "ps31-upper-set-location",
+    "input": {
+      "command": "SET-LOCATION x; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "SET-LOCATION x",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps32-node-eval",
+    "input": {
+      "command": "node -e \"1\""
+    },
+    "output": {
+      "commandSegments": [
+        "node -e \"1\""
+      ]
+    }
+  },
+  {
+    "name": "ps33-bare-python",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "commandSegments": [
+        "python3"
+      ]
+    }
+  },
+  {
+    "name": "ps34-pushd",
+    "input": {
+      "command": "pushd x\nmvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "pushd x",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps35-push-location",
+    "input": {
+      "command": "Push-Location x; Get-ChildItem"
+    },
+    "output": {
+      "commandSegments": [
+        "Push-Location x",
+        "Get-ChildItem"
+      ]
+    }
+  },
+  {
+    "name": "ps36-deny",
+    "input": {
+      "command": "rm -rf x"
+    },
+    "output": {
+      "commandSegments": [
+        "rm -rf x"
+      ]
+    }
+  },
+  {
+    "name": "ps37-throw",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps38-unchanged",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps39-nbsp",
+    "input": {
+      "command": "Set-Location x; mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "Set-Location x",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "ps40-interactive-docker",
+    "input": {
+      "command": "docker run -it ubuntu"
+    },
+    "output": {
+      "commandSegments": [
+        "docker run -it ubuntu"
+      ]
+    }
+  },
+  {
+    "name": "ps41-unknown-tool",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "r01-git-status",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "r01-git-status@bash-all",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r01-git-status@deny-only",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r01-git-status@empty",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r01-git-status@exact",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r01-git-status@mixed",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r01-git-status@odd-forms",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r01-git-status@prefix",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r01-git-status@wildcard",
+    "input": {
+      "command": "git status",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r02-mvn-test",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "r03-env-prefix-npm-test",
+    "input": {
+      "command": "FOO=1 npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "FOO=1 npm test"
+      ]
+    }
+  },
+  {
+    "name": "r04-cd-npm-test",
+    "input": {
+      "command": "cd src && npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src",
+        "npm test"
+      ]
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@bash-all",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@deny-only",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@empty",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@exact",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@mixed",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@odd-forms",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@prefix",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r04-cd-npm-test@wildcard",
+    "input": {
+      "command": "cd src && npm test",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r05-tail-50",
+    "input": {
+      "command": "npm test | tail -50"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test",
+        "tail -50"
+      ]
+    }
+  },
+  {
+    "name": "r05-tail-50@bash-all",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r05-tail-50@deny-only",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r05-tail-50@empty",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r05-tail-50@exact",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r05-tail-50@mixed",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r05-tail-50@odd-forms",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r05-tail-50@prefix",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r05-tail-50@wildcard",
+    "input": {
+      "command": "npm test | tail -50",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test 2>&1",
+        "tail -n 150"
+      ]
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@bash-all",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@deny-only",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@empty",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@exact",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@mixed",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@odd-forms",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@prefix",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r06-mvn-tail-150@wildcard",
+    "input": {
+      "command": "mvn test 2>&1 | tail -n 150",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r07-pipe-grep-tail-21",
+    "input": {
+      "command": "git log | grep x | tail -n 21"
+    },
+    "output": {
+      "commandSegments": [
+        "git log",
+        "grep x",
+        "tail -n 21"
+      ]
+    }
+  },
+  {
+    "name": "r08-windows-wrapper-chain",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"C:\\j\" && ./mvnw.cmd -B test 2>&1 | tail -n 150"
+    },
+    "output": {
+      "commandSegments": [
+        "cd \"C:\\x\\api\"",
+        "export JAVA_HOME=\"C:\\j\"",
+        "./mvnw.cmd -B test 2>&1",
+        "tail -n 150"
+      ]
+    }
+  },
+  {
+    "name": "r09-add-status",
+    "input": {
+      "command": "git add . && git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git add .",
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "r10-quoted-gt",
+    "input": {
+      "command": "echo \"a > b\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"a > b\""
+      ]
+    }
+  },
+  {
+    "name": "r11-devnull-stderr",
+    "input": {
+      "command": "ls -la 2>/dev/null"
+    },
+    "output": {
+      "commandSegments": [
+        "ls -la 2>/dev/null"
+      ]
+    }
+  },
+  {
+    "name": "r12-where-java",
+    "input": {
+      "command": "where java 2>/dev/null; ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+    },
+    "output": {
+      "commandSegments": [
+        "where java 2>/dev/null",
+        "ls -d /c/Program\\ Files/Java/*/ 2>/dev/null"
+      ]
+    }
+  },
+  {
+    "name": "r13-node-eval-then-grep",
+    "input": {
+      "command": "node -e \"const a=1&&2; console.log(a|3)\" && grep -n foo README.md"
+    },
+    "output": {
+      "commandSegments": [
+        "node -e \"const a=1&&2; console.log(a|3)\"",
+        "grep -n foo README.md"
+      ]
+    }
+  },
+  {
+    "name": "r14-python-in-chain",
+    "input": {
+      "command": "cd api && python3 gen.py && git status"
+    },
+    "output": {
+      "commandSegments": [
+        "cd api",
+        "python3 gen.py",
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "r15-ask-code-3",
+    "input": {
+      "command": "git log --oneline"
+    },
+    "output": {
+      "commandSegments": [
+        "git log --oneline"
+      ]
+    }
+  },
+  {
+    "name": "r16-only-mvn",
+    "input": {
+      "command": "mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "r17-docker-ps",
+    "input": {
+      "command": "docker ps"
+    },
+    "output": {
+      "commandSegments": [
+        "docker ps"
+      ]
+    }
+  },
+  {
+    "name": "r18-git-diff-exclude-curl",
+    "input": {
+      "command": "git diff"
+    },
+    "output": {
+      "commandSegments": [
+        "git diff"
+      ]
+    }
+  },
+  {
+    "name": "r19-mvnw-cmd-unix",
+    "input": {
+      "command": "./mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        "./mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "r20-mvnw-cmd-win",
+    "input": {
+      "command": ".\\mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        ".\\mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "r21-env-then-mvnw",
+    "input": {
+      "command": "cd api && JAVA_HOME=\"/c/x\" ./mvnw.cmd test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd api",
+        "JAVA_HOME=\"/c/x\" ./mvnw.cmd test"
+      ]
+    }
+  },
+  {
+    "name": "r22-gradlew-bat",
+    "input": {
+      "command": "./gradlew.bat build"
+    },
+    "output": {
+      "commandSegments": [
+        "./gradlew.bat build"
+      ]
+    }
+  },
+  {
+    "name": "r23-npm-test",
+    "input": {
+      "command": "npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test"
+      ]
+    }
+  },
+  {
+    "name": "r24-pnpm-test-args",
+    "input": {
+      "command": "pnpm test -- --run"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm test -- --run"
+      ]
+    }
+  },
+  {
+    "name": "r25-pnpm-build",
+    "input": {
+      "command": "pnpm build"
+    },
+    "output": {
+      "commandSegments": [
+        "pnpm build"
+      ]
+    }
+  },
+  {
+    "name": "r26-npm-run-build",
+    "input": {
+      "command": "npm run build"
+    },
+    "output": {
+      "commandSegments": [
+        "npm run build"
+      ]
+    }
+  },
+  {
+    "name": "r26-npm-run-build@bash-all",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@deny-only",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@empty",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@exact",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@mixed",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@odd-forms",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@prefix",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "r26-npm-run-build@wildcard",
+    "input": {
+      "command": "npm run build",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "r27-quoted-cd-mvnw",
+    "input": {
+      "command": "cd \"C:\\x\\api\" && export JAVA_HOME=\"/c/j\" && ./mvnw test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd \"C:\\x\\api\"",
+        "export JAVA_HOME=\"/c/j\"",
+        "./mvnw test"
+      ]
+    }
+  },
+  {
+    "name": "r28-source-then-mvn",
+    "input": {
+      "command": "source ~/.bashrc && mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "source ~/.bashrc",
+        "mvn test"
+      ]
+    }
+  },
+  {
+    "name": "s01-empty",
+    "input": {
+      "command": ""
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "s02-spaces",
+    "input": {
+      "command": "   "
+    },
+    "output": {
+      "commandSegments": []
+    }
+  },
+  {
+    "name": "s03-engine-off",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "s04-raw-env",
+    "input": {
+      "command": "NXY_RAW=1 mvn test"
+    },
+    "output": {
+      "commandSegments": [
+        "NXY_RAW=1 mvn test"
+      ]
+    }
+  },
+  {
+    "name": "s05-raw-env-in-chain",
+    "input": {
+      "command": "cd api && NXY_RAW=1 grep -n foo README.md"
+    },
+    "output": {
+      "commandSegments": [
+        "cd api",
+        "NXY_RAW=1 grep -n foo README.md"
+      ]
+    }
+  },
+  {
+    "name": "s06-raw-comment",
+    "input": {
+      "command": "mvn test # raw"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test # raw"
+      ]
+    }
+  },
+  {
+    "name": "s07-raw-comment-nxy",
+    "input": {
+      "command": "mvn test #nxy:raw"
+    },
+    "output": {
+      "commandSegments": [
+        "mvn test #nxy:raw"
+      ]
+    }
+  },
+  {
+    "name": "s08-already-rtk",
+    "input": {
+      "command": "rtk git status"
+    },
+    "output": {
+      "commandSegments": [
+        "rtk git status"
+      ]
+    }
+  },
+  {
+    "name": "s09-already-rtk-exe",
+    "input": {
+      "command": "rtk.exe git status"
+    },
+    "output": {
+      "commandSegments": [
+        "rtk.exe git status"
+      ]
+    }
+  },
+  {
+    "name": "s10-already-rtk-chain",
+    "input": {
+      "command": "cd src && rtk npm test"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src",
+        "rtk npm test"
+      ]
+    }
+  },
+  {
+    "name": "s11-excluded",
+    "input": {
+      "command": "curl -s https://x"
+    },
+    "output": {
+      "commandSegments": [
+        "curl -s https://x"
+      ]
+    }
+  },
+  {
+    "name": "s12-excluded-in-chain",
+    "input": {
+      "command": "npm test && curl x"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test",
+        "curl x"
+      ]
+    }
+  },
+  {
+    "name": "s13-not-in-only",
+    "input": {
+      "command": "ls"
+    },
+    "output": {
+      "commandSegments": [
+        "ls"
+      ]
+    }
+  },
+  {
+    "name": "s14-heredoc",
+    "input": {
+      "command": "cat <<'X'\nhi\nX"
+    },
+    "output": {
+      "commandSegments": [
+        "cat <<'X'",
+        "hi",
+        "X"
+      ]
+    }
+  },
+  {
+    "name": "s15-herestring",
+    "input": {
+      "command": "cat <<< \"hi\""
+    },
+    "output": {
+      "commandSegments": [
+        "cat <<< \"hi\""
+      ]
+    }
+  },
+  {
+    "name": "s16-substitution-dollar",
+    "input": {
+      "command": "echo $(date)"
+    },
+    "output": {
+      "commandSegments": [
+        "echo $(date)"
+      ]
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@bash-all",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@deny-only",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@empty",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@exact",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@mixed",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@odd-forms",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@prefix",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s16-substitution-dollar@wildcard",
+    "input": {
+      "command": "echo $(date)",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s17-substitution-backtick",
+    "input": {
+      "command": "echo `date`"
+    },
+    "output": {
+      "commandSegments": [
+        "echo `date`"
+      ]
+    }
+  },
+  {
+    "name": "s18-substitution-brace",
+    "input": {
+      "command": "echo \"${HOME}\""
+    },
+    "output": {
+      "commandSegments": [
+        "echo \"${HOME}\""
+      ]
+    }
+  },
+  {
+    "name": "s19-redirect-file",
+    "input": {
+      "command": "ls > out.txt"
+    },
+    "output": {
+      "commandSegments": [
+        "ls > out.txt"
+      ]
+    }
+  },
+  {
+    "name": "s20-redirect-and-merge",
+    "input": {
+      "command": "npm test > out.log 2>&1"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test > out.log 2>&1"
+      ]
+    }
+  },
+  {
+    "name": "s21-redirect-input",
+    "input": {
+      "command": "sort < in.txt"
+    },
+    "output": {
+      "commandSegments": [
+        "sort < in.txt"
+      ]
+    }
+  },
+  {
+    "name": "s22-background",
+    "input": {
+      "command": "npm start &"
+    },
+    "output": {
+      "commandSegments": [
+        "npm start"
+      ]
+    }
+  },
+  {
+    "name": "s23-capped-head-3",
+    "input": {
+      "command": "grep -rn \"nxy\" README.md | head -3"
+    },
+    "output": {
+      "commandSegments": [
+        "grep -rn \"nxy\" README.md",
+        "head -3"
+      ]
+    }
+  },
+  {
+    "name": "s24-capped-tail-20",
+    "input": {
+      "command": "npm test | tail -20"
+    },
+    "output": {
+      "commandSegments": [
+        "npm test",
+        "tail -20"
+      ]
+    }
+  },
+  {
+    "name": "s25-capped-bare-tail",
+    "input": {
+      "command": "ls -la | tail"
+    },
+    "output": {
+      "commandSegments": [
+        "ls -la",
+        "tail"
+      ]
+    }
+  },
+  {
+    "name": "s26-capped-head-n-10",
+    "input": {
+      "command": "git log --oneline | head -n 10"
+    },
+    "output": {
+      "commandSegments": [
+        "git log --oneline",
+        "head -n 10"
+      ]
+    }
+  },
+  {
+    "name": "s27-cd-only",
+    "input": {
+      "command": "cd src"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src"
+      ]
+    }
+  },
+  {
+    "name": "s28-export-only",
+    "input": {
+      "command": "export A=1"
+    },
+    "output": {
+      "commandSegments": [
+        "export A=1"
+      ]
+    }
+  },
+  {
+    "name": "s29-state-chain",
+    "input": {
+      "command": "cd src && export A=1"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src",
+        "export A=1"
+      ]
+    }
+  },
+  {
+    "name": "s30-sudo",
+    "input": {
+      "command": "sudo apt install x"
+    },
+    "output": {
+      "commandSegments": [
+        "sudo apt install x"
+      ]
+    }
+  },
+  {
+    "name": "s30-sudo@bash-all",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s30-sudo@deny-only",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s30-sudo@empty",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s30-sudo@exact",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s30-sudo@mixed",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s30-sudo@odd-forms",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "s30-sudo@prefix",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s30-sudo@wildcard",
+    "input": {
+      "command": "sudo apt install x",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s31-vim",
+    "input": {
+      "command": "vim file.txt"
+    },
+    "output": {
+      "commandSegments": [
+        "vim file.txt"
+      ]
+    }
+  },
+  {
+    "name": "s32-ssh",
+    "input": {
+      "command": "ssh host"
+    },
+    "output": {
+      "commandSegments": [
+        "ssh host"
+      ]
+    }
+  },
+  {
+    "name": "s33-bare-node",
+    "input": {
+      "command": "node"
+    },
+    "output": {
+      "commandSegments": [
+        "node"
+      ]
+    }
+  },
+  {
+    "name": "s34-bare-python3",
+    "input": {
+      "command": "python3"
+    },
+    "output": {
+      "commandSegments": [
+        "python3"
+      ]
+    }
+  },
+  {
+    "name": "s35-cd-bare-node",
+    "input": {
+      "command": "cd src && node"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src",
+        "node"
+      ]
+    }
+  },
+  {
+    "name": "s36-node-eval",
+    "input": {
+      "command": "node -e \"console.log(1)\""
+    },
+    "output": {
+      "commandSegments": [
+        "node -e \"console.log(1)\""
+      ]
+    }
+  },
+  {
+    "name": "s37-node-test-after-cd",
+    "input": {
+      "command": "cd src && node --test tests/x.test.mjs"
+    },
+    "output": {
+      "commandSegments": [
+        "cd src",
+        "node --test tests/x.test.mjs"
+      ]
+    }
+  },
+  {
+    "name": "s38-python-script",
+    "input": {
+      "command": "python3 tool.py --flag"
+    },
+    "output": {
+      "commandSegments": [
+        "python3 tool.py --flag"
+      ]
+    }
+  },
+  {
+    "name": "s39-git-commit",
+    "input": {
+      "command": "git commit -m \"x\""
+    },
+    "output": {
+      "commandSegments": [
+        "git commit -m \"x\""
+      ]
+    }
+  },
+  {
+    "name": "s40-git-C-commit",
+    "input": {
+      "command": "git -C . commit -m \"x\""
+    },
+    "output": {
+      "commandSegments": [
+        "git -C . commit -m \"x\""
+      ]
+    }
+  },
+  {
+    "name": "s41-git-push",
+    "input": {
+      "command": "git push origin main"
+    },
+    "output": {
+      "commandSegments": [
+        "git push origin main"
+      ]
+    }
+  },
+  {
+    "name": "s41-git-push@bash-all",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s41-git-push@deny-only",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s41-git-push@empty",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s41-git-push@exact",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s41-git-push@mixed",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "s41-git-push@odd-forms",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s41-git-push@prefix",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s41-git-push@wildcard",
+    "input": {
+      "command": "git push origin main",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s42-git-rebase-i",
+    "input": {
+      "command": "git rebase -i HEAD~3"
+    },
+    "output": {
+      "commandSegments": [
+        "git rebase -i HEAD~3"
+      ]
+    }
+  },
+  {
+    "name": "s43-git-add-p",
+    "input": {
+      "command": "git add -p"
+    },
+    "output": {
+      "commandSegments": [
+        "git add -p"
+      ]
+    }
+  },
+  {
+    "name": "s44-git-checkout",
+    "input": {
+      "command": "git checkout main"
+    },
+    "output": {
+      "commandSegments": [
+        "git checkout main"
+      ]
+    }
+  },
+  {
+    "name": "s45-docker-exec-it",
+    "input": {
+      "command": "docker exec -it web sh"
+    },
+    "output": {
+      "commandSegments": [
+        "docker exec -it web sh"
+      ]
+    }
+  },
+  {
+    "name": "s46-chain-with-commit",
+    "input": {
+      "command": "ls && git commit -m x"
+    },
+    "output": {
+      "commandSegments": [
+        "ls",
+        "git commit -m x"
+      ]
+    }
+  },
+  {
+    "name": "s47-nxy-internal",
+    "input": {
+      "command": "cat .nxy/metrics/filter.jsonl"
+    },
+    "output": {
+      "commandSegments": [
+        "cat .nxy/metrics/filter.jsonl"
+      ]
+    }
+  },
+  {
+    "name": "s48-nxy-internal-quoted",
+    "input": {
+      "command": "cat \"./.nxy/config.json\""
+    },
+    "output": {
+      "commandSegments": [
+        "cat \"./.nxy/config.json\""
+      ]
+    }
+  },
+  {
+    "name": "s49-rtk-hook-present",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "s50-no-engine",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "s51-rtk-none",
+    "input": {
+      "command": "weird-cmd"
+    },
+    "output": {
+      "commandSegments": [
+        "weird-cmd"
+      ]
+    }
+  },
+  {
+    "name": "s52-rtk-deny",
+    "input": {
+      "command": "rm -rf /"
+    },
+    "output": {
+      "commandSegments": [
+        "rm -rf /"
+      ]
+    }
+  },
+  {
+    "name": "s52-rtk-deny@bash-all",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@deny-only",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [],
+        "deny": [
+          "Bash(rm:*)",
+          "Bash(curl:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@empty",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@exact",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash(git status)",
+          "Bash(ls)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@mixed",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash",
+          "Read(./**)"
+        ],
+        "deny": [
+          "Bash(git push:*)",
+          "Bash(rm -rf *)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "deny"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@odd-forms",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash()",
+          "Bash(*)",
+          "Bash(grep -rn \"a.b\" .)",
+          "Edit"
+        ],
+        "deny": [
+          "Bash(sudo:*)"
+        ]
+      }
+    },
+    "output": {
+      "originalVerdict": "allow"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@prefix",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash(git status:*)",
+          "Bash(npm run:*)",
+          "Bash(cd:*)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s52-rtk-deny@wildcard",
+    "input": {
+      "command": "rm -rf /",
+      "rules": {
+        "allow": [
+          "Bash(npm * test)",
+          "Bash(git * --oneline)",
+          "Bash(echo *)"
+        ],
+        "deny": []
+      }
+    },
+    "output": {
+      "originalVerdict": "none"
+    }
+  },
+  {
+    "name": "s53-rtk-error",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "s54-rtk-unchanged",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  },
+  {
+    "name": "s55-rtk-empty-stdout",
+    "input": {
+      "command": "git status"
+    },
+    "output": {
+      "commandSegments": [
+        "git status"
+      ]
+    }
+  }
+]

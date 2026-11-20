@@ -1,0 +1,11 @@
+{
+  "name": "nxy-docs-video",
+  "private": true,
+  "description": "Videos de la documentacion de nxy (HyperFrames). Solo se instala dentro de la imagen Docker: ver docs/assets/video/Dockerfile.",
+  "scripts": {
+    "render": "hyperframes render"
+  },
+  "devDependencies": {
+    "hyperframes": "0.9.10"
+  }
+}

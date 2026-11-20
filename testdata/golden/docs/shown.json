@@ -1,0 +1,8 @@
+[
+{"name":"shown:000","input":{"docs":[]},"output":{"shown":""}},
+{"name":"shown:001","input":{"docs":["README.md"]},"output":{"shown":"README.md"}},
+{"name":"shown:002","input":{"docs":["README.md","docs/a.md"]},"output":{"shown":"README.md, docs/a.md"}},
+{"name":"shown:003","input":{"docs":["README.md","docs/a.md","docs/b.md"]},"output":{"shown":"README.md, docs/a.md, docs/b.md"}},
+{"name":"shown:004","input":{"docs":["README.md","docs/a.md","docs/b.md","docs/c.md"]},"output":{"shown":"README.md, docs/a.md, docs/b.md, +1 more"}},
+{"name":"shown:005","input":{"docs":["a.md","b.md","c.md","d.md","e.md","f.md"]},"output":{"shown":"a.md, b.md, c.md, +3 more"}}
+]

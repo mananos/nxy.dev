@@ -1,11 +1,11 @@
 ---
-description: Review of a finished plan — findings per lens, and what the plan changed (nxy)
-argument-hint: [status | show [<id>] | escape "<rule>" --as convention|lens [--lens <l>] | docs | packet]
-allowed-tools: Bash(node:*)
+description: Review — mirá la última review, las stats de los lentes o reportá un problema que se le escapó
+argument-hint: [show | status | escape "<text>" --question "<q>" [--lens base]]
+allowed-tools: Bash(. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" review:*)
 ---
 
-Below is the output of a script. Reproduce it in one fenced code block, character for character, without reformatting or summarizing. Only after the block, and only if the user asked something, answer it from what it shows.
+```
+!`. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd" review $ARGUMENTS`
+```
 
-```
-!`node --disable-warning=ExperimentalWarning "${CLAUDE_PLUGIN_ROOT}/hosts/claude-code/entries/review.mjs" $ARGUMENTS`
-```
+Show the block above to the user verbatim. `escape` always needs the question the rule settles (`--question`): without it the command fails, so ask the user for it instead of inventing one. Never report an escape on your own: only when the user asked for it with this command. With an active feature the escape is only a candidate for the closing question; without one it is saved as a repo rule right away.

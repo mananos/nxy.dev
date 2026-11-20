@@ -1,0 +1,77 @@
+{
+  "session_id": "sess-b",
+  "project": "-srv-dev-app",
+  "model": "claude-sonnet-4-6",
+  "turns": 2,
+  "calls": 6,
+  "main_calls": 3,
+  "usage": {
+    "input": 7700,
+    "cacheWrite5m": 800,
+    "cacheWrite1h": 0,
+    "cacheRead": 49000,
+    "output": 2950,
+    "thinking": 0
+  },
+  "usd": 0.07896,
+  "usd_estimated": false,
+  "cache_hit_pct": 85.21739130434783,
+  "shape": {
+    "calls_per_turn": 3,
+    "main_calls_per_turn": 1.5,
+    "main_ctx_avg": 14766.666666666666,
+    "subagent_share_pct": 24.81389578163772
+  },
+  "by_model": [
+    {
+      "model": "claude-sonnet-4-6",
+      "calls": 5,
+      "usage": {
+        "input": 6800,
+        "cacheWrite5m": 800,
+        "cacheWrite1h": 0,
+        "cacheRead": 47000,
+        "output": 2750,
+        "thinking": 0
+      },
+      "usd": 0.07875,
+      "cache_hit_pct": 86.08058608058609,
+      "estimated": false
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "calls": 1,
+      "usage": {
+        "input": 900,
+        "cacheWrite5m": 0,
+        "cacheWrite1h": 0,
+        "cacheRead": 2000,
+        "output": 200,
+        "thinking": 0
+      },
+      "usd": 0.00021,
+      "cache_hit_pct": 68.96551724137932,
+      "estimated": false
+    }
+  ],
+  "filter": {
+    "rows": 0,
+    "by_engine": [],
+    "est_tokens": 0
+  },
+  "broad": {
+    "count": 0,
+    "context_tokens": 0,
+    "threshold": 100000
+  },
+  "rtk": null,
+  "cache_ttl": "5m",
+  "sessions": [
+    {
+      "id": "sess-a",
+      "label": "revisar el módulo de facturación",
+      "started_at": "2026-11-10T14:00:00Z",
+      "usd": 0.07575
+    }
+  ]
+}

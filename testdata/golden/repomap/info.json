@@ -1,0 +1,16 @@
+[
+{"name":"info:bad-meta-json","input":{"now":1800000000000,"map":"","meta":null,"metaRaw":"{oops"},"output":{"info":null}},
+{"name":"info:files-array","input":{"now":1800000000000,"map":"","meta":{"builtAt":1799999999000,"files":[{"lines":["x","y","z"]},null,{"lines":"no"}]},"metaRaw":null},"output":{"info":{"builtAt":1799999999000,"files":3,"symbols":3,"map":".nxy/local/index/repomap.tsv","ageMs":1000}}},
+{"name":"info:files-falsy","input":{"now":1800000000000,"map":"","meta":{"builtAt":0,"files":0},"metaRaw":null},"output":{"info":{"builtAt":0,"files":0,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1800000000000}}},
+{"name":"info:files-number","input":{"now":1800000000000,"map":"","meta":{"builtAt":1799999999000,"files":7},"metaRaw":null},"output":{"info":{"builtAt":1799999999000,"files":0,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1000}}},
+{"name":"info:files-string","input":{"now":1800000000000,"map":"","meta":{"builtAt":1799999999000,"files":"ab😀"},"metaRaw":null},"output":{"info":{"builtAt":1799999999000,"files":4,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1000}}},
+{"name":"info:known-meta","input":{"now":1800000000000,"map":"a.ts\t1\tclass\tA\tclass A {}\n","meta":{"builtAt":1799999990000,"root":"/x","files":{"a.ts":{"mtimeMs":1,"size":2,"lines":["a.ts\t1\tclass\tA\tclass A {}"]},"b.ts":{"mtimeMs":1,"size":2,"lines":[]}}},"metaRaw":null},"output":{"info":{"builtAt":1799999990000,"files":2,"symbols":1,"map":".nxy/local/index/repomap.tsv","ageMs":10000}}},
+{"name":"info:meta-array","input":{"now":1800000000000,"map":"","meta":null,"metaRaw":"[1, 2]"},"output":{"info":{"builtAt":0,"files":0,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1800000000000}}},
+{"name":"info:meta-null","input":{"now":1800000000000,"map":"","meta":null,"metaRaw":"null"},"output":{"info":null}},
+{"name":"info:meta-number","input":{"now":1800000000000,"map":"","meta":null,"metaRaw":"5"},"output":{"info":{"builtAt":0,"files":0,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1800000000000}}},
+{"name":"info:no-builtat","input":{"now":1800000000000,"map":"","meta":{"files":{}},"metaRaw":null},"output":{"info":{"builtAt":0,"files":0,"symbols":0,"map":".nxy/local/index/repomap.tsv","ageMs":1800000000000}}},
+{"name":"info:no-index","input":{"now":1800000000000,"map":null,"meta":null,"metaRaw":null},"output":{"info":null}},
+{"name":"info:no-map","input":{"now":1800000000000,"map":null,"meta":{"builtAt":1,"files":{}},"metaRaw":null},"output":{"info":null}},
+{"name":"info:no-meta","input":{"now":1800000000000,"map":"","meta":null,"metaRaw":null},"output":{"info":null}},
+{"name":"info:odd-entries","input":{"now":1800000000000,"map":"","meta":{"builtAt":1799999999000,"files":{"a.ts":{"lines":["x","y"]},"b.ts":null,"c.ts":{"lines":"nope"}}},"metaRaw":null},"output":{"info":{"builtAt":1799999999000,"files":3,"symbols":2,"map":".nxy/local/index/repomap.tsv","ageMs":1000}}}
+]

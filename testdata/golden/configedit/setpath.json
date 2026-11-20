@@ -1,0 +1,16 @@
+[
+{"name":"setpath:000","input":{"obj":{},"path":["modules","filter"],"value":false},"output":{"obj":{"modules":{"filter":false}}}},
+{"name":"setpath:001","input":{"obj":{"modules":{"filter":true,"metrics":false}},"path":["modules","filter"],"value":null},"output":{"obj":{"modules":{"metrics":false}}}},
+{"name":"setpath:002","input":{"obj":{"modules":{"filter":true}},"path":["modules","filter"],"value":null},"output":{"obj":{}}},
+{"name":"setpath:003","input":{"obj":{"roles":{"planner":{"model":"opus"}},"other":1},"path":["roles","planner","effort"],"value":"high"},"output":{"obj":{"roles":{"planner":{"model":"opus","effort":"high"}},"other":1}}},
+{"name":"setpath:004","input":{"obj":{"roles":{"planner":{"model":"opus"}},"other":1},"path":["roles","planner","model"],"value":null},"output":{"obj":{"other":1}}},
+{"name":"setpath:005","input":{"obj":{"roles":{"planner":{"model":"opus"},"scout":{"effort":"low"}}},"path":["roles","planner","model"],"value":null},"output":{"obj":{"roles":{"scout":{"effort":"low"}}}}},
+{"name":"setpath:006","input":{"obj":{"roles":"x"},"path":["roles","scout","model"],"value":"haiku"},"output":{"obj":{"roles":{"scout":{"model":"haiku"}}}}},
+{"name":"setpath:007","input":{"obj":{"roles":["a"]},"path":["roles","scout","model"],"value":"haiku"},"output":{"obj":{"roles":{"scout":{"model":"haiku"}}}}},
+{"name":"setpath:008","input":{"obj":{"a":1},"path":[],"value":"x"},"output":{"obj":{"a":1}}},
+{"name":"setpath:009","input":{"obj":{"a":{"b":{"c":1}}},"path":["a","b","c"],"value":null},"output":{"obj":{}}},
+{"name":"setpath:010","input":{"obj":{"a":{"b":{"c":1,"d":2}}},"path":["a","b","c"],"value":null},"output":{"obj":{"a":{"b":{"d":2}}}}},
+{"name":"setpath:011","input":{"obj":{},"path":["a","b","c"],"value":null},"output":{"obj":{}}},
+{"name":"setpath:012","input":{"obj":{"a":1},"path":["b"],"value":null},"output":{"obj":{"a":1}}},
+{"name":"setpath:013","input":{"obj":null,"path":["a","b"],"value":5},"output":{"obj":{"a":{"b":5}}}}
+]

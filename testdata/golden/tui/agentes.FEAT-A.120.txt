@@ -1,0 +1,19 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱    ● 2 DECISIONES    hoy $0.079   
+  Inicio › FEAT-A › Agentes                                                                                 esc vuelve  
+
+    ▌AGENTES                                                                                      8 agentes · $0.46   
+     Agente               Modelo                   ↓     ↑  cache tiempo       $                                      
+     ○ Hilo principal     sonnet-4.6 · high     3.5k   800   83 %21h 00m   $0.03   esperando                          
+     ├ ✓ planner          sonnet-4.6 · high     3.0k  1.2k   64 %     7m   $0.05                                      
+     │ └ ✓ scout          haiku-5.5 · low       1.0k   300   67 %     3m   $0.00                                      
+     ├ ✓ lote 1 · api     sonnet-4.6 · medium    900  1.1k   91 %    20m   $0.12                                      
+     ├ ✓ lote 2 · web                              0     0                 $0.00                                      
+  ›  ├ ✗ lote 3 · api     sonnet-4.6 · medium   2.0k  2.6k   90 %    40m   $0.20   intento 2                          
+     │ └ ✓ fixer          sonnet-4.6 · medium    700   500   90 %    10m   $0.05                                      
+     └ ○ lote 4 · web                                                              espera a 3                         
+
+     Lote 3 · api · intento 2 de 2                                                              sonnet-4.6 · medium   
+     herramientas  todavía no corrió                                                                                  
+     recibió       nada                                                                                               
+     aprendió      nada                                                                                               
+  ↑↓  agente     enter  plegar     d  decidir     ?  ayuda                                                              

@@ -1,0 +1,7 @@
+[
+{"name":"bases:000","input":{"branches":["main","dev","feature/a"],"default":"main","worktrees":[{"path":"/r","branch":"main"},{"path":"/r.worktrees/a","branch":"feature/a"}]},"output":{"bases":["main","dev","feature/a"],"choices":{"free":["dev"],"busy":[{"name":"main","path":"/r"},{"name":"feature/a","path":"/r.worktrees/a"}]}}},
+{"name":"bases:001","input":{"branches":["dev","main","x"],"default":"main","worktrees":[{"path":"/r","branch":"dev"}]},"output":{"bases":["main","dev","x"],"choices":{"free":["main","x"],"busy":[{"name":"dev","path":"/r"}]}}},
+{"name":"bases:002","input":{"branches":["a","b"],"default":null,"worktrees":[]},"output":{"bases":["a","b"],"choices":{"free":["a","b"],"busy":[]}}},
+{"name":"bases:003","input":{"branches":[],"default":"main","worktrees":[{"path":"/r","branch":null}]},"output":{"bases":["main"],"choices":{"free":[],"busy":[]}}},
+{"name":"bases:004","input":{"branches":["a","b"],"default":null,"worktrees":[{"path":"/r","branch":"a"},{"path":"/s","branch":"a"},{"path":"/t","branch":null}]},"output":{"bases":["a","b"],"choices":{"free":["b"],"busy":[{"name":"a","path":"/r"}]}}}
+]

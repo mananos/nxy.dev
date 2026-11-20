@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagrama: la memoria</title>
+<link rel="stylesheet" href="../brand/marca.css">
+</head>
+<body>
+<div style="width:1280px;height:720px;position:relative;overflow:hidden;background:#070707;font-family:'Archivo',sans-serif;color:#fff">
+  <div style="position:absolute;left:64px;top:30px;display:flex;align-items:baseline;gap:18px">
+    <span class="titulo" style="font-size:40px">Memoria</span>
+    <span style="font-size:20px;color:#9A9A9A">de dónde salen las reglas y quién las lee</span>
+  </div>
+
+  <div class="caja" style="left:64px;top:265px;width:190px;height:130px">
+    <span class="num">00</span><span class="nombre" style="font-size:22px">Features</span>
+    <span class="texto">y sesiones</span>
+  </div>
+  <div style="position:absolute;left:254px;top:327px;width:26px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:277px;top:147px;width:6px;height:363px;background:#FDBF01"></div>
+
+  <div class="flecha-h" style="left:280px;top:147px;width:132px"></div>
+  <div class="mono" style="position:absolute;left:300px;top:118px;font-size:13px;color:#FDBF01;font-weight:700">anota</div>
+  <div class="flecha-h" style="left:280px;top:327px;width:132px"></div>
+  <div class="mono" style="position:absolute;left:300px;top:292px;font-size:13px;color:#FDBF01;font-weight:700;line-height:1.2">nxy mem rule</div>
+  <div class="flecha-h" style="left:280px;top:507px;width:132px"></div>
+  <div class="mono" style="position:absolute;left:300px;top:458px;font-size:13px;color:#FDBF01;font-weight:700;line-height:1.3">nxy mem rule<br>--global</div>
+
+  <div class="caja caja--en-curso" style="left:420px;top:90px;width:280px;height:120px">
+    <span class="num">A</span><span class="nombre" style="font-size:24px">Aprendizajes</span>
+    <span class="texto">Lo que nxy anota</span>
+  </div>
+  <div class="flecha-v" style="left:557px;top:210px;height:50px"></div>
+  <div class="mono" style="position:absolute;left:580px;top:226px;font-size:13px;color:#FDBF01;font-weight:700">nxy mem promote</div>
+  <div class="caja caja--guardado" style="left:420px;top:270px;width:280px;height:120px">
+    <span class="num">K</span><span class="nombre" style="font-size:24px">Reglas</span>
+    <span class="texto">Las del repo</span>
+  </div>
+  <div class="caja caja--guardado" style="left:420px;top:450px;width:280px;height:120px">
+    <span class="num">G</span><span class="nombre" style="font-size:24px">Globales</span>
+    <span class="texto">Con roles</span>
+  </div>
+
+  <div style="position:absolute;left:700px;top:147px;width:20px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:700px;top:327px;width:20px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:700px;top:507px;width:20px;height:6px;background:#FDBF01"></div>
+  <div style="position:absolute;left:717px;top:147px;width:6px;height:366px;background:#FDBF01"></div>
+  <div class="flecha-h" style="left:720px;top:327px;width:32px"></div>
+
+  <div class="caja caja--en-curso" style="left:760px;top:90px;width:456px;height:480px;gap:14px">
+    <span class="num">QUIÉN LAS LEE</span>
+    <span class="nombre" style="font-size:26px">Cada rol, lo suyo</span>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:15px;color:#FDBF01;font-weight:700">planner y main (modo ingeniero)</span><span class="texto">Todas las reglas.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:15px;color:#FDBF01;font-weight:700">implementer y reviewer</span><span class="texto">Las reglas del área de los archivos y los aprendizajes de esos archivos.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:15px;color:#FDBF01;font-weight:700">globales</span><span class="texto">Según <span class="mono" style="font-size:14px">--roles</span>; sin <span class="mono" style="font-size:14px">--roles</span>, todos.</span></div>
+  </div>
+
+  <div class="caja" style="left:420px;top:600px;width:796px;height:84px;flex-direction:row;align-items:center;gap:14px;padding:0 20px;white-space:nowrap">
+    <span class="num" style="color:#FDBF01">K Y G</span>
+    <span class="nombre" style="font-size:20px">Editar y borrar</span>
+    <span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">nxy mem edit</span>
+    <span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">nxy mem rm</span>
+    <span class="texto" style="font-size:14px">se recupera con</span>
+    <span class="mono" style="font-size:14px;color:#FDBF01;font-weight:700">nxy mem restore</span>
+  </div>
+
+  <img src="../brand/perro-diagrama.png" alt="" aria-hidden="true" style="position:absolute;left:100px;top:530px;width:130px;height:auto">
+
+  <div class="leyenda" style="left:290px;top:600px;width:120px;gap:6px">
+    <b>LEYENDA</b>
+    <span><i class="en-curso"></i>nxy anota</span>
+    <span><i class="guardado"></i>guardado</span>
+  </div>
+</div>
+</body>
+</html>

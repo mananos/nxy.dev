@@ -4,11 +4,19 @@ docs/roadmap-debate.md
 # Runtime data written by the plugin (per checkout, regenerated on its own).
 # `.nxy/config.json` and `.nxy/memory/` are NOT ignored on purpose: they are what the repo shares.
 .nxy/local/
-# Pre-0.2.0 runtime path. An installed 0.1.x keeps writing here until it is upgraded.
-.nxy/metrics/
 
 # Tooling
 node_modules/
+# GoReleaser output
+dist/
+# codegraph index (nxy affected creates and syncs it on its own)
+.codegraph/
+# Docs visuals: render work files (dumps, frames, checks); the MP4s are versioned next to each composition
+docs/assets/.build/
+# HyperFrames render state (container paths and timestamps)
+docs/assets/video/*/.hyperframes/
+# Brand assets copied next to each composition during the render (removed afterwards)
+docs/assets/video/*/marca/
 # API declarations Claude Code writes when a plugin is loaded from a folder (--plugin-dir)
 .claude-plugin/types/
 *.log

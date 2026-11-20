@@ -1,0 +1,33 @@
+   nxy     ›Inicio    Memoria    Gasto    Config    ╱╱╱╱    ● 2    hoy $0.079   
+  Inicio › FEAT-Q › Plan                                            esc vuelve  
+
+     ←   Revisar el formato de las notas   FEAT-Q              TE NECESITA    
+         api · feat/formato · 1d 0h · $0.00                                   
+
+   ✓ Diseño  ━━  Plan  ──  Lotes  ──  Review  ──  Cierre 
+
+    ▌LOTES                esperando tu aprobación  ·  en fila, un solo repo   
+     ›○ 1 Formato                                                             
+                                                                              
+     Lote 1 · Formato                                           riesgo bajo   
+     accept  go test ./src/ -run TestFormato                                  
+
+    ▌OBJETIVO                                                                 
+     Revisar el formato de las notas                                          
+                                                                              
+    ▌CRITERIOS                                                                
+     R1  Revisar el formato de las notas                                      
+                                                                              
+    ▌DECISIONES                                                               
+
+     Impacto · lote 1                                             codegraph   
+                                                                              
+  ›   edita   Nota.java                                                       
+              :4  Formato                                                     
+              ← Factura.java                                                  
+              ← Listado.java                                                  
+              ○ NotaTest.java                                                 
+              ○ NotaServiceTest.java                                          
+                                                                              
+     ← importa   ○ test que lo cubre                                          
+  a  aprobar     c  cambiar     x  parar     ←→  lote     ?  ayuda              

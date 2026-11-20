@@ -1,0 +1,15 @@
+[
+{"name":"key:000","input":{"files":{".git/config":"[core]\n\tbare = false\n[remote \"origin\"]\n\turl = https://github.com/Mananos/NXY.dev.git\n"},"cwd":""},"output":{"key":"github.com/mananos/nxy.dev"}},
+{"name":"key:001","input":{"files":{"sub/dir/x.txt":"x",".git/config":"[remote \"origin\"]\n\turl = git@github.com:mananos/nxy.dev.git\n"},"cwd":"sub/dir"},"output":{"key":"github.com/mananos/nxy.dev"}},
+{"name":"key:002","input":{"files":{".git/config":"[remote \"up\"]\n\turl = https://example.com/z/up.git\n[remote \"origin\"]\n\turl = https://example.com/z/origin.git\n"},"cwd":""},"output":{"key":"example.com/z/origin"}},
+{"name":"key:003","input":{"files":{".git/config":"[remote \"up\"]\n\turl = https://example.com/z/up.git\n"},"cwd":""},"output":{"key":"example.com/z/up"}},
+{"name":"key:004","input":{"files":{".git/config":"[remote \"a\"]\n\turl = https://example.com/z/a.git\n[remote \"b\"]\n\turl = https://example.com/z/b.git\n"},"cwd":""},"output":{"key":"example.com/z/a"}},
+{"name":"key:005","input":{"files":{".git/config":"[remote \"origin\"]\n\turl = ssh://git@host.example:2222/team/app.git\n"},"cwd":""},"output":{"key":"host.example/team/app"}},
+{"name":"key:006","input":{"files":{".git/config":"[remote \"origin\"]\n\turl = https://user:tok@gitlab.com/g/s/app.git\n"},"cwd":""},"output":{"key":"gitlab.com/g/s/app"}},
+{"name":"key:007","input":{"files":{".git/config":"[core]\n\tbare = false\n"},"cwd":""},"output":{"key":"path:@ROOT@"}},
+{"name":"key:008","input":{"files":{"Work/Mi Repo/.git/HEAD":"ref: refs/heads/main\n","Work/Mi Repo/src/a.txt":"a"},"cwd":"Work/Mi Repo/src"},"output":{"key":"path:@ROOT@/work/mi repo"}},
+{"name":"key:009","input":{"files":{"Plain/Dir/a.txt":"a"},"cwd":"Plain/Dir"},"output":{"key":"path:@ROOT@/plain/dir"}},
+{"name":"key:010","input":{"files":{"main/.git/config":"[remote \"origin\"]\n\turl = https://github.com/mananos/nxy.dev.git\n","main/.git/worktrees/wt/commondir":"../..\n","main/.git/worktrees/wt/HEAD":"ref: refs/heads/feat\n","wt/.git":"gitdir: @ROOT@/main/.git/worktrees/wt\n","wt/src/a.txt":"a"},"cwd":"wt/src"},"output":{"key":"github.com/mananos/nxy.dev"}},
+{"name":"key:011","input":{"files":{"main/.git/config":"[remote \"origin\"]\n\turl = https://github.com/mananos/nxy.dev.git\n","main/.git/worktrees/wt/commondir":"@ROOT@/main/.git\n","wt/.git":"gitdir: ../main/.git/worktrees/wt\n"},"cwd":"wt"},"output":{"key":"github.com/mananos/nxy.dev"}},
+{"name":"key:012","input":{"files":{"wt/.git":"gitdir: @ROOT@/nowhere\n"},"cwd":"wt"},"output":{"key":"path:@ROOT@/wt"}}
+]
