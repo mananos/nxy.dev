@@ -129,6 +129,12 @@ func configShow(cwd string, w io.Writer) int {
 		}
 		fmt.Fprintf(w, "  %-32s %-8s (%s)\n", f.ID, displayValue(lookupPath(cfg, f.Path)), sourceLabel(configedit.SourcesOf(f.ID, files, os.Getenv)))
 	}
+	if bad := configedit.Invalid(cfg); len(bad) > 0 {
+		fmt.Fprintln(w, "\nAvisos")
+		for _, p := range bad {
+			fmt.Fprintf(w, "  %s\n", p.Message())
+		}
+	}
 	fmt.Fprintf(w, "\nArchivos\n  usuario: %s (%s)\n  repo:    %s (%s)\n", filepath.ToSlash(userPath), userState, filepath.ToSlash(repoPath), repoState)
 	fmt.Fprintf(w, "\nCambiar: nxy config set <clave> <valor|default> [--repo]  (sin --repo guarda en el usuario)\n")
 	return 0

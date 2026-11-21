@@ -36,6 +36,25 @@ func TestOfferAcceptedGoesToDesigning(t *testing.T) {
 	}
 }
 
+func TestToEngineerKeepsForkAnswers(t *testing.T) {
+	h, st := flowHooks(false)
+	f := approvalFeature(t, h, offerPlan())
+	oq := design.OfferQuestion(f.ID)
+	h.Handle(context.Background(), HookEvent{Name: "PostToolUse", Tool: "AskUserQuestion", ProjectDir: "/p", Cwd: "/p",
+		Questions: []string{oq, "First?"},
+		Answers:   map[string]string{oq: design.LabelToEngineer, "First?": "B"}})
+	got := st.feats[f.ID]
+	if got.Design == nil || len(got.Design.Agenda) != 2 {
+		t.Fatalf("design = %+v", got.Design)
+	}
+	if got.Design.Agenda[0].Answer != "B" || got.Design.Agenda[1].Answer != "" {
+		t.Errorf("answers = %q, %q", got.Design.Agenda[0].Answer, got.Design.Agenda[1].Answer)
+	}
+	if g := design.Guide(got, "nxy"); !strings.Contains(g, "ya respondió: B") {
+		t.Errorf("guide lacks the answer:\n%s", g)
+	}
+}
+
 func TestOfferDeclinedKeepsQuestions(t *testing.T) {
 	h, st := flowHooks(false)
 	f := approvalFeature(t, h, offerPlan())

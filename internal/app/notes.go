@@ -45,6 +45,7 @@ func (h Hooks) startNotesSession(ctx context.Context, ev HookEvent, featureActiv
 	_, _ = h.Memory.SweepNotes(ctx, now)
 	_, _ = h.Sessions.PruneSessions(ctx, now.Add(-sessionRetention))
 	folder := sessionFolder(ev)
+	h.dropGoneNotes(ctx, folder)
 	s := SessionState{ID: ev.SessionID, Folder: folder, Source: ev.Source, StartedAt: now.UnixMilli()}
 	if prev, ok, err := h.Sessions.Session(ctx, ev.SessionID); err == nil && ok && (ev.Source == "resume" || ev.Source == "compact") {
 		// the same session continues: keep what it already did
@@ -63,6 +64,26 @@ func (h Hooks) startNotesSession(ctx context.Context, ev HookEvent, featureActiv
 		}
 	}
 	_ = h.Sessions.StartSession(ctx, s)
+}
+
+// dropGoneNotes deletes the notes of the folder tied to a branch that no longer exists or is already
+// merged into its base (notes on the base or without a branch stay until they expire).
+func (h Hooks) dropGoneNotes(ctx context.Context, folder string) {
+	if h.NoteBranches == nil {
+		return
+	}
+	notes, err := h.Memory.Notes(ctx, folder, foldNoteFolders, h.now())
+	if err != nil {
+		return
+	}
+	for _, n := range notes {
+		if n.Branch == "" || n.Base == "" || n.FeatureID != "" {
+			continue
+		}
+		if h.NoteBranches.Gone(ctx, n.Folder, n.Branch, n.Base, n.Fork) {
+			_ = h.Memory.DeleteNote(ctx, n.ID)
+		}
+	}
 }
 
 // sessionEnd handles SessionEnd: it records how the session ended.
@@ -97,9 +118,13 @@ func (h Hooks) stopNote(ctx context.Context, ev HookEvent) (HookResponse, bool) 
 		return HookResponse{}, false
 	}
 	since := s.StartedAt
+	chained := ""
 	if s.NoteID != "" {
-		if n, err := h.Memory.Note(ctx, s.NoteID); err == nil && !n.Deleted() && n.UpdatedAt > since {
-			since = n.UpdatedAt
+		if n, err := h.Memory.Note(ctx, s.NoteID); err == nil && !n.Deleted() && !memory.NoteExpired(n, h.now()) {
+			chained = s.NoteID
+			if n.UpdatedAt > since {
+				since = n.UpdatedAt
+			}
 		}
 	}
 	if s.LastEditAt <= since {
@@ -113,16 +138,16 @@ func (h Hooks) stopNote(ctx context.Context, ev HookEvent) (HookResponse, bool) 
 		exe = "nxy"
 	}
 	id := ""
-	if s.NoteID != "" {
-		id = " --id " + s.NoteID
+	if chained != "" {
+		id = " --id " + chained
 	}
 	var b strings.Builder
 	b.WriteString("nxy: before you stop, save a short note so the next session can pick this up. Run:\n\n")
 	b.WriteString("\"" + exe + "\" note save \"<short title>\" --session " + ev.SessionID + id + " <<'NOTE'\n")
 	b.WriteString("<what was done, what is missing, the next step; 2 KB at most>\nNOTE\n\n")
 	b.WriteString("(PowerShell: pipe a here-string into `& \"" + exe + "\" note save ...` with the same arguments.)\n")
-	if s.NoteID != "" {
-		b.WriteString("This session continues note " + s.NoteID + ": the command above updates it.\n")
+	if chained != "" {
+		b.WriteString("This session continues note " + chained + ": the command above updates it.\n")
 	}
 	b.WriteString("If there is nothing worth saving, say so in one line and do not run it. Do not ask the user.")
 	return HookResponse{Block: b.String()}, true

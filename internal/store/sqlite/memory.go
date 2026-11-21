@@ -1007,12 +1007,12 @@ func (s *Store) Search(ctx context.Context, repo string, all bool, q string, lim
 
 // ---- notes ----
 
-const noteCols = `id, short, folder, title, body, session, feature_id, created_at, updated_at, deleted_at, machine_id`
+const noteCols = `id, short, folder, title, body, session, feature_id, created_at, updated_at, deleted_at, machine_id, branch, base, fork`
 
 func scanNote(sc scanner) (memory.Note, error) {
 	var n memory.Note
 	err := sc.Scan(&n.ID, &n.Short, &n.Folder, &n.Title, &n.Body, &n.Session, &n.FeatureID,
-		&n.CreatedAt, &n.UpdatedAt, &n.DeletedAt, &n.Machine)
+		&n.CreatedAt, &n.UpdatedAt, &n.DeletedAt, &n.Machine, &n.Branch, &n.Base, &n.Fork)
 	return n, err
 }
 
@@ -1040,11 +1040,13 @@ func upsertNote(ctx context.Context, q queryer, n memory.Note) error {
 	if n.Deleted() {
 		n.Body = "" // a tombstone stays as a small row
 	}
-	_, err := q.ExecContext(ctx, `INSERT INTO mem_notes (`+noteCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+	_, err := q.ExecContext(ctx, `INSERT INTO mem_notes (`+noteCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET folder=excluded.folder, title=excluded.title, body=excluded.body,
 		session=excluded.session, feature_id=excluded.feature_id, created_at=excluded.created_at,
-		updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, machine_id=excluded.machine_id`,
-		n.ID, n.Short, n.Folder, n.Title, n.Body, n.Session, n.FeatureID, n.CreatedAt, n.UpdatedAt, n.DeletedAt, n.Machine)
+		updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, machine_id=excluded.machine_id,
+		branch=excluded.branch, base=excluded.base, fork=excluded.fork`,
+		n.ID, n.Short, n.Folder, n.Title, n.Body, n.Session, n.FeatureID, n.CreatedAt, n.UpdatedAt, n.DeletedAt, n.Machine,
+		n.Branch, n.Base, n.Fork)
 	return err
 }
 
@@ -1079,6 +1081,9 @@ func (s *Store) SaveNote(ctx context.Context, n memory.Note) (memory.Note, error
 		}
 		if n.FeatureID != "" {
 			old.FeatureID = n.FeatureID
+		}
+		if n.Branch != "" {
+			old.Branch, old.Base, old.Fork = n.Branch, n.Base, n.Fork
 		}
 		if err := upsertNote(ctx, tx, old); err != nil {
 			return memory.Note{}, err

@@ -301,7 +301,12 @@ func (configScreen) view(st *state, r route, w int) ([]line, int) {
 	}
 	head = L(head, col(T("Rol", tSb), 16), col(T("Qué hace", tSb), doesW-1), spaces(1, ""), col(T("Modelo", tSb), 8), col(T("Effort", tSb), 8), col(T("Origen", tSb), 8))
 	title := lr(L(heading("Roles")), L(T("se aplica al próximo agente que se lance", tSb)), iw)
-	out = append(out, indent(block([]line{title, head}, w-4, tBg1, 3), 2)...)
+	top := []line{title}
+	for _, msg := range c.Warnings {
+		top = append(top, L(T("⚠ "+msg, tNeed)))
+	}
+	top = append(top, head)
+	out = append(out, indent(block(top, w-4, tBg1, 3), 2)...)
 	prevStage := ""
 	for i, ro := range c.Roles {
 		isSel := sel == i

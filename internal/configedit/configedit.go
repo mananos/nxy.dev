@@ -5,12 +5,15 @@
 // not in the schema, and filter.engine and the v2 roles reviewer-quick and refuter are new.
 package configedit
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Models and Efforts are the values a role can take.
 var (
 	Models  = []string{"haiku", "sonnet", "opus", "fable"}
-	Efforts = []string{"low", "medium", "high"}
+	Efforts = []string{"low", "medium", "high", "xhigh", "max"}
 	// Roles are the subagents whose model and effort the user can choose.
 	Roles = []string{"planner", "implementer", "reviewer", "reviewer-quick", "refuter", "scout", "documenter"}
 )
@@ -196,6 +199,65 @@ func RoleOf(cfg map[string]any, role string) (model, effort string) {
 		e = ""
 	}
 	return m, e
+}
+
+// Problem is a roles.<role>.model or effort value the config carries that is not valid.
+type Problem struct {
+	Key   string
+	Value any
+}
+
+// Message is the warning for the user, with the valid values.
+func (p Problem) Message() string {
+	valid := Models
+	if strings.HasSuffix(p.Key, ".effort") {
+		valid = Efforts
+	}
+	return fmt.Sprintf("%s: valor inválido %s; se ignora y queda lo que dice el agente (válidos: %s)", p.Key, shown(p.Value), strings.Join(valid, ", "))
+}
+
+// shown is the value of a config the repo carries as safe text: quoted (so control characters are
+// escaped) and cut at 40 characters.
+func shown(v any) string {
+	s := fmt.Sprint(v)
+	if rs := []rune(s); len(rs) > 40 {
+		s = string(rs[:40]) + "…"
+	}
+	return fmt.Sprintf("%q", s)
+}
+
+// Invalid lists the role values of the config that are not a string of the valid list.
+func Invalid(cfg map[string]any) []Problem {
+	var out []Problem
+	roles, _ := cfg["roles"].(map[string]any)
+	for _, role := range Roles {
+		r, _ := roles[role].(map[string]any)
+		for _, k := range []struct {
+			name  string
+			valid []string
+		}{{"model", Models}, {"effort", Efforts}} {
+			v, present := r[k.name]
+			if !present || v == nil {
+				continue
+			}
+			if s, ok := v.(string); ok && contains(k.valid, s) {
+				continue
+			}
+			out = append(out, Problem{Key: "roles." + role + "." + k.name, Value: v})
+		}
+	}
+	return out
+}
+
+// InvalidOf is the warning for the invalid values of one role, "" when there are none.
+func InvalidOf(cfg map[string]any, role string) string {
+	var msgs []string
+	for _, p := range Invalid(cfg) {
+		if strings.HasPrefix(p.Key, "roles."+role+".") {
+			msgs = append(msgs, p.Message())
+		}
+	}
+	return strings.Join(msgs, "; ")
 }
 
 func contains(list []string, s string) bool {

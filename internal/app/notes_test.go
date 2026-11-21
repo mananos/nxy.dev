@@ -15,6 +15,18 @@ type noteMemory struct {
 	swept int
 	// deletedFor are the feature ids whose notes were deleted.
 	deletedFor []string
+	deleted    []string
+}
+
+func (m *noteMemory) DeleteNote(_ context.Context, ref string) error {
+	m.deleted = append(m.deleted, ref)
+	for i, n := range m.notes {
+		if n.ID == ref || n.Short == ref {
+			m.notes = append(m.notes[:i:i], m.notes[i+1:]...)
+			break
+		}
+	}
+	return nil
 }
 
 func (m *noteMemory) DeleteNotesOfFeature(_ context.Context, id string) (int, error) {
@@ -157,6 +169,34 @@ func TestSessionStartSweepsAndMarksNotesPending(t *testing.T) {
 	h.Handle(context.Background(), startEv("startup", "s2"))
 	if ss.rows["s2"].NotesPending {
 		t.Errorf("no notes, yet pending")
+	}
+}
+
+// goneBranches is a NoteBranches where the listed branches are gone or merged.
+type goneBranches map[string]bool
+
+func (g goneBranches) Gone(_ context.Context, _, branch, _, _ string) bool { return g[branch] }
+
+func TestStartSessionDropsMergedNotes(t *testing.T) {
+	h, mem, ss := notesHooks(t)
+	mem.notes = []memory.Note{
+		{Meta: memory.Meta{ID: "i1", UpdatedAt: time.Now().UnixMilli()}, Short: "N1", Title: "merged", Branch: "old", Base: "main", Fork: "abc"},
+		{Meta: memory.Meta{ID: "i2", UpdatedAt: time.Now().UnixMilli()}, Short: "N2", Title: "alive", Branch: "wip", Base: "main", Fork: "abc"},
+		{Meta: memory.Meta{ID: "i3", UpdatedAt: time.Now().UnixMilli()}, Short: "N3", Title: "on base"},
+	}
+	h.NoteBranches = goneBranches{"old": true}
+	h.Handle(context.Background(), startEv("startup", "s1"))
+	if len(mem.deleted) != 1 || mem.deleted[0] != "i1" {
+		t.Fatalf("deleted = %v", mem.deleted)
+	}
+	if len(mem.notes) != 2 || !ss.rows["s1"].NotesPending {
+		t.Errorf("notes = %v pending = %v", mem.notes, ss.rows["s1"].NotesPending)
+	}
+	h.NoteBranches = nil
+	mem.deleted = nil
+	h.Handle(context.Background(), startEv("startup", "s2"))
+	if len(mem.deleted) != 0 {
+		t.Errorf("nil NoteBranches deleted %v", mem.deleted)
 	}
 }
 

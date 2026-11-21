@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mananos/nxy.dev/v2/internal/configedit"
 )
@@ -151,6 +153,26 @@ func TestConfigSetBrokenFileUntouched(t *testing.T) {
 	_, out, _ = runCmd(t, "", "config", "--cwd", t.TempDir())
 	if !strings.Contains(out, "(roto)") {
 		t.Errorf("show:\n%s", out)
+	}
+}
+
+func TestInvalidRoleValueIsWarnedInShowAndView(t *testing.T) {
+	isolate(t)
+	userCfg := filepath.Join(os.Getenv("NXY_HOME"), "config.json")
+	if err := os.WriteFile(userCfg, []byte(`{"roles":{"planner":{"effort":"ultra"},"scout":{"effort":"xhigh"}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cwd := t.TempDir()
+	code, out, _ := runCmd(t, "", "config", "--cwd", cwd)
+	if code != 0 || !strings.Contains(out, "Avisos") || !strings.Contains(out, `roles.planner.effort: valor inválido "ultra"`) || strings.Contains(out, "roles.scout.effort: valor inválido") {
+		t.Fatalf("show (%d):\n%s", code, out)
+	}
+	cfg, err := newViewSource(nil, os.Getenv, cwd, time.Now, time.UTC).Config(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Warnings) != 1 || !strings.Contains(cfg.Warnings[0], `roles.planner.effort: valor inválido "ultra"`) {
+		t.Fatalf("view warnings = %v", cfg.Warnings)
 	}
 }
 

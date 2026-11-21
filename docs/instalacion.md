@@ -25,7 +25,7 @@ Opcionales, que suman ahorro:
 | [codegraph](https://github.com/colbymchenry/codegraph) | «Quién llama a qué» para el scout, y qué tests afecta un cambio | El scout usa el índice propio de nxy y `rg`; los tests afectados se buscan por nombre |
 | [d2](https://d2lang.com) | Dibuja los diagramas del modo ingeniero en la TUI | El diagrama se muestra como texto fuente |
 
-No hace falta pegar nada a mano: `/nxy:setup` detecta qué te falta, te muestra el comando exacto para tu sistema y lo corre **sólo si le decís que sí**. Elige el gestor que encuentra: `winget`, `brew`, o `apt-get`, `dnf` o `pacman` (con `sudo`: si no puede usarlo, te imprime el comando para que lo pegues vos en una terminal). rtk y codegraph se instalan con el script de su proyecto (`install.sh`; en Windows, `install.ps1` para codegraph); d2, con `https://d2lang.com/install.sh`.
+No hace falta pegar nada a mano: `/nxy:setup` detecta qué te falta, te muestra el comando exacto para tu sistema y lo corre **sólo si le decís que sí**. Elige el gestor que encuentra: `winget`, `brew`, o `apt-get`, `dnf` o `pacman` (con `sudo`: si no puede usarlo, te imprime el comando para que lo pegues vos en una terminal). rtk y codegraph se instalan con el script de su proyecto (`install.sh`; en Windows, `install.ps1` para codegraph); d2, con `https://d2lang.com/install.sh`. Si winget dice que no hay una versión más nueva (ya estaba instalado, por ejemplo d2 en `C:\Program Files\D2`), nxy lo toma como instalado, termina con exit 0 y vuelve a detectar: imprime dónde lo encontró o que no está en el PATH (abrí una terminal nueva).
 
 Si preferís instalar a mano:
 
@@ -77,7 +77,7 @@ La escribe en `~/.claude/settings.json` (con un backup `settings.json.bak-nxy-<m
 
 La TUI es una consola de control que abrís en **otra terminal**, al lado de Claude Code: tus features, el plan, los agentes, la memoria, el gasto y la config. `/nxy:tui` te muestra el comando exacto para abrirla (es lo mismo que `nxy tui where`); nxy no abre terminales solo.
 
-Para que alcance con escribir `nxy tui`, hace falta que `nxy` esté en el PATH. `nxy setup status` te dice si lo está (`nxy en el PATH: sí/no`) y, si no, el comando que lo deja: `nxy setup run path --yes`. En Windows suma `~/.nxy/bin` al PATH del usuario; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (esa carpeta tiene que estar en tu PATH). Para sacarlo, quitá esa carpeta del PATH o borrá ese archivo.
+Para que alcance con escribir `nxy tui`, hace falta que `nxy` esté en el PATH. `nxy setup status` te dice si lo está (`nxy en el PATH: sí/no`) y, si no, el comando que lo deja: `nxy setup run path --yes`. En Windows suma `~/.nxy/bin` al PATH del usuario, y nxy ve el Path nuevo (el de usuario y el de sistema del registro) sin reiniciar la terminal ni la TUI; en Linux y macOS crea `~/.local/bin/nxy`, un script de 2 líneas (esa carpeta tiene que estar en tu PATH). Para sacarlo, quitá esa carpeta del PATH o borrá ese archivo.
 
 `nxy tui --demo` abre el mismo programa con datos de ejemplo, sin tocar tu repo ni tu base: sirve para mirar antes de usarla.
 

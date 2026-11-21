@@ -150,8 +150,12 @@ func TestSetupRunReportsTheOutcome(t *testing.T) {
 	isolate(t)
 	calls := noInstall(t, setup.RunResult{OK: true, Ran: []string{"x"}, Tail: "all good"})
 	code, out, _ := runCmd(t, "", "setup", "run", "rtk", "--yes", "--cwd", t.TempDir())
-	if code != 0 || !strings.HasSuffix(out, "all good\nrtk: listo (1 paso).\n") || len(*calls) != 1 {
+	if code != 0 || !strings.Contains(out, "all good\nrtk: listo (1 paso).\nrtk: ") || len(*calls) != 1 {
 		t.Fatalf("ok (%d, %d calls): %s", code, len(*calls), out)
+	}
+	// after the install nxy detects again and says where it found the tool or that it is not on the PATH
+	if !strings.Contains(out, "rtk: detectado en ") && !strings.Contains(out, "rtk: no está en el PATH (abrí una terminal nueva)\n") {
+		t.Fatalf("no re-detect line: %s", out)
 	}
 
 	calls = noInstall(t, setup.RunResult{FailedAt: "step 2", Tail: "boom", Manual: []string{"sudo x"}})

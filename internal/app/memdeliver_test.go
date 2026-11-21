@@ -32,6 +32,7 @@ func (m *deliverMemory) Note(context.Context, string) (memory.Note, error) {
 func (m *deliverMemory) SaveNote(_ context.Context, n memory.Note) (memory.Note, error) {
 	return n, nil
 }
+func (m *deliverMemory) DeleteNote(context.Context, string) error                    { return nil }
 func (m *deliverMemory) SweepNotes(context.Context, time.Time) (int, error)          { return 0, nil }
 func (m *deliverMemory) DeleteNotesOfFeature(context.Context, string) (int, error)   { return 0, nil }
 func (m *deliverMemory) DeleteNotesUnder(context.Context, string, bool) (int, error) { return 0, nil }

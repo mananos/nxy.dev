@@ -20,7 +20,7 @@ func TestBuildConfig(t *testing.T) {
 		t.Fatalf("roles %v", order)
 	}
 	p := c.Roles[0]
-	if p.Stage != "Planificar" || p.Model != "opus" || p.Source != "user" || len(p.Models) != 4 || len(p.Efforts) != 3 {
+	if p.Stage != "Planificar" || p.Model != "opus" || p.Source != "user" || len(p.Models) != 4 || len(p.Efforts) != 5 {
 		t.Errorf("planner %+v", p)
 	}
 	if im := c.Roles[2]; im.Source != "default" || im.Model != "" || im.Stage != "Implementar" {
@@ -44,6 +44,16 @@ func TestBuildConfig(t *testing.T) {
 	}
 	if c.Layers == nil || c.Tools == nil {
 		t.Error("lists must not be nil")
+	}
+}
+
+func TestBuildConfigCarriesWarnings(t *testing.T) {
+	c := BuildConfig(ConfigIn{Warnings: []string{"roles.scout.effort: valor inválido"}})
+	if !reflect.DeepEqual(c.Warnings, []string{"roles.scout.effort: valor inválido"}) {
+		t.Fatalf("warnings %v", c.Warnings)
+	}
+	if c := BuildConfig(ConfigIn{}); c.Warnings == nil || len(c.Warnings) != 0 {
+		t.Fatalf("no warnings must be an empty list, got %#v", c.Warnings)
 	}
 }
 

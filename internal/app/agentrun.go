@@ -50,7 +50,7 @@ func (h Hooks) recordAgentRun(ctx context.Context, ev HookEvent) {
 		if dir == "" {
 			dir = ev.Cwd
 		}
-		_, effort = h.Roles.Role(dir, role)
+		_, effort, _ = h.Roles.Role(dir, role)
 	}
 	fin := b.Finish()
 	now := h.now().UnixMilli()

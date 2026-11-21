@@ -74,7 +74,7 @@ Hay **una sola feature sin terminar por checkout**; si ya hay una, `/nxy:feature
 
 ### Notas para retomar
 
-Una nota (`N3`) es algo que dejaste a medias en una carpeta, para retomar en otra sesión sin releer el chat. Sin feature activa y con notas en la carpeta, tu primer mensaje dispara la pregunta «¿Con cuál seguimos?» (elegí una, o «Ninguna, es otra cosa»). Vencen a los 30 días. No son lo mismo que los aprendizajes de la [memoria](memoria.md).
+Una nota (`N3`) es algo que dejaste a medias en una carpeta, para retomar en otra sesión sin releer el chat. Sin feature activa y con notas en la carpeta, tu primer mensaje dispara la pregunta «¿Con cuál seguimos?» (elegí una, o «Ninguna, es otra cosa»). Una nota guardada en una rama se borra sola cuando esa rama se mergea en la base o ya no existe; las demás vencen a los 30 días. No son lo mismo que los aprendizajes de la [memoria](memoria.md).
 
 ## Comandos y config
 

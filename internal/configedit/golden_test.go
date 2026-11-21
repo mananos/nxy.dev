@@ -78,15 +78,24 @@ func TestV2OnlyKeys(t *testing.T) {
 
 func TestRoleOf(t *testing.T) {
 	cfg := map[string]any{"roles": map[string]any{
-		"scout":   map[string]any{"model": "haiku", "effort": "low"},
-		"planner": map[string]any{"model": 5.0, "effort": "extreme"},
-		"refuter": map[string]any{"effort": "high"},
+		"scout":       map[string]any{"model": "haiku", "effort": "low"},
+		"planner":     map[string]any{"model": 5.0, "effort": "extreme"},
+		"refuter":     map[string]any{"effort": "high"},
+		"reviewer":    map[string]any{"effort": "xhigh"},
+		"implementer": map[string]any{"effort": "max"},
 	}}
+	for _, v := range []string{"xhigh", "max"} {
+		if ok, reason := Validate("roles.planner.effort", v); !ok {
+			t.Errorf("roles.planner.effort=%s: %s", v, reason)
+		}
+	}
 	cases := []struct{ role, model, effort string }{
+		{"reviewer", "", "xhigh"},
+		{"implementer", "", "max"},
 		{"scout", "haiku", "low"},
 		{"planner", "", ""},
 		{"refuter", "", "high"},
-		{"reviewer", "", ""},
+		{"documenter", "", ""},
 	}
 	for _, c := range cases {
 		m, e := RoleOf(cfg, c.role)

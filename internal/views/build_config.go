@@ -29,6 +29,7 @@ type ConfigIn struct {
 	Statusline Statusline
 	Tools      []Tool
 	Binary     Binary
+	Warnings   []string
 }
 
 type roleInfo struct{ role, stage, does string }
@@ -63,6 +64,7 @@ func BuildConfig(in ConfigIn) Config {
 		Statusline: in.Statusline,
 		Tools:      append([]Tool{}, in.Tools...),
 		Binary:     in.Binary,
+		Warnings:   append([]string{}, in.Warnings...),
 	}
 	for _, l := range in.Layers {
 		if l.Name == "repo" && !in.InRepo {

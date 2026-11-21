@@ -6,7 +6,7 @@
   "roles": [
     {
       "role": "planner", "stage": "Planificar", "does": "arma el plan por lotes", "model": "opus", "effort": "high", "source": "default",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.planner.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.planner.effort", "{value}"], "confirm": "", "planned": false },
@@ -16,7 +16,7 @@
     },
     {
       "role": "scout", "stage": "Planificar", "does": "busca dónde vive algo", "model": "haiku", "effort": "low", "source": "default",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.scout.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.scout.effort", "{value}"], "confirm": "", "planned": false },
@@ -26,7 +26,7 @@
     },
     {
       "role": "implementer", "stage": "Implementar", "does": "escribe cada lote", "model": "sonnet", "effort": "high", "source": "user",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.implementer.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.implementer.effort", "{value}"], "confirm": "", "planned": false },
@@ -36,7 +36,7 @@
     },
     {
       "role": "reviewer", "stage": "Revisar", "does": "la review completa", "model": "opus", "effort": "medium", "source": "user",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.reviewer.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.reviewer.effort", "{value}"], "confirm": "", "planned": false },
@@ -46,7 +46,7 @@
     },
     {
       "role": "reviewer-quick", "stage": "Revisar", "does": "review rápida, criterio por criterio", "model": "sonnet", "effort": "low", "source": "default",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.reviewer-quick.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.reviewer-quick.effort", "{value}"], "confirm": "", "planned": false },
@@ -56,7 +56,7 @@
     },
     {
       "role": "refuter", "stage": "Revisar", "does": "intenta refutar los hallazgos altos", "model": "opus", "effort": "medium", "source": "default",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.refuter.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.refuter.effort", "{value}"], "confirm": "", "planned": false },
@@ -66,7 +66,7 @@
     },
     {
       "role": "documenter", "stage": "Documentar", "does": "actualiza las docs", "model": "sonnet", "effort": "low", "source": "default",
-      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high"],
+      "models": ["haiku", "sonnet", "opus", "fable"], "efforts": ["low", "medium", "high", "xhigh", "max"],
       "actions": [
         { "id": "model", "label": "Cambiar el modelo", "argv": ["nxy", "config", "set", "roles.documenter.model", "{value}"], "confirm": "", "planned": false },
         { "id": "effort", "label": "Cambiar el effort", "argv": ["nxy", "config", "set", "roles.documenter.effort", "{value}"], "confirm": "", "planned": false },

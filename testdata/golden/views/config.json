@@ -28,7 +28,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -103,7 +105,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -178,7 +182,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -253,7 +259,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -328,7 +336,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -403,7 +413,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -478,7 +490,9 @@
       "efforts": [
         "low",
         "medium",
-        "high"
+        "high",
+        "xhigh",
+        "max"
       ],
       "actions": [
         {
@@ -726,5 +740,6 @@
     "path": "~/.nxy/bin/nxy",
     "download": "none",
     "manual_command": ""
-  }
+  },
+  "warnings": []
 }

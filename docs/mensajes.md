@@ -81,6 +81,7 @@ Más en [Memoria](memoria.md).
 | **Este repo no tiene reglas guardadas. ¿Las propongo ahora? (~30–60k tokens, 1–2 min, una sola vez)** | Es la primera feature de un repo sin reglas | **Sí**: un scout lee el build, los linters y el CI y te propone hasta 10 reglas para elegir. **No**: sigue la feature sin reglas |
 | **nxy: ¿Con cuál seguimos?** (encabezado «Notas») | Dejaste notas a medias en esta carpeta | Elegí una, o **Ninguna, es otra cosa** |
 | `nxy: that message sounds like a repo rule. Ask the user whether to save it; …` | Con una feature activa escribiste «siempre», «nunca» o «de ahora en adelante» | Contestá la pregunta de Claude; nxy nunca guarda una regla sin que confirmes |
+| **Stop hook error** (rótulo de Claude Code) | Claude Code lo pone cuando nxy te entrega un paso al terminar el turno (un checkpoint del planner o de un implementer en segundo plano) | No es un error y no hacés nada: es el rótulo de Claude Code y nxy no puede cambiarlo |
 | `no hay nada que cambiar: pasá --text, --question, --paths o --roles` | `nxy mem edit` de una regla sin ningún cambio | Agregá lo que querés cambiar |
 
 ## Contestar desde la TUI

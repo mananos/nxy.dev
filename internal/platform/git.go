@@ -339,3 +339,69 @@ func GitExcludeLocal(ctx context.Context, dir, pattern string) error {
 	_, err = f.WriteString(add)
 	return err
 }
+
+// NoteBranchOf is the branch dir is on, the base it forks from and the merge-base of both, so a
+// note can be dropped once the branch is merged. Empty on the base branch, detached or outside a repo.
+func NoteBranchOf(ctx context.Context, dir string) (branch, base, fork string) {
+	branch = CurrentBranch(ctx, dir)
+	if branch == "" {
+		return "", "", ""
+	}
+	base = noteBase(ctx, dir)
+	if base == "" || base == branch {
+		return "", "", ""
+	}
+	for _, ref := range []string{base, "origin/" + base} {
+		if out, err := gitOut(ctx, dir, "merge-base", branch, ref); err == nil {
+			if fork = strings.TrimSpace(out); fork != "" {
+				return branch, base, fork
+			}
+		}
+	}
+	return "", "", ""
+}
+
+// noteBase is the branch a note's branch is measured against: origin's HEAD, else main or master,
+// else the repo's default (which is the checked-out branch when nothing else is known).
+func noteBase(ctx context.Context, dir string) string {
+	if out, err := gitOut(ctx, dir, "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"); err == nil {
+		if b := strings.TrimPrefix(strings.TrimSpace(out), "origin/"); b != "" {
+			return b
+		}
+	}
+	for _, b := range []string{"main", "master"} {
+		if _, err := gitOut(ctx, dir, "rev-parse", "--verify", "-q", "refs/heads/"+b); err == nil {
+			return b
+		}
+	}
+	_, def := RepoBranches(ctx, dir)
+	return def
+}
+
+// NoteBranchGone is true when a note's branch no longer exists in the repo of dir, or its tip moved
+// since fork and is reachable from the base (local or origin/<base>): the work was merged. A dir that
+// is not a repo is never gone.
+func NoteBranchGone(ctx context.Context, dir, branch, base, fork string) bool {
+	if branch == "" || base == "" {
+		return false
+	}
+	if _, ok := GitRoot(NativePath(dir)); !ok {
+		return false
+	}
+	out, err := gitOut(ctx, dir, "rev-parse", "--verify", "-q", "refs/heads/"+branch)
+	if err != nil {
+		// not found vs git failing: a repo whose rev-parse itself works answers for the branch
+		_, herr := gitOut(ctx, dir, "rev-parse", "--git-dir")
+		return herr == nil
+	}
+	tip := strings.TrimSpace(out)
+	if tip == "" || tip == fork {
+		return false
+	}
+	for _, ref := range []string{base, "origin/" + base} {
+		if _, err := gitOut(ctx, dir, "merge-base", "--is-ancestor", tip, ref); err == nil {
+			return true
+		}
+	}
+	return false
+}

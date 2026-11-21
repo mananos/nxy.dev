@@ -93,6 +93,21 @@ func TestRuleHintOnlyWithActiveFeatureAndWord(t *testing.T) {
 	}
 }
 
+func TestRuleHintSkipsAgentPrompt(t *testing.T) {
+	h, _ := flowHooks(false)
+	h.Memory = memRules()
+	ctx := context.Background()
+	h.Handle(ctx, prompt("/nxy:feature add a cache"))
+	ev := prompt("[Subagent hand-back] siempre usá tabs")
+	ev.PromptFromAgent = true
+	if r := h.Handle(ctx, ev); strings.Contains(r.Context, "repo rule") {
+		t.Errorf("hint on hand-back: %q", r.Context)
+	}
+	if r := h.Handle(ctx, prompt("siempre usá tabs")); !strings.Contains(r.Context, "repo rule") {
+		t.Errorf("no hint on user prompt: %q", r.Context)
+	}
+}
+
 func TestRuleHintNeverWritesMemory(t *testing.T) {
 	h, _ := flowHooks(false)
 	mem := &writeSpyMemory{deliverMemory: memRules()}

@@ -36,9 +36,11 @@ type HookEvent struct {
 	// AgentTranscript is the subagent's own transcript file (SubagentStop).
 	AgentTranscript string
 	// Prompt is the user's prompt (UserPromptSubmit); Source is SessionStart's source.
-	Prompt    string
-	Source    string
-	ToolUseID string
+	Prompt string
+	// PromptFromAgent is true when the prompt was not typed by the user (subagent hand-back, notification).
+	PromptFromAgent bool
+	Source          string
+	ToolUseID       string
 	// Subagent and AgentPrompt are tool_input.subagent_type / prompt of Agent/Task.
 	Subagent    string
 	AgentPrompt string
@@ -201,6 +203,8 @@ type Hooks struct {
 	Docs Docs
 	// Branches runs the git of the branch step; nil means no branch is made (the feature works where it is).
 	Branches Branches
+	// NoteBranches drops the notes whose branch is gone or merged at SessionStart (nil = never).
+	NoteBranches NoteBranches
 	// Memory serves the repo memory inside the flow; nil means no memory: everything that uses it is skipped.
 	Memory FlowMemory
 	// Sessions keeps the per-session hook state; nil means no notes question, no chaining.
