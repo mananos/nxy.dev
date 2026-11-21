@@ -359,10 +359,10 @@
         2
       ],
       "priceFor": {
-        "key": "claude-fable-5-1",
-        "estimated": true
+        "key": "claude-fable-5-2",
+        "estimated": false
       },
-      "estimateBasis": "claude-fable-5-1",
+      "estimateBasis": null,
       "isSyntheticModel": false
     }
   },
@@ -533,10 +533,10 @@
         2
       ],
       "priceFor": {
-        "key": "claude-mythos-5-1",
-        "estimated": true
+        "key": "claude-mythos-5-2",
+        "estimated": false
       },
-      "estimateBasis": "claude-mythos-5-1",
+      "estimateBasis": null,
       "isSyntheticModel": false
     }
   },
