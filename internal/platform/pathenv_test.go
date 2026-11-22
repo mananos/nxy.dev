@@ -17,9 +17,10 @@ func TestMergePath(t *testing.T) {
 }
 
 func TestMergePathWindowsCase(t *testing.T) {
+	// No drive letters: on Linux the list separator is ':' and would split "C:\x".
 	sep := string(filepath.ListSeparator)
-	got := MergePath("C:\\Bin\\", "c:\\bin"+sep+"C:\\User", "", nil, true)
-	want := "C:\\Bin\\" + sep + "C:\\User"
+	got := MergePath("\\Bin\\", "\\bin"+sep+"\\User", "", nil, true)
+	want := "\\Bin\\" + sep + "\\User"
 	if got != want {
 		t.Fatalf("MergePath = %q, want %q", got, want)
 	}
