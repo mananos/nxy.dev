@@ -41,6 +41,7 @@ Fuera de una feature y sin nada que filtrar no ves nada: ni salida de hook, ni h
 | `PreToolUse` Grep/Glob | El freno de lectura |
 | `PreToolUse` Edit/Write/NotebookEdit/MultiEdit | El freno de escritura; cuenta las escrituras del implementer y verifica que su lote nombre el archivo |
 | `PreToolUse` Agent/Task | Escribe el prompt del implementer, del reviewer, etc. a partir del plan guardado; aplica el modelo y el effort por rol; inyecta las reglas |
+| `PreToolUse` Skill | En el hilo principal rechaza `nxy:feature` y `nxy:engineer`: sólo arrancan tipeados por vos |
 | `PreToolUse` AskUserQuestion | Retiene la pregunta si hay una TUI viva (hasta 25 min); timeout de 1800 s ([decidir](decidir.md)) |
 | `PostToolUse` Bash/PowerShell | Suma la llamada al resumen del filtro |
 | `PostToolUse` Agent/Task | Decide el veredicto del lote cuando el subagente vuelve, y el paso siguiente |

@@ -219,6 +219,30 @@ func TestRunBatchTailCut(t *testing.T) {
 	}
 }
 
+func longGoFailOutput() string {
+	var b strings.Builder
+	b.WriteString("FAIL\tgithub.com/x/cmd/nxy\t0.5s\n--- FAIL: TestA (0.00s)\nFAIL\tgithub.com/x/internal/app\t1.2s\n")
+	for i := 1; i <= 60; i++ {
+		fmt.Fprintf(&b, "ok  \tgithub.com/x/pkg%d\t0.1s\n", i)
+	}
+	return b.String()
+}
+
+func TestFailTail(t *testing.T) {
+	out := failTail(longGoFailOutput(), acceptTailLines)
+	for _, want := range []string{"FAIL\tgithub.com/x/cmd/nxy", "--- FAIL: TestA", "FAIL\tgithub.com/x/internal/app", "pkg60"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "pkg1\t") {
+		t.Errorf("ok lines outside the tail kept:\n%s", out)
+	}
+	if got := failTail("a\nb\nc", 2); got != "b\nc" {
+		t.Errorf("no failures: %q", got)
+	}
+}
+
 func TestRunBatchRunsInRepoCheckout(t *testing.T) {
 	h, st, sh, id := batchFeature(t, domain.BatchTestNew, "go test")
 	f := st.feats[id]

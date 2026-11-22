@@ -156,6 +156,7 @@ func TestHooksManifest(t *testing.T) {
 		"PreToolUse|Grep|Glob",
 		"PreToolUse|Agent|Task",
 		"PreToolUse|AskUserQuestion",
+		"PreToolUse|Skill",
 		"PostToolUse|Bash|PowerShell",
 		"PostToolUse|Agent|Task",
 		"PostToolUse|AskUserQuestion",

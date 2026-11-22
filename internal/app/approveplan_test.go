@@ -137,6 +137,53 @@ func TestFreeTextAnswerIsTheNote(t *testing.T) {
 	}
 }
 
+func TestOtherApproveWordApproves(t *testing.T) {
+	h, _ := flowHooks(false)
+	f := approvalFeature(t, h, validPlan())
+	r := h.Handle(context.Background(), askPost(f, plan.ApprovalQuestion(f.ID, 1), "apruebo."))
+	if r.Next == nil || r.Next.Feature.State.Phase != domain.PhaseRunningBatch {
+		t.Fatalf("response = %+v", r)
+	}
+}
+
+func TestTypedApprovalInChat(t *testing.T) {
+	ctx := context.Background()
+	h, st := flowHooks(false)
+	h.Viewer = &fakeViewer{}
+	f := approvalFeature(t, h, validPlan())
+	for _, txt := range []string{"hola, dale con el plan", "Aprobar y listo"} {
+		h.Handle(ctx, prompt(txt))
+		if st.feats[f.ID].State.Phase != domain.PhaseApproval {
+			t.Fatalf("%q moved the phase to %s", txt, st.feats[f.ID].State.Phase)
+		}
+	}
+	ev := prompt("Aprobar")
+	ev.PromptFromAgent = true
+	h.Handle(ctx, ev)
+	if st.feats[f.ID].State.Phase != domain.PhaseApproval {
+		t.Fatalf("hand-back approved: %s", st.feats[f.ID].State.Phase)
+	}
+	h.Handle(ctx, prompt("Ver completo"))
+	if st.feats[f.ID].State.Phase != domain.PhaseApproval {
+		t.Fatalf("view full left approval: %s", st.feats[f.ID].State.Phase)
+	}
+	h.Handle(ctx, prompt("Cambiar"))
+	if st.feats[f.ID].State.Phase != domain.PhaseChangeNote {
+		t.Fatalf("change: %s", st.feats[f.ID].State.Phase)
+	}
+	h, st = flowHooks(false)
+	f = approvalFeature(t, h, validPlan())
+	r := h.Handle(ctx, prompt("  Aprobado. "))
+	if r.Next == nil || st.feats[f.ID].State.Phase != domain.PhaseRunningBatch {
+		t.Fatalf("typed approval: %+v / %s", r, st.feats[f.ID].State.Phase)
+	}
+	// Outside approval it is not taken.
+	h.Handle(ctx, prompt("Aprobar"))
+	if st.feats[f.ID].State.Phase != domain.PhaseRunningBatch {
+		t.Fatalf("outside approval: %s", st.feats[f.ID].State.Phase)
+	}
+}
+
 func TestViewFullShowsAndAsksAgain(t *testing.T) {
 	h, st := flowHooks(false)
 	v := &fakeViewer{}

@@ -150,6 +150,36 @@ func batchDir(f domain.Feature, n int) string {
 	return f.ProjectDir
 }
 
+// maxFailLines caps the failure lines failTail lifts out of a long output.
+const maxFailLines = 20
+
+var failMarkers = []string{"FAIL", "ERROR", "panic:", "●", "✕"}
+
+// failTail is tailLines plus, above the last n lines, the lines of the whole
+// output that mark a failure (up to maxFailLines), so a failing package that
+// scrolled out of the tail stays visible.
+func failTail(s string, n int) string {
+	s = strings.TrimRight(s, "\r\n")
+	lines := strings.Split(s, "\n")
+	if len(lines) <= n {
+		return strings.Join(lines, "\n")
+	}
+	cut := len(lines) - n
+	var fails []string
+	for _, l := range lines[:cut] {
+		for _, m := range failMarkers {
+			if strings.Contains(l, m) {
+				fails = append(fails, l)
+				break
+			}
+		}
+	}
+	if len(fails) > maxFailLines {
+		fails = fails[len(fails)-maxFailLines:]
+	}
+	return strings.Join(append(fails, lines[cut:]...), "\n")
+}
+
 // tailLines keeps the last n lines of s, without the trailing newline.
 func tailLines(s string, n int) string {
 	s = strings.TrimRight(s, "\r\n")

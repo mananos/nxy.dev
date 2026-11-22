@@ -304,7 +304,7 @@ func TestDecisionQueue(t *testing.T) {
 	// answering the first leaves the other
 	m = testModel(t)
 	press(m, "ctrl+n", "enter")
-	if !m.st.answered["F7K2"] || !m.st.decOpen || m.st.decCur != "F7K9" || m.st.decisionCount() != 1 {
+	if !m.st.answered["ASK-F7K2"] || !m.st.decOpen || m.st.decCur != "F7K9" || m.st.decisionCount() != 1 {
 		t.Fatalf("after answering F7K2: %v open=%v cur=%s", m.st.answered, m.st.decOpen, m.st.decCur)
 	}
 	if !strings.Contains(m.st.toast, "nxy action decide --ask ASK-F7K2 --answer Reintentar") {
@@ -364,14 +364,14 @@ func TestPlanApproval(t *testing.T) {
 		t.Errorf("tab went to the question of the plan on screen: %s", m.st.decCur)
 	}
 	m = prep()
-	m.st.answered["F7K2"] = true
+	m.st.answered["ASK-F7K2"] = true
 	press(m, "ctrl+n")
 	if m.st.decOpen || !strings.Contains(m.st.toast, "se contesta acá") {
 		t.Fatalf("the window jumped over the plan waiting for approval: open=%v toast=%q", m.st.decOpen, m.st.toast)
 	}
 	// on any other screen it does open
 	m = prep()
-	m.st.answered["F7K2"] = true
+	m.st.answered["ASK-F7K2"] = true
 	press(m, "esc")
 	press(m, "ctrl+n")
 	if !m.st.decOpen || m.st.decCur != "F7K9" {

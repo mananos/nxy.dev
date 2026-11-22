@@ -318,6 +318,10 @@ func TestInstructionPerAction(t *testing.T) {
 	if s := Instruction(f, ""); !strings.Contains(s, "`nxy:implementer`") || !strings.Contains(s, "feature f1 affected fix") {
 		t.Errorf("affected fix: %s", s)
 	}
+	f.Next = domain.Action{Kind: domain.DispatchAffectedFix, Retry: true}
+	if s := Instruction(f, ""); strings.Contains(s, "retries once") || !strings.Contains(s, "affected tests failed") {
+		t.Errorf("affected fix retry: %s", s)
+	}
 	f.Next = domain.Action{Kind: domain.AskDecision}
 	f.State = domain.State{Phase: domain.PhaseAffectedFailed}
 	f.Affected = &domain.AffectedRun{Failure: "`go test` (exit 1):\nboom"}

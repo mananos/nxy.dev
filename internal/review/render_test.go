@@ -186,6 +186,32 @@ func TestSummaryShowsAffectedVerdict(t *testing.T) {
 	}
 }
 
+func TestSummaryCriterionFixedByReview(t *testing.T) {
+	green := &domain.AffectedRun{Runs: []domain.CommandRun{{Command: "go test", Exit: 0}}}
+	mk := func(chosen []string, aff *domain.AffectedRun) domain.Feature {
+		f := testFeature()
+		f.Review.Criteria = []domain.CriterionCheck{{ID: "R1", OK: true}, {ID: "R2", Why: "x"}}
+		f.Review.Findings = []domain.Finding{{ID: "H1", Title: "boom", Criterion: "R2"}}
+		f.Review.Chosen = chosen
+		f.Affected = aff
+		return f
+	}
+	if s := Summary(mk([]string{"H1"}, green)); !strings.Contains(s, "R2 ✔ arreglo H1") {
+		t.Errorf("fixed Summary = %q", s)
+	}
+	for name, f := range map[string]domain.Feature{
+		"red":        mk([]string{"H1"}, &domain.AffectedRun{Failure: "FAIL", Runs: green.Runs}),
+		"unverified": mk([]string{"H1"}, &domain.AffectedRun{Reason: "sin runner"}),
+		"nil":        mk([]string{"H1"}, nil),
+		"notchosen":  mk(nil, green),
+	} {
+		s := Summary(f)
+		if !strings.Contains(s, "R2 ✘") || strings.Contains(s, "arreglo H1") {
+			t.Errorf("%s Summary = %q", name, s)
+		}
+	}
+}
+
 func TestSummaryNeverEmpty(t *testing.T) {
 	f := testFeature()
 	f.Review = nil

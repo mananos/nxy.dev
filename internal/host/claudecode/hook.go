@@ -87,6 +87,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		Prompt       string          `json:"prompt"`
 		Model        string          `json:"model"`
 		Effort       string          `json:"effort"`
+		Skill        string          `json:"skill"`
 		FilePath     string          `json:"file_path"`
 		NotebookPath string          `json:"notebook_path"`
 		Questions    []struct {
@@ -106,6 +107,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		}
 		ev.Subagent, ev.AgentPrompt = ti.SubagentType, ti.Prompt
 		ev.AgentModel, ev.AgentEffort = ti.Model, ti.Effort
+		ev.Skill = ti.Skill
 		ev.FilePath = ti.FilePath
 		if ev.FilePath == "" {
 			ev.FilePath = ti.NotebookPath

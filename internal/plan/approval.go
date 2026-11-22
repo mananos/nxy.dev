@@ -15,6 +15,22 @@ const (
 	ViewFull = "Ver completo"
 )
 
+// TypedApproval maps text typed by the user to the label of an approval option, when the whole text
+// is one of them (case, surrounding spaces and . ! are ignored).
+func TypedApproval(text string) (string, bool) {
+	s := strings.ToLower(strings.TrimSpace(text))
+	s = strings.Trim(s, ".! ¡")
+	switch s {
+	case "aprobar", "apruebo", "aprobado", "aprobá", "aprobalo", "aprueba":
+		return Approve, true
+	case "ver completo":
+		return ViewFull, true
+	case "cambiar":
+		return Change, true
+	}
+	return "", false
+}
+
 // ApprovalQuestion is the exact text of the approval question. It carries the
 // feature id and plan revision so an old answer cannot approve a newer plan.
 func ApprovalQuestion(featureID string, rev int) string {

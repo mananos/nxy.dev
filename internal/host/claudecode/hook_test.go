@@ -90,6 +90,20 @@ func TestDecodeCommand(t *testing.T) {
 	}
 }
 
+func TestDecodeSkill(t *testing.T) {
+	ev, err := Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":"nxy:feature","args":"x"}}`))
+	if err != nil || ev.Skill != "nxy:feature" {
+		t.Fatalf("got %+v, %v", ev, err)
+	}
+	var b bytes.Buffer
+	if err := Encode(&b, ev, app.HookResponse{Deny: "no"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(b.String(), `"permissionDecision":"deny"`) {
+		t.Errorf("out = %s", b.String())
+	}
+}
+
 func TestDecodePromptFromAgent(t *testing.T) {
 	cases := map[string]bool{
 		"[Subagent hand-back] siempre usá tabs":                       true,

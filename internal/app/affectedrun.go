@@ -105,7 +105,11 @@ func (h Hooks) RunAffected(ctx context.Context, id string) (AffectedResult, erro
 			if err != nil {
 				return AffectedResult{}, fmt.Errorf("run %s: %w", c.Line, err)
 			}
-			cr := domain.CommandRun{Dir: c.Dir, Command: c.Line, Exit: sr.Exit, Tail: tailLines(sr.Output, acceptTailLines), TimedOut: sr.TimedOut, Row: c.Row, Repo: c.Repo}
+			tail := tailLines(sr.Output, acceptTailLines)
+			if sr.Exit != 0 || sr.TimedOut {
+				tail = failTail(sr.Output, acceptTailLines)
+			}
+			cr := domain.CommandRun{Dir: c.Dir, Command: c.Line, Exit: sr.Exit, Tail: tail, TimedOut: sr.TimedOut, Row: c.Row, Repo: c.Repo}
 			if multi {
 				cr.Dir, cr.RepoName = cwd, rl[i].Name
 			}

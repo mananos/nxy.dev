@@ -47,6 +47,8 @@ type HookEvent struct {
 	// AgentModel and AgentEffort are tool_input.model / effort of the dispatch, when it carries them.
 	AgentModel  string
 	AgentEffort string
+	// Skill is tool_input.skill of the Skill tool.
+	Skill string
 	// FilePath is tool_input.file_path (or notebook_path).
 	FilePath string
 	// Questions are the AskUserQuestion question texts; InputHasAnswers is true when
@@ -272,6 +274,9 @@ func (h Hooks) handlePrompt(ctx context.Context, ev HookEvent) HookResponse {
 	if r, ok := h.changeNote(ctx, ev); ok {
 		return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
 	}
+	if r, ok := h.typedApproval(ctx, ev); ok {
+		return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, r))
+	}
 	h.designRef(ctx, ev)
 	return h.withRuleHint(ctx, ev, h.deliverPending(ctx, ev, h.startFeature(ctx, ev)))
 }
@@ -285,6 +290,8 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	case ev.Name == "PreToolUse" && (ev.Tool == "Grep" || ev.Tool == "Glob"):
 		return h.preToolSearch(ctx, ev)
+	case ev.Name == "PreToolUse" && ev.Tool == "Skill":
+		return h.preToolSkill(ev)
 	case ev.Name == "PreToolUse" && isAgentTool(ev.Tool):
 		return h.preToolAgent(ctx, ev)
 	case ev.Name == "PostToolUse" && isAgentTool(ev.Tool):
