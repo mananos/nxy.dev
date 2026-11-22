@@ -33,7 +33,7 @@ En una feature común, el planner arma el plan y vos lo aprobás. Eso alcanza cu
 /nxy:engineer reintentos de pagos con backoff, sin perder mensajes
 ```
 
-También aparece como oferta dentro de `/nxy:feature`: si el planner te hace preguntas, la primera es **«¿pasar a engineer para decidir esto con vos?»**, con **Pasar a engineer** o **Responder acá**.
+También aparece como oferta dentro de `/nxy:feature`: si el planner te hace preguntas, la primera es **«¿pasar a engineer para decidir esto con vos?»**, con **Pasar a engineer** o **Responder acá**. Si en esa misma pregunta ya contestaste alguna de las del planner, esas respuestas quedan registradas en su bifurcación (`B1`, `B2`…) y Claude no te las vuelve a preguntar: propone esa decisión para que la confirmes.
 
 2. Debatí cada bifurcación, en el chat o en la TUI. Para elegir una opción tenés dos caminos: pedírselo a Claude, que te hace la pregunta de la bifurcación (`¿qué opción elegís para B1?`), o, con la pregunta abierta, apretar `enter` sobre la opción en la pantalla Ingeniero. Si todavía no hay pregunta abierta, la TUI te avisa: «elegí en el chat; enter contesta cuando Claude haga la pregunta de la bifurcación».
 3. Cuando te decidís, Claude propone la decisión y te pregunta **«¿guardar la decisión D1?»** con **OK, guardar** o **Seguir debatiendo**. Nada queda guardado sin ese OK. Esta pregunta se contesta en el chat.

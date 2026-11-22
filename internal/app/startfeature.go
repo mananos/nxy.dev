@@ -22,6 +22,7 @@ func featureRequest(prompt string) (string, bool) {
 
 // commandRequest is featureRequest for any of the commands that start a feature.
 func commandRequest(prompt, cmd string) (string, bool) {
+	prompt = unwrapCommand(prompt)
 	rest, ok := strings.CutPrefix(prompt, cmd)
 	if !ok {
 		return "", false
@@ -37,6 +38,43 @@ func commandRequest(prompt, cmd string) (string, bool) {
 	return "", false
 }
 
+// unwrapCommand drops what can sit before a pasted command: a BOM, blanks, and a code fence or
+// backticks around it (the closing one too); an unwrapped prompt only loses its leading part.
+func unwrapCommand(p string) string {
+	p = strings.TrimLeft(p, "\xef\xbb\xbf \t\r\n")
+	switch {
+	case strings.HasPrefix(p, "```"):
+		_, body, _ := strings.Cut(p, "\n")
+		body = strings.TrimLeft(body, " \t\r\n")
+		if !strings.HasPrefix(body, "/nxy:") {
+			return p
+		}
+		body = strings.TrimRight(body, " \t\r\n")
+		return strings.TrimRight(strings.TrimSuffix(body, "```"), " \t\r\n")
+	case strings.HasPrefix(p, "`"):
+		body := strings.TrimLeft(p, "`")
+		if !strings.HasPrefix(body, "/nxy:") {
+			return p
+		}
+		return strings.TrimRight(strings.TrimRight(body, " \t\r\n"), "`")
+	}
+	return p
+}
+
+// laterLineCommand is true when a line after the first starts with /nxy:feature or /nxy:engineer.
+func laterLineCommand(prompt string) bool {
+	_, rest, _ := strings.Cut(prompt, "\n")
+	for _, line := range strings.Split(rest, "\n") {
+		line = strings.TrimLeft(line, " \t\r")
+		for _, cmd := range []string{featureCommand, engineerCommand} {
+			if _, ok := commandRequest(line, cmd); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // startFeature handles UserPromptSubmit: `/nxy:feature <request>` captures the request verbatim
 // and starts a feature; any other prompt is not its business.
 func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
@@ -45,6 +83,9 @@ func (h Hooks) startFeature(ctx context.Context, ev HookEvent) HookResponse {
 	if !ok {
 		cmd = engineerCommand
 		request, ok = commandRequest(ev.Prompt, cmd)
+	}
+	if !ok && !ev.PromptFromAgent && laterLineCommand(ev.Prompt) {
+		return HookResponse{Notice: "nxy: no arrancó ninguna feature. /nxy:feature (o /nxy:engineer) solo arranca si va al principio del mensaje: mandalo de nuevo empezando por el comando."}
 	}
 	if !ok || h.Store == nil || h.Repos == nil {
 		return HookResponse{}

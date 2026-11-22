@@ -59,7 +59,7 @@ Con todos los lotes en verde, nxy mira qué archivos cambiaron desde que aprobas
 
 Los runners que nxy conoce de fábrica: go, angular, vitest, jest, react-scripts, maven (y `mvnw`), gradle (y `gradlew`), sbt y pytest. Para otro, un `.nxy/runners.json` en el repo (se commitea) agrega o pisa filas.
 
-Si sale en rojo, un implementer los arregla una vez. Si sigue rojo ves **Afectados fallidos**. Si no hay ningún test que correr, o ningún runner conocido y el plan no tiene `Suite:`, ves **Afectados sin verificar**: nunca cuenta como verde.
+En **Afectados fallidos** nxy lista una línea por cada paquete que falló; con salida larga la falla igual muestra las líneas que fallan (p. ej. `FAIL <paquete>`) además del final. En la línea «Listo», un criterio que falló al principio y lo arregló un fix de la review se marca `✔ arreglo`, no `✘`. Si sale en rojo, un implementer los arregla una vez. Si sigue rojo ves **Afectados fallidos**. Si no hay ningún test que correr, o ningún runner conocido y el plan no tiene `Suite:`, ves **Afectados sin verificar**: nunca cuenta como verde.
 
 ## Qué hacer
 

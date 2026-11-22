@@ -469,7 +469,8 @@ func runNote(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int
 				folder = row.Folder
 			}
 		}
-		n, err := m.NoteSave(ctx, folder, strings.Join(pos, " "), string(body), optVal(opts, "id"), optVal(opts, "feature"), session)
+		branch, base, fork := platform.NoteBranchOf(ctx, folder)
+		n, err := m.NoteSave(ctx, folder, strings.Join(pos, " "), string(body), optVal(opts, "id"), optVal(opts, "feature"), session, branch, base, fork)
 		if err == nil && session != "" {
 			_ = st.ChainNote(ctx, session, n.Short)
 		}

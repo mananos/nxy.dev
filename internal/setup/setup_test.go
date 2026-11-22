@@ -98,6 +98,48 @@ func TestStatusJSONShape(t *testing.T) {
 	}
 }
 
+func TestRunWingetAlreadyInstalled(t *testing.T) {
+	p := Plan{Steps: []Step{{Display: "winget install Terrastruct.D2", File: "winget"}, {Display: "after", File: "x"}}}
+	cases := []SpawnResult{
+		{Status: 0x8A15002B},
+		{Status: -1978335189, Stdout: "x"},
+		{Status: 0x8A150061},
+		{Status: 1, Stdout: "No newer package versions are available from the configured sources."},
+		{Status: 1, Stdout: "No available upgrade found."},
+		{Status: 1, Stdout: "An existing package already installed."},
+	}
+	for _, c := range cases {
+		c := c
+		var ran []string
+		r := Run(p, func(s Step) SpawnResult {
+			ran = append(ran, s.File)
+			if s.File == "winget" {
+				return c
+			}
+			return SpawnResult{}
+		})
+		if !r.OK || !r.AlreadyInstalled || len(ran) != 2 {
+			t.Errorf("%+v: ok=%v already=%v ran=%v", c, r.OK, r.AlreadyInstalled, ran)
+		}
+		text, code := RunOutcome("d2", p, r)
+		if code != 0 || !strings.Contains(text, "d2: ya estaba instalado (winget no tiene una versión más nueva)") {
+			t.Errorf("outcome %d %q", code, text)
+		}
+	}
+	// any other error still fails
+	r := Run(p, func(s Step) SpawnResult { return SpawnResult{Status: 1, Stdout: "boom"} })
+	if r.OK || r.AlreadyInstalled {
+		t.Errorf("other error must fail: %+v", r)
+	}
+	// non-winget with the same text is a failure
+	r = Run(Plan{Steps: []Step{{Display: "brew", File: "brew"}}}, func(Step) SpawnResult {
+		return SpawnResult{Status: 1, Stdout: "No newer package versions"}
+	})
+	if r.OK {
+		t.Errorf("non-winget must fail")
+	}
+}
+
 func TestRunOutcomeAndHeader(t *testing.T) {
 	p := InstallPlan("rtk", Opts{Platform: "win32"})
 	if h := RunHeader("rtk", p, true); !strings.HasPrefix(h, "install rtk (dry-run: no se ejecuta nada):\n  install: winget install rtk-ai.rtk") {

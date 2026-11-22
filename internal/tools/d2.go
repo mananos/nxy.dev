@@ -40,18 +40,29 @@ func KnownD2Locations(goos, home string, getenv func(string) string) []string {
 		"/usr/local/bin/d2", "/opt/homebrew/bin/d2")
 }
 
+// d2Candidates are the binaries FindD2 tries first: NXY_D2_PATH, PATH names, and on Windows the
+// machine-wide installer location (%ProgramFiles%\D2\d2.exe).
+func d2Candidates(goos string, getenv func(string) string) []string {
+	var c []string
+	if p := getenv("NXY_D2_PATH"); p != "" {
+		c = append(c, p)
+	}
+	c = append(c, "d2")
+	if goos == "windows" {
+		c = append(c, "d2.exe")
+		pf := getenv("ProgramFiles")
+		if pf == "" {
+			pf = `C:\Program Files`
+		}
+		c = append(c, filepath.Join(pf, "D2", "d2.exe"))
+	}
+	return c
+}
+
 // FindD2 locates d2: NXY_D2_PATH, then `d2` on PATH, then `d2.exe` (Windows), then known install
 // locations. The version has a leading "v" stripped.
 func FindD2(getenv func(string) string) (path, version string, ok bool) {
-	var candidates []string
-	if p := getenv("NXY_D2_PATH"); p != "" {
-		candidates = append(candidates, p)
-	}
-	candidates = append(candidates, "d2")
-	if runtime.GOOS == "windows" {
-		candidates = append(candidates, "d2.exe")
-	}
-	for _, bin := range candidates {
+	for _, bin := range d2Candidates(runtime.GOOS, getenv) {
 		if v, found := tryVersion(bin); found {
 			return bin, strings.TrimPrefix(v, "v"), true
 		}

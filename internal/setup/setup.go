@@ -390,17 +390,39 @@ type RunResult struct {
 	FailedAt string
 	Tail     string
 	Manual   []string
+	// AlreadyInstalled: a winget step found nothing newer to install, which counts as OK.
+	AlreadyInstalled bool
+}
+
+// WingetAlreadyInstalled says whether a winget exit means "already installed / no newer version".
+func WingetAlreadyInstalled(status int, output string) bool {
+	switch uint32(status) {
+	case 0x8A15002B, 0x8A150061:
+		return true
+	}
+	low := strings.ToLower(output)
+	for _, t := range []string{"no newer package versions", "no available upgrade found", "existing package already installed"} {
+		if strings.Contains(low, t) {
+			return true
+		}
+	}
+	return false
 }
 
 // Run runs removes then steps in order and stops at the first failure.
 func Run(p Plan, spawn Spawn) RunResult {
 	ran := []string{}
 	tail := ""
+	already := false
 	all := append(append([]Step{}, p.Removes...), p.Steps...)
 	for _, s := range all {
 		ran = append(ran, s.Display)
 		r := spawn(s)
 		tail = Clip(jscompat.Trim(r.Stdout+r.Stderr+r.Err), 1500)
+		if s.File == "winget" && r.Status != 0 && WingetAlreadyInstalled(r.Status, r.Stdout+r.Stderr) {
+			already = true
+			continue
+		}
 		if r.Err != "" || r.Status != 0 {
 			if s.NeedsSudo && IsSudoNoTTY(tail) {
 				tail = Clip(jscompat.Trim(tail+"\nsudo no pudo pedir contraseña sin terminal. Pegá en una terminal: "+strings.Join(p.Manual, " ; ")), 1500)
@@ -408,7 +430,7 @@ func Run(p Plan, spawn Spawn) RunResult {
 			return RunResult{OK: false, Ran: ran, FailedAt: s.Display, Tail: tail, Manual: p.Manual}
 		}
 	}
-	return RunResult{OK: true, Ran: ran, Tail: tail, Manual: []string{}}
+	return RunResult{OK: true, Ran: ran, Tail: tail, Manual: []string{}, AlreadyInstalled: already}
 }
 
 // ToolInfo is what nxy knows of one tool on this machine.
@@ -589,7 +611,11 @@ func RunOutcome(tool string, p Plan, r RunResult) (string, int) {
 	if len(r.Ran) == 1 {
 		plural = ""
 	}
-	lines = append(lines, fmt.Sprintf("%s: listo (%d paso%s).", tool, len(r.Ran), plural))
+	if r.AlreadyInstalled {
+		lines = append(lines, fmt.Sprintf("%s: ya estaba instalado (winget no tiene una versión más nueva), exit 0", tool))
+	} else {
+		lines = append(lines, fmt.Sprintf("%s: listo (%d paso%s).", tool, len(r.Ran), plural))
+	}
 	// sudo fallbacks (plain `sudo ...`) belong to steps that just ran OK; only the other notes still apply
 	for _, m := range p.Manual {
 		if !strings.HasPrefix(m, "sudo ") {

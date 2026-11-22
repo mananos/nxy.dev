@@ -794,6 +794,9 @@ func (v *viewSource) Config(ctx context.Context) (views.Config, error) {
 			{Name: "repo", Path: filepath.ToSlash(repoPath), Exists: repoState != "no existe"},
 		},
 	}
+	for _, p := range configedit.Invalid(cfg) {
+		in.Warnings = append(in.Warnings, p.Message())
+	}
 	for _, r := range configedit.Roles {
 		model, effort := configedit.RoleOf(cfg, r)
 		src := configedit.SourcesOf("roles."+r+".model", files, v.getenv)

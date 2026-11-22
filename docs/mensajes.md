@@ -66,6 +66,11 @@ Más en [Una feature, paso a paso](feature.md), [Plan y lotes](plan-y-lotes.md) 
 | `nxy: feature <id> — los reviewers siguen corriendo; su resultado llega cuando terminan` (o `… el implementer sigue corriendo …`) | Un agente trabaja en segundo plano | Nada: el resultado llega solo, una sola vez |
 | `nxy: feature <id> — 2 de 4 lentes listas; esperá al resto, nxy trae el resultado cuando terminen.` | La review va por lentes en paralelo | Nada |
 | `nxy: the user stopped feature <id> from the TUI` | Paraste la feature con `x` en la TUI | Nada |
+| `nxy: no arrancó ninguna feature. /nxy:feature (o /nxy:engineer) solo arranca si va al principio del mensaje …` | Escribiste el comando en una línea que no es la primera de tu mensaje | Mandalo de nuevo con el comando al principio |
+| `Solo arranca tipeado por el usuario, no por un Skill. Decile … que escriba /nxy:feature <pedido> …` | Claude intentó arrancar la feature por su cuenta (Skill) y nxy lo rechazó | Escribí `/nxy:feature <pedido>` vos |
+| **Aprobación escrita en el chat** | Si en vez de usar el diálogo respondés «aprobado» en el chat, nxy lo toma como aprobación del plan | Nada; si querés cambios, decilos en el chat |
+| **Afectados fallidos**: una línea por paquete que falló | nxy muestra cada paquete de los tests afectados que falló, no solo el total | Leelas antes de elegir **Reintentar**, **Seguir** o **Parar** |
+| `✔ arreglo` en la línea «Listo» | Un criterio que falló al principio y lo arregló un fix de la review | Nada: cuenta como verde |
 | `nxy: no hay una feature activa en este repo` · `no hay una feature activa` | `nxy feature stop` (o `pause`) y `nxy status` sin una feature en la carpeta | Nada, o arrancá una con `/nxy:feature` |
 
 Los estados que muestran `nxy status` y la TUI: **Trabajando** (un agente hace su parte), **Verificando** (corre un test o una review), **Necesita tu decisión** (te toca) y **Listo** (terminó, o la paraste).
@@ -81,6 +86,7 @@ Más en [Memoria](memoria.md).
 | **Este repo no tiene reglas guardadas. ¿Las propongo ahora? (~30–60k tokens, 1–2 min, una sola vez)** | Es la primera feature de un repo sin reglas | **Sí**: un scout lee el build, los linters y el CI y te propone hasta 10 reglas para elegir. **No**: sigue la feature sin reglas |
 | **nxy: ¿Con cuál seguimos?** (encabezado «Notas») | Dejaste notas a medias en esta carpeta | Elegí una, o **Ninguna, es otra cosa** |
 | `nxy: that message sounds like a repo rule. Ask the user whether to save it; …` | Con una feature activa escribiste «siempre», «nunca» o «de ahora en adelante» | Contestá la pregunta de Claude; nxy nunca guarda una regla sin que confirmes |
+| **Stop hook error** (rótulo de Claude Code) | Claude Code lo pone cuando nxy te entrega un paso al terminar el turno (un checkpoint del planner o de un implementer en segundo plano) | No es un error y no hacés nada: es el rótulo de Claude Code y nxy no puede cambiarlo |
 | `no hay nada que cambiar: pasá --text, --question, --paths o --roles` | `nxy mem edit` de una regla sin ningún cambio | Agregá lo que querés cambiar |
 
 ## Contestar desde la TUI

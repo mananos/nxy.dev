@@ -153,4 +153,8 @@ type Note struct {
 	Body      string `json:"body,omitempty"`
 	Session   string `json:"session,omitempty"`
 	FeatureID string `json:"feature_id,omitempty"`
+	// Branch, Base and Fork tie the note to the git branch it was saved on (Fork = merge-base); empty on the base.
+	Branch string `json:"branch,omitempty"`
+	Base   string `json:"base,omitempty"`
+	Fork   string `json:"fork,omitempty"`
 }

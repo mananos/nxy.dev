@@ -288,6 +288,9 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 	var nf domain.Feature
 	var err error
 	note := ""
+	if label, ok := plan.TypedApproval(answer); ok {
+		answer = label
+	}
 	switch answer {
 	case plan.Approve:
 		// The branch question is built from git before the transition; with nothing to ask the first
@@ -331,6 +334,23 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 	return HookResponse{Next: &Next{Feature: nf, Note: note}}
 }
 
+// typedApproval handles a prompt typed by the user while the plan waits for approval: the words of
+// the approval options act as them. It reports whether the prompt was consumed.
+func (h Hooks) typedApproval(ctx context.Context, ev HookEvent) (HookResponse, bool) {
+	if ev.PromptFromAgent || ev.AgentID != "" || h.Store == nil || h.Repos == nil {
+		return HookResponse{}, false
+	}
+	label, ok := plan.TypedApproval(ev.Prompt)
+	if !ok {
+		return HookResponse{}, false
+	}
+	f, ok := h.activeFeature(ctx, ev)
+	if !ok || f.State.Phase != domain.PhaseApproval || f.Next.Kind != domain.AskApproval {
+		return HookResponse{}, false
+	}
+	return h.answerApproval(ctx, f, label, f.PlanRev), true
+}
+
 func (h Hooks) answerQuestions(ctx context.Context, f domain.Feature, answers map[string]string) HookResponse {
 	offer, offered := answers[design.OfferQuestion(f.ID)]
 	if offered && strings.Contains(offer, design.LabelToEngineer) {
@@ -350,6 +370,9 @@ func (h Hooks) answerQuestions(ctx context.Context, f domain.Feature, answers ma
 			}
 			design.AddForks(x.Design, titles, domain.SourceOffer)
 			for i, pq := range x.Plan.Questions {
+				if a := strings.TrimSpace(answers[pq.Question]); a != "" {
+					x.Design.Agenda[start+i].Answer = a
+				}
 				for _, o := range pq.Options {
 					x.Design.Agenda[start+i].Options = append(x.Design.Agenda[start+i].Options, domain.ForkOption{Label: o.Label})
 				}

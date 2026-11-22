@@ -22,7 +22,7 @@ func (h Hooks) engineerMemoryNote(ctx context.Context, f domain.Feature) string 
 // withRuleHint adds to the prompt's response a line asking the user whether a "from now on" style
 // prompt is a repo rule. It only suggests: nothing is saved here.
 func (h Hooks) withRuleHint(ctx context.Context, ev HookEvent, resp HookResponse) HookResponse {
-	if h.Store == nil || h.Repos == nil || !memory.RuleHint(ev.Prompt) {
+	if h.Store == nil || h.Repos == nil || ev.PromptFromAgent || !memory.RuleHint(ev.Prompt) {
 		return resp
 	}
 	if _, ok := h.activeFeature(ctx, ev); !ok {

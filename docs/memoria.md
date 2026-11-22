@@ -77,7 +77,7 @@ En la TUI, la pantalla Memoria marca sólo lo raro y lo convierte en una propues
 
 ### Notas: otra cosa
 
-Una **nota** (`N3`) es algo que dejaste a medias en una carpeta, para retomar en otra sesión; vence a los 30 días. Es distinta de un aprendizaje: la nota es de la carpeta y es temporal (`nxy note`), el aprendizaje es del repo y dura (`nxy mem note`). Ver [Una feature](feature.md).
+Una **nota** (`N3`) es algo que dejaste a medias en una carpeta, para retomar en otra sesión; se borra sola cuando su rama se mergea en la base o desaparece (se revisa al abrir una sesión en la carpeta); las notas hechas en la base, sin repo o sin rama siguen hasta `nxy note done` o hasta los 30 días. Es distinta de un aprendizaje: la nota es de la carpeta y es temporal (`nxy note`), el aprendizaje es del repo y dura (`nxy mem note`). Ver [Una feature](feature.md).
 
 ## Qué hacer
 

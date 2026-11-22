@@ -16,7 +16,7 @@ const decisionWidth = 74
 func (st *state) pending() []*views.Decision {
 	var out []*views.Decision
 	for _, d := range st.data.decisionQueue() {
-		if !st.answered[d.FeatureID] {
+		if d.AskID == "" || !st.answered[d.AskID] {
 			out = append(out, d)
 		}
 	}
@@ -200,10 +200,11 @@ func (st *state) decAnswer(d *views.Decision) {
 	for _, a := range st.decAns[feat] {
 		argv = append(argv, "--answer", a)
 	}
+	ask := d.AskID
 	st.decReset(feat)
 	a := views.Action{ID: "decide", Label: label, Argv: argv, Confirm: confirm}
 	if t := st.runAction(actionReq{label: "decidir", a: a, reloadOnErr: true, after: func() {
-		st.answered[feat] = true
+		st.answered[ask] = true
 		st.decNext()
 	}}); t != "" {
 		st.toast, st.toastErr = t, false
@@ -268,10 +269,10 @@ func (st *state) decKey(k string) bool {
 			st.toast, st.toastErr = terminalText, false
 			break
 		}
-		feat := d.FeatureID
+		feat, ask := d.FeatureID, d.AskID
 		if t := st.runAction(actionReq{label: "contestar en la terminal", a: d.Release, reloadOnErr: true, after: func() {
 			st.decReset(feat)
-			st.answered[feat] = true
+			st.answered[ask] = true
 			st.decNext()
 		}}); t != "" {
 			st.toast, st.toastErr = t, false

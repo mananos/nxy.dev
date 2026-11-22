@@ -159,6 +159,47 @@ func TestStartFeatureNewlineSeparator(t *testing.T) {
 	}
 }
 
+func TestStartFeaturePastedForms(t *testing.T) {
+	const req = "add a flag\nsecond line"
+	forms := map[string]string{
+		"spaces":     "  \n /nxy:feature " + req,
+		"bom":        "\xef\xbb\xbf/nxy:feature " + req,
+		"backticks":  "`/nxy:feature " + req + "`",
+		"code block": "```\n/nxy:feature " + req + "\n```",
+	}
+	for name, p := range forms {
+		h, _ := flowHooks(false)
+		r := h.Handle(context.Background(), prompt(p))
+		if r.Deny != "" || r.Next == nil || r.Next.Feature.Request != req {
+			t.Errorf("%s: response = %+v", name, r)
+		}
+	}
+	h, _ := flowHooks(false)
+	r := h.Handle(context.Background(), prompt("\xef\xbb\xbf```\n/nxy:engineer "+req+"\n```"))
+	if r.Next == nil || r.Next.Feature.Request != req || r.Next.Feature.Mode != domain.ModeEngineer {
+		t.Errorf("engineer: response = %+v", r)
+	}
+}
+
+func TestStartFeatureLaterLineNotice(t *testing.T) {
+	h, st := flowHooks(false)
+	r := h.Handle(context.Background(), prompt("hola\n/nxy:feature algo"))
+	if r.Next != nil || len(st.feats) != 0 {
+		t.Fatalf("started something: %+v", r)
+	}
+	if !strings.Contains(r.Notice, "no arrancó") || !strings.Contains(r.Notice, "principio") {
+		t.Errorf("notice = %q", r.Notice)
+	}
+	ev := prompt("hola\n/nxy:feature algo")
+	ev.PromptFromAgent = true
+	if r := h.Handle(context.Background(), ev); r.Notice != "" {
+		t.Errorf("agent prompt got notice %q", r.Notice)
+	}
+	if r := h.Handle(context.Background(), prompt("hola, nada de comandos")); r.Notice != "" {
+		t.Errorf("plain prompt got notice %q", r.Notice)
+	}
+}
+
 func TestStartFeatureEmptyIsDenied(t *testing.T) {
 	for _, p := range []string{"/nxy:feature", "/nxy:feature ", "/nxy:feature  \n "} {
 		h, st := flowHooks(false)
@@ -228,7 +269,7 @@ func TestStartFeatureRaceIsRejected(t *testing.T) {
 }
 
 func TestOtherPromptsCreateNothing(t *testing.T) {
-	for _, p := range []string{"hello", "/nxy:featurex y", "/nxy:status", " /nxy:feature a", ""} {
+	for _, p := range []string{"hello", "/nxy:featurex y", "/nxy:status", ""} {
 		h, st := flowHooks(false)
 		if r := h.Handle(context.Background(), prompt(p)); r != (HookResponse{}) {
 			t.Errorf("%q: response = %+v", p, r)

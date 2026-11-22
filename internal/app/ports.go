@@ -147,8 +147,14 @@ type FlowMemory interface {
 	Note(ctx context.Context, ref string) (memory.Note, error)
 	SaveNote(ctx context.Context, n memory.Note) (memory.Note, error)
 	SweepNotes(ctx context.Context, now time.Time) (int, error)
+	DeleteNote(ctx context.Context, ref string) error
 	DeleteNotesOfFeature(ctx context.Context, featureID string) (int, error)
 	DeleteNotesUnder(ctx context.Context, folder string, foldCase bool) (int, error)
+}
+
+// NoteBranches tells whether the git branch a note was saved on is gone or already merged.
+type NoteBranches interface {
+	Gone(ctx context.Context, dir, branch, base, fork string) bool
 }
 
 // SessionState is the local per-session state of the hooks; times are in ms (zero = never).
@@ -392,7 +398,7 @@ type TUILiveness interface {
 // Roles gives the model and effort the config sets for a subagent role ("planner", "scout"...);
 // an empty string means the config says nothing and the role keeps its frontmatter.
 type Roles interface {
-	Role(projectDir, role string) (model, effort string)
+	Role(projectDir, role string) (model, effort, warn string)
 }
 
 // ShellResult is the outcome of a command run by Shell: Output is the tail of stdout and stderr.

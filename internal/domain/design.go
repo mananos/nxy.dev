@@ -56,6 +56,8 @@ type Fork struct {
 	Question string       `json:"question,omitempty"`
 	Options  []ForkOption `json:"options,omitempty"`
 	Opinion  string       `json:"opinion,omitempty"`
+	// Answer is what the user already chose before the debate started.
+	Answer string `json:"answer,omitempty"`
 }
 
 // DesignClose is what the main thread proposes when closing the design.

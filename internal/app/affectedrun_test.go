@@ -252,6 +252,27 @@ func TestAffectedRedStoresFailureAndFixes(t *testing.T) {
 	}
 }
 
+type outShell struct{ out string }
+
+func (s outShell) Run(context.Context, string, string) (ShellResult, error) {
+	return ShellResult{Exit: 1, Output: s.out}, nil
+}
+
+func TestAffectedRedTailKeepsFailingPackages(t *testing.T) {
+	h, st, _, id := affectedHooks(t, "", GraphResult{Status: GraphOK, Tests: []string{"pkg/a_test.go"}})
+	h.Shell = outShell{out: longGoFailOutput()}
+	if _, err := h.RunAffected(context.Background(), id); err != nil {
+		t.Fatal(err)
+	}
+	f := st.feats[id]
+	if !strings.Contains(f.Affected.Failure, "FAIL\tgithub.com/x/cmd/nxy") || !strings.Contains(f.Affected.Failure, "FAIL\tgithub.com/x/internal/app") {
+		t.Errorf("failure = %q", f.Affected.Failure)
+	}
+	if len(f.Affected.Runs) == 0 || !strings.Contains(f.Affected.Runs[0].Tail, "FAIL\tgithub.com/x/cmd/nxy") {
+		t.Errorf("runs = %+v", f.Affected.Runs)
+	}
+}
+
 func TestAffectedCheckModeRecordsNothing(t *testing.T) {
 	h, st, sh, id := affectedHooks(t, "", GraphResult{Status: GraphOK, Tests: []string{"pkg/a_test.go"}})
 	f := st.feats[id]

@@ -90,6 +90,50 @@ func gitRepo(t *testing.T) string {
 	return d
 }
 
+func TestNoteBranchGone(t *testing.T) {
+	d := gitRepo(t)
+	ctx := context.Background()
+	git := func(args ...string) {
+		t.Helper()
+		c := exec.Command("git", args...)
+		c.Dir = d
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	base := CurrentBranch(ctx, d)
+	if b, bs, f := NoteBranchOf(ctx, d); b != "" || bs != "" || f != "" {
+		t.Fatalf("on the base: %q %q %q", b, bs, f)
+	}
+	git("checkout", "-q", "-b", "feat")
+	b, bs, fork := NoteBranchOf(ctx, d)
+	if b != "feat" || bs != base || fork == "" {
+		t.Fatalf("on feat: %q %q %q", b, bs, fork)
+	}
+	if NoteBranchGone(ctx, d, b, bs, fork) {
+		t.Fatal("a branch without own commits is not gone")
+	}
+	git("branch", "-q", "tmp")
+	if NoteBranchGone(ctx, d, "tmp", bs, fork) {
+		t.Fatal("tmp has no own commits")
+	}
+	writeFile(t, filepath.Join(d, "f.txt"), "f")
+	git("add", ".")
+	git("commit", "-q", "-m", "feat work")
+	if NoteBranchGone(ctx, d, b, bs, fork) {
+		t.Fatal("an unmerged branch is not gone")
+	}
+	git("checkout", "-q", base)
+	git("merge", "-q", "--no-ff", "-m", "merge", "feat")
+	if !NoteBranchGone(ctx, d, b, bs, fork) {
+		t.Fatal("a merged branch is gone")
+	}
+	git("branch", "-q", "-D", "tmp")
+	if !NoteBranchGone(ctx, d, "tmp", bs, fork) {
+		t.Fatal("a deleted branch is gone")
+	}
+}
+
 func TestGitFileAt(t *testing.T) {
 	d := gitRepo(t)
 	ctx := context.Background()

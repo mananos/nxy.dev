@@ -775,9 +775,9 @@ func TestShimFreshLockSkips(t *testing.T) {
 			dir := filepath.Join(h, "bin", version.Version)
 			lock := filepath.Join(dir, exeName("nxy")+".lock")
 			if err := os.MkdirAll(dir, 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(lock, nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(lock, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			mark := filepath.Join(t.TempDir(), "mark")

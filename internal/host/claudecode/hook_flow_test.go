@@ -138,6 +138,14 @@ func encode(t *testing.T, ev app.HookEvent, resp app.HookResponse) map[string]an
 	return m
 }
 
+func TestEncodeNoticeAloneIsOnlyASystemMessage(t *testing.T) {
+	ev := app.HookEvent{Name: "PreToolUse", Subagent: "nxy:planner", ToolInput: json.RawMessage(`{"prompt":"x"}`)}
+	m := encode(t, ev, app.HookResponse{Notice: "nxy: aviso"})
+	if m["systemMessage"] != "nxy: aviso" || len(m) != 1 {
+		t.Fatalf("output = %v: a notice alone must not decide anything", m)
+	}
+}
+
 func TestEncodeResponses(t *testing.T) {
 	m := encode(t, app.HookEvent{Name: "PreToolUse"}, app.HookResponse{Deny: "no"})
 	h := m["hookSpecificOutput"].(map[string]any)
@@ -309,6 +317,10 @@ func TestInstructionPerAction(t *testing.T) {
 	f.State = domain.State{Phase: domain.PhaseAffectedFix}
 	if s := Instruction(f, ""); !strings.Contains(s, "`nxy:implementer`") || !strings.Contains(s, "feature f1 affected fix") {
 		t.Errorf("affected fix: %s", s)
+	}
+	f.Next = domain.Action{Kind: domain.DispatchAffectedFix, Retry: true}
+	if s := Instruction(f, ""); strings.Contains(s, "retries once") || !strings.Contains(s, "affected tests failed") {
+		t.Errorf("affected fix retry: %s", s)
 	}
 	f.Next = domain.Action{Kind: domain.AskDecision}
 	f.State = domain.State{Phase: domain.PhaseAffectedFailed}

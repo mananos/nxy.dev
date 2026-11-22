@@ -122,7 +122,7 @@ type state struct {
 	height    int
 	editing   bool // a text box is open: the decision window does not jump in
 	postponed map[string]bool
-	answered  map[string]bool         // decisions answered in this run (the demo only shows the command)
+	answered  map[string]bool         // AskIDs answered in this run: a new question of the same feature shows again (the demo only shows the command)
 	decOpen   bool                    // the decision window is on top
 	decCur    string                  // feature of the question the window shows
 	decIdx    map[string]int          // feature: question of a multi-question ask the window is on

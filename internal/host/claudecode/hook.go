@@ -37,6 +37,20 @@ type hookInput struct {
 	AgentTranscriptPath  string `json:"agent_transcript_path"`
 }
 
+// promptFromAgent reports whether a UserPromptSubmit prompt came from a subagent hand-back or a
+// system notification instead of the user.
+func promptFromAgent(p string) bool {
+	p = strings.TrimSpace(p)
+	for _, pre := range []string{"<task-notification", "<system-reminder"} {
+		if strings.HasPrefix(p, pre) {
+			return true
+		}
+	}
+	first, _, _ := strings.Cut(p, "\n")
+	return strings.Contains(first, "[Subagent hand-back]") ||
+		strings.Contains(first, "Another Claude session sent a message")
+}
+
 // Decode reads a Claude Code hook payload. Unknown fields are ignored.
 func Decode(r io.Reader) (app.HookEvent, error) {
 	var in hookInput
@@ -64,6 +78,8 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		PermissionMode: in.PermissionMode,
 
 		StopHookActive: in.StopHookActive,
+
+		PromptFromAgent: promptFromAgent(in.Prompt),
 	}
 	var ti struct {
 		Command      json.RawMessage `json:"command"`
@@ -71,6 +87,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		Prompt       string          `json:"prompt"`
 		Model        string          `json:"model"`
 		Effort       string          `json:"effort"`
+		Skill        string          `json:"skill"`
 		FilePath     string          `json:"file_path"`
 		NotebookPath string          `json:"notebook_path"`
 		Questions    []struct {
@@ -90,6 +107,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		}
 		ev.Subagent, ev.AgentPrompt = ti.SubagentType, ti.Prompt
 		ev.AgentModel, ev.AgentEffort = ti.Model, ti.Effort
+		ev.Skill = ti.Skill
 		ev.FilePath = ti.FilePath
 		if ev.FilePath == "" {
 			ev.FilePath = ti.NotebookPath
@@ -217,6 +235,12 @@ func Encode(w io.Writer, ev app.HookEvent, resp app.HookResponse) error {
 			"permissionDecisionReason": reason,
 			"updatedInput":             fields,
 		}}
+		if resp.Notice != "" {
+			out["systemMessage"] = resp.Notice
+		}
+	case ev.Name == "PreToolUse" && resp.Notice != "" && strings.HasPrefix(ev.Subagent, "nxy:"):
+		// A notice alone decides nothing: only the message, no permissionDecision.
+		out = map[string]any{"systemMessage": resp.Notice}
 	case ev.Name == "Stop" && resp.Block != "":
 		out = map[string]any{"decision": "block", "reason": resp.Block}
 	case ev.Name == "Stop" && resp.Ask != nil && resp.Next == nil:

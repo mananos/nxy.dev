@@ -10,6 +10,29 @@ import (
 	"time"
 )
 
+func TestD2CandidatesProgramFiles(t *testing.T) {
+	pf := filepath.Join(t.TempDir(), "Program Files")
+	getenv := func(k string) string {
+		if k == "ProgramFiles" {
+			return pf
+		}
+		return ""
+	}
+	want := filepath.Join(pf, "D2", "d2.exe")
+	found := false
+	for _, c := range d2Candidates("windows", getenv) {
+		found = found || c == want
+	}
+	if !found {
+		t.Errorf("windows candidates miss %s: %v", want, d2Candidates("windows", getenv))
+	}
+	for _, c := range d2Candidates("linux", getenv) {
+		if c == want {
+			t.Errorf("linux must not include Program Files")
+		}
+	}
+}
+
 func TestKnownD2Locations(t *testing.T) {
 	home := t.TempDir()
 	local := filepath.Join(home, "AppData", "Local")

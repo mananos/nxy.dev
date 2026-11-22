@@ -29,6 +29,10 @@ func jsPlatform(goos string) string {
 // setupState detects the tools: what is installed, what collides, and the plan for each.
 // It reads files and runs `--version`; it never installs.
 func setupState(cwd string, getenv func(string) string) setup.State {
+	// Windows: the Path of the registry may have changed after this process started.
+	if p := os.Getenv("PATH"); platform.FreshPath(p) != p {
+		os.Setenv("PATH", platform.FreshPath(p))
+	}
 	goos := jsPlatform(runtime.GOOS)
 	facts := claudecode.SetupFacts(homeDir(), cwd)
 	pm := setup.PackageManager(goos, tools.HasBin)
@@ -140,7 +144,7 @@ func runSetup(args []string, _ io.Reader, stdout, _ io.Writer) (code int) {
 // nxyOnPath is where `nxy` resolves in the PATH of this process ("" when it does not).
 // The bin dirs of Claude Code plugins do not count: Claude Code adds them to the PATH itself.
 var nxyOnPath = func() string {
-	return lookNxy(os.Getenv("PATH"), os.Getenv("PATHEXT"), os.Getenv("CLAUDE_PLUGIN_ROOT"), runtime.GOOS)
+	return lookNxy(platform.FreshPath(os.Getenv("PATH")), os.Getenv("PATHEXT"), os.Getenv("CLAUDE_PLUGIN_ROOT"), runtime.GOOS)
 }
 
 // lookNxy resolves `nxy` in pathEnv, skipping pluginRoot/bin and any dir under .claude/plugins.
@@ -263,6 +267,17 @@ func setupRun(cwd, tool string, a setupArgs, stdout io.Writer) int {
 	}
 	text, code := setup.RunOutcome(tool, plan, r)
 	fmt.Fprintln(stdout, text)
+	if r.OK {
+		if info := setupState(cwd, os.Getenv).Tool(tool); info.Found {
+			where := info.Path
+			if where == "" {
+				where = "el PATH"
+			}
+			fmt.Fprintf(stdout, "%s: detectado en %s\n", tool, filepath.ToSlash(where))
+		} else {
+			fmt.Fprintf(stdout, "%s: no está en el PATH (abrí una terminal nueva)\n", tool)
+		}
+	}
 	return code
 }
 

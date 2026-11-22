@@ -143,7 +143,7 @@ Qué modelo y effort usa cada rol de nxy. nxy lo aplica al despachar cada agente
 | `scout` | sonnet | medium |
 | `documenter` | sonnet | low |
 
-Los defaults salen del encabezado de cada `agents/*.md`. Valores que acepta la config: `roles.<rol>.model` = `haiku`, `sonnet`, `opus` o `fable`; `roles.<rol>.effort` = `low`, `medium` o `high`. Sin clave queda lo del agente. Si el despacho ya trae modelo o effort explícito, gana el del despacho. Editar los `.md` del plugin se pisa al actualizar: usá la config.
+Los defaults salen del encabezado de cada `agents/*.md`. Valores que acepta la config: `roles.<rol>.model` = `haiku`, `sonnet`, `opus` o `fable`; `roles.<rol>.effort` = `low`, `medium`, `high`, `xhigh` o `max`. Sin clave queda lo del agente. Un valor inválido en la config (por ejemplo `"effort": "extreme"`) no se descarta en silencio: `nxy config show`, la pestaña Config y el despacho de ese rol lo avisan, y el rol sigue con lo de su agente. Si el despacho ya trae modelo o effort explícito, gana el del despacho. Editar los `.md` del plugin se pisa al actualizar: usá la config.
 
 ```
 nxy config set roles.planner.model sonnet
@@ -177,7 +177,7 @@ Cómo se cambia, de lo más cómodo a lo más manual:
 | `modules.filter` | `true` o `false` |
 | `filter.engine` | `auto`, `rtk` u `off` |
 | `roles.<rol>.model` | `haiku`, `sonnet`, `opus` o `fable` |
-| `roles.<rol>.effort` | `low`, `medium` o `high` |
+| `roles.<rol>.effort` | `low`, `medium`, `high`, `xhigh` o `max` |
 
 con `<rol>` = `planner`, `implementer`, `reviewer`, `reviewer-quick`, `refuter`, `scout` o `documenter`. Con otra clave responde `campo desconocido: <clave>`, y con un valor que no está en la lista, `valor inválido para <clave>: <valor>`. Las demás claves de esta página (el `gate`, la `statusline`, `metrics`…) se editan a mano en el JSON; hay atajos para algunas: `/nxy:gate reads on|off`, `/nxy:filter on|off`.
 

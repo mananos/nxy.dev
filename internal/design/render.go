@@ -70,6 +70,9 @@ func pendingState(id string, d *domain.Design) string {
 	}
 	if f := findFork(d, d.Current); f != nil && f.Status == domain.ForkOpen && len(f.Options) > 0 {
 		fmt.Fprintf(&b, "\n\nBifurcación en debate: %s %s", f.ID, f.Title)
+		if f.Answer != "" {
+			fmt.Fprintf(&b, "\nEl usuario ya respondió: %s. No la repreguntes: proponé esa decisión con design propose.", f.Answer)
+		}
 		for _, o := range OptionKeys(f.Options) {
 			fmt.Fprintf(&b, "\n- %s %s", o.Key, o.Label)
 		}
@@ -108,6 +111,9 @@ func Agenda(d *domain.Design) string {
 	fmt.Fprintf(&b, "Agenda: %d de %d decididas", done, len(d.Agenda))
 	for _, f := range d.Agenda {
 		fmt.Fprintf(&b, "\n- %s %s (%s)", f.ID, f.Title, forkMark[f.Status])
+		if f.Answer != "" && f.Status == domain.ForkOpen {
+			fmt.Fprintf(&b, "; el usuario ya respondió: %s", f.Answer)
+		}
 	}
 	return b.String()
 }

@@ -5,9 +5,11 @@ import (
 	"testing"
 )
 
-type fakeRoles map[string][2]string
+type fakeRoles map[string][3]string
 
-func (f fakeRoles) Role(_, role string) (string, string) { return f[role][0], f[role][1] }
+func (f fakeRoles) Role(_, role string) (string, string, string) {
+	return f[role][0], f[role][1], f[role][2]
+}
 
 func TestRolesFillModelAndEffort(t *testing.T) {
 	h, _ := flowHooks(false)
@@ -38,6 +40,15 @@ func TestRolesFillModelAndEffort(t *testing.T) {
 	r = h.Handle(ctx, agentEv("PreToolUse", rolePlanner))
 	if r.Prompt == "" || r.Model != "opus" || r.Effort != "" {
 		t.Fatalf("planner = %+v", r)
+	}
+}
+
+func TestRolesInvalidConfigWarnsOnDispatch(t *testing.T) {
+	h, _ := flowHooks(false)
+	h.Roles = fakeRoles{"scout": {"haiku", "", "roles.scout.effort: valor inválido"}}
+	r := h.Handle(context.Background(), agentEv("PreToolUse", roleScout))
+	if r.Notice != "nxy: roles.scout.effort: valor inválido" || r.Model != "haiku" {
+		t.Fatalf("scout = %+v", r)
 	}
 }
 

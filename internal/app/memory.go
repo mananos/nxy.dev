@@ -174,9 +174,11 @@ func (m Memory) ImportApply(ctx context.Context, d memory.Diff) error {
 }
 
 // NoteSave stores a temporary note in cwd's folder; with id (N2 or ULID) it updates that note.
-func (m Memory) NoteSave(ctx context.Context, cwd, title, body, id, feature, session string) (memory.Note, error) {
+// branch, base and fork tie it to the git branch it was saved on (all empty on the base).
+func (m Memory) NoteSave(ctx context.Context, cwd, title, body, id, feature, session, branch, base, fork string) (memory.Note, error) {
 	return m.Store.SaveNote(ctx, memory.Note{
 		Meta: memory.Meta{ID: id}, Folder: cwd, Title: strings.TrimSpace(title), Body: body, FeatureID: feature, Session: session,
+		Branch: branch, Base: base, Fork: fork,
 	})
 }
 

@@ -304,8 +304,31 @@ func TestDecisionMultiQuestionBuildsOneDecide(t *testing.T) {
 	if !reflect.DeepEqual(f.calls, want) {
 		t.Fatalf("ran %v, want %v", f.calls, want)
 	}
-	if !m.st.answered["FX"] {
+	if !m.st.answered["ASK-1"] {
 		t.Error("not marked as answered")
+	}
+}
+
+func TestDecisionReaskSameFeatureShows(t *testing.T) {
+	f := &fakeRun{}
+	mk := func(ask string) *views.Decision {
+		return &views.Decision{FeatureID: "FX", AskID: ask, Question: "q", Options: opts("Ver completo", "Aprobar")}
+	}
+	m := decModel(t, f, mk("ASK-1"))
+	send(m, key("1"))
+	send(m, key("enter"))
+	if len(f.calls) != 1 || !m.st.answered["ASK-1"] {
+		t.Fatalf("ran %v, answered %v", f.calls, m.st.answered)
+	}
+	m.st.data.Decisions = map[string]*views.Decision{"FX": mk("ASK-2")}
+	m.st.openDecision("")
+	if !m.st.decOpen || m.st.decisionCount() != 1 {
+		t.Fatalf("the repeated question is hidden: open=%v count=%d toast=%q", m.st.decOpen, m.st.decisionCount(), m.st.toast)
+	}
+	send(m, key("2"))
+	send(m, key("enter"))
+	if len(f.calls) != 2 || !reflect.DeepEqual(f.calls[1], []string{"nxy", "action", "decide", "--ask", "ASK-2", "--answer", "Aprobar"}) {
+		t.Fatalf("ran %v", f.calls)
 	}
 }
 

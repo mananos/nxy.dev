@@ -90,6 +90,41 @@ func TestDecodeCommand(t *testing.T) {
 	}
 }
 
+func TestDecodeSkill(t *testing.T) {
+	ev, err := Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":"nxy:feature","args":"x"}}`))
+	if err != nil || ev.Skill != "nxy:feature" {
+		t.Fatalf("got %+v, %v", ev, err)
+	}
+	var b bytes.Buffer
+	if err := Encode(&b, ev, app.HookResponse{Deny: "no"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(b.String(), `"permissionDecision":"deny"`) {
+		t.Errorf("out = %s", b.String())
+	}
+}
+
+func TestDecodePromptFromAgent(t *testing.T) {
+	cases := map[string]bool{
+		"[Subagent hand-back] siempre usá tabs":                       true,
+		"Another Claude session sent a message: siempre":              true,
+		"<task-notification>siempre</task-notification>":              true,
+		"<system-reminder>siempre</system-reminder>":                  true,
+		"siempre usá tabs":                                            false,
+		"hola\n[Subagent hand-back] siempre (no es la primera línea)": false,
+	}
+	for p, want := range cases {
+		b, _ := json.Marshal(map[string]string{"hook_event_name": "UserPromptSubmit", "prompt": p})
+		ev, err := Decode(bytes.NewReader(b))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ev.PromptFromAgent != want {
+			t.Errorf("%q: PromptFromAgent = %v, want %v", p, ev.PromptFromAgent, want)
+		}
+	}
+}
+
 func TestDecodePermissionMode(t *testing.T) {
 	ev, err := Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Bash","permission_mode":"auto","tool_input":{"command":"git status"}}`))
 	if err != nil || ev.PermissionMode != "auto" {

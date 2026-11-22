@@ -212,7 +212,10 @@ func (h Hooks) preToolAgent(ctx context.Context, ev HookEvent) HookResponse {
 	if dir == "" {
 		dir = ev.Cwd
 	}
-	model, effort := h.Roles.Role(dir, strings.TrimPrefix(ev.Subagent, "nxy:"))
+	model, effort, warn := h.Roles.Role(dir, strings.TrimPrefix(ev.Subagent, "nxy:"))
+	if warn != "" {
+		resp.Notice = "nxy: " + warn
+	}
 	if ev.AgentModel == "" {
 		resp.Model = model
 	}

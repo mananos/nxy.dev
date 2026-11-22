@@ -172,7 +172,7 @@ func instruction(f domain.Feature, note, exe string, stop bool) string {
 	case domain.DispatchAffectedFix:
 		lead := "Next"
 		if a.Retry {
-			lead = "the affected fix did not pass the check; nxy retries once — dispatch it again the same way"
+			lead = "the affected tests failed; nxy sends one fix — dispatch it"
 		}
 		s = fmt.Sprintf("nxy: feature %s — %s: Agent tool, subagent_type `nxy:implementer`, prompt `feature %s affected fix`; nothing else, nxy writes its prompt; it may run in the background.", f.ID, lead, f.ID)
 	case domain.DispatchReviewer:

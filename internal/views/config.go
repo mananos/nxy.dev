@@ -8,6 +8,8 @@ type Config struct {
 	Statusline Statusline `json:"statusline"`
 	Tools      []Tool     `json:"tools"`
 	Binary     Binary     `json:"binary"`
+	// Warnings are config values that are not valid and nxy ignores.
+	Warnings []string `json:"warnings"`
 }
 
 // Layer is a config file (user or repo).

@@ -363,6 +363,20 @@ func Summary(f domain.Feature) string {
 	for _, rc := range rv.Criteria {
 		answered[rc.ID] = rc
 	}
+	verified := f.Affected != nil && f.Affected.Failure == "" && f.Affected.Reason == "" && len(f.Affected.Runs) > 0
+	fixedBy := func(id string) string {
+		if !verified {
+			return ""
+		}
+		for _, c := range rv.Chosen {
+			for _, fd := range rv.Findings {
+				if fd.ID == c && fd.Criterion == id {
+					return fd.ID
+				}
+			}
+		}
+		return ""
+	}
 	var parts []string
 	for _, r := range criteriaOf(f) {
 		rc, ok := answered[r.ID]
@@ -372,7 +386,11 @@ func Summary(f domain.Feature) string {
 		case rc.OK:
 			parts = append(parts, r.ID+" ✔ "+criterionProof(f.Plan, r))
 		default:
-			parts = append(parts, r.ID+" ✘")
+			if h := fixedBy(r.ID); h != "" {
+				parts = append(parts, r.ID+" ✔ arreglo "+h)
+			} else {
+				parts = append(parts, r.ID+" ✘")
+			}
 		}
 	}
 	var b strings.Builder

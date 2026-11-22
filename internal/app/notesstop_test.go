@@ -87,6 +87,30 @@ func TestStopAsksAgainForAChainedNoteOlderThanTheEdit(t *testing.T) {
 	}
 }
 
+func TestStopNoteDeadChainedNote(t *testing.T) {
+	for name, deleted := range map[string]bool{"deleted": true, "missing": false} {
+		t.Run(name, func(t *testing.T) {
+			h, mem, ss, clk := stopHooks(t)
+			ctx := context.Background()
+			if deleted {
+				mem.notes[0].DeletedAt = clk.t.UnixMilli()
+			} else {
+				mem.notes = nil
+			}
+			_ = ss.ChainNote(ctx, "s1", "N1")
+			clk.t = clk.t.Add(time.Minute)
+			h.Handle(ctx, editEv("s1"))
+			r := h.Handle(ctx, mainStopEv("s1"))
+			if !strings.Contains(r.Block, "note save") {
+				t.Fatalf("no note asked: %q", r.Block)
+			}
+			if strings.Contains(r.Block, "--id") || strings.Contains(r.Block, "continues note") {
+				t.Errorf("block chains a dead note: %q", r.Block)
+			}
+		})
+	}
+}
+
 func TestOwnNoteCommandsArePreApproved(t *testing.T) {
 	h, _, _, _ := stopHooks(t)
 	h.Config = fakeConfig{}

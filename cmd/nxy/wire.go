@@ -40,8 +40,10 @@ func (filterConfig) Filter(projectDir string) filter.Settings {
 // roleConfig is the role table of the merged config (roles.<role>.model / effort).
 type roleConfig struct{}
 
-func (roleConfig) Role(projectDir, role string) (string, string) {
-	return configedit.RoleOf(platform.LoadConfig(projectDir, os.Getenv), role)
+func (roleConfig) Role(projectDir, role string) (string, string, string) {
+	cfg := platform.LoadConfig(projectDir, os.Getenv)
+	model, effort := configedit.RoleOf(cfg, role)
+	return model, effort, configedit.InvalidOf(cfg, role)
 }
 
 type permissionRules struct{}
@@ -281,6 +283,21 @@ func (l *lazyStore) SaveNote(ctx context.Context, n memory.Note) (memory.Note, e
 		return memory.Note{}, err
 	}
 	return s.SaveNote(ctx, n)
+}
+
+func (l *lazyStore) DeleteNote(ctx context.Context, ref string) error {
+	s, err := l.open(ctx)
+	if err != nil {
+		return err
+	}
+	return s.DeleteNote(ctx, ref)
+}
+
+// noteBranches answers whether a note's git branch is gone or merged.
+type noteBranches struct{}
+
+func (noteBranches) Gone(ctx context.Context, dir, branch, base, fork string) bool {
+	return platform.NoteBranchGone(ctx, dir, branch, base, fork)
 }
 
 func (l *lazyStore) SweepNotes(ctx context.Context, now time.Time) (int, error) {
@@ -841,7 +858,7 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
-		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{},
+		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{}, NoteBranches: noteBranches{},
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 		LegacyData: legacyFiles{}, LegacyStore: st,
 		AgentFiles: claudecode.AgentFile{}, Runs: st,
