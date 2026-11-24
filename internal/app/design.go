@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/mananos/nxy.dev/v2/internal/design"
@@ -29,6 +30,10 @@ func cloneDesign(src *domain.Design) domain.Design {
 	d.Agenda = append([]domain.Fork(nil), d.Agenda...)
 	d.Decisions = append([]domain.Decision(nil), d.Decisions...)
 	d.Refs = append([]string(nil), d.Refs...)
+	if d.Pick != nil {
+		p := *d.Pick
+		d.Pick = &p
+	}
 	return d
 }
 
@@ -74,6 +79,17 @@ func (h Hooks) designChange(ctx context.Context, id string, apply func(d *domain
 	return DesignResult{Feature: nf}, nil
 }
 
+// checkD2 tries a non-empty d2 with the D2 port; the error goes back as a problem at where.
+func (h Hooks) checkD2(ctx context.Context, where, src string) []plan.Problem {
+	if h.D2 == nil || strings.TrimSpace(src) == "" {
+		return nil
+	}
+	if err := h.D2.CheckD2(ctx, src); err != nil {
+		return []plan.Problem{{Where: where, Msg: "d2 no pudo dibujarlo, corregilo: " + err.Error()}}
+	}
+	return nil
+}
+
 // SaveAgenda sets the open forks of the design from {"forks": [...]}.
 func (h Hooks) SaveAgenda(ctx context.Context, id string, r io.Reader) (DesignResult, error) {
 	titles, err := design.DecodeAgenda(r)
@@ -91,9 +107,86 @@ func (h Hooks) SaveForkOptions(ctx context.Context, id string, r io.Reader) (Des
 	if err != nil {
 		return DesignResult{}, err
 	}
+	var probs []plan.Problem
+	for i, o := range in.Options {
+		probs = append(probs, h.checkD2(ctx, fmt.Sprintf("options[%d].d2", i), o.D2)...)
+	}
+	if len(probs) > 0 {
+		return DesignResult{Problems: probs}, nil
+	}
 	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
 		return design.SetForkOptions(d, in)
 	})
+}
+
+// PickFork keeps the option the user chose in the TUI for the open fork; Claude gets it in the next
+// turn. Another call replaces the choice.
+func (h Hooks) PickFork(ctx context.Context, id, fork, label string) (DesignResult, error) {
+	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
+		return design.SetPick(d, fork, label)
+	})
+}
+
+// withPick adds to the answer of a prompt what the user chose in the TUI, once; a choice that no
+// longer fits the fork is forgotten.
+func (h Hooks) withPick(ctx context.Context, ev HookEvent, resp HookResponse) HookResponse {
+	if h.Store == nil || h.Repos == nil || ev.AgentID != "" || ev.PromptFromAgent || resp.Deny != "" || strings.HasPrefix(ev.Prompt, "/") {
+		return resp
+	}
+	f, ok := h.activeFeature(ctx, ev)
+	if !ok || f.State.Phase != domain.PhaseDesigning || f.Design == nil || f.Design.Pick == nil {
+		return resp
+	}
+	var line string
+	_, _ = h.mutateDesign(ctx, f.ID, func(d *domain.Design) bool {
+		if d.Pick == nil {
+			return false
+		}
+		if !design.ValidPick(d) {
+			d.Pick = nil
+			return true
+		}
+		if d.Pick.Told {
+			return false
+		}
+		p := *d.Pick
+		p.Told = true
+		d.Pick = &p
+		line = fmt.Sprintf("The user chose %s for %s in the TUI: propose it with design propose.", p.Label, p.Fork)
+		return true
+	})
+	if line == "" {
+		return resp
+	}
+	if resp.Context != "" {
+		resp.Context += "\n" + line
+	} else {
+		resp.Context = line
+	}
+	return resp
+}
+
+// pickAnswer answers the question of the current fork by itself with the option the user chose in
+// the TUI, and forgets the choice.
+func (h Hooks) pickAnswer(ctx context.Context, ev HookEvent, f domain.Feature) (HookResponse, bool) {
+	d := f.Design
+	if d == nil || d.Pick == nil || !design.ValidPick(d) || len(ev.Asked) != 1 || ev.Asked[0].Question != design.ForkQuestion(f.ID, d.Pick.Fork) {
+		return HookResponse{}, false
+	}
+	label := d.Pick.Label
+	if !slices.Contains(ev.Asked[0].Options, label) {
+		return HookResponse{}, false
+	}
+	if _, err := h.mutateDesign(ctx, f.ID, func(g *domain.Design) bool {
+		if g.Pick == nil || g.Pick.Label != label {
+			return false
+		}
+		g.Pick = nil
+		return true
+	}); err != nil {
+		return HookResponse{}, false
+	}
+	return HookResponse{Answers: &AskAnswers{ByQuestion: map[string]string{ev.Asked[0].Question: label}}}, true
 }
 
 // SaveToday stores the d2 of how the code is today from {"d2": "..."}.
@@ -101,6 +194,9 @@ func (h Hooks) SaveToday(ctx context.Context, id string, r io.Reader) (DesignRes
 	src, err := design.DecodeToday(r)
 	if err != nil {
 		return DesignResult{}, err
+	}
+	if probs := h.checkD2(ctx, "d2", src); len(probs) > 0 {
+		return DesignResult{Problems: probs}, nil
 	}
 	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
 		return design.SetToday(d, src)
@@ -127,6 +223,9 @@ func (h Hooks) ProposeClose(ctx context.Context, id string, r io.Reader) (Design
 	c, err := design.DecodeClose(r)
 	if err != nil {
 		return DesignResult{}, err
+	}
+	if probs := h.checkD2(ctx, "d2", c.D2); len(probs) > 0 {
+		return DesignResult{Problems: probs}, nil
 	}
 	return h.designChange(ctx, id, func(d *domain.Design) []plan.Problem {
 		if probs := design.ValidateClose(d, c); len(probs) > 0 {

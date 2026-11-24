@@ -28,6 +28,8 @@ type BatchRun struct {
 	Tail     string
 	Recorded bool
 	Refused  string
+	// Warn is a notice for a recorded red that came after code was written.
+	Warn string
 }
 
 // RunBatchCheck runs the Accept command of the current batch and records it as the red or
@@ -108,6 +110,10 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	}
 
 	run := &domain.Run{Exit: res.Exit, Tail: out.Tail, Edits: edits}
+	if kind == RunRed && len(pr.CodeFirst) > 0 {
+		run.CodeFirst = slices.Clone(pr.CodeFirst)
+		out.Warn = fmt.Sprintf("code written before the red (%s): the reviewer will check that your test fails without it", strings.Join(run.CodeFirst, ", "))
+	}
 	_, applied, err := h.mutate(ctx, featureID, func(f *domain.Feature) bool {
 		if f.State.Phase != domain.PhaseRunningBatch {
 			return false
@@ -219,7 +225,8 @@ func failTail(s string, n int) string {
 	if len(fails) > maxFailLines {
 		fails = fails[len(fails)-maxFailLines:]
 	}
-	return strings.Join(append(fails, lines[cut:]...), "\n")
+	head := append([]string{cutLine(cut)}, fails...)
+	return strings.Join(append(head, lines[cut:]...), "\n")
 }
 
 // tailLines keeps the last n lines of s, without the trailing newline.
@@ -227,7 +234,13 @@ func tailLines(s string, n int) string {
 	s = strings.TrimRight(s, "\r\n")
 	lines := strings.Split(s, "\n")
 	if len(lines) > n {
-		lines = lines[len(lines)-n:]
+		cut := len(lines) - n
+		lines = append([]string{cutLine(cut)}, lines[cut:]...)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// cutLine is the first line of a tail that dropped cut earlier lines.
+func cutLine(cut int) string {
+	return fmt.Sprintf("… %d líneas anteriores recortadas", cut)
 }

@@ -89,6 +89,12 @@ type capturer interface {
 	captures(st *state, r route, k string) bool
 }
 
+// scroller is a screen that scrolls its own body: top gives the first row to draw, given the
+// focused row, the length of the body and the rows available. The frame bounds it to the body.
+type scroller interface {
+	top(st *state, r route, focus, length, avail int) int
+}
+
 var registered = map[string]screen{}
 
 func register(s screen) { registered[s.id()] = s }
@@ -157,6 +163,7 @@ type state struct {
 	busy     map[string]string // row key → the running line of a command in flight
 	failed   map[string]string // row key → the error of its last failed command
 	toastErr bool              // the toast is a failure
+	reread   map[string]string // view key a r waits for → the notice when it arrives
 	errNext  bool              // the toast runAction just returned is a failure
 	cfgPend  map[string]string // value picked with e and not saved: "role/kind" or "setting/id"
 
@@ -548,6 +555,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case topMsg:
 		m.st.onLoad(msg)
+		m.st.onRereadDone(msg)
 	case pollTick:
 		return m, m.st.pollCmd()
 	case pollMsg:

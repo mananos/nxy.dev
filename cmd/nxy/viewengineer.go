@@ -20,7 +20,7 @@ type d2Cache struct {
 	bin    string
 	ver    string
 	lines  map[string][]string
-	failed map[string]bool // sources d2 could not draw: tried once per source and version
+	failed map[string]string // sources d2 could not draw, with its message: tried once per source and version
 }
 
 func (c *d2Cache) draw(ctx context.Context, src string) views.Diagram {
@@ -38,11 +38,13 @@ func (c *d2Cache) draw(ctx context.Context, src string) views.Diagram {
 		}
 	}
 	if !c.found || ts.RenderD2 == nil {
+		empty.Problem = "missing"
 		return empty
 	}
 	sum := sha256.Sum256([]byte(src))
 	key := hex.EncodeToString(sum[:]) + "|" + c.ver
-	if c.failed[key] {
+	if msg, bad := c.failed[key]; bad {
+		empty.Problem, empty.Error = "error", msg
 		return empty
 	}
 	lines, ok := c.lines[key]
@@ -52,10 +54,15 @@ func (c *d2Cache) draw(ctx context.Context, src string) views.Diagram {
 			if errors.Is(err, context.Canceled) {
 				return empty // the caller gave up: not a failure of the source, try again next time
 			}
-			if c.failed == nil {
-				c.failed = map[string]bool{}
+			if errors.Is(err, context.DeadlineExceeded) {
+				empty.Problem = "slow" // d2 took too long: not kept, the next load tries again
+				return empty
 			}
-			c.failed[key] = true
+			if c.failed == nil {
+				c.failed = map[string]string{}
+			}
+			c.failed[key] = err.Error()
+			empty.Problem, empty.Error = "error", err.Error()
 			return empty
 		}
 		if c.lines == nil {

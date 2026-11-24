@@ -251,6 +251,55 @@ func TestImplementerPrompt(t *testing.T) {
 	}
 }
 
+func TestImplementerPromptSharedCriterion(t *testing.T) {
+	f := sampleFeature(t)
+	b1 := f.Plan.Batches[0]
+	b1.Covers = []string{"R1", "R2"}
+	b2 := b1
+	b2.N = 2
+	b2.Covers = []string{"R2"}
+	b1.N = 1
+	f.Plan.Batches = []domain.Batch{b1, b2}
+	f.Plan.Criteria = []domain.Criterion{
+		{ID: "R1", Text: "solo uno", Test: domain.TestExisting},
+		{ID: "R2", Text: "compartido", Test: domain.TestManual},
+	}
+	const line = "se cumple entre todos los lotes"
+	got1 := ImplementerPromptFor(f, 1, "nxy", "")
+	if !strings.Contains(got1, "also covered by batches 2") || !strings.Contains(got1, line) {
+		t.Errorf("prompt 1 lacks the shared marker:\n%s", got1)
+	}
+	got2 := ImplementerPromptFor(f, 2, "nxy", "")
+	if !strings.Contains(got2, "also covered by batches 1") || !strings.Contains(got2, line) {
+		t.Errorf("prompt 2 lacks the shared marker:\n%s", got2)
+	}
+	if strings.Contains(got1, "R1: solo uno (test: existing; also") {
+		t.Error("unshared criterion is marked as shared")
+	}
+	b2.Covers = []string{"R1"}
+	f.Plan.Batches = []domain.Batch{b1, b2}
+	b1.Covers = []string{"R2"}
+	f.Plan.Batches[0] = b1
+	if got := ImplementerPromptFor(f, 1, "nxy", ""); strings.Contains(got, line) {
+		t.Error("no shared criterion but the line is present")
+	}
+}
+
+func TestImplementerPromptForbidsStubRed(t *testing.T) {
+	f := sampleFeature(t)
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
+	const ban = "Never stub, comment out or revert code to make the test fail"
+	const warn = "say so in your reply"
+	got := ImplementerPrompt(f, "nxy", "")
+	if !strings.Contains(got, ban) || !strings.Contains(got, warn) {
+		t.Errorf("TDD prompt lacks the stub ban or the warning:\n%s", got)
+	}
+	f.Plan.Criteria[0].Test = domain.TestExisting
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, ban) {
+		t.Error("green-only prompt carries the stub ban")
+	}
+}
+
 func TestDecisionQuestions(t *testing.T) {
 	if got := DecisionQuestion("abc", 2); got != "nxy feature abc: el lote 2 falló dos veces — ¿qué hacemos?" {
 		t.Fatalf("got %q", got)

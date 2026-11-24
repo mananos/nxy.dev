@@ -96,6 +96,13 @@ type reviewerData struct {
 	Example     string
 	Engineer    bool
 	Decisions   []domain.Decision
+	CodeFirst   []codeFirstBatch
+}
+
+// codeFirstBatch is a batch whose red came after code was written.
+type codeFirstBatch struct {
+	N     int
+	Files string
 }
 
 // ReviewerPrompt builds the prompt of the reviewer of one lens. Only the base
@@ -119,6 +126,11 @@ func ReviewerPrompt(f domain.Feature, lens Lens, diffs []FileDiff, exe, mem stri
 		if lens.Name == BaseLens {
 			d.Criteria = f.Plan.Criteria
 			d.Example = reviewerBaseExample
+			for _, b := range f.Plan.Batches {
+				if r := f.ProofOf(b.N).Red; r != nil && len(r.CodeFirst) > 0 {
+					d.CodeFirst = append(d.CodeFirst, codeFirstBatch{N: b.N, Files: strings.Join(r.CodeFirst, ", ")})
+				}
+			}
 		}
 	}
 	if f.Mode == domain.ModeEngineer {

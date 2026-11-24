@@ -4,7 +4,7 @@
      ←   Credito.java   api                                      codegraph    
          src/billing/Credito.java · lo edita el lote 2                        
 
-      diff de la feature   archivo                    v  alterna  o  editor   
+      diff de la feature   archivo                               cambio 1/1   
                                                                               
      ▸ 1 + class Credito {                                                    
        2 + }                                                                  
@@ -14,4 +14,4 @@
                                                                               
     ▌FEATURES                                                                 
      FEAT-P  lote 2 · en rojo                                                 
-  n N  otro cambio     v  archivo entero     o  editor     ?  ayuda             
+  ↑↓  desplaza     n N  cambio 1/1     v  archivo entero     ?  ayuda           

@@ -57,7 +57,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "nxy: no conozco el comando %q\n%s\n", args[0], usage)
 		return 1
 	}
-	return cmd(args[1:], stdin, stdout, stderr)
+	return cmd(args[1:], platform.SkipBOM(stdin), stdout, stderr)
 }
 
 func runVersion(_ []string, _ io.Reader, stdout, _ io.Writer) int {

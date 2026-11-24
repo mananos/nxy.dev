@@ -6,13 +6,13 @@
                                                                                                  
       TE NECESITA    Mi   ¿Aprobás el plan FEAT-D r2 de nxy?                                        1d 22h    $0.00   
                      Te                                                                          ──────  plan         
-                                                                                                 
- ▌EN CURSO  1          ›  ▸ 1  Aprobar     Empezar a ejecutar el lote 1                          
-      TRABAJANDO     Ex     2  Cambiar     Escribí qué cambiar; nxy vuelve a planificar             3h 00m    $0.18   
-                     Es     3  Ver completoAbrir el plan completo en tu editor                   ──────  lote 2/4     
-                                                                                                 
- ▌LISTO HOY  1            No espera a la TUI: contestá en la terminal de Claude Code.            
+                       ›  ▸ 1  Aprobar                                                           
+ ▌EN CURSO  1                  Empezar a ejecutar el lote 1                                      
+      TRABAJANDO     Ex     2  Cambiar                                                              3h 00m    $0.18   
+                     Es        Escribí qué cambiar; nxy vuelve a planificar                      ──────  lote 2/4     
+                            3  Ver completo                                                      
+ ▌LISTO HOY  1                 Abrir el plan completo en tu editor                               
       LISTO          Co                                                                                       $0.03   
-
-  worktrees  1 pausado · 1 huérfano   w ver todos
+                          No espera a la TUI: contestá en la terminal de Claude Code.            
+  worktrees  1 pausado                                                                           
   1-3  elegir     enter  confirmar     tab  la otra     esc  después     ?  ayuda                                       

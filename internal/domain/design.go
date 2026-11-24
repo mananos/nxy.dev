@@ -67,6 +67,15 @@ type DesignClose struct {
 	Delegate bool        `json:"delegate,omitempty"`
 }
 
+// ForkPick is the option the user chose in the TUI for an open fork, with the labels there were,
+// until Claude is told (Told) and asks the question of the fork.
+type ForkPick struct {
+	Fork    string   `json:"fork"`
+	Label   string   `json:"label"`
+	Options []string `json:"options"`
+	Told    bool     `json:"told,omitempty"`
+}
+
 // Design is the debate of an engineer feature, kept in the db as it happens.
 type Design struct {
 	Agenda    []Fork       `json:"agenda,omitempty"`
@@ -80,4 +89,5 @@ type Design struct {
 	Closed    bool         `json:"closed,omitempty"`
 	Current   string       `json:"current,omitempty"` // fork being debated
 	Today     string       `json:"today,omitempty"`   // d2 source of how the code is today
+	Pick      *ForkPick    `json:"pick,omitempty"`    // what the user chose in the TUI for the current fork
 }

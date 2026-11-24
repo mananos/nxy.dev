@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -92,9 +93,9 @@ func TestRenderD2(t *testing.T) {
 		t.Errorf("lines %q", lines)
 	}
 
-	fail := fakeD2(t, "echo boom >&2\nexit 3\n", "exit /b 3\r\n")
-	if _, err := RenderD2(context.Background(), fail, "x"); err == nil {
-		t.Error("a non-zero exit must be an error")
+	fail := fakeD2(t, "echo boom >&2\nexit 3\n", "echo boom 1>&2\r\nexit /b 3\r\n")
+	if _, err := RenderD2(context.Background(), fail, "x"); err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("a non-zero exit must be an error with stderr: %v", err)
 	}
 }
 

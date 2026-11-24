@@ -869,6 +869,6 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 		Gate: gateFiles{getenv: os.Getenv}, Context: claudeContext{},
 		LegacyData: legacyFiles{}, LegacyStore: st,
 		AgentFiles: claudecode.AgentFile{}, Runs: st,
-		Asks: st, TUI: tuiLive{},
+		Asks: st, TUI: tuiLive{}, D2: d2Check,
 	}, st
 }

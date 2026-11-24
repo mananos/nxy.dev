@@ -1,6 +1,7 @@
 package docs
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -91,6 +92,24 @@ func TestQuestion(t *testing.T) {
 	}
 	if q.Options[0].Label != LabelUpdate || q.Options[0].Description != "README.md, docs/a.md" || q.Options[1].Label != LabelLeave {
 		t.Errorf("options = %+v", q.Options)
+	}
+}
+
+func TestTermsPatternPlainWords(t *testing.T) {
+	re := regexp.MustCompile(TermsPattern([]string{"branch", "prompt", "ClienteService"}))
+	for _, s := range []string{"git clone --branch v2", "Haiku sigue el prompt del agente", "the branch is new", "a clienteservice"} {
+		if re.MatchString(s) {
+			t.Errorf("%q should not match", s)
+		}
+	}
+	for _, s := range []string{"use `branch` here", "see worktree/branch.go", "calls branch(x)", "the ClienteService fetches"} {
+		if !re.MatchString(s) {
+			t.Errorf("%q should match", s)
+		}
+	}
+	greet := regexp.MustCompile(TermsPattern([]string{"greet"}))
+	if !greet.MatchString("greet() prints") || greet.MatchString("to greet people") {
+		t.Errorf("greet pattern = %s", greet)
 	}
 }
 

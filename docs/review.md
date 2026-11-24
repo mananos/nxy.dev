@@ -49,7 +49,7 @@ Las lentes `security` y `database` suben el riesgo a **alto**; `api` y `contract
 
 ### Docs
 
-Al final, nxy busca (por código, sin gastar tokens) documentos para usuarios que nombren lo que cambió: un `.md` en la raíz, un README, o lo que esté en `docs/`, `doc/`, `documentation/` o `wiki/`. Nombrar significa que aparece el nombre de un archivo cambiado, sin extensión, como palabra entera (nombres genéricos como `index` o `utils` no cuentan). Si encuentra alguno, te ofrece **Actualizar docs** o **Dejar**; con lo primero, un `documenter` actualiza sólo esos archivos y te cuenta qué cambió y qué dejó igual. Si no hay ninguno, no te pregunta.
+Al final, nxy busca (por código, sin gastar tokens) documentos para usuarios que nombren lo que cambió: un `.md` en la raíz, un README, o lo que esté en `docs/`, `doc/`, `documentation/` o `wiki/`. Nombrar significa que aparece el nombre de un archivo cambiado, sin extensión, como palabra entera; si el nombre es una sola palabra simple (`branch`, `prompt`), sólo cuenta entre backticks, con extensión (`branch.go`) o como llamada (`branch(`), y los compuestos (`ClienteService`, `cliente.component`) siguen contando como palabra entera (nombres genéricos como `index` o `utils` no cuentan). Si encuentra alguno, te ofrece **Actualizar docs** o **Dejar**; con lo primero, un `documenter` actualiza sólo esos archivos y te cuenta qué cambió y qué dejó igual. Si no hay ninguno, no te pregunta.
 
 ## Qué hacer
 

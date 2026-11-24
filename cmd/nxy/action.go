@@ -16,6 +16,9 @@ const actionUsage = "uso: nxy action decide --ask <id> --answer <etiqueta> [--an
 // runAction is `nxy action decide`: the user's answer, from the TUI, to a question the hook holds.
 // It is not for the model: the PreToolUse hook refuses the command.
 func runAction(args []string, _ io.Reader, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "pick" {
+		return runActionPick(args[1:], stdout, stderr)
+	}
 	if len(args) == 0 || args[0] != "decide" {
 		fmt.Fprintln(stderr, actionUsage)
 		return 1
@@ -63,6 +66,52 @@ func runAction(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 	} else {
 		fmt.Fprintln(stdout, "contestada")
 	}
+	return 0
+}
+
+const pickUsage = "uso: nxy action pick --feature <id> --fork <B> --option <etiqueta>"
+
+// runActionPick is `nxy action pick`: the option the user chose in the TUI for the open fork; Claude
+// gets it in the next turn. Like decide, only the TUI runs it.
+func runActionPick(rest []string, stdout, stderr io.Writer) int {
+	var feature, fork, option string
+	for i := 0; i < len(rest); i += 2 {
+		if i+1 >= len(rest) {
+			fmt.Fprintln(stderr, pickUsage)
+			return 1
+		}
+		switch rest[i] {
+		case "--feature":
+			feature = rest[i+1]
+		case "--fork":
+			fork = rest[i+1]
+		case "--option":
+			option = rest[i+1]
+		default:
+			fmt.Fprintln(stderr, pickUsage)
+			return 1
+		}
+	}
+	if feature == "" || fork == "" || option == "" {
+		fmt.Fprintln(stderr, pickUsage)
+		return 1
+	}
+	if !tuiProof(os.Getenv(platform.NonceEnv)) {
+		fmt.Fprintln(stderr, "nxy action pick: sólo lo corre la TUI de nxy (abrila con nxy tui y elegí ahí)")
+		return 1
+	}
+	h, st := newHooksStore()
+	defer st.Close()
+	res, err := h.PickFork(context.Background(), feature, fork, option)
+	if err != nil {
+		fmt.Fprintf(stderr, "nxy action pick: %s\n", oneLine(err.Error()))
+		return 1
+	}
+	if len(res.Problems) > 0 {
+		fmt.Fprintf(stderr, "nxy action pick: %s: %s\n", res.Problems[0].Where, oneLine(res.Problems[0].Msg))
+		return 1
+	}
+	fmt.Fprintln(stdout, "guardada")
 	return 0
 }
 
