@@ -62,6 +62,18 @@ func TestFindDocsNoTermsNoSearch(t *testing.T) {
 	}
 }
 
+func TestFindDocsPlainWordNeedsCode(t *testing.T) {
+	root := t.TempDir()
+	writeTree(t, root, map[string]string{
+		"README.md":     "git clone --branch v2 and the branch is new\n",
+		"docs/guide.md": "see `branch.go` for details\n",
+	})
+	res := findDocs(context.Background(), root, []string{"internal/worktree/branch.go"}, "")
+	if len(res.Docs) != 1 || res.Docs[0].Path != "docs/guide.md" {
+		t.Errorf("docs = %+v", res.Docs)
+	}
+}
+
 func TestFindDocsWikiDirFromCI(t *testing.T) {
 	root := t.TempDir()
 	writeTree(t, root, map[string]string{

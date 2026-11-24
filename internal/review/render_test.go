@@ -117,6 +117,22 @@ func TestReviewerPromptListsCutFiles(t *testing.T) {
 	}
 }
 
+func TestReviewerPromptCodeFirst(t *testing.T) {
+	base := Lens{Name: BaseLens, Title: "Base"}
+	if p := ReviewerPrompt(testFeature(), base, nil, "nxy", ""); strings.Contains(p, "Red after code") {
+		t.Error("no CodeFirst, no section")
+	}
+	f := testFeature()
+	f.SetProof(domain.Proof{Batch: 1, Red: &domain.Run{Exit: 1, CodeFirst: []string{"internal/x/x.go"}}})
+	p := ReviewerPrompt(f, base, nil, "nxy", "")
+	if !strings.Contains(p, "Red after code") || !strings.Contains(p, "batch 1") || !strings.Contains(p, "internal/x/x.go") {
+		t.Errorf("base prompt lacks the batch: %s", p)
+	}
+	if p := ReviewerPrompt(f, Lens{Name: "api", Title: "API"}, nil, "nxy", ""); strings.Contains(p, "Red after code") {
+		t.Error("other lens must not get it")
+	}
+}
+
 func TestRefuterAndFixPrompts(t *testing.T) {
 	f := testFeature()
 	f.Review.Findings = []domain.Finding{

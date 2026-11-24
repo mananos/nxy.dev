@@ -132,7 +132,9 @@ func (st *state) frame(dump bool) string {
 		avail := max(st.height-len(head)-len(foot), 1)
 		if len(body) > avail {
 			start := 0
-			if focus >= avail {
+			if sc, ok := scr.(scroller); ok && !st.help {
+				start = min(max(sc.top(st, r, focus, len(body), avail), 0), len(body)-avail)
+			} else if focus >= avail {
 				start = min(focus-avail+3, len(body)-avail)
 			}
 			body = body[start : start+avail]
@@ -147,7 +149,7 @@ func (st *state) frame(dump bool) string {
 		out = append(out, paint(l))
 	}
 	if st.decOpen && !st.help {
-		if win := st.decWindow(cw); len(win) > 0 {
+		if win, selTop, selBot := st.decWindow(cw); len(win) > 0 {
 			ww := lw(win[0])
 			top := 3
 			if dump {
@@ -157,7 +159,23 @@ func (st *state) frame(dump bool) string {
 			} else {
 				// never taller than the terminal: rise, then cut what does not fit
 				top = max(min(top, len(out)-len(win)), 0)
-				win = win[:min(len(win), len(out)-top)]
+				if h := len(out) - top; len(win) > h {
+					// cut from the saved offset, moved so the marked option shows whole
+					key := "decision/" + st.decCur + "#s"
+					start := min(max(st.cur[key], 0), len(win)-h)
+					if selTop < 0 {
+						// no marked option (fork): keep the offset the arrows set
+					} else if selBot-selTop+1 > h {
+						start = selTop
+					} else if selBot >= start+h {
+						start = selBot - h + 1
+					} else if selTop < start {
+						start = selTop
+					}
+					start = min(max(start, 0), len(win)-h)
+					st.cur[key] = start
+					win = win[start : start+h]
+				}
 			}
 			painted := make([]string, len(win))
 			for i, l := range win {

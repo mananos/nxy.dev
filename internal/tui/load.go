@@ -347,6 +347,34 @@ func (st *state) onLoad(msg tea.Msg) {
 	}
 }
 
+// askReread remembers that an r waits for the view of the screen on top and says so.
+func (st *state) askReread(r route, doneText string) intent {
+	if st.reread == nil {
+		st.reread = map[string]string{}
+	}
+	st.reread[topKey(r)] = doneText
+	return intent{toast: "Releyendo…"}
+}
+
+// onRereadDone closes the "Releyendo…" notice when the view an r asked for arrives.
+func (st *state) onRereadDone(m topMsg) {
+	if m.r == nil {
+		return
+	}
+	for _, k := range m.r.keys {
+		text, ok := st.reread[k]
+		if !ok {
+			continue
+		}
+		delete(st.reread, k)
+		if err := st.data.Errs[k]; err != nil {
+			st.toast, st.toastErr = err.Error(), true
+		} else {
+			st.toast, st.toastErr = text, false
+		}
+	}
+}
+
 // loadAll loads everything now: the cheap views, and per feature its agents, plan, design and the
 // files of the plan. Tests that drive the screens with keys use it so no screen waits.
 func (st *state) loadAll() {

@@ -112,6 +112,34 @@ func TestSavePlanEngineerRejects(t *testing.T) {
 	}
 }
 
+func TestSavePlanEngineerCriterionFromNote(t *testing.T) {
+	h, st, id := planningEngineer(t)
+	ctx := context.Background()
+	two := validPlan()
+	two.Criteria[0].Text = "r"
+	two.Criteria = append(two.Criteria, domain.Criterion{ID: "R2", Text: "new one", Test: domain.TestTDD})
+	two.Batches[0].Covers = []string{"R1", "R2"}
+	if res, _ := h.SavePlan(ctx, id, planReader(t, two)); len(res.Problems) == 0 {
+		t.Fatal("extra criterion without a note accepted")
+	}
+	f := st.feats[id]
+	f.ChangeNotes = []string{"add a criterion: new one"}
+	st.feats[id] = f
+	res, err := h.SavePlan(ctx, id, planReader(t, two))
+	if err != nil || len(res.Problems) != 0 {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	f = st.feats[id]
+	if f.Plan == nil || len(f.Plan.Criteria) != 2 {
+		t.Fatalf("plan = %+v", f.Plan)
+	}
+	h.Handle(ctx, askPost(f, plan.ApprovalQuestion(id, f.PlanRev), plan.Approve))
+	cs := st.feats[id].Design.Criteria
+	if len(cs) != 2 || cs[1].ID != "R2" || cs[1].Text != "new one" {
+		t.Errorf("design criteria = %+v", cs)
+	}
+}
+
 func TestSaveGapsBackToDesigning(t *testing.T) {
 	h, st, id := planningEngineer(t)
 	if res, _ := h.SaveGaps(context.Background(), id, strings.NewReader(`{"gaps":[]}`)); len(res.Problems) == 0 {

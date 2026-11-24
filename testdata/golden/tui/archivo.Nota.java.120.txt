@@ -4,7 +4,7 @@
      ←   Nota.java   api                                                                                 codegraph    
          src/billing/Nota.java · lo edita el lote 1                                                                   
 
-      diff de la feature   archivo                    v  alterna  o  editor       ▌IMPORTADO POR                      
+      diff de la feature   archivo                               cambio 1/2       ▌IMPORTADO POR                      
                                                                                    ›Factura.java                :30   
      ▸  9   linea I                                                                 Listado.java                 :7   
        10   linea J                                                                                                   
@@ -22,4 +22,4 @@
        20 + linea nueva 20                                                         CF-NOTA  cerrada hace 5d           
                                                                                                                       
      ✗ src/billing/Nota.java:12: se esperaba 100.00 y dio 99.99                                                       
-  n N  otro cambio     v  archivo entero     o  editor     r  recalcular     enter  importador     ?  ayuda             
+  ↑↓  desplaza     n N  cambio 1/2     v  archivo entero     o  editor     r  releer     ?  ayuda                       

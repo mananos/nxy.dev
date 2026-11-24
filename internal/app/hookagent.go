@@ -2,10 +2,13 @@ package app
 
 import (
 	"context"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/mananos/nxy.dev/v2/internal/affected"
 	"github.com/mananos/nxy.dev/v2/internal/docs"
 	"github.com/mananos/nxy.dev/v2/internal/domain"
 	"github.com/mananos/nxy.dev/v2/internal/flow"
@@ -110,15 +113,40 @@ func batchOfPrompt(prompt string) int {
 
 var batchPromptRe = regexp.MustCompile(`(?i)\bbatch (\d+)`)
 
+// maxCodeFirst caps the files kept in Proof.CodeFirst.
+const maxCodeFirst = 5
+
+// isCodePath reports whether a write to p is code: not a test, not under testdata (golden
+// files included) and not a markdown doc.
+func isCodePath(p string) bool {
+	p = filepath.ToSlash(p)
+	if affected.IsTest(affected.Builtin(), p) {
+		return false
+	}
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "testdata" {
+			return false
+		}
+	}
+	if strings.HasSuffix(p, ".md") && (strings.HasPrefix(p, "docs/") || strings.Contains(p, "/docs/")) {
+		return false
+	}
+	return true
+}
+
 // noteWrite counts a subagent write in the repo during running batch n: a green recorded
 // before it no longer vouches for the code.
-func (h Hooks) noteWrite(ctx context.Context, id string, n int) {
+func (h Hooks) noteWrite(ctx context.Context, id string, n int, path string) {
 	_, _, _ = h.mutate(ctx, id, func(g *domain.Feature) bool {
 		if g.State.Phase != domain.PhaseRunningBatch {
 			return false
 		}
 		p := g.ProofOf(n)
 		p.Edits++
+		if g.Plan != nil && p.Red == nil && plan.NeedOf(*g.Plan, n).Red && isCodePath(path) &&
+			len(p.CodeFirst) < maxCodeFirst && !slices.Contains(p.CodeFirst, path) {
+			p.CodeFirst = append(p.CodeFirst, path)
+		}
 		g.SetProof(p)
 		return true
 	})

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -125,6 +126,16 @@ func press(m *model, keys ...string) {
 			msg = tea.KeyPressMsg{Code: tea.KeyTab}
 		case "down":
 			msg = tea.KeyPressMsg{Code: tea.KeyDown}
+		case "up":
+			msg = tea.KeyPressMsg{Code: tea.KeyUp}
+		case "pgup":
+			msg = tea.KeyPressMsg{Code: tea.KeyPgUp}
+		case "pgdown":
+			msg = tea.KeyPressMsg{Code: tea.KeyPgDown}
+		case "home":
+			msg = tea.KeyPressMsg{Code: tea.KeyHome}
+		case "end":
+			msg = tea.KeyPressMsg{Code: tea.KeyEnd}
 		case "ctrl+n":
 			msg = tea.KeyPressMsg{Code: 'n', Mod: tea.ModCtrl}
 		default:
@@ -453,9 +464,194 @@ func TestFileHunks(t *testing.T) {
 		t.Errorf("v did not show the whole file:\n%s", got)
 	}
 	m.st.getenv = func(string) string { return "" }
+	m.st.lookPath, m.st.goos = noPath, "linux"
 	press(m, "o")
 	if !strings.Contains(m.st.toast, "nota-credito.component.ts:36") {
 		t.Errorf("toast %q", m.st.toast)
+	}
+}
+
+func TestRereadToastEnds(t *testing.T) {
+	m := fileModel(t)
+	press(m, "r")
+	if !strings.Contains(m.st.toast, "Releyendo") {
+		t.Fatalf("r did not say it is reading: %q", m.st.toast)
+	}
+	res := newResult()
+	res.keys = append(res.keys, "file/"+componentKey)
+	m.Update(topMsg{r: res})
+	if strings.Contains(m.st.toast, "Releyendo") || m.st.toast == "" || m.st.toastErr {
+		t.Errorf("the notice did not end: %q err=%v", m.st.toast, m.st.toastErr)
+	}
+
+	press(m, "r")
+	res = newResult()
+	res.fail("file/"+componentKey, fmt.Errorf("boom"))
+	m.Update(topMsg{r: res})
+	if !strings.Contains(m.st.toast, "boom") || !m.st.toastErr {
+		t.Errorf("the error did not show: %q err=%v", m.st.toast, m.st.toastErr)
+	}
+
+	m.st.stack = m.st.targetStack("plan", "F7K2")
+	press(m, "r")
+	if !strings.Contains(m.st.toast, "Releyendo") {
+		t.Fatalf("plan r: %q", m.st.toast)
+	}
+	res = newResult()
+	res.keys = append(res.keys, "plan/F7K2")
+	m.Update(topMsg{r: res})
+	if strings.Contains(m.st.toast, "Releyendo") || m.st.toast == "" {
+		t.Errorf("plan notice did not end: %q", m.st.toast)
+	}
+}
+
+// scrollFile is a 40 line file with an added line, a pure deletion in the middle and a deletion
+// after the last line.
+func scrollFile(t *testing.T) *model {
+	m := fileModel(t)
+	m.st.height = 16
+	var c []string
+	for i := 1; i <= 40; i++ {
+		c = append(c, fmt.Sprintf("line %02d", i))
+	}
+	m.st.data.Files[componentKey] = &views.File{
+		Path: "src/app/notas/nota-credito.component.ts", Repo: "facturacion-web", Content: c,
+		Hunks: []views.Hunk{
+			{OldStart: 10, NewStart: 10, Lines: []views.DiffLine{{Kind: views.DiffAdd, New: 10, Text: "line 10"}}},
+			{OldStart: 19, NewStart: 20, Lines: []views.DiffLine{{Kind: views.DiffDel, Old: 19, Text: "gone mid"}}},
+			{OldStart: 40, NewStart: 41, Lines: []views.DiffLine{{Kind: views.DiffDel, Old: 40, Text: "gone end"}}},
+		},
+		ImportedBy: []views.FileRef{{Path: "src/a.ts", Line: 3}, {Path: "src/b.ts", Line: 5}},
+	}
+	press(m, "v")
+	return m
+}
+
+func rowOf(m *model, s string) int {
+	for i, l := range strings.Split(m.st.frame(false), "\n") {
+		if strings.Contains(l, s) {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestFileScroll(t *testing.T) {
+	m := scrollFile(t)
+	if rowOf(m, "line 01") < 0 {
+		t.Fatalf("line 01 should show at the start:\n%s", m.st.frame(false))
+	}
+	press(m, "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j")
+	if rowOf(m, "line 01") >= 0 {
+		t.Errorf("j did not scroll:\n%s", m.st.frame(false))
+	}
+	press(m, "up", "k")
+	a := rowOf(m, "line 10")
+	press(m, "down")
+	if b := rowOf(m, "line 10"); b != a-1 {
+		t.Errorf("down moved %d -> %d, want one row", a, b)
+	}
+	press(m, "end")
+	if rowOf(m, "gone end") < 0 {
+		t.Fatalf("end must show the last row:\n%s", m.st.frame(false))
+	}
+	last := rowOf(m, "gone end")
+	press(m, "pgdown")
+	rowOf(m, "")
+	press(m, "down")
+	rowOf(m, "")
+	press(m, "j")
+	if rowOf(m, "gone end") != last {
+		t.Errorf("scrolled past the end")
+	}
+	press(m, "pgup")
+	if rowOf(m, "gone end") == last {
+		t.Errorf("pgup did not go back")
+	}
+	press(m, "home")
+	if rowOf(m, "line 01") < 0 {
+		t.Errorf("home did not go to the top")
+	}
+	press(m, "pgdown")
+	if rowOf(m, "line 01") >= 0 {
+		t.Errorf("pgdown should move a page:\n%s", m.st.frame(false))
+	}
+}
+
+func TestFileJump(t *testing.T) {
+	m := scrollFile(t)
+	if !strings.Contains(m.st.frame(false), "cambio 1/3") {
+		t.Errorf("no change counter:\n%s", m.st.frame(false))
+	}
+	// head: top bar and crumb, then two rows above the change
+	press(m, "n")
+	if r := rowOf(m, "gone mid"); r != 4 {
+		t.Errorf("n did not reach the pure deletion (row %d):\n%s", r, m.st.frame(false))
+	}
+	if !strings.Contains(m.st.frame(false), "cambio 2/3") {
+		t.Errorf("counter after n:\n%s", m.st.frame(false))
+	}
+	press(m, "n")
+	if rowOf(m, "gone end") < 0 || !strings.Contains(m.st.frame(false), "cambio 3/3") {
+		t.Errorf("n did not reach the deletion at the end:\n%s", m.st.frame(false))
+	}
+	press(m, "N")
+	if r := rowOf(m, "gone mid"); r != 4 {
+		t.Errorf("N back to the deletion: row %d", r)
+	}
+	press(m, "N")
+	if r := rowOf(m, "line 10"); r != 4 {
+		t.Errorf("N left the change at row %d, want 4:\n%s", r, m.st.frame(false))
+	}
+	press(m, "n")
+	// free scroll from there (the frame is drawn between keys)
+	rowOf(m, "")
+	press(m, "down")
+	if r := rowOf(m, "gone mid"); r != 3 {
+		t.Errorf("down after a jump: row %d, want 3", r)
+	}
+	// the diff view too
+	press(m, "v", "N")
+	if r := rowOf(m, "line 10"); r < 0 {
+		t.Errorf("N in the diff:\n%s", m.st.frame(false))
+	}
+}
+
+func TestFileFooterFits100(t *testing.T) {
+	m := scrollFile(t)
+	m.st.data.Files[componentKey].Path = "src/Nota.java"
+	m.st.width = 100
+	lines := strings.Split(m.st.frame(false), "\n")
+	foot := lines[len(lines)-1]
+	for _, want := range []string{"o  editor", "r  releer", "?  ayuda"} {
+		if !strings.Contains(foot, want) {
+			t.Errorf("footer at 100 columns lacks %q:\n%s", want, foot)
+		}
+	}
+}
+
+func TestFileImporterKeys(t *testing.T) {
+	m := scrollFile(t)
+	m.st.width = 200
+	if got := m.st.frame(false); !strings.Contains(got, "abre a.ts") {
+		t.Fatalf("footer should name the file:\n%s", got)
+	}
+	press(m, "i")
+	if got := m.st.frame(false); !strings.Contains(got, "abre b.ts") {
+		t.Errorf("i did not move the mark:\n%s", got)
+	}
+	press(m, "I")
+	if got := m.st.frame(false); !strings.Contains(got, "abre a.ts") {
+		t.Errorf("I did not move the mark back:\n%s", got)
+	}
+	press(m, "i", "enter")
+	if got := m.st.frame(false); !strings.Contains(got, "b.ts") || m.st.top().screen != "archivo" || !strings.HasSuffix(m.st.top().key, "src/b.ts") {
+		t.Errorf("enter did not open the marked file: %+v", m.st.top())
+	}
+	m = scrollFile(t)
+	m.st.data.Files[componentKey].ImportedBy = nil
+	if got := m.st.frame(false); strings.Contains(got, "enter abre") || strings.Contains(got, "importador") {
+		t.Errorf("no importers, no importer keys:\n%s", got)
 	}
 }
 
@@ -550,6 +746,36 @@ func TestLearnedPlain(t *testing.T) {
 	}
 	for _, a := range testData(t).Agents {
 		walk(&a.Root)
+	}
+}
+
+func TestEngineerDiagramProblemNotices(t *testing.T) {
+	join := func(d views.Diagram) string {
+		var sb strings.Builder
+		for _, l := range engDiagram(d, 100) {
+			for _, s := range l {
+				sb.WriteString(s.Text)
+			}
+			sb.WriteString("\n")
+		}
+		return sb.String()
+	}
+	cases := []struct {
+		d    views.Diagram
+		want string
+	}{
+		{views.Diagram{Source: "a -> b", Problem: "missing"}, "d2 no está: instalalo desde Config"},
+		{views.Diagram{Source: "a -> b", Problem: "error", Error: "syntax x"}, "el dibujo tiene un error: syntax x"},
+		{views.Diagram{Source: "a -> b", Problem: "slow"}, "d2 tardó: se reintenta solo"},
+	}
+	for _, c := range cases {
+		got := join(c.d)
+		if !strings.Contains(got, c.want) {
+			t.Fatalf("%s: %q", c.d.Problem, got)
+		}
+		if c.d.Problem != "missing" && strings.Contains(got, "instalá") {
+			t.Fatalf("%s must not ask to install d2: %q", c.d.Problem, got)
+		}
 	}
 }
 

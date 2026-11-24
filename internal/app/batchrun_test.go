@@ -263,8 +263,22 @@ func TestRunBatchTailCut(t *testing.T) {
 	sh.res = ShellResult{Exit: 1, Output: b.String()}
 	r, _ := runBatch(h, id, RunGreen)
 	lines := strings.Split(r.Tail, "\n")
-	if len(lines) != acceptTailLines || lines[len(lines)-1] != "line 100" || lines[0] != "line 61" {
+	if len(lines) != acceptTailLines+1 || lines[len(lines)-1] != "line 100" || lines[0] != "… 60 líneas anteriores recortadas" || lines[1] != "line 61" {
 		t.Errorf("tail has %d lines: first %q last %q", len(lines), lines[0], lines[len(lines)-1])
+	}
+}
+
+func TestTailLinesMarksCut(t *testing.T) {
+	if got := tailLines("a\nb\nc", 5); got != "a\nb\nc" {
+		t.Errorf("no cut: %q", got)
+	}
+	var b strings.Builder
+	for i := 1; i <= 43; i++ {
+		fmt.Fprintf(&b, "l%d\n", i)
+	}
+	got := strings.Split(tailLines(b.String(), 40), "\n")
+	if len(got) != 41 || got[0] != "… 3 líneas anteriores recortadas" || got[1] != "l4" || got[40] != "l43" {
+		t.Errorf("cut: %q", got)
 	}
 }
 
@@ -284,11 +298,47 @@ func TestFailTail(t *testing.T) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
 	}
+	if !strings.HasPrefix(out, "… 23 líneas anteriores recortadas\n") {
+		t.Errorf("no cut line:\n%s", out)
+	}
 	if strings.Contains(out, "pkg1\t") {
 		t.Errorf("ok lines outside the tail kept:\n%s", out)
 	}
-	if got := failTail("a\nb\nc", 2); got != "b\nc" {
+	if got := failTail("a\nb\nc", 2); got != "… 1 líneas anteriores recortadas\nb\nc" {
 		t.Errorf("no failures: %q", got)
+	}
+}
+
+func TestRunBatchRedCodeFirst(t *testing.T) {
+	ctx := context.Background()
+	h, st, sh, id := batchFeature(t, domain.BatchTestNew, "go test")
+	for _, p := range []string{"x_test.go", "testdata/golden/a.txt", "docs/plan.md", "internal/x/testdata/b.golden"} {
+		h.noteWrite(ctx, id, 1, p)
+	}
+	sh.res = ShellResult{Exit: 1, Output: "FAIL"}
+	r, err := runBatch(h, id, RunRed)
+	if err != nil || !r.Recorded || r.Warn != "" {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	if pr, _ := stored(st, id); pr.Red == nil || len(pr.Red.CodeFirst) != 0 {
+		t.Errorf("marked without code: %+v", pr.Red)
+	}
+
+	h, st, sh, id = batchFeature(t, domain.BatchTestNew, "go test")
+	h.noteWrite(ctx, id, 1, "x.go")
+	h.noteWrite(ctx, id, 1, "x.go")
+	sh.res = ShellResult{Exit: 1, Output: "FAIL"}
+	r, err = runBatch(h, id, RunRed)
+	if err != nil || !r.Recorded || !strings.Contains(r.Warn, "x.go") {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	pr, _ := stored(st, id)
+	if pr.Red == nil || len(pr.Red.CodeFirst) != 1 || pr.Red.CodeFirst[0] != "x.go" {
+		t.Errorf("red = %+v", pr.Red)
+	}
+	h.noteWrite(ctx, id, 1, "y.go")
+	if pr, _ := stored(st, id); len(pr.CodeFirst) != 1 {
+		t.Errorf("code after the red counted: %+v", pr.CodeFirst)
 	}
 }
 

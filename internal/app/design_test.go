@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -71,6 +72,41 @@ func TestDesignTodaySaves(t *testing.T) {
 	}
 }
 
+type badD2 struct{}
+
+func (badD2) CheckD2(_ context.Context, src string) error { return errors.New("d2 syntax: boom") }
+
+func TestDesignD2ErrorGoesBack(t *testing.T) {
+	h, st, id := engineerFeature(t)
+	ctx := context.Background()
+	if _, err := h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["donde"]}`)); err != nil {
+		t.Fatal(err)
+	}
+	fork := `{"fork":"B1","options":[{"label":"a","d2":"x -> y"},{"label":"b"}],"opinion":"a"}`
+	closeJSON := `{"criteria":[{"id":"R1","text":"anda"}],"d2":"x -> y"}`
+	h.D2 = badD2{}
+	for name, call := range map[string]func() (DesignResult, error){
+		"today": func() (DesignResult, error) { return h.SaveToday(ctx, id, strings.NewReader(`{"d2":"a -> b"}`)) },
+		"fork":  func() (DesignResult, error) { return h.SaveForkOptions(ctx, id, strings.NewReader(fork)) },
+		"close": func() (DesignResult, error) { return h.ProposeClose(ctx, id, strings.NewReader(closeJSON)) },
+	} {
+		res, err := call()
+		if err != nil || len(res.Problems) == 0 || !strings.Contains(res.Problems[0].Msg, "boom") {
+			t.Errorf("%s: res = %+v, err = %v", name, res, err)
+		}
+	}
+	if st.feats[id].Design.Today != "" || st.feats[id].Design.Close != nil {
+		t.Errorf("saved despite the d2 error: %+v", st.feats[id].Design)
+	}
+	h.D2 = nil
+	if res, err := h.SaveToday(ctx, id, strings.NewReader(`{"d2":"a -> b"}`)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("nil D2: %+v %v", res, err)
+	}
+	if st.feats[id].Design.Today != "a -> b" {
+		t.Errorf("Today = %q", st.feats[id].Design.Today)
+	}
+}
+
 func TestDesignProposeAndOK(t *testing.T) {
 	h, st, id := engineerFeature(t)
 	ctx := context.Background()
@@ -133,6 +169,125 @@ func TestDesignForkQuestionAnswer(t *testing.T) {
 	}
 	if st.feats[id].State.Phase != domain.PhaseDesigning {
 		t.Errorf("phase = %v", st.feats[id].State.Phase)
+	}
+}
+
+func forkWithOptions(t *testing.T, labels ...string) (Hooks, *memStore, string) {
+	t.Helper()
+	h, st, id := engineerFeature(t)
+	ctx := context.Background()
+	if _, err := h.SaveAgenda(ctx, id, strings.NewReader(`{"forks":["donde va el cache"]}`)); err != nil {
+		t.Fatal(err)
+	}
+	var opts []string
+	for _, l := range labels {
+		opts = append(opts, `{"label":"`+l+`","summary":"s"}`)
+	}
+	fork := `{"fork":"B1","options":[` + strings.Join(opts, ",") + `],"opinion":"memoria"}`
+	if res, err := h.SaveForkOptions(ctx, id, strings.NewReader(fork)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("fork: %+v %v", res, err)
+	}
+	return h, st, id
+}
+
+func TestForkPickNextTurn(t *testing.T) {
+	h, st, id := forkWithOptions(t, "En memoria", "En disco")
+	ctx := context.Background()
+	if res, err := h.PickFork(ctx, id, "B1", "Nope"); err != nil || len(res.Problems) == 0 {
+		t.Fatalf("label out of the options accepted: %+v %v", res, err)
+	}
+	if res, err := h.PickFork(ctx, id, "B2", "En disco"); err != nil || len(res.Problems) == 0 {
+		t.Fatalf("other fork accepted: %+v %v", res, err)
+	}
+	if _, err := h.PickFork(ctx, id, "B1", "En memoria"); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := h.PickFork(ctx, id, "B1", "En disco"); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("change: %+v %v", res, err)
+	}
+	if p := st.feats[id].Design.Pick; p == nil || p.Label != "En disco" || p.Told {
+		t.Fatalf("pick = %+v", p)
+	}
+
+	// the next prompt carries it once
+	r := h.Handle(ctx, prompt("seguí"))
+	if !strings.Contains(r.Context, "En disco") || !strings.Contains(r.Context, "B1") || !strings.Contains(r.Context, "design propose") {
+		t.Fatalf("context = %q", r.Context)
+	}
+	if r := h.Handle(ctx, prompt("otra vez")); strings.Contains(r.Context, "En disco") {
+		t.Errorf("told twice: %q", r.Context)
+	}
+	if p := st.feats[id].Design.Pick; p == nil || !p.Told {
+		t.Errorf("pick after telling = %+v", p)
+	}
+
+	// another enter changes it and it is told again
+	if _, err := h.PickFork(ctx, id, "B1", "En memoria"); err != nil {
+		t.Fatal(err)
+	}
+	if r := h.Handle(ctx, prompt("dale")); !strings.Contains(r.Context, "En memoria") {
+		t.Errorf("changed pick not told: %q", r.Context)
+	}
+}
+
+func TestForkPickAnswersTheQuestion(t *testing.T) {
+	h, st, id := forkWithOptions(t, "En memoria", "En disco")
+	ctx := context.Background()
+	if _, err := h.PickFork(ctx, id, "B1", "En disco"); err != nil {
+		t.Fatal(err)
+	}
+	q := design.ForkQuestion(id, "B1")
+	ev := HookEvent{Name: "PreToolUse", Tool: toolAskUser, ProjectDir: "/p", Cwd: "/p", Questions: []string{q},
+		Asked: []domain.AskedQuestion{{Question: q, Options: []string{"En memoria", "En disco"}}}}
+	r := h.Handle(ctx, ev)
+	if r.Answers == nil || r.Answers.ByQuestion[q] != "En disco" {
+		t.Fatalf("response = %+v", r)
+	}
+	if st.feats[id].Design.Pick != nil {
+		t.Errorf("pick kept after answering: %+v", st.feats[id].Design.Pick)
+	}
+	if r := h.Handle(ctx, ev); r.Answers != nil {
+		t.Errorf("answered twice: %+v", r)
+	}
+}
+
+func TestForkPickDroppedWhenOptionsChange(t *testing.T) {
+	h, st, id := forkWithOptions(t, "En memoria", "En disco")
+	ctx := context.Background()
+	if _, err := h.PickFork(ctx, id, "B1", "En disco"); err != nil {
+		t.Fatal(err)
+	}
+	fork := `{"fork":"B1","options":[{"label":"En memoria","summary":"s"},{"label":"En redis","summary":"s"}],"opinion":"x"}`
+	if res, err := h.SaveForkOptions(ctx, id, strings.NewReader(fork)); err != nil || len(res.Problems) > 0 {
+		t.Fatalf("fork: %+v %v", res, err)
+	}
+	if p := st.feats[id].Design.Pick; p != nil {
+		t.Errorf("pick kept with other options: %+v", p)
+	}
+	r := h.Handle(ctx, prompt("seguí"))
+	if strings.Contains(r.Context, "En disco") {
+		t.Errorf("stale pick told: %q", r.Context)
+	}
+}
+
+func TestDecideCommandCoversPick(t *testing.T) {
+	for _, c := range []string{
+		`nxy action decide --ask X --answer Y`,
+		`"/opt/nxy/nxy" action pick --feature F --fork B1 --option A`,
+		`C:\x\nxy.exe action pick --feature F --fork B1 --option A`,
+	} {
+		if !decideCommand.MatchString(c) {
+			t.Errorf("not matched: %s", c)
+		}
+	}
+	if decideCommand.MatchString(`nxy design fork --feature F`) {
+		t.Error("design fork matched")
+	}
+	h, _, _ := engineerFeature(t)
+	r := h.Handle(context.Background(), HookEvent{Name: "PreToolUse", Tool: "Bash", HasCommand: true, ProjectDir: "/p", Cwd: "/p",
+		Command: `nxy action pick --feature F --fork B1 --option A`})
+	if r.Deny == "" {
+		t.Errorf("pick by the model allowed: %+v", r)
 	}
 }
 
