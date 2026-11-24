@@ -390,12 +390,6 @@ type PendingAsks interface {
 	DeletePendingAsk(ctx context.Context, id string) error
 }
 
-// D2Check tries to draw a d2 source; it is nil when d2 is missing or took too long (nothing can be
-// said), and the error carries what d2 complained about.
-type D2Check interface {
-	CheckD2(ctx context.Context, src string) error
-}
-
 // TUILiveness tells whether a TUI is open and can answer questions.
 type TUILiveness interface {
 	Alive() bool

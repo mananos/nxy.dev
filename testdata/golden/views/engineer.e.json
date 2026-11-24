@@ -68,24 +68,12 @@
         "lines": [
           "[cola: Cola]"
         ],
-        "renderer": "d2 0.7.1 txt",
-        "problem": "",
-        "error": ""
+        "renderer": "d2 0.7.1 txt"
       },
       "action": {
         "id": "decide-A",
         "label": "Cola de reintentos",
-        "argv": [
-          "nxy",
-          "action",
-          "pick",
-          "--feature",
-          "FEAT-E",
-          "--fork",
-          "B2",
-          "--option",
-          "Cola de reintentos"
-        ],
+        "argv": [],
         "confirm": "",
         "planned": false
       }
@@ -102,39 +90,24 @@
       "diagram": {
         "source": "",
         "lines": [],
-        "renderer": "",
-        "problem": "",
-        "error": ""
+        "renderer": ""
       },
       "action": {
         "id": "decide-B",
         "label": "Reintento en línea",
-        "argv": [
-          "nxy",
-          "action",
-          "pick",
-          "--feature",
-          "FEAT-E",
-          "--fork",
-          "B2",
-          "--option",
-          "Reintento en línea"
-        ],
+        "argv": [],
         "confirm": "",
         "planned": false
       }
     }
   ],
   "opinion": "Reintento con cola: es lo que menos toca.",
-  "picked": "",
   "today": {
     "source": "cobro: Cobro\nCobro -> Pasarela",
     "lines": [
       "[cobro: Cobro]"
     ],
-    "renderer": "d2 0.7.1 txt",
-    "problem": "",
-    "error": ""
+    "renderer": "d2 0.7.1 txt"
   },
   "other": "Otra: escribila en el chat"
 }

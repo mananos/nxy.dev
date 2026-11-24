@@ -4,9 +4,9 @@
      ←   Credito.java   api                                                                              codegraph    
          src/billing/Credito.java · lo edita el lote 2                                                                
 
-      diff de la feature   archivo                               cambio 1/1       ▌MEMORIA ANCLADA                    
+      diff de la feature   archivo                    v  alterna  o  editor       ▌MEMORIA ANCLADA                    
                                                                                    K1  Usar BigDecimal para los im…   
      ▸ 1 + class Credito {                                                                                            
        2 + }                                                                      ▌FEATURES                           
                                                                                    FEAT-P  lote 2 · en rojo           
-  ↑↓  desplaza     n N  cambio 1/1     v  archivo entero     o  editor     r  releer     ?  ayuda                       
+  n N  otro cambio     v  archivo entero     o  editor     r  recalcular     enter  importador     ?  ayuda             

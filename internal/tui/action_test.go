@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -391,61 +390,6 @@ func TestDecisionLateAnswerReloadsInRed(t *testing.T) {
 	}
 }
 
-func longOpts(n int) []views.Option {
-	var out []views.Option
-	for i := 1; i <= n; i++ {
-		var ws []string
-		for j := 1; j <= 24; j++ {
-			ws = append(ws, fmt.Sprintf("o%dw%02d", i, j))
-		}
-		out = append(out, views.Option{Label: fmt.Sprintf("Opcion%d", i), Description: strings.Join(ws, " ")})
-	}
-	return out
-}
-
-func TestDecisionWindowWholeOptions(t *testing.T) {
-	// the whole description, wrapped, and the context before the question
-	m := decModel(t, &fakeRun{}, &views.Decision{FeatureID: "FX", AskID: "A1", Question: "LAPREGUNTA",
-		Context: []string{"ELCONTEXTO"}, Options: longOpts(2)})
-	m.st.height = 60
-	got := m.st.frame(false)
-	if !strings.Contains(got, "o1w24") || !strings.Contains(got, "o2w24") || !strings.Contains(got, "o1w01") {
-		t.Fatalf("description cut:\n%s", got)
-	}
-	if strings.Index(got, "ELCONTEXTO") > strings.Index(got, "LAPREGUNTA") || !strings.Contains(got, "ELCONTEXTO") {
-		t.Fatalf("context not before the question:\n%s", got)
-	}
-
-	// a window taller than the terminal follows the marked option
-	m = decModel(t, &fakeRun{}, &views.Decision{FeatureID: "FX", AskID: "A1", Question: "q", Options: longOpts(4)})
-	m.st.height = 18
-	m.st.cur["decision/FX"] = 0
-	if f := m.st.frame(false); strings.Contains(f, "o4w24") {
-		t.Fatalf("option 4 should not fit yet:\n%s", f)
-	}
-	for i := 0; i < 3; i++ {
-		send(m, key("down"))
-	}
-	f := m.st.frame(false)
-	if !strings.Contains(f, "Opcion4") || !strings.Contains(f, "o4w24") {
-		t.Fatalf("option 4 not whole in view:\n%s", f)
-	}
-}
-
-func TestDecisionForkWindowScrolls(t *testing.T) {
-	m := decModel(t, &fakeRun{}, &views.Decision{FeatureID: "FX", Kind: "fork", Question: "q", Options: longOpts(4)})
-	m.st.height = 18
-	if f := m.st.frame(false); strings.Contains(f, "o4w24") {
-		t.Fatalf("option 4 should not fit yet:\n%s", f)
-	}
-	for i := 0; i < 40; i++ {
-		send(m, key("down"))
-	}
-	if f := m.st.frame(false); !strings.Contains(f, "o4w24") {
-		t.Fatalf("fork window did not scroll:\n%s", f)
-	}
-}
-
 func TestPlanApprovalActions(t *testing.T) {
 	f := &fakeRun{}
 	m := withRun(testModel(t), f)
@@ -488,7 +432,7 @@ func TestPlanApprovalActions(t *testing.T) {
 	}
 }
 
-func TestEngineerEnterSavesPick(t *testing.T) {
+func TestEngineerEnterNeedsAskID(t *testing.T) {
 	f := &fakeRun{}
 	m := withRun(testModel(t), f)
 	m.st.stack = m.st.targetStack("ingeniero", "F7K9")
@@ -499,18 +443,8 @@ func TestEngineerEnterSavesPick(t *testing.T) {
 	}
 	e = m.st.data.Engineer["F7K9"]
 	e.AskID = ""
-	pickArgv := []string{"nxy", "action", "pick", "--feature", "F7K9", "--fork", e.Current, "--option", e.Options[0].Label}
-	e.Options[0].Action.Argv = pickArgv
 	send(m, key("enter"))
-	if len(f.calls) != 2 || !reflect.DeepEqual(f.calls[1], pickArgv) {
-		t.Fatalf("enter without AskID ran %v", f.calls)
-	}
-	if !strings.Contains(m.st.toast, "guardada") || !strings.Contains(m.st.toast, "próximo mensaje") {
-		t.Errorf("toast %q", m.st.toast)
-	}
-	e = m.st.data.Engineer["F7K9"]
-	e.Picked = e.Options[0].Label
-	if got := m.st.frame(false); !strings.Contains(got, "✓ elegida") {
-		t.Errorf("picked option not marked:\n%s", got)
+	if len(f.calls) != 1 || !strings.Contains(m.st.toast, "elegí en el chat") {
+		t.Fatalf("enter without AskID ran %v, toast %q", f.calls, m.st.toast)
 	}
 }

@@ -240,44 +240,9 @@ func TestD2CacheCachesFailure(t *testing.T) {
 		if d.Source != "a -> b" || d.Lines == nil || len(d.Lines) != 0 || d.Renderer != "" {
 			t.Fatalf("failed draw: %+v", d)
 		}
-		if d.Problem != "error" || d.Error != "boom" {
-			t.Fatalf("problem: %+v", d)
-		}
 	}
 	if calls != 1 {
 		t.Fatalf("a broken source is tried once: %d", calls)
-	}
-}
-
-func TestD2CacheRetriesTimeout(t *testing.T) {
-	old := viewTools
-	t.Cleanup(func() { viewTools = old })
-	calls := 0
-	viewTools.FindD2 = func() (string, string, bool) { return "d2bin", "0.7.1", true }
-	viewTools.RenderD2 = func(context.Context, string, string) ([]string, error) {
-		calls++
-		if calls == 1 {
-			return nil, context.DeadlineExceeded
-		}
-		return []string{"ok"}, nil
-	}
-	c := &d2Cache{}
-	d := c.draw(context.Background(), "a -> b")
-	if d.Problem != "slow" || len(d.Lines) != 0 {
-		t.Fatalf("timeout: %+v", d)
-	}
-	d = c.draw(context.Background(), "a -> b")
-	if calls != 2 || d.Problem != "" || len(d.Lines) != 1 {
-		t.Fatalf("next load retries: calls %d, %+v", calls, d)
-	}
-}
-
-func TestD2CacheMissing(t *testing.T) {
-	old := viewTools
-	t.Cleanup(func() { viewTools = old })
-	viewTools.FindD2 = func() (string, string, bool) { return "", "", false }
-	if d := (&d2Cache{}).draw(context.Background(), "a"); d.Problem != "missing" {
-		t.Fatalf("%+v", d)
 	}
 }
 
@@ -315,95 +280,5 @@ func TestTestRefsWholeWord(t *testing.T) {
 	got = testRefs(f, []string{"src/NotaTest.java", "src/NotaTestHelper.java"})
 	if got[0].Status != "fail" || got[1].Status != "none" {
 		t.Fatalf("only NotaTest fails: %+v", got)
-	}
-}
-
-func TestViewSourceFileProbeCached(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not installed")
-	}
-	root := t.TempDir()
-	t.Setenv("HOME", filepath.Join(root, "userdir"))
-	t.Setenv("USERPROFILE", filepath.Join(root, "userdir"))
-	t.Setenv("NXY_HOME", filepath.Join(root, "nxyhome"))
-	t.Setenv("CLAUDE_PROJECT_DIR", filepath.Join(root, "app"))
-	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
-	repo := filepath.Join(root, "app")
-	vsGit(t, root, "init", "-q", repo)
-	for _, kv := range [][]string{{"user.name", "t"}, {"user.email", "t@example.com"}, {"commit.gpgsign", "false"}, {"core.autocrlf", "false"}} {
-		vsGit(t, repo, "config", kv[0], kv[1])
-	}
-	vsWrite(t, filepath.Join(repo, "src", "foo.go"), "package src\n\nfunc Foo() int {\n\treturn 1\n}\n")
-	vsGit(t, repo, "add", ".")
-	vsGit(t, repo, "commit", "-q", "-m", "init")
-	base := platform.GitHead(repo)
-	vsWrite(t, filepath.Join(repo, "src", "foo.go"), "package src\n\nfunc Foo() int {\n\treturn 2\n}\n")
-
-	ctx := context.Background()
-	clk := time.Date(2026, 11, 12, 10, 0, 0, 0, time.UTC)
-	st, err := sqlite.Open(ctx, filepath.Join(root, "nxy.db"), func() time.Time { return clk })
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer st.Close()
-	plan := &domain.Plan{
-		Title:    "Foo devuelve 2",
-		Criteria: []domain.Criterion{{ID: "R1", Text: "Foo devuelve 2", Test: domain.TestTDD}},
-		Batches: []domain.Batch{{
-			N: 1, Title: "Foo", Covers: []string{"R1"}, Risk: domain.RiskLow,
-			Change: []domain.Change{{At: "src/foo.go:4", What: "devuelve 2"}},
-			Test:   domain.BatchTest{Kind: domain.BatchTestNew, Name: "TestFoo", Accept: "go test ./src/"},
-		}},
-	}
-	id, err := st.CreateFeature(ctx, domain.Feature{
-		Repo: platform.RepoKey(repo), ProjectDir: repo, Home: "ck", Holds: []string{"ck"}, Request: "foo", PlanRev: 1, Plan: plan, Base: base,
-		State: domain.State{Phase: domain.PhaseRunningBatch, Batch: 1, Batches: 1, Steps: []domain.Step{{N: 1, Status: domain.StepRunning, Launched: true}}},
-		Next:  domain.Action{Kind: domain.AskDecision},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	old := viewTools
-	t.Cleanup(func() { viewTools = old })
-	affected, greps := 0, 0
-	viewTools = viewToolset{
-		Indexed: func(string) bool { return true },
-		Affected: func(context.Context, string, []string) ([]string, bool) {
-			affected++
-			return []string{"src/foo_test.go"}, true
-		},
-		RgFound: func() bool { return true },
-		Grep: func(context.Context, string, string) []tools.RgRow {
-			greps++
-			return []tools.RgRow{{Path: "src/bar.go", Line: 7}}
-		},
-		FindD2:   func() (string, string, bool) { return "", "", false },
-		RenderD2: func(context.Context, string, string) ([]string, error) { return nil, errors.New("no d2") },
-	}
-	src := newViewSource(st, os.Getenv, repo, func() time.Time { return clk }, time.UTC)
-	defer src.Close()
-
-	f, err := src.File(ctx, id, "src/foo.go")
-	if err != nil || len(f.ImportedBy) != 1 {
-		t.Fatalf("first file: %+v %v", f, err)
-	}
-	if affected == 0 || greps == 0 {
-		t.Fatalf("first File must probe: affected %d grep %d", affected, greps)
-	}
-	a0, g0 := affected, greps
-	f, err = src.File(ctx, id, "src/foo.go")
-	if err != nil || len(f.ImportedBy) != 1 || len(f.Tests) == 0 {
-		t.Fatalf("second file: %+v %v", f, err)
-	}
-	if affected != a0 || greps != g0 {
-		t.Fatalf("same HEAD must not probe again: affected %d->%d grep %d->%d", a0, affected, g0, greps)
-	}
-	vsGit(t, repo, "commit", "-q", "--allow-empty", "-m", "otro head")
-	if _, err := src.File(ctx, id, "src/foo.go"); err != nil {
-		t.Fatal(err)
-	}
-	if affected == a0 || greps == g0 {
-		t.Fatalf("another HEAD must probe again: affected %d grep %d", affected, greps)
 	}
 }

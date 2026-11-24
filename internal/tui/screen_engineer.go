@@ -16,7 +16,7 @@ func (engineerScreen) section() string                { return "inicio" }
 func (engineerScreen) crumb(_ *state, r route) string { return r.key + " › Ingeniero" }
 
 func (engineerScreen) keys(st *state, r route) []hint {
-	enter := hint{"enter", "guarda la elección"}
+	enter := hint{"enter", "contesta cuando Claude pregunte"}
 	if e := st.data.Engineer[r.key]; e != nil && e.AskID != "" {
 		enter = hint{"enter", "elegir"}
 	}
@@ -80,14 +80,7 @@ func engDiagram(d views.Diagram, w int) []line {
 	for _, s := range strings.Split(strings.TrimRight(d.Source, "\n"), "\n") {
 		out = append(out, fit(L(T(s, tMu)), w))
 	}
-	msg := "d2 no está: instalalo desde Config"
-	switch d.Problem {
-	case "error":
-		msg = "el dibujo tiene un error: " + strings.Join(strings.Fields(d.Error), " ")
-	case "slow":
-		msg = "d2 tardó: se reintenta solo"
-	}
-	return append(out, nil, fit(L(T(msg, tSb)), w))
+	return append(out, nil, L(T("el dibujo no está: instalá d2 desde Config", tSb)))
 }
 
 func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
@@ -133,7 +126,7 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 
 	head := []line{
 		L(heading(title)),
-		L(T(fmt.Sprintf("bifurcación %d de %d · %s", n, of, pickedText(e)), tSb)),
+		L(T(fmt.Sprintf("bifurcación %d de %d · ninguna elegida", n, of), tSb)),
 	}
 	if e.Question != "" {
 		head = append(head, nil)
@@ -154,11 +147,7 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 		if i == cur {
 			lab.Bold = true
 		}
-		sum := L("       ", T(o.Summary, tMu))
-		if e.Picked != "" && o.Label == e.Picked {
-			sum = L("       ", T("✓ elegida", tDone), T(" · "+o.Summary, tMu))
-		}
-		left = append(left, pick([]line{L(row, lab), sum}, lwid, tBg1, i == cur, 3)...)
+		left = append(left, pick([]line{L(row, lab), L("       ", T(o.Summary, tMu))}, lwid, tBg1, i == cur, 3)...)
 	}
 	tail := []line{nil, L(S(" ? ", "ch-off"), "  ", T(e.Other, tSb)), nil}
 	if st.engFlag(r, "c") && e.Opinion != "" {
@@ -213,13 +202,6 @@ func (engineerScreen) view(st *state, r route, w int) ([]line, int) {
 	return out, focus
 }
 
-func pickedText(e *views.Engineer) string {
-	if e.Picked != "" {
-		return "elegida: " + e.Picked
-	}
-	return "ninguna elegida"
-}
-
 func (engineerScreen) key(st *state, r route, k string) intent {
 	e := st.data.Engineer[r.key]
 	if e == nil {
@@ -237,15 +219,11 @@ func (engineerScreen) key(st *state, r route, k string) intent {
 		st.engToggle(r, "c")
 	case "enter":
 		if cur < len(e.Options) {
-			o := e.Options[cur]
-			if len(o.Action.Argv) == 0 {
-				return intent{toast: "no hay bifurcación abierta para elegir"}
+			a := e.Options[cur].Action
+			if e.AskID == "" || len(a.Argv) == 0 {
+				return intent{toast: "elegí en el chat; enter contesta cuando Claude haga la pregunta de la bifurcación"}
 			}
-			req := actionReq{label: "Elegir " + o.Key, a: o.Action, reloadOnErr: true}
-			if e.AskID == "" {
-				req.done = "guardada " + o.Key + ": Claude la recibe en tu próximo mensaje"
-			}
-			return intent{toast: st.runAction(req)}
+			return intent{toast: st.runAction(actionReq{label: "Elegir " + e.Options[cur].Key, a: a, reloadOnErr: true})}
 		}
 	}
 	return intent{}

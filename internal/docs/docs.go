@@ -3,9 +3,7 @@
 // found by code (no tokens), and no documenter is offered when there are none.
 //
 // "Names what changed" = the name of a changed code file without extension (`ClienteService`,
-// `cliente.component`) as a whole word. A name that is one plain word (`branch`, `prompt`) counts
-// only as code: between backticks, with an extension (`branch.go`) or as a call (`branch(`), so
-// "git clone --branch" and "the prompt" do not match. Names too generic to point at anything (`index`, `utils`)
+// `cliente.component`) as a whole word. Names too generic to point at anything (`index`, `utils`)
 // and very short ones are left out: they would match every doc in the repo.
 //
 // Differences with the 1.x: the question and its options are in Spanish ("Actualizar docs" /
@@ -17,10 +15,7 @@ package docs
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/mananos/nxy.dev/v2/internal/domain"
 	"github.com/mananos/nxy.dev/v2/internal/jscompat"
@@ -141,23 +136,7 @@ func UserDocGlobs(wikiDir string) []string {
 	return out
 }
 
-// isPlain says whether a term is one simple word (only lowercase letters): it is everyday prose.
-func isPlain(t string) bool {
-	if t == "" {
-		return false
-	}
-	for _, r := range t {
-		if !unicode.IsLower(r) {
-			return false
-		}
-	}
-	return true
-}
-
 // TermsPattern is a regex source matching any term as a whole word (dots inside a term are literal).
-// A plain word (`branch`, `prompt`) matches only as code: between backticks, followed by a dot and
-// an extension (`branch.go`) or by a parenthesis (`branch(`). The pattern has no A-Z, so rg's
-// --smart-case does not change how it matches.
 func TermsPattern(terms []string) string {
 	parts := make([]string, len(terms))
 	for i, t := range terms {
@@ -167,11 +146,6 @@ func TermsPattern(terms []string) string {
 				b.WriteByte('\\')
 			}
 			b.WriteRune(r)
-		}
-		if isPlain(t) {
-			e := b.String()
-			parts[i] = "\x60" + e + "\x60|\\b" + e + `\.\w+|\b` + e + `\(`
-			continue
 		}
 		parts[i] = `\b` + b.String() + `\b`
 	}
@@ -324,9 +298,6 @@ type PacketIn struct {
 	WikiDir string
 	// MaxDiffLines caps the diff lines; 0 means 1500.
 	MaxDiffLines int
-	// MaxBytes caps the whole packet; 0 means 25000. MaxPlanBytes caps the plan; 0 means 10000.
-	MaxBytes     int
-	MaxPlanBytes int
 }
 
 // Packet is what the documenter reads: the plan, what changed, and the docs that name it with
@@ -336,120 +307,43 @@ func Packet(o PacketIn) string {
 	if max == 0 {
 		max = 1500
 	}
-	maxBytes := o.MaxBytes
-	if maxBytes == 0 {
-		maxBytes = 25000
-	}
-	maxPlan := o.MaxPlanBytes
-	if maxPlan == 0 {
-		maxPlan = 10000
-	}
-	// the header (plan, doc lines, file list) gets at most 3/5 of the cap; the diffs get the rest
-	budget := maxBytes * 3 / 5
-	if maxPlan > budget/2 {
-		maxPlan = budget / 2
-	}
-	plan := jscompat.Trim(o.Plan)
-	if len(plan) > maxPlan {
-		cut := maxPlan
-		for cut > 0 && !utf8.RuneStart(plan[cut]) {
-			cut--
-		}
-		plan = plan[:cut] + fmt.Sprintf("\n(plan cut: %d of %d bytes shown, read the plan file for the rest)", cut, len(plan))
-	}
 	out := []string{
 		"# nxy docs packet · review " + o.ID,
 		"",
 		"## The plan",
-		plan,
+		jscompat.Trim(o.Plan),
 		"",
 		"## Docs that name what changed (edit these)",
 	}
-	hsize := len(strings.Join(out, "\n"))
-	skippedLines := 0
 	for _, d := range o.Docs {
 		out = append(out, "- "+d.Path)
-		hsize += len(d.Path) + 3
 		for _, l := range d.Lines {
-			line := fmt.Sprintf("    %s:%d: %s", d.Path, l.Line, l.Text)
-			if hsize+len(line)+1 > budget*4/5 {
-				skippedLines++
-				continue
-			}
-			out = append(out, line)
-			hsize += len(line) + 1
+			out = append(out, fmt.Sprintf("    %s:%d: %s", d.Path, l.Line, l.Text))
 		}
-	}
-	if skippedLines > 0 {
-		out = append(out, fmt.Sprintf("(%d more doc lines left out: grep the docs above)", skippedLines))
 	}
 	out = append(out, "")
 	if o.WikiDir != "" {
 		out = append(out, "The repo's CI publishes `"+o.WikiDir+"/` to its wiki: that is where its docs live.", "")
 	}
 	out = append(out, "## What changed")
-	hsize = len(strings.Join(out, "\n"))
-	skippedFiles := 0
 	for _, f := range o.Files {
-		line := fmt.Sprintf("- %s (%s, +%d −%d)", f.Path, f.Status, f.Added, f.Removed)
-		if hsize+len(line)+1 > budget {
-			skippedFiles++
-			continue
-		}
-		out = append(out, line)
-		hsize += len(line) + 1
-	}
-	if skippedFiles > 0 {
-		out = append(out, fmt.Sprintf("(%d more changed files not listed: run git status)", skippedFiles))
+		out = append(out, fmt.Sprintf("- %s (%s, +%d −%d)", f.Path, f.Status, f.Added, f.Removed))
 	}
 	out = append(out, "")
-	rank := func(p string) int {
-		switch {
-		case review.IsTestPath(p):
-			return 2
-		case review.IsDocPath(p):
-			return 1
-		}
-		return 0
-	}
-	files := append([]File(nil), o.Files...)
-	sort.SliceStable(files, func(i, j int) bool { return rank(files[i].Path) < rank(files[j].Path) })
-	size := len(strings.Join(out, "\n"))
 	used := 0
-	const noteReserve = 200
-	omitted := 0
-	for _, f := range files {
+	for _, f := range o.Files {
 		if f.Diff == "" {
 			continue
 		}
 		n := strings.Count(f.Diff, "\n") + 1
-		// each diff adds its text, a blank line and two joining newlines
-		if used+n > max || size+len(f.Diff)+2+noteReserve > maxBytes {
-			note := "(diff of " + f.Path + " left out: read the file if a doc depends on it)"
-			if size+len(note)+1+noteReserve <= maxBytes {
-				out = append(out, note)
-				size += len(note) + 1
-			} else {
-				omitted++
-			}
+		if used+n > max {
+			out = append(out, "(diff of "+f.Path+" left out: read the file if a doc depends on it)")
 			continue
 		}
 		used += n
-		size += len(f.Diff) + 2
 		out = append(out, f.Diff, "")
 	}
-	if omitted > 0 {
-		out = append(out, fmt.Sprintf("(%d more diffs left out: read the files if a doc depends on them)", omitted))
-	}
-	res := strings.Join(out, "\n")
-	if len(res) > maxBytes {
-		cut := maxBytes
-		for cut > 0 && !utf8.RuneStart(res[cut]) {
-			cut--
-		}
-		res = res[:cut]
-	}
-	return res
+	return strings.Join(out, "\n")
 }
 
 // Shown is the short list of docs in the question: the first three, then ", +N more".

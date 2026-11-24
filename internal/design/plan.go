@@ -43,9 +43,7 @@ func ValidateGaps(titles []string) []domain.Problem {
 
 // CheckPlan checks that the planner of an engineer feature did not change the design: same criteria,
 // no questions, and decisions of its own only for forks the user delegated.
-// With noted (the user left a change note) the plan may add criteria after the approved ones, with
-// the next ids in a row.
-func CheckPlan(d *domain.Design, p domain.Plan, noted bool) []domain.Problem {
+func CheckPlan(d *domain.Design, p domain.Plan) []domain.Problem {
 	var out []domain.Problem
 	add := func(where, format string, a ...any) {
 		out = append(out, domain.Problem{Where: where, Msg: fmt.Sprintf(format, a...)})
@@ -53,14 +51,8 @@ func CheckPlan(d *domain.Design, p domain.Plan, noted bool) []domain.Problem {
 	if len(p.Questions) > 0 {
 		add("questions", "an engineer plan asks nothing: a design hole goes to `plan gaps`")
 	}
-	n := len(d.Criteria)
-	if len(p.Criteria) < n || (len(p.Criteria) > n && !noted) {
-		add("criteria", "the design approved %d criteria; the plan has %d (copy them as they are)", n, len(p.Criteria))
-	}
-	for i := n; noted && i < len(p.Criteria); i++ {
-		if want := "R" + strconv.Itoa(i+1); p.Criteria[i].ID != want {
-			add(p.Criteria[i].ID, "a criterion added from a note takes the next id: %s", want)
-		}
+	if len(p.Criteria) != len(d.Criteria) {
+		add("criteria", "the design approved %d criteria; the plan has %d (copy them as they are)", len(d.Criteria), len(p.Criteria))
 	}
 	for i, r := range p.Criteria {
 		if i >= len(d.Criteria) {

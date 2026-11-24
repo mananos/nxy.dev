@@ -91,7 +91,7 @@ func docsReview(t *testing.T, files map[string]string) (repo, id, out string) {
 }
 
 func TestReviewWithDocsAsksAndTheDocumenterFinishes(t *testing.T) {
-	repo, id, out := docsReview(t, map[string]string{"README.md": "intro\nThe `greeter` prints a hello.\n"})
+	repo, id, out := docsReview(t, map[string]string{"README.md": "intro\nThe greeter prints a hello.\n"})
 	if !strings.Contains(out, "Actualizar docs") || !strings.Contains(out, "Dejar") || !strings.Contains(out, "AskUserQuestion") || strings.Contains(out, "Listo") {
 		t.Fatalf("no docs question: %s", out)
 	}
@@ -105,7 +105,7 @@ func TestReviewWithDocsAsksAndTheDocumenterFinishes(t *testing.T) {
 		t.Fatalf("no documenter dispatch: %s", out)
 	}
 	out = agentPre(t, repo, "nxy:documenter", "feature "+id+" docs")
-	if !strings.Contains(out, "updatedInput") || !strings.Contains(out, "README.md:2: The `greeter` prints a hello.") || !strings.Contains(out, "review docs --feature "+id) {
+	if !strings.Contains(out, "updatedInput") || !strings.Contains(out, "README.md:2: The greeter prints a hello.") || !strings.Contains(out, "review docs --feature "+id) {
 		t.Fatalf("documenter prompt not injected: %s", out)
 	}
 	edit := func(name string) string {
@@ -132,7 +132,7 @@ func TestReviewWithDocsAsksAndTheDocumenterFinishes(t *testing.T) {
 }
 
 func TestReviewWithDocsLeaveCloses(t *testing.T) {
-	repo, id, _ := docsReview(t, map[string]string{"docs/guide.md": "`greeter` is described here\n"})
+	repo, id, _ := docsReview(t, map[string]string{"docs/guide.md": "greeter is described here\n"})
 	out := answer(t, repo, docs.QuestionText(id), "Dejar")
 	if !strings.Contains(out, "Listo") || strings.Contains(out, "nxy:documenter") {
 		t.Fatalf("Dejar did not close: %s", out)
@@ -140,7 +140,7 @@ func TestReviewWithDocsLeaveCloses(t *testing.T) {
 }
 
 func TestReviewWithoutDocsClosesWithoutAsking(t *testing.T) {
-	_, _, out := docsReview(t, map[string]string{"README.md": "nothing about it\n", "src/notes.md": "`greeter` (not a user doc)\n"})
+	_, _, out := docsReview(t, map[string]string{"README.md": "nothing about it\n", "src/notes.md": "greeter (not a user doc)\n"})
 	if !strings.Contains(out, "Listo") || strings.Contains(out, "Actualizar docs") {
 		t.Fatalf("a repo without docs naming the change was asked: %s", out)
 	}
