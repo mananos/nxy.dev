@@ -99,6 +99,13 @@ func (h Hooks) preToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	h.markBootstrapAsked(ctx, ev)
+	if !ev.InputHasAnswers && h.Store != nil && h.Repos != nil {
+		if f, ok := h.activeFeature(ctx, ev); ok {
+			if r, ok := h.pickAnswer(ctx, ev, f); ok {
+				return r
+			}
+		}
+	}
 	if !ev.InputHasAnswers && (h.Asks == nil || h.TUI == nil) {
 		return HookResponse{}
 	}

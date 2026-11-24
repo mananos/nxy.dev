@@ -36,7 +36,7 @@ Fuera de una feature y sin nada que filtrar no ves nada: ni salida de hook, ni h
 | Evento | Qué hace |
 | --- | --- |
 | `SessionStart` | Importa los datos de la 1.x una vez por repo; resuelve el motor del filtro; re-inyecta el paso de la feature activa (sobrevive a `/clear`); ofrece las notas de la carpeta; avisa si quedó una feature de la 1.x a medias o si hay una 1.x activa; en auto mode, le pide a Claude que anteponga `rtk` |
-| `UserPromptSubmit` | Arranca la feature de `/nxy:feature` y `/nxy:engineer` (guarda tu pedido tal cual); guarda tus mensajes como referencias del diseño; entrega un paso pendiente; el aviso de «siempre / nunca» para proponer una regla; la pregunta de las notas |
+| `UserPromptSubmit` | Arranca la feature de `/nxy:feature` y `/nxy:engineer` (guarda tu pedido tal cual); guarda tus mensajes como referencias del diseño; entrega un paso pendiente y la opción que elegiste en Ingeniero ([ingeniero](ingeniero.md)); el aviso de «siempre / nunca» para proponer una regla; la pregunta de las notas |
 | `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk ([rtk](rtk.md)); frena las escrituras por consola y las búsquedas amplias del hilo principal ([gate](gate.md)); rechaza `nxy action decide` |
 | `PreToolUse` Grep/Glob | El freno de lectura |
 | `PreToolUse` Edit/Write/NotebookEdit/MultiEdit | El freno de escritura; cuenta las escrituras del implementer y verifica que su lote nombre el archivo |

@@ -64,7 +64,7 @@ func (h Hooks) broadShellSearch(ev HookEvent) bool {
 
 // decideCommand matches a command that runs `nxy … action decide`, in Bash or PowerShell (the binary
 // may carry a path, an extension or quotes). Strict on purpose: the answer is the user's, not the model's.
-var decideCommand = regexp.MustCompile(`(?i)\bnxy(?:\.exe|\.cmd)?['"]?(?:\s+\S+)*?\s+action\s+decide\b`)
+var decideCommand = regexp.MustCompile(`(?i)\bnxy(?:\.exe|\.cmd)?['"]?(?:\s+\S+)*?\s+action\s+(?:decide|pick)\b`)
 
 // preToolBash mirrors hosts/claude-code/hooks/pretooluse-bash.mjs: while a feature is active the
 // main thread does not write the repo through the shell either (an implementer's writes are
@@ -74,7 +74,7 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	if decideCommand.MatchString(ev.Command) {
-		return HookResponse{Deny: "nxy action decide is the user's answer from the TUI; ask with AskUserQuestion"}
+		return HookResponse{Deny: "nxy action decide and pick are the user's answer from the TUI; ask with AskUserQuestion"}
 	}
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r

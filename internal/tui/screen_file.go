@@ -24,7 +24,18 @@ func (fileScreen) keys(st *state, r route) []hint {
 	if st.fileFull(r) {
 		v = hint{"v", "diff"}
 	}
-	return []hint{{"n N", "otro cambio"}, v, {"o", "editor"}, {"r", "recalcular"}, {"enter", "importador"}, {"↑↓", "importador"}}
+	cambio := "cambio"
+	f := st.data.Files[r.key]
+	if f != nil && len(f.Hunks) > 0 {
+		cur := min(max(st.cur[r.ckey()+"#n"], 0), len(f.Hunks)-1)
+		cambio = fmt.Sprintf("cambio %d/%d", cur+1, len(f.Hunks))
+	}
+	hs := []hint{{"↑↓", "desplaza"}, {"n N", cambio}, v}
+	if f != nil && len(f.ImportedBy) > 0 {
+		imp := min(max(st.cur[r.ckey()+"#i"], 0), len(f.ImportedBy)-1)
+		hs = append(hs, hint{"enter", "abre " + path.Base(f.ImportedBy[imp].Path)}, hint{"i I", "importador"})
+	}
+	return append(hs, hint{"o", "editor"}, hint{"r", "releer"})
 }
 
 func (st *state) fileFull(r route) bool { return st.cur[r.ckey()+"#v"] == 1 }
@@ -147,47 +158,72 @@ func (st *state) fileCode(f *views.File, cur int, full bool, iw int) (lines []li
 	}
 
 	// the whole file: the deleted lines go in front of the line that follows them
+	// (what a batch deletes at its end goes in front of the next line, or after the last one)
 	dels := map[int][]views.DiffLine{}
 	added := map[int]bool{}
+	end := len(f.Content) + 1
 	for _, h := range f.Hunks {
 		var pending []views.DiffLine
+		last := 0
 		for _, d := range h.Lines {
 			if d.Kind == views.DiffDel {
 				pending = append(pending, d)
 				continue
 			}
+			last = d.New
 			if len(pending) > 0 {
-				dels[d.New] = append(dels[d.New], pending...)
+				dels[min(d.New, end)] = append(dels[min(d.New, end)], pending...)
 				pending = nil
 			}
 			if d.Kind == views.DiffAdd {
 				added[d.New] = true
 			}
 		}
+		if len(pending) > 0 {
+			at := h.NewStart
+			if last > 0 {
+				at = last + 1
+			}
+			at = min(max(at, 1), end)
+			dels[at] = append(dels[at], pending...)
+		}
 	}
-	starts := map[int]int{}
+	starts := map[int][]int{}
 	for hi, h := range f.Hunks {
-		starts[h.NewStart] = hi
+		starts[min(max(h.NewStart, 1), end)] = append(starts[min(max(h.NewStart, 1), end)], hi)
 	}
 	hunkRow = make([]int, len(f.Hunks))
-	for i, text := range f.Content {
-		no := i + 1
-		if hi, ok := starts[no]; ok {
+	// emit draws the deleted lines in front of line no, then the line itself unless no is past
+	// the end; the mark goes on the first row of the current block.
+	emit := func(no int, text string, segs []seg) {
+		marked := false
+		for _, hi := range starts[no] {
 			hunkRow[hi] = len(lines)
+			marked = marked || hi == cur
+		}
+		mk := func() string {
+			if marked {
+				marked = false
+				return "▸"
+			}
+			return " "
 		}
 		for _, d := range dels[no] {
-			lines = append(lines, row(" ", d.Old, "-", d.Text, tFailBg, nil))
+			lines = append(lines, row(mk(), d.Old, "-", d.Text, tFailBg, nil))
 		}
-		mark := " "
-		if hi, ok := starts[no]; ok && hi == cur {
-			mark = "▸"
+		if no >= end {
+			return
 		}
 		if added[no] {
-			lines = append(lines, row(mark, no, "+", text, tDoneBg, content[i]))
+			lines = append(lines, row(mk(), no, "+", text, tDoneBg, segs))
 		} else {
-			lines = append(lines, row(mark, no, " ", text, "", content[i]))
+			lines = append(lines, row(mk(), no, " ", text, "", segs))
 		}
 	}
+	for i, text := range f.Content {
+		emit(i+1, text, content[i])
+	}
+	emit(end, "", nil)
 	return lines, hunkRow
 }
 
@@ -293,7 +329,11 @@ func (fileScreen) view(st *state, r route, w int) ([]line, int) {
 		diffChip, fullChip = L(S(" "+label+" ", "ch-off")), accent("archivo")
 	}
 	body, rows := st.fileCode(f, cur, full, ciw)
-	head := []line{lr(L(diffChip, " ", fullChip), L(keycap("v"), T(" alterna ", tMu), keycap("o"), T(" editor", tMu)), ciw), nil}
+	right := L()
+	if len(f.Hunks) > 0 {
+		right = L(T(fmt.Sprintf("cambio %d/%d", cur+1, len(f.Hunks)), tMu))
+	}
+	head := []line{lr(L(diffChip, " ", fullChip), right, ciw), nil}
 	code := append(head, body...)
 	if len(f.Notes) > 0 {
 		code = append(code, nil)
@@ -320,10 +360,22 @@ func (fileScreen) view(st *state, r route, w int) ([]line, int) {
 	return out, focus
 }
 
+// top is the first row of the body: a jump (-1) puts the focused change two rows from the top.
+func (fileScreen) top(st *state, r route, focus, length, avail int) int {
+	k := r.ckey() + "#s"
+	s := st.cur[k]
+	if s < 0 {
+		s = focus - 2
+	}
+	s = min(max(s, 0), max(length-avail, 0))
+	st.cur[k] = s
+	return s
+}
+
 func (fileScreen) key(st *state, r route, k string) intent {
 	if k == "r" {
 		st.cmd = tea.Batch(st.cmd, st.topCmd(true))
-		return intent{toast: "Recalculando el archivo…"}
+		return st.askReread(r, "Archivo releído.")
 	}
 	f := st.data.Files[r.key]
 	if f == nil {
@@ -331,17 +383,35 @@ func (fileScreen) key(st *state, r route, k string) intent {
 	}
 	cur := min(max(st.cur[r.ckey()+"#n"], 0), max(len(f.Hunks)-1, 0))
 	imp := min(max(st.cur[r.ckey()+"#i"], 0), max(len(f.ImportedBy)-1, 0))
+	sk := r.ckey() + "#s"
+	scroll := max(st.cur[sk], 0)
+	page := max(st.height-6, 1)
 	switch k {
 	case "n":
 		st.cur[r.ckey()+"#n"] = min(cur+1, max(len(f.Hunks)-1, 0))
+		st.cur[sk] = -1
 	case "N":
 		st.cur[r.ckey()+"#n"] = max(cur-1, 0)
+		st.cur[sk] = -1
 	case "v":
 		st.cur[r.ckey()+"#v"] = 1 - st.cur[r.ckey()+"#v"]
+		st.cur[sk] = 0
 	case "up", "k":
-		st.cur[r.ckey()+"#i"] = max(imp-1, 0)
+		st.cur[sk] = max(scroll-1, 0)
 	case "down", "j":
+		st.cur[sk] = scroll + 1
+	case "pgup":
+		st.cur[sk] = max(scroll-page, 0)
+	case "pgdown":
+		st.cur[sk] = scroll + page
+	case "home":
+		st.cur[sk] = 0
+	case "end":
+		st.cur[sk] = 1 << 30
+	case "i":
 		st.cur[r.ckey()+"#i"] = min(imp+1, max(len(f.ImportedBy)-1, 0))
+	case "I":
+		st.cur[r.ckey()+"#i"] = max(imp-1, 0)
 	case "o":
 		line := 1
 		if cur < len(f.Hunks) {

@@ -16,6 +16,8 @@ type Diagram struct {
 	Source   string   `json:"source"`   // d2 code
 	Lines    []string `json:"lines"`    // text already drawn
 	Renderer string   `json:"renderer"` // "d2 0.7.1 txt" or "demo"
+	Problem  string   `json:"problem"`  // why there are no lines: missing|error|slow; empty with a drawing
+	Error    string   `json:"error"`    // the message of d2 when Problem is error
 }
 
 // EngFork is one fork of the design agenda.
@@ -48,6 +50,7 @@ type Engineer struct {
 	Question string        `json:"question"`
 	Options  []EngOption   `json:"options"`
 	Opinion  string        `json:"opinion"`
-	Today    Diagram       `json:"today"` // how the code is today
+	Picked   string        `json:"picked"` // label of the option the user saved with enter; empty when none
+	Today    Diagram       `json:"today"`  // how the code is today
 	Other    string        `json:"other"`
 }

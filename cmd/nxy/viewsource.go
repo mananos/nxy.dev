@@ -110,9 +110,16 @@ type viewSource struct {
 	done   func()
 
 	mu      sync.Mutex
-	impacts map[string]planImpact // by feature id, plan revision and HEAD of each repo
+	impacts map[string]planImpact   // by feature id, plan revision and HEAD of each repo
+	probes  map[string]fileProbeHit // tests and importers by repo dir, path, source and HEAD
 	d2      *d2Cache
 	ts      *viewToolset // real tools over getenv, built on first use
+}
+
+// fileProbeHit is what probe found for one file at one HEAD.
+type fileProbeHit struct {
+	tests []string
+	refs  []tools.RgRow
 }
 
 var _ views.Source = (*viewSource)(nil)
