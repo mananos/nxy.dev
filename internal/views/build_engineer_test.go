@@ -68,8 +68,8 @@ func TestBuildEngineerAgendaAndOptions(t *testing.T) {
 	if len(o.Diagram.Lines) != 1 || o.Cons == nil || len(o.Pros) != 1 || o.Action.Planned {
 		t.Errorf("option 0 = %+v", o)
 	}
-	if got := strings.Join(o.Action.Argv, " "); e.AskID != "" || got != "nxy action pick --feature F1 --fork B2 --option json" {
-		t.Errorf("nothing waiting: ask %q argv %q", e.AskID, got)
+	if e.AskID != "" || len(o.Action.Argv) != 0 {
+		t.Errorf("nothing waiting: ask %q argv %v", e.AskID, o.Action.Argv)
 	}
 	// with the fork question waiting, enter answers with the label
 	w, _ := BuildEngineer(EngineerIn{

@@ -22,7 +22,7 @@ func closedDesign() *domain.Design {
 func TestCheckPlanEngineer(t *testing.T) {
 	d := closedDesign()
 	ok := domain.Plan{Criteria: []domain.Criterion{{ID: "R1", Text: "r", Test: domain.TestTDD}}}
-	if probs := CheckPlan(d, ok, false); len(probs) != 0 {
+	if probs := CheckPlan(d, ok); len(probs) != 0 {
 		t.Errorf("problems = %v", probs)
 	}
 	bad := domain.Plan{
@@ -30,28 +30,8 @@ func TestCheckPlanEngineer(t *testing.T) {
 		Questions: []domain.Question{{Question: "q"}},
 		Decisions: []domain.Decision{{Fork: "B1"}},
 	}
-	if probs := CheckPlan(d, bad, false); len(probs) != 3 {
+	if probs := CheckPlan(d, bad); len(probs) != 3 {
 		t.Errorf("problems = %v", probs)
-	}
-}
-
-func TestCheckPlanExtraCriteria(t *testing.T) {
-	d := closedDesign()
-	r1 := domain.Criterion{ID: "R1", Text: "r", Test: domain.TestTDD}
-	extra := domain.Criterion{ID: "R2", Text: "more", Test: domain.TestTDD}
-	if probs := CheckPlan(d, domain.Plan{Criteria: []domain.Criterion{r1, extra}}, true); len(probs) != 0 {
-		t.Errorf("extra with note: %v", probs)
-	}
-	if probs := CheckPlan(d, domain.Plan{Criteria: []domain.Criterion{r1, extra}}, false); len(probs) == 0 {
-		t.Error("extra without note accepted")
-	}
-	skip := domain.Criterion{ID: "R3", Text: "more"}
-	if probs := CheckPlan(d, domain.Plan{Criteria: []domain.Criterion{r1, skip}}, true); len(probs) == 0 {
-		t.Error("skipped id accepted")
-	}
-	changed := domain.Criterion{ID: "R1", Text: "other"}
-	if probs := CheckPlan(d, domain.Plan{Criteria: []domain.Criterion{changed, extra}}, true); len(probs) == 0 {
-		t.Error("changed approved criterion accepted")
 	}
 }
 

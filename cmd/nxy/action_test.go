@@ -135,67 +135,6 @@ func TestActionDecideRelease(t *testing.T) {
 	}
 }
 
-func TestActionPick(t *testing.T) {
-	repo := flowRepo(t)
-	path, err := platform.DBPath()
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := t.Context()
-	s, err := sqlite.Open(ctx, path, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fid, err := s.CreateFeature(ctx, domain.Feature{
-		Repo: platform.RepoKey(repo), ProjectDir: repo, Mode: domain.ModeEngineer,
-		State: domain.State{Phase: domain.PhaseDesigning},
-		Design: &domain.Design{Current: "B1", Agenda: []domain.Fork{{ID: "B1", Title: "t", Status: domain.ForkOpen,
-			Options: []domain.ForkOption{{Key: "A", Label: "En memoria"}, {Key: "B", Label: "En disco"}}}}},
-	})
-	s.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	pick := func(label string) (int, string, string) {
-		return runCmd(t, "", "action", "pick", "--feature", fid, "--fork", "B1", "--option", label)
-	}
-	read := func() *domain.ForkPick {
-		s, err := sqlite.Open(ctx, path, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer s.Close()
-		f, err := s.Feature(ctx, fid)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return f.Design.Pick
-	}
-	t.Setenv(platform.NonceEnv, "")
-	if code, _, errb := pick("En disco"); code != 1 || !strings.Contains(errb, "sólo lo corre la TUI") {
-		t.Fatalf("no nonce: code %d, err %q", code, errb)
-	}
-	if read() != nil {
-		t.Fatal("picked without proof")
-	}
-	liveTUI(t)
-	if code, _, errb := pick("Quizás"); code != 1 || errb == "" {
-		t.Fatalf("bad label: code %d, err %q", code, errb)
-	}
-	if code, out, errb := pick("En disco"); code != 0 || !strings.Contains(out, "guardada") {
-		t.Fatalf("pick: code %d, out %q, err %q", code, out, errb)
-	}
-	if p := read(); p == nil || p.Label != "En disco" {
-		t.Fatalf("pick = %+v", p)
-	}
-	if code, _, errb := pick("En memoria"); code != 0 {
-		t.Fatalf("change: code %d, err %q", code, errb)
-	}
-	if p := read(); p == nil || p.Label != "En memoria" {
-		t.Fatalf("pick = %+v", p)
-	}
-}
-
 func TestFeatureStopByIDReleasesTheAsk(t *testing.T) {
 	fid, id := seedAsk(t)
 	code, out, errb := runCmd(t, "", "feature", "stop", "--feature", fid)

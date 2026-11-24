@@ -22,8 +22,6 @@ type actionReq struct {
 	// reloadOnErr reloads the views when the command fails: a decide that came late ("ya contestada")
 	// leaves the screen showing a question nobody waits for.
 	reloadOnErr bool
-	// done is the toast when the command worked, instead of "<label> · listo".
-	done string
 	// filled says every placeholder of the argv got a value: a `{x}` inside a value the user
 	// typed is not a placeholder nobody filled in.
 	filled bool
@@ -135,9 +133,6 @@ func (st *state) onActionDone(m actionDoneMsg) tea.Cmd {
 		return nil
 	}
 	st.toast, st.toastErr = m.q.label+" · listo", false
-	if m.q.done != "" {
-		st.toast = m.q.done
-	}
 	if m.q.after != nil {
 		m.q.after()
 	}

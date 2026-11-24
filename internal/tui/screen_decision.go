@@ -123,7 +123,6 @@ func (st *state) decReset(feature string) {
 	delete(st.decAns, feature)
 	delete(st.decMark, feature)
 	delete(st.cur, "decision/"+feature)
-	delete(st.cur, "decision/"+feature+"#s")
 }
 
 // decOption is the option under the cursor: the recommended one until the user moves.
@@ -242,14 +241,6 @@ func (st *state) decKey(k string) bool {
 		st.decNext()
 	case "up", "k", "down", "j":
 		if isFork(d) {
-			// no option to move: the window scrolls (frame clamps to what is left)
-			s := st.cur["decision/"+d.FeatureID+"#s"]
-			if k == "up" || k == "k" {
-				s--
-			} else {
-				s++
-			}
-			st.cur["decision/"+d.FeatureID+"#s"] = max(s, 0)
 			break
 		}
 		q, _, _ := st.decCurrent(d)
@@ -342,12 +333,11 @@ func wrap(s string, w int) []string {
 	return out
 }
 
-// decWindow is the window as lines of one width, and the first and last line of the marked option.
-// Empty when there is nothing to ask.
-func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
+// decWindow is the window as lines of one width. Empty when there is nothing to ask.
+func (st *state) decWindow(cw int) []line {
 	d, i, n := st.currentDecision()
 	if d == nil {
-		return nil, 0, 0
+		return nil
 	}
 	dq, qi, qn := st.decCurrent(d)
 	ww := min(decisionWidth, cw-6)
@@ -357,19 +347,6 @@ func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
 		L(T(d.FeatureID+" · "+d.Repo, tSb), "  ", S(fmt.Sprintf(" %d de %d ", i+1, n), "ch-mute")), iw)
 
 	top := []line{nil, head, nil}
-	if d.Fork != nil {
-		top = append(top, L("  ", T(fmt.Sprintf("bifurcación %d de %d · %s", d.Fork.N, d.Fork.Of, d.Fork.Title), tSb)))
-	}
-	hasCtx := false
-	for _, c := range d.Context {
-		for _, s := range wrap(c, iw-2) {
-			top = append(top, L("  ", T(s, tMu)))
-			hasCtx = true
-		}
-	}
-	if hasCtx || d.Fork != nil {
-		top = append(top, nil)
-	}
 	if qn > 1 {
 		top = append(top, L(T(fmt.Sprintf("pregunta %d de %d", qi+1, qn), tSb)))
 	}
@@ -377,16 +354,22 @@ func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
 		top = append(top, L(s))
 	}
 	top = append(top, nil)
+	if d.Fork != nil {
+		top = append(top, L("  ", T(fmt.Sprintf("bifurcación %d de %d · %s", d.Fork.N, d.Fork.Of, d.Fork.Title), tSb)))
+	}
+	for _, c := range d.Context {
+		for _, s := range wrap(c, iw-2) {
+			top = append(top, L("  ", T(s, tMu)))
+		}
+	}
+	top = append(top, nil)
 	out := block(top, ww, tBg2, 3)
 
 	sel := st.decOption(d, dq.opts)
-	selTop, selBot = -1, -1 // forks have no marked option: nothing to keep in view
 	for k, o := range dq.opts {
 		var row line
-		indent := 5
 		if isFork(d) {
-			indent = 7
-			row = L("  ", S(" "+string(rune('A'+k))+" ", "ch-mute"), "  ", B(o.Label, ""))
+			row = L("  ", S(" "+string(rune('A'+k))+" ", "ch-mute"), "  ", B(o.Label, ""), "  ", T(o.Description, tMu))
 		} else {
 			marker, num := T("  ", tAc), B(fmt.Sprint(k+1), "")
 			if k == sel {
@@ -395,22 +378,12 @@ func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
 			if dq.multi && st.decMark[d.FeatureID][k] {
 				marker = T("✓ ", tDone)
 			}
-			row = L(marker, num, "  ", B(o.Label, ""))
+			row = L(marker, num, "  ", col(B(o.Label, ""), 12), T(o.Description, tMu))
 			if o.Recommended {
 				row = append(row, spaces(3, ""), T("recomendada", tDone))
 			}
 		}
-		card := []line{row}
-		for _, s := range wrap(o.Description, iw-indent) {
-			if s != "" {
-				card = append(card, L(spaces(indent, ""), T(s, tMu)))
-			}
-		}
-		if !isFork(d) && k == sel {
-			selTop = len(out)
-			selBot = len(out) + len(card) - 1
-		}
-		out = append(out, pick(card, ww, tBg2, !isFork(d) && k == sel, 3)...)
+		out = append(out, pick([]line{row}, ww, tBg2, !isFork(d) && k == sel, 3)...)
 	}
 
 	note := "No espera a la TUI: " + terminalText + "."
@@ -421,5 +394,5 @@ func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
 		note = "Se contesta en Ingeniero: enter la abre."
 	}
 	bottom := []line{nil, L(T(note, tSb)), nil}
-	return append(out, block(bottom, ww, tBg2, 3)...), selTop, selBot
+	return append(out, block(bottom, ww, tBg2, 3)...)
 }

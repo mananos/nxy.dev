@@ -229,8 +229,6 @@ type Hooks struct {
 	Asks    PendingAsks
 	TUI     TUILiveness
 	AskWait AskWait
-	// D2 tries the d2 of the design before it is saved; nil tests nothing.
-	D2 D2Check
 }
 
 // Handle answers a hook event, one use case per event/tool.
@@ -270,10 +268,6 @@ func (h Hooks) askedByNxy(ctx context.Context, ev HookEvent) bool {
 
 // handlePrompt is the UserPromptSubmit flow once the bootstrap's typed answer is ruled out.
 func (h Hooks) handlePrompt(ctx context.Context, ev HookEvent) HookResponse {
-	return h.withPick(ctx, ev, h.handlePromptFlow(ctx, ev))
-}
-
-func (h Hooks) handlePromptFlow(ctx context.Context, ev HookEvent) HookResponse {
 	if r, ok := h.firstPromptNotes(ctx, ev); ok {
 		return r
 	}

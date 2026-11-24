@@ -10,13 +10,6 @@ You are the base pass: answer every criterion, one by one, ok true or false. A c
 {{range .Criteria}}
 - {{.ID}}: {{.Text}} ({{.Test}}{{if .Check}}; look at: {{.Check}}{{end}}){{end}}
 {{end}}
-{{if .CodeFirst}}
-## Red after code (check these tests)
-
-The implementer wrote non-test code before recording the red of these batches, so the red may not prove the test. For each one, check that its test fails without that code (read the test and the code; a test that passes with the code stubbed out proves nothing). If it does not, report it as a finding and mark the criterion false.
-{{range .CodeFirst}}
-- batch {{.N}}: {{.Files}}{{end}}
-{{end}}
 {{if .Decisions}}
 ## Decisiones del diseño (decí dónde quedó cada una)
 

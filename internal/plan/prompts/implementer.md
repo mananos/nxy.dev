@@ -19,10 +19,8 @@ If you find out something true and not obvious that cost you to discover, add a 
 {{end}}
 ## Criteria this batch covers
 {{range .Criteria}}
-- {{.ID}}: {{.Text}} (test: {{.Test}}{{if .Check}}; check: {{.Check}}{{end}}{{if .Others}}; also covered by batches {{.OthersText}}{{end}}){{end}}
-{{if .Shared}}
-A criterion marked "also covered by batches" is met across all those batches (se cumple entre todos los lotes): do your part and do not report it as open.
-{{end}}{{if .Batch.Read}}
+- {{.ID}}: {{.Text}} (test: {{.Test}}{{if .Check}}; check: {{.Check}}{{end}}){{end}}
+{{if .Batch.Read}}
 ## Read first
 {{range .Batch.Read}}
 - {{.}}{{end}}
@@ -41,7 +39,7 @@ The test is already written and its red is recorded: do not write it again and d
 1. Fix the code.
 2. Run `"{{.Exe}}" batch green --feature {{.Feature.ID}} --batch {{.Batch.N}}`. If it fails, fix and run it again.
 {{else if .Need.Red}}
-1. Write the test first. Do not write the code yet. Never stub, comment out or revert code to make the test fail. If the behavior already exists and the test passes, do not force the red: say so in your reply.
+1. Write the test first. Do not write the code yet.
 2. Run `"{{.Exe}}" batch red --feature {{.Feature.ID}} --batch {{.Batch.N}}`. It must report the red recorded; if the test passes, the test is wrong.
 3. Write the code.
 4. Run `"{{.Exe}}" batch green --feature {{.Feature.ID}} --batch {{.Batch.N}}`. If it fails, fix and run it again.

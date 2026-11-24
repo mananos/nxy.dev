@@ -29,9 +29,7 @@ You may decide only these. Put each in "decisions" with "fork" set to its id, sc
 ## The user asked to change the plan
 {{range .NotesJoined}}
 - {{.}}{{end}}
-{{if .Design}}
-If a note asks for a new criterion, add it after the approved ones with the next id (R<n+1>), in the user's words; the approved criteria do not change.
-{{end}}{{end}}{{if .PrevJSON}}
+{{end}}{{if .PrevJSON}}
 ## Previous plan (revise it, do not start over)
 
 {{.PrevJSON}}

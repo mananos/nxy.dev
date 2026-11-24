@@ -3,7 +3,6 @@ package tools
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -91,22 +90,11 @@ func RenderD2(ctx context.Context, bin, src string) ([]string, error) {
 	c.Stdin = strings.NewReader(src)
 	var stdout bytes.Buffer
 	c.Stdout = &stdout
-	var stderr bytes.Buffer
-	c.Stderr = &stderr
 	err := c.Run()
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 	if err != nil {
-		var first []string
-		for _, l := range strings.Split(strings.ReplaceAll(stderr.String(), "\r\n", "\n"), "\n") {
-			if l = strings.TrimSpace(l); l != "" && len(first) < 5 {
-				first = append(first, l)
-			}
-		}
-		if len(first) > 0 {
-			return nil, fmt.Errorf("%w: %s", err, strings.Join(first, "\n"))
-		}
 		return nil, err
 	}
 	lines := strings.Split(strings.ReplaceAll(stdout.String(), "\r\n", "\n"), "\n")

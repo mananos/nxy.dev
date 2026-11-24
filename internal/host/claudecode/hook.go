@@ -41,7 +41,7 @@ type hookInput struct {
 // system notification instead of the user.
 func promptFromAgent(p string) bool {
 	p = strings.TrimSpace(p)
-	for _, pre := range []string{"<task-notification", "<system-reminder", "<agent-message"} {
+	for _, pre := range []string{"<task-notification", "<system-reminder"} {
 		if strings.HasPrefix(p, pre) {
 			return true
 		}
@@ -55,7 +55,11 @@ func promptFromAgent(p string) bool {
 func Decode(r io.Reader) (app.HookEvent, error) {
 	var in hookInput
 	// PowerShell prepends a UTF-8 BOM when it forwards stdin; drop one.
-	if err := json.NewDecoder(platform.SkipBOM(r)).Decode(&in); err != nil {
+	br := bufio.NewReader(r)
+	if head, _ := br.Peek(3); bytes.Equal(head, []byte("\xef\xbb\xbf")) {
+		_, _ = br.Discard(3)
+	}
+	if err := json.NewDecoder(br).Decode(&in); err != nil {
 		return app.HookEvent{}, fmt.Errorf("decode hook payload: %w", err)
 	}
 	ev := app.HookEvent{

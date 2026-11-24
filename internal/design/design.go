@@ -29,7 +29,7 @@ type ProposalInput struct {
 }
 
 func decodeStrict(r io.Reader, what string, v any) error {
-	dec := json.NewDecoder(r) // the BOM of PowerShell 5.1 is dropped by platform.SkipBOM in run
+	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(v); err != nil {
 		return fmt.Errorf("%s JSON: %w", what, err)
@@ -124,7 +124,6 @@ func SetAgenda(d *domain.Design, titles []string) []domain.Problem {
 	if d.Current != "" && findFork(d, d.Current) == nil {
 		d.Current = ""
 	}
-	dropStalePick(d)
 	return nil
 }
 
@@ -263,7 +262,6 @@ func SetForkOptions(d *domain.Design, in ForkInput) []domain.Problem {
 	f.Options = OptionKeys(in.Options)
 	f.Opinion = strings.TrimSpace(in.Opinion)
 	d.Current = f.ID
-	dropStalePick(d)
 	return nil
 }
 
@@ -340,60 +338,7 @@ func Approve(d *domain.Design) (domain.Decision, bool) {
 	if d.Current == dec.Fork {
 		d.Current = ""
 	}
-	if d.Pick != nil && d.Pick.Fork == dec.Fork {
-		d.Pick = nil
-	}
 	return dec, true
-}
-
-// SetPick keeps the option the user chose in the TUI for the current open fork; another call
-// replaces it.
-func SetPick(d *domain.Design, fork, label string) []domain.Problem {
-	f := findFork(d, fork)
-	switch {
-	case f == nil || d.Current != fork:
-		return []domain.Problem{{Where: "fork", Msg: fmt.Sprintf("%q is not the fork being debated", fork)}}
-	case f.Status != domain.ForkOpen:
-		return []domain.Problem{{Where: "fork", Msg: fmt.Sprintf("%s is already %s", f.ID, f.Status)}}
-	}
-	labels := make([]string, 0, len(f.Options))
-	found := false
-	for _, o := range f.Options {
-		labels = append(labels, o.Label)
-		found = found || o.Label == label
-	}
-	if !found {
-		return []domain.Problem{{Where: "option", Msg: fmt.Sprintf("%q is not an option of %s", label, fork)}}
-	}
-	d.Pick = &domain.ForkPick{Fork: fork, Label: label, Options: labels}
-	return nil
-}
-
-// ValidPick is true when the pick is still about the current open fork with the same options.
-func ValidPick(d *domain.Design) bool {
-	p := d.Pick
-	if p == nil || d.Current != p.Fork {
-		return false
-	}
-	f := findFork(d, p.Fork)
-	if f == nil || f.Status != domain.ForkOpen || len(f.Options) != len(p.Options) {
-		return false
-	}
-	found := false
-	for i, o := range f.Options {
-		if o.Label != p.Options[i] {
-			return false
-		}
-		found = found || o.Label == p.Label
-	}
-	return found
-}
-
-// dropStalePick forgets a pick that is no longer about the fork or its options.
-func dropStalePick(d *domain.Design) {
-	if d.Pick != nil && !ValidPick(d) {
-		d.Pick = nil
-	}
 }
 
 // Discard drops the pending proposal (the user wants to keep debating).

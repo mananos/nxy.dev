@@ -22,4 +22,4 @@
                                                                                                                       
       c   qué elegiría Claude                                                                                         
                                                                                                                       
-  ↑↓  opción     enter  guarda la elección     h  cómo es hoy     c  qué elegiría Claude     ?  ayuda                   
+  ↑↓  opción     enter  contesta cuando Claude pregunte     h  cómo es hoy     c  qué elegiría Claude     ?  ayuda      

@@ -99,13 +99,6 @@ func (h Hooks) preToolAskUser(ctx context.Context, ev HookEvent) HookResponse {
 		return HookResponse{}
 	}
 	h.markBootstrapAsked(ctx, ev)
-	if !ev.InputHasAnswers && h.Store != nil && h.Repos != nil {
-		if f, ok := h.activeFeature(ctx, ev); ok {
-			if r, ok := h.pickAnswer(ctx, ev, f); ok {
-				return r
-			}
-		}
-	}
 	if !ev.InputHasAnswers && (h.Asks == nil || h.TUI == nil) {
 		return HookResponse{}
 	}
@@ -305,12 +298,6 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 		offer := h.branchOffer(ctx, f)
 		nf, _, err = h.advanceSteps(ctx, f.ID, func(x *domain.Feature) ([]flow.Event, error) {
 			x.BranchOffer = offer
-			// criteria the user asked for in a change note stay in the design
-			if x.Mode == domain.ModeEngineer && x.Design != nil && x.Plan != nil && len(x.Plan.Criteria) > len(x.Design.Criteria) {
-				d := *x.Design
-				d.Criteria = append(append([]domain.Criterion(nil), d.Criteria...), x.Plan.Criteria[len(d.Criteria):]...)
-				x.Design = &d
-			}
 			if offer != nil {
 				return []flow.Event{{Kind: flow.Approved}}, nil
 			}

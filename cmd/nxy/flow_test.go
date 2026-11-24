@@ -511,19 +511,6 @@ func TestDesignTodayCommand(t *testing.T) {
 	}
 }
 
-func TestStdinBOM(t *testing.T) {
-	repo := flowRepo(t)
-	hookCall(t, map[string]any{"hook_event_name": "UserPromptSubmit", "cwd": repo, "prompt": "/nxy:engineer add a flag"})
-	id := featureID(t)
-	const bom = "\xef\xbb\xbf"
-	if code, _, errb := runCmd(t, bom+`{"forks":["where the flag lives"]}`, "design", "agenda", "--feature", id); code != 0 {
-		t.Fatalf("agenda with BOM: code %d, err %q", code, errb)
-	}
-	if code, so, errb := runCmd(t, bom+`{"d2":"a -> b"}`, "design", "today", "--feature", id); code != 0 || !strings.Contains(so, "B1") {
-		t.Fatalf("today with BOM: code %d, out %q, err %q", code, so, errb)
-	}
-}
-
 // engineerToPlanning drives /nxy:engineer up to the planner dispatch, with one decided fork.
 func engineerToPlanning(t *testing.T, repo string) string {
 	t.Helper()

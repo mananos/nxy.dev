@@ -57,7 +57,7 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 		if d == nil {
 			d = &domain.Design{}
 		}
-		if probs := design.CheckPlan(d, p, len(f.ChangeNotes) > 0); len(probs) > 0 {
+		if probs := design.CheckPlan(d, p); len(probs) > 0 {
 			return SaveResult{Problems: probs}, nil
 		}
 		design.Merge(d, &p)

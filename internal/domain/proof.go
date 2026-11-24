@@ -6,8 +6,6 @@ type Run struct {
 	Tail string `json:"tail,omitempty"`
 	// Edits is the Proof.Edits counter when the run started.
 	Edits int `json:"edits,omitempty"`
-	// CodeFirst is the Proof.CodeFirst when this red was recorded.
-	CodeFirst []string `json:"code_first,omitempty"`
 }
 
 // CommandRun is one command run for the affected tests.
@@ -46,8 +44,6 @@ type Proof struct {
 	Green *Run `json:"green,omitempty"`
 	// Edits counts the subagent writes in the repo during the batch.
 	Edits int `json:"edits,omitempty"`
-	// CodeFirst lists the non-test files written in the batch before the red (at most 5).
-	CodeFirst []string `json:"code_first,omitempty"`
 	// Failure is why the last verdict was red, with the tail, for the retry prompt.
 	Failure string `json:"failure,omitempty"`
 }
