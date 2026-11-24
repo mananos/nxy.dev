@@ -19,8 +19,10 @@ If you find out something true and not obvious that cost you to discover, add a 
 {{end}}
 ## Criteria this batch covers
 {{range .Criteria}}
-- {{.ID}}: {{.Text}} (test: {{.Test}}{{if .Check}}; check: {{.Check}}{{end}}){{end}}
-{{if .Batch.Read}}
+- {{.ID}}: {{.Text}} (test: {{.Test}}{{if .Check}}; check: {{.Check}}{{end}}{{if .Others}}; also covered by batches {{.OthersText}}{{end}}){{end}}
+{{if .Shared}}
+A criterion marked "also covered by batches" is met across all those batches (se cumple entre todos los lotes): do your part and do not report it as open.
+{{end}}{{if .Batch.Read}}
 ## Read first
 {{range .Batch.Read}}
 - {{.}}{{end}}
