@@ -37,7 +37,7 @@ Con una feature activa el freno es otro y total: el hilo principal no escribe el
 
 **El freno de lectura.** Frena una búsqueda **amplia** del hilo principal cuando su contexto llega al umbral (`gate.contextTokens`, 100k por defecto). Es amplia un `Grep` o `Glob` que no apunta a un solo archivo, y por consola `rg`, `git grep`, `grep -r`, `find`, `fd`, `Get-ChildItem -Recurse` o `Select-String` sin ruta de archivo. Nunca frena un `Read` (entero, con `offset`/`limit`), una búsqueda sobre un archivo ni a un subagente. Si no puede medir el contexto, deja pasar. Límite conocido: una carpeta con un punto en el nombre (`v1.2`) el chequeo rápido la toma por un archivo, así que una búsqueda sobre ella no se frena.
 
-**Una sola vez.** `/nxy:gate once` arma un permiso para la próxima edición de código del hilo principal; `/nxy:gate once search`, para la próxima búsqueda amplia. Cada uno se gasta al usarse, vence a los `gate.escapeMinutes` (5 por defecto, mínimo 1) y es independiente del otro. Si un comando de consola escribe varios archivos de código, un permiso alcanza para todo ese comando.
+**Una sola vez.** `/nxy:gate once` arma un permiso para la próxima edición de código del hilo principal; `/nxy:gate once search`, para la próxima búsqueda amplia. Cada uno se gasta al usarse, vence a los `gate.escapeMinutes` (5 por defecto, mínimo 1) y es independiente del otro. Si un comando de consola escribe varios archivos de código, un permiso alcanza para todo ese comando. El permiso no se gasta si nxy frena el comando para que corra con rtk (en auto mode te pide ejecutar la versión con `rtk`); lo gasta la corrida que sigue.
 
 **Fallar abierto.** Ante cualquier dato que no puede leer, el freno deja pasar: un freno que falla cerrado te rompe el editor.
 

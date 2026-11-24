@@ -20,6 +20,8 @@ type loader struct {
 	src    views.Source
 	inRepo bool
 	mu     sync.Mutex
+	// spendMu is the lock of spend: apart from mu so Gasto and Tendencia do not hold the rest.
+	spendMu sync.Mutex
 }
 
 // extraMemorier is a Source that has more memory than the repo of the folder and the global one
@@ -55,6 +57,7 @@ func (st *state) cheapOpts() cheapOpts {
 
 type cheapMsg struct{ r *result }
 type topMsg struct{ r *result }
+type spendMsg struct{ r *result }
 
 // cheap loads what every screen shares: the cockpit, the questions, the memory, the spend and the
 // config.
@@ -111,6 +114,26 @@ func (l *loader) cheap(opts cheapOpts) *result {
 		}
 	}
 
+	r.keys = append(r.keys, "config")
+	if c, err := l.src.Config(ctx); err != nil {
+		r.fail("config", err)
+	} else {
+		r.d.Config = &c
+	}
+	return r
+}
+
+// todayCoster is a Source that gives today's spend apart from the cockpit.
+type todayCoster interface {
+	CostToday(ctx context.Context) (float64, error)
+}
+
+// spend loads Gasto, Tendencia and today's spend. It has its own lock: reading the transcripts is
+// slow and must not hold the other screens.
+func (l *loader) spend(opts cheapOpts) *result {
+	l.spendMu.Lock()
+	defer l.spendMu.Unlock()
+	ctx, r := l.ctx, newResult()
 	r.keys = append(r.keys, "stats")
 	if s, err := l.src.Stats(ctx, opts.session); errors.Is(err, views.ErrNoSession) {
 		r.d.Stats = nil
@@ -125,11 +148,10 @@ func (l *loader) cheap(opts cheapOpts) *result {
 	} else {
 		r.d.Trend = &t
 	}
-	r.keys = append(r.keys, "config")
-	if c, err := l.src.Config(ctx); err != nil {
-		r.fail("config", err)
-	} else {
-		r.d.Config = &c
+	if c, ok := l.src.(todayCoster); ok {
+		if v, err := c.CostToday(ctx); err == nil {
+			r.d.Today = &v
+		}
 	}
 	return r
 }
@@ -255,6 +277,9 @@ func (d *Data) merge(r *result) {
 	if x.Trend != nil {
 		d.Trend = x.Trend
 	}
+	if x.Today != nil {
+		d.Today = x.Today
+	}
 	if x.Config != nil {
 		d.Config = x.Config
 	}
@@ -333,12 +358,25 @@ func (st *state) cheapCmd() tea.Cmd {
 	return func() tea.Msg { return cheapMsg{r: l.cheap(o)} }
 }
 
+// spendCmd loads Gasto, Tendencia and today's spend; with one already in flight it does nothing.
+func (st *state) spendCmd() tea.Cmd {
+	if st.ld == nil || st.spendBusy {
+		return nil
+	}
+	st.spendBusy, st.spendStale, st.spendAt = true, false, st.now()
+	l, o := st.ld, st.cheapOpts()
+	return func() tea.Msg { return spendMsg{r: l.spend(o)} }
+}
+
 // onLoad applies what a load brought.
 func (st *state) onLoad(msg tea.Msg) {
 	// the cursors follow their row, not their position
 	snap := st.snapCursors()
 	defer st.restoreCursors(snap)
 	switch m := msg.(type) {
+	case spendMsg:
+		st.spendBusy = false
+		st.data.merge(m.r)
 	case cheapMsg:
 		st.cheapBusy = false
 		st.data.merge(m.r)
@@ -382,6 +420,7 @@ func (st *state) loadAll() {
 		return
 	}
 	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
+	st.onLoad(spendMsg{r: st.ld.spend(st.cheapOpts())})
 	if js, ok := st.ld.src.(*jsonSource); ok {
 		for k, f := range js.d.Files {
 			st.data.Files[k] = f

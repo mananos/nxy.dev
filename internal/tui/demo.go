@@ -21,6 +21,7 @@ type Data struct {
 	Stats     *views.Stats
 	Trend     *views.Trend
 	Config    *views.Config
+	Today     *float64 // today's spend when the source gives it apart from the cockpit
 
 	Errs    map[string]error
 	Loading map[string]bool

@@ -80,6 +80,20 @@ func TestDecideMultiSelectLabelsWithCommas(t *testing.T) {
 	}
 }
 
+func TestDecideMultiSelectEmptyAnswer(t *testing.T) {
+	for _, bad := range []string{"", " ", ",", "A,"} {
+		h, asks, id := decideSetup(t, true)
+		ctx := context.Background()
+		if err := h.Decide(ctx, id, []string{bad, "X"}, false); err == nil {
+			t.Errorf("answer %q was accepted", bad)
+		}
+		row, _ := asks.PendingAsk(ctx, id)
+		if len(row.Answers) != 0 {
+			t.Errorf("answer %q left answers = %q", bad, row.Answers)
+		}
+	}
+}
+
 // staleAsks reads every unanswered row as the store does once its hook stopped renewing it.
 type staleAsks struct{ *fakeAsks }
 

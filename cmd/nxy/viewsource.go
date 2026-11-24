@@ -108,6 +108,8 @@ type viewSource struct {
 	cwd    string
 	loc    *time.Location
 	done   func()
+	// todayApart: the cockpit leaves hoy $ out (the TUI asks CostToday on its own, with Gasto).
+	todayApart bool
 
 	mu      sync.Mutex
 	impacts map[string]planImpact   // by feature id, plan revision and HEAD of each repo
@@ -133,6 +135,9 @@ func newViewSource(store *sqlite.Store, getenv func(string) string, cwd string, 
 	ts := newTails()
 	usage, done := newUsage(getenv, func() string { return cwd }, now, loc)
 	usage.Transcripts = cachedTranscripts{Transcripts: usage.Transcripts, ts: ts}
+	if store != nil {
+		usage.SessionCache = storeSessionCache{store: store}
+	}
 	return &viewSource{store: store, usage: usage, tails: ts, now: now, getenv: getenv, cwd: cwd, loc: loc, done: done}
 }
 
@@ -451,14 +456,23 @@ func (v *viewSource) Cockpit(ctx context.Context) (views.Cockpit, error) {
 			open = append(open, row.Feature)
 		}
 	}
-	mid := v.midnight()
-	for _, s := range v.usage.TrendSessions(&mid, nil, false, v.cwd) {
-		if int64(s.Ts) >= mid {
-			in.CostTodayUSD += s.USD
-		}
+	if !v.todayApart {
+		in.CostTodayUSD, _ = v.CostToday(ctx)
 	}
 	in.Worktrees = v.worktrees(ctx, open)
 	return views.BuildCockpit(in), nil
+}
+
+// CostToday is the spend of the sessions since midnight.
+func (v *viewSource) CostToday(context.Context) (float64, error) {
+	var sum float64
+	mid := v.midnight()
+	for _, s := range v.usage.TrendSessions(&mid, nil, false, v.cwd) {
+		if int64(s.Ts) >= mid {
+			sum += s.USD
+		}
+	}
+	return sum, nil
 }
 
 // worktrees lists the worktrees of the repos of the open features: the ones a feature holds are

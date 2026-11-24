@@ -125,6 +125,61 @@ func TestRefresh(t *testing.T) {
 	}
 }
 
+// slowStats is a source whose Stats waits until the test lets it go.
+type slowStats struct {
+	views.Source
+	in   chan struct{}
+	gate chan struct{}
+}
+
+func (s *slowStats) Stats(ctx context.Context, id string) (views.Stats, error) {
+	s.in <- struct{}{}
+	<-s.gate
+	return s.Source.Stats(ctx, id)
+}
+
+func TestSpendOutsideCheapLock(t *testing.T) {
+	src := &slowStats{Source: testSource(t), in: make(chan struct{}, 4), gate: make(chan struct{})}
+	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true})
+	cmd := st.spendCmd()
+	if cmd == nil || !st.spendBusy {
+		t.Fatal("spendCmd must start a spend load")
+	}
+	done := make(chan tea.Msg, 1)
+	go func() { done <- cmd() }()
+	select {
+	case <-src.in:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the spend load never reached Stats")
+	}
+
+	others := make(chan struct{})
+	go func() {
+		defer close(others)
+		st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
+		id := st.data.Cockpit.Features[0].ID
+		st.ld.plan(id)
+		st.ld.agents(id)
+		st.ld.engineer(id)
+		st.ld.file(id, "repo/x.go", nil)
+	}()
+	select {
+	case <-others:
+	case <-time.After(2 * time.Second):
+		close(src.gate)
+		t.Fatal("cheap, plan, agents, engineer and file wait for Stats")
+	}
+	close(src.gate)
+	msg := <-done
+	if _, ok := msg.(spendMsg); !ok {
+		t.Fatalf("spend load answered %T", msg)
+	}
+	st.onLoad(msg)
+	if st.spendBusy || st.data.Stats == nil {
+		t.Fatalf("spendMsg must free the load and bring Stats: busy=%v", st.spendBusy)
+	}
+}
+
 func TestRefreshForgetsFarViews(t *testing.T) {
 	src := newLiveSource(t)
 	m := liveModel(t, src, 5)
@@ -186,6 +241,83 @@ func TestSchemaNewerCallsOnStale(t *testing.T) {
 	m.Update(pollMsg{ver: 3, schema: 6})
 	if calls != 1 {
 		t.Fatalf("OnStale called %d times, want 1", calls)
+	}
+}
+
+// spendSource counts the spend loads (one Stats call each) on top of the live source.
+type spendSource struct {
+	*liveSource
+	spends atomic.Int32
+}
+
+func (s *spendSource) Stats(ctx context.Context, id string) (views.Stats, error) {
+	s.spends.Add(1)
+	return s.liveSource.Stats(ctx, id)
+}
+
+func TestSpendRhythm(t *testing.T) {
+	src := &spendSource{liveSource: newLiveSource(t)}
+	clock := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	st := newState(Options{Source: src, InRepo: true, Width: 100, Plain: true, Watch: fakeWatch,
+		Schema: 5, Ver: 1, HaveVer: true, Now: func() time.Time { return clock }})
+	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
+	m := &model{st: st}
+	// the first spend load, as Init does
+	feed(m, collect(st.spendCmd()))
+	base := src.spends.Load()
+	key := func(c rune, text string) tea.Cmd {
+		_, cmd := m.Update(tea.KeyPressMsg{Code: c, Text: text})
+		return cmd
+	}
+	spends := func() int32 { return src.spends.Load() - base }
+
+	// on Inicio a db change does not reload the spend
+	_, cmd := m.Update(pollMsg{ver: 2, schema: 1})
+	feed(m, collect(cmd))
+	if spends() != 0 {
+		t.Fatalf("spend loads %d on Inicio after a change, want 0", spends())
+	}
+	// 30 s later the next poll does
+	clock = clock.Add(31 * time.Second)
+	_, cmd = m.Update(pollMsg{ver: 2, schema: 1})
+	feed(m, collect(cmd))
+	if spends() != 1 {
+		t.Fatalf("spend loads %d after 30 s, want 1", spends())
+	}
+
+	// with Gasto on top every change reloads it
+	st.stack = []route{{screen: "inicio"}, {screen: "gasto"}}
+	_, cmd = m.Update(pollMsg{ver: 3, schema: 1})
+	feed(m, collect(cmd))
+	if spends() != 2 {
+		t.Fatalf("spend loads %d with Gasto on top, want 2", spends())
+	}
+
+	// a change on Inicio, then entering Gasto: at once
+	st.stack = []route{{screen: "inicio"}}
+	_, cmd = m.Update(pollMsg{ver: 4, schema: 1})
+	feed(m, collect(cmd))
+	st.stack = []route{{screen: "inicio"}, {screen: "gasto"}}
+	feed(m, collect(key(tea.KeyDown, "")))
+	if spends() != 3 {
+		t.Fatalf("spend loads %d after entering Gasto, want 3", spends())
+	}
+
+	// r reloads at once
+	feed(m, collect(key('r', "r")))
+	if spends() != 4 {
+		t.Fatalf("spend loads %d after r, want 4", spends())
+	}
+
+	// picking a period reloads the spend and not the cheap views
+	st.stack = []route{{screen: "inicio"}, {screen: "gasto"}, {screen: "tendencia"}}
+	cheap := src.loads.Load()
+	feed(m, collect(key(tea.KeyLeft, "")))
+	if spends() != 5 {
+		t.Fatalf("spend loads %d after picking a period, want 5", spends())
+	}
+	if src.loads.Load() != cheap {
+		t.Fatal("picking a period must not reload the cheap views")
 	}
 }
 

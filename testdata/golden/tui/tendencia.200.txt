@@ -16,4 +16,4 @@
      planner     2 corridas  ━━━━━━━━━                                         $0.09   prom 6m                                                                                                        
      fixer       1 corridas  ━━━━━                                             $0.05  prom 10m                                                                                                        
      scout       1 corridas  ━                                                 $0.00   prom 3m                                                                                                        
-  tab  config     shift+tab  sesión     enter  cambiar agrupado     ←→  período     ?  ayuda                                                                                                            
+  tab  config     shift+tab  sesión     enter  cambiar agrupado     ←→  período     r  releer     ?  ayuda                                                                                              

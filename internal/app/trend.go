@@ -2,13 +2,16 @@ package app
 
 import (
 	"math"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mananos/nxy.dev/v2/internal/format"
 	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
 	"github.com/mananos/nxy.dev/v2/internal/jscompat"
 	"github.com/mananos/nxy.dev/v2/internal/metrics"
 	"github.com/mananos/nxy.dev/v2/internal/report"
+	"github.com/mananos/nxy.dev/v2/internal/version"
 )
 
 // Trend is entries/trend.mjs: the range, the session list, the filter and ledger reads.
@@ -87,79 +90,170 @@ func (u Usage) readTrend(d *report.TrendData, cwd string, since *int64) int {
 		return 0
 	}
 
-	// The filter summary is per project cwd and session; cache it per pair.
-	filterCache := map[[2]string][]report.FilterGroup{}
-	filterGroupsFor := func(sessionCwd any, sessionID string) []report.FilterGroup {
-		dir := cwd
-		if jscompat.Truthy(sessionCwd) {
-			dir = jscompat.String(sessionCwd)
-		}
-		key := [2]string{dir, sessionID}
-		gs, ok := filterCache[key]
-		if !ok {
-			gs = u.FilterGroups(dir, sessionID)
-			filterCache[key] = gs
-		}
-		return gs
-	}
-
 	// rtk's ledger for the whole range, attributed to sessions by time window + cwd.
 	ledger, ledgerOK := u.Ledger.Rows(since, nil)
 	d.LedgerOK = ledgerOK
 
 	threshold := settings.CacheBreakThreshold
-	for _, ref := range refs {
-		s := u.Transcripts.ParseSession(ref, transcript.SessionOpts{CacheBreakThreshold: &threshold, Timing: by == "agent"})
-		if s.Usage.Calls == 0 {
-			continue
-		}
-		if by == "agent" {
+	if by == "agent" {
+		for _, ref := range refs {
+			s := u.Transcripts.ParseSession(ref, transcript.SessionOpts{CacheBreakThreshold: &threshold, Timing: true})
+			if s.Usage.Calls == 0 {
+				continue
+			}
 			for _, ag := range s.Agents {
 				if ag.Timing != nil {
 					d.AgentRuns = append(d.AgentRuns, metrics.Run{AgentType: ag.AgentType, Timing: ag.Timing})
 				}
 			}
 			d.AgentSessions++
-			continue
 		}
-		groups := filterGroupsFor(s.Cwd, s.SessionID)
-		nxy := report.FilterGroupsRows(groups) > 0
-		for _, k := range s.BySkill.Keys {
-			if strings.HasPrefix(k, "nxy:") {
-				nxy = true
+		return len(refs)
+	}
+
+	// 1st: the summary of each session, from its stored row when the signature is the same.
+	type read struct {
+		ref transcript.SessionRef
+		us  report.SessionUsage
+	}
+	var stored map[string]SessionUsageRow
+	if u.SessionCache != nil {
+		paths := make([]string, len(refs))
+		for i, ref := range refs {
+			paths[i] = ref.Path
+		}
+		stored = u.SessionCache.Rows(paths)
+	}
+	nowMs := time.Now().UnixMilli()
+	if u.Clock != nil {
+		nowMs = u.Clock().UnixMilli()
+	}
+	var toSave []SessionUsageRow
+	reads := make([]read, 0, len(refs))
+	for _, ref := range refs {
+		var us report.SessionUsage
+		if u.SessionCache == nil {
+			us = sessionUsageOf(ref, u.Transcripts.ParseSession(ref, transcript.SessionOpts{CacheBreakThreshold: &threshold}))
+		} else {
+			stamp, newest := u.Transcripts.Stamp(ref)
+			stamp += "|t=" + strconv.FormatFloat(threshold, 'g', -1, 64) + "|v=" + version.Version
+			if row, ok := stored[ref.Path]; ok && row.Stamp == stamp {
+				us = row.Usage
+			} else {
+				us = sessionUsageOf(ref, u.Transcripts.ParseSession(ref, transcript.SessionOpts{CacheBreakThreshold: &threshold}))
+				if float64(nowMs)-newest >= quietMs {
+					toSave = append(toSave, SessionUsageRow{Path: ref.Path, SessionID: ref.SessionID, Stamp: stamp, MtimeMs: int64(newest), Usage: us})
+				}
 			}
 		}
+		if us.Calls == 0 {
+			continue
+		}
+		reads = append(reads, read{ref, us})
+	}
+	if len(toSave) > 0 {
+		u.SessionCache.Save(toSave)
+	}
+
+	// 2nd: the filter summary of every session in one query.
+	dirOf := func(us report.SessionUsage) string {
+		if us.Cwd != "" {
+			return us.Cwd
+		}
+		return cwd
+	}
+	var keys []FilterKey
+	seen := map[FilterKey]bool{}
+	for _, r := range reads {
+		k := FilterKey{dirOf(r.us), r.us.SessionID}
+		if !seen[k] {
+			seen[k] = true
+			keys = append(keys, k)
+		}
+	}
+	var filters map[FilterKey][]report.FilterGroup
+	if u.FilterGroupsMany != nil {
+		filters = u.FilterGroupsMany(keys)
+	} else {
+		filters = make(map[FilterKey][]report.FilterGroup, len(keys))
+		for _, k := range keys {
+			filters[k] = u.FilterGroups(k.Dir, k.SessionID)
+		}
+	}
+
+	for _, r := range reads {
+		us := r.us
+		groups := filters[FilterKey{dirOf(us), us.SessionID}]
+		nxy := report.FilterGroupsRows(groups) > 0 || us.UsedNxySkill
 		rtkCalls := report.FilterGroupsRTK(groups)
-		ts := ref.MtimeMs
-		if s.FirstTs != nil {
-			ts = float64(*s.FirstTs)
+		var firstTs, lastTs *int64
+		if us.FirstTs != 0 {
+			v := int64(us.FirstTs)
+			firstTs = &v
+		}
+		if us.LastTs != 0 {
+			v := int64(us.LastTs)
+			lastTs = &v
 		}
 		var saved *float64
 		switch {
 		case ledgerOK && rtkCalls != 0:
-			v := report.SessionSavings(ledger, report.Window{Cwd: report.TruthyString(s.Cwd), FirstTs: s.FirstTs, LastTs: s.LastTs}, u.GOOS).Saved
+			v := report.SessionSavings(ledger, report.Window{Cwd: us.Cwd, FirstTs: firstTs, LastTs: lastTs}, u.GOOS).Saved
 			saved = &v
 		case ledgerOK:
 			zero := 0.0
 			saved = &zero
 		}
-		prompt := ""
-		if len(s.Prompts) > 0 {
-			prompt = s.Prompts[0].Text
-		}
-		us := s.Usage.Usage
 		d.Sessions = append(d.Sessions, report.TrendSession{
-			SessionID: s.SessionID, Project: s.Project, Ts: ts, Turns: s.Turns, Calls: s.Usage.Calls,
-			MainCalls: s.Main.Calls, MainInput: s.Main.TotalInput, MainEdits: len(s.Tools.FilesEditedMain),
-			RtkSaved: saved, Input: us.Input, CacheW: us.CacheWrite5m + us.CacheWrite1h, CacheR: us.CacheRead, Output: us.Output,
-			TotalTokens: s.Usage.TotalInput + us.Output, USD: s.Usage.USD, USDPartial: s.Usage.USDPartial,
-			UnknownModels: s.Usage.UnknownModels, USDEstimated: s.Usage.USDEstimated, EstimatedModels: s.Usage.EstimatedModels,
-			AgentTokens: s.Subagents.TotalInput + s.Subagents.Usage.Output, Agents: len(s.Agents),
-			BashLines: s.Tools.Bash.ResultLines, BashCalls: s.Tools.Bash.Calls, RtkCalls: rtkCalls, WallMs: s.WallMs,
-			Nxy: nxy, FirstPrompt: prompt, ByModel: s.ByModel, CacheBreaks: s.CacheBreaks, TTLWhatIf: s.TTLWhatIf,
+			SessionID: us.SessionID, Project: us.Project, Ts: us.Ts, Turns: us.Turns, Calls: us.Calls,
+			MainCalls: us.MainCalls, MainInput: us.MainInput, MainEdits: us.MainEdits,
+			RtkSaved: saved, Input: us.Input, CacheW: us.CacheW, CacheR: us.CacheR, Output: us.Output,
+			TotalTokens: us.TotalTokens, USD: us.USD, USDPartial: us.USDPartial,
+			UnknownModels: us.UnknownModels, USDEstimated: us.USDEstimated, EstimatedModels: us.EstimatedModels,
+			AgentTokens: us.AgentTokens, Agents: us.Agents,
+			BashLines: us.BashLines, BashCalls: us.BashCalls, RtkCalls: rtkCalls, WallMs: us.WallMs,
+			Nxy: nxy, FirstPrompt: us.FirstPrompt, ByModel: us.ByModel, CacheBreaks: us.CacheBreaks, TTLWhatIf: us.TTLWhatIf,
 		})
 	}
 	return len(refs)
+}
+
+// quietMs is how long a session has to be untouched before its summary is stored.
+const quietMs = 10 * 60_000
+
+// sessionUsageOf is what is kept of a parsed session.
+func sessionUsageOf(ref transcript.SessionRef, s transcript.Session) report.SessionUsage {
+	ts := ref.MtimeMs
+	var firstTs, lastTs float64
+	if s.FirstTs != nil {
+		ts = float64(*s.FirstTs)
+		firstTs = ts
+	}
+	if s.LastTs != nil {
+		lastTs = float64(*s.LastTs)
+	}
+	prompt := ""
+	if len(s.Prompts) > 0 {
+		prompt = s.Prompts[0].Text
+	}
+	nxySkill := false
+	for _, k := range s.BySkill.Keys {
+		if strings.HasPrefix(k, "nxy:") {
+			nxySkill = true
+		}
+	}
+	us := s.Usage.Usage
+	return report.SessionUsage{
+		SessionID: s.SessionID, Project: s.Project, Ts: ts, Turns: s.Turns, Calls: s.Usage.Calls,
+		MainCalls: s.Main.Calls, MainInput: s.Main.TotalInput, MainEdits: len(s.Tools.FilesEditedMain),
+		Input: us.Input, CacheW: us.CacheWrite5m + us.CacheWrite1h, CacheR: us.CacheRead, Output: us.Output,
+		TotalTokens: s.Usage.TotalInput + us.Output, USD: s.Usage.USD, USDPartial: s.Usage.USDPartial,
+		UnknownModels: s.Usage.UnknownModels, USDEstimated: s.Usage.USDEstimated, EstimatedModels: s.Usage.EstimatedModels,
+		AgentTokens: s.Subagents.TotalInput + s.Subagents.Usage.Output, Agents: len(s.Agents),
+		BashLines: s.Tools.Bash.ResultLines, BashCalls: s.Tools.Bash.Calls, WallMs: s.WallMs,
+		FirstPrompt: prompt, ByModel: s.ByModel, CacheBreaks: s.CacheBreaks, TTLWhatIf: s.TTLWhatIf,
+		Cwd: report.TruthyString(s.Cwd), FirstTs: firstTs, LastTs: lastTs, UsedNxySkill: nxySkill,
+	}
 }
 
 // tsOrNaN is a nullable epoch ms as the float the formatters take (NaN is JS null).

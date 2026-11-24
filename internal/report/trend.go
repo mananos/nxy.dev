@@ -48,6 +48,43 @@ type TrendSession struct {
 	TTLWhatIf       metrics.TTLWhatIf                       `json:"ttlWhatIf"`
 }
 
+// SessionUsage is what reading one transcript gives, kept in the db: a TrendSession without what
+// comes from rtk or the db (RtkSaved, RtkCalls, Nxy) plus the cwd, the first and last call
+// timestamps and whether the session used an nxy: skill. Sessions without calls are kept too.
+type SessionUsage struct {
+	SessionID       string                                  `json:"sessionId"`
+	Project         string                                  `json:"project"`
+	Ts              float64                                 `json:"ts"`
+	Turns           int                                     `json:"turns"`
+	Calls           int                                     `json:"calls"`
+	MainCalls       int                                     `json:"mainCalls"`
+	MainInput       float64                                 `json:"mainInput"`
+	MainEdits       int                                     `json:"mainEdits"`
+	Input           float64                                 `json:"input"`
+	CacheW          float64                                 `json:"cacheW"`
+	CacheR          float64                                 `json:"cacheR"`
+	Output          float64                                 `json:"output"`
+	TotalTokens     float64                                 `json:"totalTokens"`
+	USD             float64                                 `json:"usd"`
+	USDPartial      bool                                    `json:"usdPartial"`
+	UnknownModels   []string                                `json:"unknownModels"`
+	USDEstimated    bool                                    `json:"usdEstimated"`
+	EstimatedModels metrics.ModelBasis                      `json:"estimatedModels"`
+	AgentTokens     float64                                 `json:"agentTokens"`
+	Agents          int                                     `json:"agents"`
+	BashLines       int                                     `json:"bashLines"`
+	BashCalls       int                                     `json:"bashCalls"`
+	WallMs          int64                                   `json:"wallMs"`
+	FirstPrompt     string                                  `json:"firstPrompt"`
+	ByModel         transcript.OrderedMap[metrics.Finished] `json:"byModel"`
+	CacheBreaks     []metrics.Break                         `json:"cacheBreaks"`
+	TTLWhatIf       metrics.TTLWhatIf                       `json:"ttlWhatIf"`
+	Cwd             string                                  `json:"cwd"`
+	FirstTs         float64                                 `json:"firstTs"`
+	LastTs          float64                                 `json:"lastTs"`
+	UsedNxySkill    bool                                    `json:"usedNxySkill"`
+}
+
 // TrendData is everything `nxy trend` needs once the sessions are parsed.
 type TrendData struct {
 	// Since is the lower bound in epoch ms; nil when --since did not parse (JS null).

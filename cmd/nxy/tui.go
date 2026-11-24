@@ -215,6 +215,7 @@ func openRealSource(dir string, stderr io.Writer) (*viewSource, func(), int) {
 		return nil, nil, 1
 	}
 	src := newViewSource(st, os.Getenv, dir, time.Now, time.Local)
+	src.todayApart = true
 	return src, func() { src.Close(); st.Close() }, 0
 }
 

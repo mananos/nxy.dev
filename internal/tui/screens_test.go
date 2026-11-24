@@ -1111,7 +1111,7 @@ func TestTrendPeriodKeys(t *testing.T) {
 	m.st.stack = []route{{screen: "tendencia"}}
 	// last is the anchor the next cheap load asks for.
 	last := func() time.Time {
-		m.st.ld.cheap(m.st.cheapOpts())
+		m.st.ld.spend(m.st.cheapOpts())
 		return rec.anchors[len(rec.anchors)-1]
 	}
 	near := func(a time.Time, days int) bool {
@@ -1180,16 +1180,16 @@ func TestStatsPickSession(t *testing.T) {
 		t.Fatalf("s did not open the list:\n%s", m.st.frame(true))
 	}
 	press(m, "down", "enter")
-	if m.st.statsPick || !m.st.cheapBusy {
-		t.Fatalf("enter should close the list and reload: pick=%v busy=%v", m.st.statsPick, m.st.cheapBusy)
+	if m.st.statsPick || !m.st.spendBusy {
+		t.Fatalf("enter should close the list and reload: pick=%v busy=%v", m.st.statsPick, m.st.spendBusy)
 	}
-	m.st.cheapBusy = false
-	m.st.onLoad(m.st.cheapCmd()().(cheapMsg))
+	m.st.spendBusy = false
+	m.st.onLoad(m.st.spendCmd()().(spendMsg))
 	if got := rec.ids[len(rec.ids)-1]; got != want.ID {
 		t.Fatalf("Stats asked for %q, want %q", got, want.ID)
 	}
-	m.st.cheapBusy = false
-	m.st.onLoad(m.st.cheapCmd()().(cheapMsg)) // a refresh keeps it
+	m.st.spendBusy = false
+	m.st.onLoad(m.st.spendCmd()().(spendMsg)) // a refresh keeps it
 	if got := rec.ids[len(rec.ids)-1]; got != want.ID {
 		t.Fatalf("refresh asked for %q, want %q", got, want.ID)
 	}
@@ -1364,6 +1364,26 @@ func TestFrameHeight(t *testing.T) {
 		}
 		if last := ansi.Strip(lines[54]); !strings.Contains(last, "ayuda") {
 			t.Fatalf("last line is not the key bar: %q", last)
+		}
+	}
+}
+
+// TestPlanLegendFits: the legend of the approved plan explains the three test marks at any width.
+func TestPlanLegendFits(t *testing.T) {
+	for _, w := range []int{80, 120, 200} {
+		out, err := Render(Options{Source: testSource(t), Demo: true, Width: w, Plain: true}, "plan", "F7K9")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, want := range []string{"✓ pasó", "✗ falló", "○ sin correr"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("width %d: the legend lacks %q:\n%s", w, want, out)
+			}
+		}
+		for _, l := range strings.Split(out, "\n") {
+			if n := ansi.StringWidth(l); n > w {
+				t.Errorf("width %d: line of %d columns: %q", w, n, l)
+			}
 		}
 	}
 }

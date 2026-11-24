@@ -13,6 +13,9 @@ import (
 const (
 	pollEvery = 500 * time.Millisecond
 	liveEvery = time.Second
+	// spendEvery is the longest a change of the db waits to reach the spend of the screens that
+	// do not show it (the hoy $ of the header).
+	spendEvery = 30 * time.Second
 )
 
 type pollTick struct{}
@@ -49,11 +52,54 @@ func (st *state) reload() tea.Cmd {
 		return nil
 	}
 	st.forgetFar()
+	var cmds []tea.Cmd
 	if st.cheapBusy {
 		st.cheapDirty = true
-		return st.topCmd(true)
+	} else {
+		cmds = append(cmds, st.cheapCmd())
 	}
-	return tea.Batch(st.cheapCmd(), st.topCmd(true))
+	if st.onSpendScreen() {
+		cmds = append(cmds, st.spendNow())
+	} else {
+		st.spendStale = true
+	}
+	return tea.Batch(append(cmds, st.topCmd(true))...)
+}
+
+// onSpendScreen tells whether Gasto or Tendencia is on top.
+func (st *state) onSpendScreen() bool {
+	s := st.top().screen
+	return s == "gasto" || s == "tendencia"
+}
+
+// spendNow loads the spend now; with a load in flight it is asked again as soon as that one ends.
+func (st *state) spendNow() tea.Cmd {
+	if st.ld == nil {
+		return nil
+	}
+	if st.spendBusy {
+		st.spendDirty = true
+		return nil
+	}
+	return st.spendCmd()
+}
+
+// reloadSpend loads only the spend (Gasto, Tendencia, hoy $): a session or a period was picked.
+func (st *state) reloadSpend() tea.Cmd { return st.spendNow() }
+
+// rereadSpend is the r of Gasto and Tendencia: load the spend at once and say so.
+func (st *state) rereadSpend() intent {
+	st.cmd = st.spendNow()
+	st.spendReread = true
+	return intent{toast: "Releyendo…"}
+}
+
+// spendDue launches the spend load of a change that waited, once 30 s passed since the last one.
+func (st *state) spendDue() tea.Cmd {
+	if !st.spendStale || st.now().Sub(st.spendAt) < spendEvery {
+		return nil
+	}
+	return st.spendNow()
 }
 
 // forgetFar marks as not loaded the top views (agents, plan, engineer, file) of the screens that
@@ -92,9 +138,9 @@ func (st *state) onPoll(m pollMsg) tea.Cmd {
 	}
 	if m.ver != st.lastVer {
 		st.lastVer = m.ver
-		return tea.Batch(st.pollTickCmd(), st.reload())
+		return tea.Batch(st.pollTickCmd(), st.reload(), st.spendDue())
 	}
-	return st.pollTickCmd()
+	return tea.Batch(st.pollTickCmd(), st.spendDue())
 }
 
 // working tells whether some feature of the cockpit is running.
@@ -127,7 +173,7 @@ func (st *state) onLive() tea.Cmd {
 	if s := st.top().screen; s == "feature" || s == "agentes" {
 		cmds = append(cmds, st.topCmd(true))
 	}
-	cmds = append(cmds, st.liveTickCmd())
+	cmds = append(cmds, st.spendDue(), st.liveTickCmd())
 	return tea.Batch(cmds...)
 }
 

@@ -20,7 +20,7 @@ func (trendScreen) crumb(*state, route) string { return "Tendencia" }
 func (trendScreen) captures(_ *state, _ route, k string) bool { return k == "shift+tab" }
 
 func (trendScreen) keys(*state, route) []hint {
-	return []hint{{"tab", "config"}, {"shift+tab", "sesión"}, {"enter", "cambiar agrupado"}, {"←→", "período"}}
+	return []hint{{"tab", "config"}, {"shift+tab", "sesión"}, {"enter", "cambiar agrupado"}, {"←→", "período"}, {"r", "releer"}}
 }
 
 // trendMaxBack is how many periods back the window can go.
@@ -50,17 +50,19 @@ func (trendScreen) key(st *state, r route, k string) intent {
 	case "enter":
 		st.cur[r.ckey()+"#g"] = (st.trendGroup(r) + 1) % len(trendGroups)
 		if st.trendBack > 0 { // the step changes with the grouping
-			st.cmd = st.reload()
+			st.cmd = st.reloadSpend()
 		}
+	case "r":
+		return st.rereadSpend()
 	case "left", "h":
 		if st.trendBack < trendMaxBack {
 			st.trendBack++
-			st.cmd = st.reload()
+			st.cmd = st.reloadSpend()
 		}
 	case "right", "l":
 		if st.trendBack > 0 {
 			st.trendBack--
-			st.cmd = st.reload()
+			st.cmd = st.reloadSpend()
 		}
 	}
 	return intent{}

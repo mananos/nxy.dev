@@ -3,6 +3,7 @@ package metrics
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"math"
 
 	"github.com/mananos/nxy.dev/v2/internal/pricing"
@@ -72,6 +73,35 @@ func (m ModelBasis) MarshalJSON() ([]byte, error) {
 	}
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON reads an object keeping the order of its keys; an empty object leaves it nil.
+func (m *ModelBasis) UnmarshalJSON(data []byte) error {
+	*m = ModelBasis{}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if tok == nil {
+		return nil
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return errors.New("metrics: expected a JSON object")
+	}
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		var v string
+		if err := dec.Decode(&v); err != nil {
+			return err
+		}
+		m.Set(kt.(string), v)
+	}
+	_, err = dec.Token()
+	return err
 }
 
 // Bucket accumulates a group of calls. USD is the sum of what has a price; USDUnknownCalls counts

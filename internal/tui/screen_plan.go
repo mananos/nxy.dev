@@ -268,11 +268,19 @@ func (st *state) planImpact(r route, p *views.Plan, b views.PlanBatch, short fun
 		}
 		out = append(out, pick(g, w, tBg1, i == sel, 3)...)
 	}
-	legend := L(T("← ", tSb), T("importa   ", tMu), T("○ ", tSb), T("test que lo cubre", tMu))
-	if !approval {
-		legend = L(T("← ", tSb), T("importa   ", tMu), T("✗ ", tFail), T("test   ", tMu), T("↔ ", tAc), T("contrato", tMu))
+	legend := []line{L(T("← ", tSb), T("importa   ", tMu), T("✗ ", tFail), T("test   ", tMu), T("↔ ", tAc), T("contrato", tMu))}
+	if approval {
+		first := L(T("← ", tSb), T("importa   ", tMu), T("✓ ", tDone), T("pasó   ", tMu), T("✗ ", tFail), T("falló   ", tMu), T("○ ", tSb), T("sin correr", tMu))
+		if w >= 56 {
+			legend = []line{first}
+		} else {
+			legend = []line{
+				L(T("← ", tSb), T("importa   ", tMu), T("↔ ", tAc), T("contrato", tMu)),
+				L(T("✓ ", tDone), T("pasó   ", tMu), T("✗ ", tFail), T("falló   ", tMu), T("○ ", tSb), T("sin correr", tMu)),
+			}
+		}
 	}
-	out = append(out, block([]line{nil, legend}, w, tBg1, 3)...)
+	out = append(out, block(append([]line{nil}, legend...), w, tBg1, 3)...)
 	return out, selRow
 }
 

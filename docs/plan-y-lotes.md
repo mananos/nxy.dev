@@ -46,6 +46,8 @@ Para cada lote el implementer corre dos comandos que ejecutan el `Accept:` por �
 - **`nxy batch green`**, después del código: tiene que **pasar**. Si falla, ve `green failed (exit N): fix and run green again`. Un verde sólo cuenta si no se escribió nada después: si el implementer edita otra vez, tiene que volver a correr `green`.
   - **En Go, el formato también cuenta.** Si el `Accept:` pasa pero algún `.go` que cambió el lote no está formateado con `gofmt`, el verde no se registra: ves `Go files are not gofmt-formatted: <archivos>; run gofmt -w <archivos> and run green again`. Significa que la review iba a encontrar ese formato igual. El implementer corre `gofmt -w` sobre esos archivos y vuelve a correr `green`; vos no hacés nada. Sin `gofmt` en el PATH, sin git o en otros lenguajes, no se chequea.
 
+En el Plan de la TUI, cada test del impacto lleva una marca: **✓** pasó, **✗** falló y **○** todavía no corrió. Cambian solos: el test de un lote pasa a ✓ cuando el lote queda en verde, y los demás se actualizan con la corrida de afectados. No tenés que hacer nada; la leyenda al pie del impacto las explica.
+
 Un lote que sólo se prueba a mano (sin `Accept:`) no pide nada. Si el lote queda en rojo, nxy lo reintenta una vez solo.
 
 ### Lotes en paralelo

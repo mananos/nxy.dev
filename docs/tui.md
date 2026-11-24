@@ -26,7 +26,7 @@ Con `enter` abrís la feature: sus lotes con el modelo, el tiempo y el costo de 
 ### Memoria, Gasto y Config
 
 - **Memoria**: tus reglas del repo, las globales y los aprendizajes, con búsqueda y edición en el lugar ([Memoria](memoria.md)).
-- **Gasto**: la sesión y la tendencia, con barras; `s` cambia de sesión. En Tendencia, `←` y `→` mueven la ventana un período (7 días u 8 semanas), hasta 12 atrás; al salir vuelve a hoy ([Gasto](gasto.md)).
+- **Gasto**: la sesión y la tendencia, con barras; `s` cambia de sesión. En Tendencia, `←` y `→` mueven la ventana un período (7 días u 8 semanas), hasta 12 atrás; al salir vuelve a hoy ([Gasto](gasto.md)). Gasto y Tendencia cargan aparte, sin frenar el resto: con una de las dos en pantalla se recargan con cada cambio de la base; en las demás pantallas (y el hoy $ de arriba) a lo sumo cada 30 segundos. `r` o entrar a la pantalla las recarga al instante.
 - **Config**: los roles con su modelo y effort, los módulos, las herramientas que nxy usa y el estado de la statusline y del binario.
 
 En Config, arriba ves las dos capas: **usuario** (`~/.nxy/config.json`) y **repo** (`.nxy/config.json`); cuando las dos dicen algo, gana el repo. La columna **Origen** de cada rol te dice de dónde sale el valor (`default`, `usuario` o `repo`), y un cambio aplica «al próximo agente que se lance». Detalle de cada clave: [Configuración](configuracion.md).
