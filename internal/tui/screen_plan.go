@@ -307,7 +307,7 @@ func planAction(p *views.Plan, id string) (views.Action, bool) {
 func (planScreen) key(st *state, r route, k string) intent {
 	if k == "r" {
 		st.cmd = tea.Batch(st.cmd, st.topCmd(true))
-		return intent{toast: "Recalculando el plan…"}
+		return st.askReread(r, "Plan recalculado.")
 	}
 	p := st.data.Plans[r.key]
 	if p == nil || len(p.Batches) == 0 {

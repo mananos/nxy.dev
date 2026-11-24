@@ -41,7 +41,8 @@ En el chat, el plan llega como un resumen con esta forma:
 
 Para cada lote el implementer corre dos comandos que ejecutan el `Accept:` por él:
 
-- **`nxy batch red`**, antes del código, sólo cuando el lote trae un test nuevo que cubre un criterio `tdd`: el test tiene que **fallar**. Si pasa, nxy no lo registra («the recorded red passed: the test must fail before the code»).
+- **`nxy batch red`**, antes del código, sólo cuando el lote trae un test nuevo que cubre un criterio `tdd`: el test tiene que **fallar**. Si pasa, nxy no lo registra («the recorded red passed: the test must fail before the code»). Un rojo logrado con un stub (código comentado, revertido o reemplazado a propósito) no prueba nada: el implementer no puede hacerlo y, si el comportamiento ya existía y el test pasa, lo avisa en su respuesta en lugar de forzar el rojo.
+  - **Rojo después de código.** Si antes del `red` el lote ya escribió código que no es test (ni `testdata`, golden o docs), nxy graba el rojo igual, porque no puede saber si el test es bueno, pero lo avisa en la salida con los archivos («code written before the red (…)»). Qué significa: el rojo puede venir de un stub y no probar el test. Qué hacer: nada de tu lado; el reviewer base lista ese lote con sus archivos y verifica que el test falla sin ese código.
 - **`nxy batch green`**, después del código: tiene que **pasar**. Si falla, ve `green failed (exit N): fix and run green again`. Un verde sólo cuenta si no se escribió nada después: si el implementer edita otra vez, tiene que volver a correr `green`.
 
 Un lote que sólo se prueba a mano (sin `Accept:`) no pide nada. Si el lote queda en rojo, nxy lo reintenta una vez solo.
@@ -59,7 +60,7 @@ Con todos los lotes en verde, nxy mira qué archivos cambiaron desde que aprobas
 
 Los runners que nxy conoce de fábrica: go, angular, vitest, jest, react-scripts, maven (y `mvnw`), gradle (y `gradlew`), sbt y pytest. Para otro, un `.nxy/runners.json` en el repo (se commitea) agrega o pisa filas.
 
-En **Afectados fallidos** nxy lista una línea por cada paquete que falló; con salida larga la falla igual muestra las líneas que fallan (p. ej. `FAIL <paquete>`) además del final. En la línea «Listo», un criterio que falló al principio y lo arregló un fix de la review se marca `✔ arreglo`, no `✘`. Si sale en rojo, un implementer los arregla una vez. Si sigue rojo ves **Afectados fallidos**. Si no hay ningún test que correr, o ningún runner conocido y el plan no tiene `Suite:`, ves **Afectados sin verificar**: nunca cuenta como verde.
+En **Afectados fallidos** nxy lista una línea por cada paquete que falló; con salida larga la falla igual muestra las líneas que fallan (p. ej. `FAIL <paquete>`) además del final. Cuando la salida de un Accept o de los afectados es más larga que la cola que nxy guarda, la cola arranca con «… N líneas anteriores recortadas»: significa que esas N líneas corrieron igual aunque no las veas (por ejemplo `cmd/nxy`); si dudás de una, corré el comando a mano. En la línea «Listo», un criterio que falló al principio y lo arregló un fix de la review se marca `✔ arreglo`, no `✘`. Si sale en rojo, un implementer los arregla una vez. Si sigue rojo ves **Afectados fallidos**. Si no hay ningún test que correr, o ningún runner conocido y el plan no tiene `Suite:`, ves **Afectados sin verificar**: nunca cuenta como verde.
 
 ## Qué hacer
 

@@ -3,6 +3,7 @@ package plan
 import (
 	_ "embed"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -212,13 +213,29 @@ func PlannerPrompt(f domain.Feature, exe, mem string) string {
 	return b.String()
 }
 
+// sharedCriterion is a criterion plus the other batches that also cover it.
+type sharedCriterion struct {
+	domain.Criterion
+	Others []int
+}
+
+// OthersText is "2, 3" for the template.
+func (c sharedCriterion) OthersText() string {
+	s := make([]string, len(c.Others))
+	for i, n := range c.Others {
+		s[i] = strconv.Itoa(n)
+	}
+	return strings.Join(s, ", ")
+}
+
 type implementerData struct {
 	Feature   domain.Feature
 	Exe       string
 	Batch     domain.Batch
 	Total     int
 	Decisions []domain.Decision
-	Criteria  []domain.Criterion
+	Criteria  []sharedCriterion
+	Shared    bool
 	Accept    string
 	RepoLine  string
 	Need      Need
@@ -259,7 +276,22 @@ func ImplementerPromptFor(f domain.Feature, n int, exe, mem string) string {
 	for _, id := range d.Batch.Covers {
 		for _, r := range p.Criteria {
 			if r.ID == id {
-				d.Criteria = append(d.Criteria, r)
+				sc := sharedCriterion{Criterion: r}
+				for i, ob := range p.Batches {
+					if i+1 == n {
+						continue
+					}
+					for _, oid := range ob.Covers {
+						if oid == id {
+							sc.Others = append(sc.Others, i+1)
+							break
+						}
+					}
+				}
+				if len(sc.Others) > 0 {
+					d.Shared = true
+				}
+				d.Criteria = append(d.Criteria, sc)
 			}
 		}
 	}

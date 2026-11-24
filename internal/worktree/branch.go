@@ -5,8 +5,9 @@ import "strings"
 // Branch names for a feature that starts in the session's own folder (or in a worktree of a given
 // branch). Pure: git runs in internal/platform.
 
-// SuggestBranch is up to two names for the feature's branch: the prefix most used among the repo's local
-// branches (feature/ when none has one) plus the slug of the title, skipping names that already exist.
+// SuggestBranch is up to two names for the feature's branch: the prefixes shared by two or more of the
+// repo's local branches, most used first (a prefix used by a single branch is ignored), then feature/ and
+// fix/ as fallback, each plus the slug of the title, skipping names that already exist.
 func SuggestBranch(title string, branches []string) []string {
 	slug := SlugOf(title)
 	if slug == "" {
@@ -31,11 +32,17 @@ func SuggestBranch(title string, branches []string) []string {
 			order[j], order[j-1] = order[j-1], order[j]
 		}
 	}
-	prefixes := order
-	if len(prefixes) == 0 {
-		prefixes = []string{"feature/"}
+	var prefixes []string
+	for _, p := range order {
+		if counts[p] >= 2 {
+			prefixes = append(prefixes, p)
+		}
 	}
-	for _, p := range []string{"feature/", "fix/"} {
+	fallback := []string{"fix/", "feature/"}
+	if len(prefixes) == 0 {
+		fallback = []string{"feature/", "fix/"}
+	}
+	for _, p := range fallback {
 		seen := false
 		for _, o := range prefixes {
 			seen = seen || o == p

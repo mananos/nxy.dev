@@ -110,7 +110,10 @@ func TestDecodePromptFromAgent(t *testing.T) {
 		"Another Claude session sent a message: siempre":              true,
 		"<task-notification>siempre</task-notification>":              true,
 		"<system-reminder>siempre</system-reminder>":                  true,
+		"<agent-message from=x>\n[Subagent hand-back] siempre":        true,
+		"  <agent-message from=x>siempre usá tabs":                    true,
 		"siempre usá tabs":                                            false,
+		"siempre, y no confundas <agent-message> con mi texto":        false,
 		"hola\n[Subagent hand-back] siempre (no es la primera línea)": false,
 	}
 	for p, want := range cases {

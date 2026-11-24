@@ -149,7 +149,20 @@ func (v *viewSource) File(ctx context.Context, featureID, pathArg string) (views
 	}
 
 	src := v.repoSource(t.dir)
-	tests, refs := v.probe(ctx, t.dir, src, p, v.filesOf(ctx, t.dir, src))
+	pkey := strings.Join([]string{t.dir, p, src, platform.GitHead(t.dir)}, "\x00")
+	v.mu.Lock()
+	pr, hit := v.probes[pkey]
+	v.mu.Unlock()
+	if !hit {
+		pr.tests, pr.refs = v.probe(ctx, t.dir, src, p, v.filesOf(ctx, t.dir, src))
+		v.mu.Lock()
+		if v.probes == nil {
+			v.probes = map[string]fileProbeHit{}
+		}
+		v.probes[pkey] = pr
+		v.mu.Unlock()
+	}
+	tests, refs := pr.tests, pr.refs
 	in.Source = src
 	in.Tests = testRefs(f, tests)
 	for _, r := range refs {

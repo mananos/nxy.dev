@@ -4,7 +4,7 @@
      ←   Nota.java   api                                         codegraph    
          src/billing/Nota.java · lo edita el lote 1                           
 
-      diff de la feature   archivo                    v  alterna  o  editor   
+      diff de la feature   archivo                               cambio 1/2   
                                                                               
      ▸  9   linea I                                                           
        10   linea J                                                           
@@ -39,4 +39,4 @@
      FEAT-P  lote 1 · en curso                                                
      FEAT-Q  lote 1 · por empezar                                             
      CF-NOTA  cerrada hace 5d                                                 
-  n N  otro cambio     v  archivo entero     o  editor     ?  ayuda             
+  ↑↓  desplaza     n N  cambio 1/2     v  archivo entero     ?  ayuda           

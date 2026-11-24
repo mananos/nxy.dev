@@ -68,15 +68,22 @@ func BuildEngineer(in EngineerIn) (Engineer, bool) {
 	if row != nil {
 		out.AskID = row.ID
 	}
+	if design.ValidPick(d) {
+		out.Picked = d.Pick.Label
+	}
 	for i, o := range cur.Options {
 		key := o.Key
 		if key == "" {
 			key = string(rune('A' + i))
 		}
+		argv := decideArgv(row, o.Label)
+		if row == nil {
+			argv = []string{"nxy", "action", "pick", "--feature", in.Feature.ID, "--fork", cur.ID, "--option", o.Label}
+		}
 		out.Options = append(out.Options, EngOption{
 			Key: key, Label: o.Label, Summary: o.Summary, Pros: nonNilStrings(o.Pros), Cons: nonNilStrings(o.Cons),
 			Touches: o.Touches, Diagram: draw(o.D2),
-			Action: Action{ID: "decide-" + key, Label: o.Label, Argv: decideArgv(row, o.Label)},
+			Action: Action{ID: "decide-" + key, Label: o.Label, Argv: argv},
 		})
 	}
 	return out, true

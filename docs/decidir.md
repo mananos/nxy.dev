@@ -16,7 +16,7 @@ Una feature te hace preguntas todo el tiempo: aprobar el plan, qué hacer con un
 
 - En la TUI, arriba a la derecha, `● 2 DECISIONES`; la feature que espera aparece en el grupo **Te necesita**, y el título de la terminal pasa a `● nxy: 2 decisiones`.
 - En la terminal de Claude Code, el título pasa a `● nxy: decisión pendiente` mientras la pregunta espera.
-- Al apretar `d` se abre la ventana: el chip **Te necesita**, el título de la pregunta, la feature y el repo (`F7K2 · facturacion-web`), cuántas hay (`1 de 2`), la pregunta con su contexto, y las opciones numeradas, con la **recomendada** marcada. Si la pregunta es de varias partes ves `pregunta 1 de 3`.
+- Al apretar `d` se abre la ventana: el chip **Te necesita**, el título de la pregunta, la feature y el repo (`F7K2 · facturacion-web`), cuántas hay (`1 de 2`), el contexto, la pregunta, y las opciones numeradas, cada una con su descripción entera en varias líneas, con la **recomendada** marcada. Si no entra en la terminal, `↑` `↓` desplazan la ventana y la opción marcada queda siempre a la vista. Si la pregunta es de varias partes ves `pregunta 1 de 3`.
 - Al contestar, Claude sigue como si hubieras elegido en su diálogo; en el registro de la herramienta queda `nxy: contestada en la TUI`.
 
 ## Qué significa
