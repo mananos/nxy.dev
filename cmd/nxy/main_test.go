@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -66,6 +67,20 @@ func TestVersion(t *testing.T) {
 	}
 	if strings.TrimSpace(out.String()) != version.Version {
 		t.Fatalf("got %q", out.String())
+	}
+}
+
+type failReader struct{ t *testing.T }
+
+func (f failReader) Read([]byte) (int, error) {
+	f.t.Error("stdin was read")
+	return 0, io.EOF
+}
+
+func TestRunDoesNotReadStdin(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := run([]string{"version"}, failReader{t}, &out, &errb); code != 0 {
+		t.Fatalf("exit %d", code)
 	}
 }
 

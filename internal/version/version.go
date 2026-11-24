@@ -3,4 +3,4 @@
 package version
 
 // Version is the nxy version; the shim pins the same string.
-var Version = "2.2.0"
+var Version = "2.2.1"
