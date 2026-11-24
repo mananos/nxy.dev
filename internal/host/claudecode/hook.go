@@ -41,7 +41,7 @@ type hookInput struct {
 // system notification instead of the user.
 func promptFromAgent(p string) bool {
 	p = strings.TrimSpace(p)
-	for _, pre := range []string{"<task-notification", "<system-reminder"} {
+	for _, pre := range []string{"<task-notification", "<system-reminder", "<agent-message"} {
 		if strings.HasPrefix(p, pre) {
 			return true
 		}

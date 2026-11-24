@@ -305,6 +305,12 @@ func (h Hooks) answerApproval(ctx context.Context, f domain.Feature, answer stri
 		offer := h.branchOffer(ctx, f)
 		nf, _, err = h.advanceSteps(ctx, f.ID, func(x *domain.Feature) ([]flow.Event, error) {
 			x.BranchOffer = offer
+			// criteria the user asked for in a change note stay in the design
+			if x.Mode == domain.ModeEngineer && x.Design != nil && x.Plan != nil && len(x.Plan.Criteria) > len(x.Design.Criteria) {
+				d := *x.Design
+				d.Criteria = append(append([]domain.Criterion(nil), d.Criteria...), x.Plan.Criteria[len(d.Criteria):]...)
+				x.Design = &d
+			}
 			if offer != nil {
 				return []flow.Event{{Kind: flow.Approved}}, nil
 			}

@@ -617,8 +617,22 @@ func TestFileJump(t *testing.T) {
 	}
 }
 
+func TestFileFooterFits100(t *testing.T) {
+	m := scrollFile(t)
+	m.st.data.Files[componentKey].Path = "src/Nota.java"
+	m.st.width = 100
+	lines := strings.Split(m.st.frame(false), "\n")
+	foot := lines[len(lines)-1]
+	for _, want := range []string{"o  editor", "r  releer", "?  ayuda"} {
+		if !strings.Contains(foot, want) {
+			t.Errorf("footer at 100 columns lacks %q:\n%s", want, foot)
+		}
+	}
+}
+
 func TestFileImporterKeys(t *testing.T) {
 	m := scrollFile(t)
+	m.st.width = 200
 	if got := m.st.frame(false); !strings.Contains(got, "abre a.ts") {
 		t.Fatalf("footer should name the file:\n%s", got)
 	}

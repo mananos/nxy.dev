@@ -15,6 +15,8 @@ func TestSuggestBranch(t *testing.T) {
 		{"Login Google", []string{"main", "feat/a", "feat/b", "fix/c"}, []string{"feat/login_google", "fix/login_google"}},
 		{"Login Google", []string{"main", "fix/a", "feature/b", "feature/c"}, []string{"feature/login_google", "fix/login_google"}},
 		{"Login Google", []string{"feature/login_google"}, []string{"fix/login_google"}},
+		{"Login Google", []string{"feature/a", "feature/b", "bfeature/x"}, []string{"feature/login_google", "fix/login_google"}},
+		{"Login Google", []string{"main", "feat/a"}, []string{"feature/login_google", "fix/login_google"}},
 		{"???", nil, nil},
 	} {
 		if got := SuggestBranch(c.title, c.branches); !reflect.DeepEqual(got, c.want) {

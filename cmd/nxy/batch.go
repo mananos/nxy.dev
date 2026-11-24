@@ -42,6 +42,9 @@ func runBatch(args []string, _ io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "%s not recorded: %s\n", kind, res.Refused)
 		return 1
 	case kind == app.RunRed:
+		if res.Warn != "" {
+			fmt.Fprintln(stdout, "nxy: "+res.Warn)
+		}
 		fmt.Fprintln(stdout, "red recorded")
 		return 0
 	case res.Exit == 0:

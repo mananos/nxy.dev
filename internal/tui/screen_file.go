@@ -30,12 +30,12 @@ func (fileScreen) keys(st *state, r route) []hint {
 		cur := min(max(st.cur[r.ckey()+"#n"], 0), len(f.Hunks)-1)
 		cambio = fmt.Sprintf("cambio %d/%d", cur+1, len(f.Hunks))
 	}
-	hs := []hint{{"↑↓", "desplaza"}, {"n N", cambio}, v}
+	hs := []hint{{"↑↓", "desplaza"}, {"n N", cambio}, v, {"o", "editor"}, {"r", "releer"}}
 	if f != nil && len(f.ImportedBy) > 0 {
 		imp := min(max(st.cur[r.ckey()+"#i"], 0), len(f.ImportedBy)-1)
 		hs = append(hs, hint{"enter", "abre " + path.Base(f.ImportedBy[imp].Path)}, hint{"i I", "importador"})
 	}
-	return append(hs, hint{"o", "editor"}, hint{"r", "releer"})
+	return hs
 }
 
 func (st *state) fileFull(r route) bool { return st.cur[r.ckey()+"#v"] == 1 }

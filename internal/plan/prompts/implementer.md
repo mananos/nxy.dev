@@ -39,7 +39,7 @@ The test is already written and its red is recorded: do not write it again and d
 1. Fix the code.
 2. Run `"{{.Exe}}" batch green --feature {{.Feature.ID}} --batch {{.Batch.N}}`. If it fails, fix and run it again.
 {{else if .Need.Red}}
-1. Write the test first. Do not write the code yet.
+1. Write the test first. Do not write the code yet. Never stub, comment out or revert code to make the test fail. If the behavior already exists and the test passes, do not force the red: say so in your reply.
 2. Run `"{{.Exe}}" batch red --feature {{.Feature.ID}} --batch {{.Batch.N}}`. It must report the red recorded; if the test passes, the test is wrong.
 3. Write the code.
 4. Run `"{{.Exe}}" batch green --feature {{.Feature.ID}} --batch {{.Batch.N}}`. If it fails, fix and run it again.

@@ -22,4 +22,4 @@
        20 + linea nueva 20                                                         CF-NOTA  cerrada hace 5d           
                                                                                                                       
      ✗ src/billing/Nota.java:12: se esperaba 100.00 y dio 99.99                                                       
-  ↑↓  desplaza     n N  cambio 1/2     v  archivo entero     enter  abre Factura.java     i I  importador     ?  ayuda  
+  ↑↓  desplaza     n N  cambio 1/2     v  archivo entero     o  editor     r  releer     ?  ayuda                       

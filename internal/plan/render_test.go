@@ -250,6 +250,21 @@ func TestImplementerPrompt(t *testing.T) {
 	}
 }
 
+func TestImplementerPromptForbidsStubRed(t *testing.T) {
+	f := sampleFeature(t)
+	f.Next = domain.Action{Kind: domain.DispatchImplementer, Batch: 1}
+	const ban = "Never stub, comment out or revert code to make the test fail"
+	const warn = "say so in your reply"
+	got := ImplementerPrompt(f, "nxy", "")
+	if !strings.Contains(got, ban) || !strings.Contains(got, warn) {
+		t.Errorf("TDD prompt lacks the stub ban or the warning:\n%s", got)
+	}
+	f.Plan.Criteria[0].Test = domain.TestExisting
+	if got := ImplementerPrompt(f, "nxy", ""); strings.Contains(got, ban) {
+		t.Error("green-only prompt carries the stub ban")
+	}
+}
+
 func TestDecisionQuestions(t *testing.T) {
 	if got := DecisionQuestion("abc", 2); got != "nxy feature abc: el lote 2 falló dos veces — ¿qué hacemos?" {
 		t.Fatalf("got %q", got)

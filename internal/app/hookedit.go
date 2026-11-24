@@ -154,7 +154,7 @@ func (h Hooks) featureEdit(ctx context.Context, ev HookEvent, f domain.Feature) 
 		}
 		if f.State.Phase == domain.PhaseRunningBatch {
 			n, named := h.editBatch(f, ev, target)
-			h.noteWrite(ctx, f.ID, n)
+			h.noteWrite(ctx, f.ID, n, target)
 			if ev.AgentType == roleImplementer && named {
 				return HookResponse{AllowReason: "nxy: batch " + strconv.Itoa(n) + " of feature " + f.ID + " names this file"}
 			}
