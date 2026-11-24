@@ -299,6 +299,25 @@ func GitFiles(ctx context.Context, dir string) ([]string, error) {
 	return res, nil
 }
 
+// GitIgnored returns which of paths (relative to dir, slash-separated) the repo's ignore rules
+// cover, with one `git check-ignore`. Without a repo, without git or on any error it returns empty.
+func GitIgnored(ctx context.Context, dir string, paths []string) map[string]bool {
+	res := map[string]bool{}
+	if len(paths) == 0 {
+		return res
+	}
+	var out, errw tailWriter
+	out.keep, errw.keep = -1, 0
+	exit, err := runProc(ctx, NativePath(dir), []string{"git", "check-ignore", "-z", "--stdin"}, "", strings.Join(paths, "\x00")+"\x00", &out, &errw)
+	if err != nil || exit != 0 {
+		return res
+	}
+	for _, p := range splitNUL(out.String()) {
+		res[p] = true
+	}
+	return res
+}
+
 // GitExcludeLocal makes git ignore pattern through .git/info/exclude (local, never
 // committed). It does nothing when the pattern is already ignored by the repo's own rules. For a
 // directory pattern the probe is its .gitignore: a tool's nested `*` + `!.gitignore` makes the

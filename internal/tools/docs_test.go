@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -98,6 +99,36 @@ func TestFindDocsWithRgMatchesTheWalk(t *testing.T) {
 	}
 	if len(walk.Docs) != 2 {
 		t.Errorf("docs = %+v", walk.Docs)
+	}
+}
+
+func TestFindDocsSkipsGitignored(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	root := t.TempDir()
+	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
+		t.Skipf("git init: %v %s", err, out)
+	}
+	writeTree(t, root, map[string]string{
+		".gitignore":            "docs/ignorado.md\n",
+		"docs/ignorado.md":      "the ClienteService is ignored\n",
+		"docs/guide.md":         "the ClienteService is described here\n",
+		"src/ClienteService.ts": "export class ClienteService {}\n",
+	})
+	bins := []string{""}
+	if bin, ok := FindRg(os.Getenv); ok {
+		bins = append(bins, bin)
+	}
+	for _, bin := range bins {
+		res := findDocs(context.Background(), root, []string{"src/ClienteService.ts"}, bin)
+		var got []string
+		for _, d := range res.Docs {
+			got = append(got, d.Path)
+		}
+		if want := []string{"docs/guide.md"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("rg=%q docs = %v, want %v", bin, got, want)
+		}
 	}
 }
 

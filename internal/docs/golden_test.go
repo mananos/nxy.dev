@@ -100,7 +100,7 @@ func TestDocumenterPrompt(t *testing.T) {
 		WikiDir: "docs",
 	}}
 	p := DocumenterPrompt(f, `C:\bin\nxy.exe`)
-	for _, want := range []string{"add greet", "README.md:3: greet", `"C:/bin/nxy.exe" review docs --feature abc123`, "`docs/`", "Edit and Write"} {
+	for _, want := range []string{"add greet", "README.md:3: greet", `"C:/bin/nxy.exe" review docs --feature abc123`, "`docs/`", "Edit and Write", "without `| head`, `| tail` or a redirect", "read its whole output"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt misses %q:\n%s", want, p)
 		}

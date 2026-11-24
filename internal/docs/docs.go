@@ -414,7 +414,7 @@ func DocumenterPrompt(f domain.Feature, exe string) string {
 			b.WriteString("\nThe repo's CI publishes `" + f.Docs.WikiDir + "/` to its wiki: that is where its docs live.\n")
 		}
 	}
-	fmt.Fprintf(&b, "\n## Packet\n\nBefore you edit, read the plan, the changed files and the diff with exactly this command (its own Bash call):\n\n\"%s\" review docs --feature %s\n\n", exe, f.ID)
+	fmt.Fprintf(&b, "\n## Packet\n\nBefore you edit, read the plan, the changed files and the diff with exactly this command (its own Bash call):\n\n\"%s\" review docs --feature %s\n\nRun it alone, without `| head`, `| tail` or a redirect, and read its whole output: it already comes cut to 25,000 bytes and the diff is at the end.\n\n", exe, f.ID)
 	b.WriteString("## Rules\n\n")
 	b.WriteString("- Edit only the docs listed above. For each one, read it around those lines and change only what the diff made wrong or incomplete: a renamed class, a new field or endpoint, a changed flow, a new step.\n")
 	b.WriteString("- Keep the doc's language, tone, headings and format: a doc in Spanish stays in Spanish.\n")

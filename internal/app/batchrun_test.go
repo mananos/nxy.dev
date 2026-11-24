@@ -119,6 +119,55 @@ func TestRunBatchGreenAfterRed(t *testing.T) {
 	}
 }
 
+type fakeFormat struct {
+	bad   []string
+	files []string
+}
+
+func (f *fakeFormat) Unformatted(_ context.Context, _ string, files []string) ([]string, error) {
+	f.files = files
+	return f.bad, nil
+}
+
+// formatBatch is a batch feature on an existing-test batch with a base and a changed .go and .md file.
+func formatBatch(t *testing.T, bad []string) (Hooks, *memStore, *fakeFormat, string) {
+	t.Helper()
+	h, st, sh, id := batchFeature(t, domain.BatchTestExisting, "go test")
+	sh.res = ShellResult{Exit: 0}
+	f := st.feats[id]
+	f.Base = "abc"
+	st.feats[id] = f
+	h.Changes = fakeChanges{changed: []string{"a/x.go", "README.md"}}
+	ff := &fakeFormat{bad: bad}
+	h.Format = ff
+	return h, st, ff, id
+}
+
+func TestRunBatchGreenRefusesUnformatted(t *testing.T) {
+	h, st, ff, id := formatBatch(t, []string{"a/x.go"})
+	r, err := runBatch(h, id, RunGreen)
+	if err != nil || r.Recorded || !strings.Contains(r.Refused, "gofmt -w a/x.go") {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	if len(ff.files) != 1 || ff.files[0] != "a/x.go" {
+		t.Errorf("checked %v, want only the .go", ff.files)
+	}
+	if pr, any := stored(st, id); any {
+		t.Errorf("proof stored: %+v", pr)
+	}
+}
+
+func TestRunBatchGreenFormattedRecorded(t *testing.T) {
+	h, st, _, id := formatBatch(t, nil)
+	r, err := runBatch(h, id, RunGreen)
+	if err != nil || !r.Recorded {
+		t.Fatalf("r = %+v err = %v", r, err)
+	}
+	if pr, _ := stored(st, id); pr.Green == nil {
+		t.Errorf("proof = %+v", pr)
+	}
+}
+
 func TestRunBatchGreenOnExistingBatch(t *testing.T) {
 	h, st, sh, id := batchFeature(t, domain.BatchTestExisting, "go test")
 	sh.res = ShellResult{Exit: 0}

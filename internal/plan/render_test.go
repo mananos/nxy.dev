@@ -212,6 +212,7 @@ func TestImplementerPrompt(t *testing.T) {
 		`"C:/tools/nxy.exe" batch red --feature f1`,
 		`"C:/tools/nxy.exe" batch green --feature f1 --batch 1`,
 		"timeout 600000",
+		"gofmt -w <files>",
 		"R1: greet(name)",
 		"internal/greet/greet.go:12",
 	} {

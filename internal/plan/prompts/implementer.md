@@ -49,7 +49,7 @@ The test is already written and its red is recorded: do not write it again and d
 {{else}}
 1. Make the changes. This batch has no command to run: do not run any `batch` command.
 {{end}}
-Run each nxy command exactly as written, as its own Bash call, without `cd` or anything chained: nxy runs it in the project folder itself. Give those Bash calls timeout 600000. Edit files with Edit and Write, not through the shell. Any write after the green makes it void: run green again.
+Run each nxy command exactly as written, as its own Bash call, without `cd` or anything chained: nxy runs it in the project folder itself. Give those Bash calls timeout 600000. Edit files with Edit and Write, not through the shell. Before the green, format the files you touched with the repo's formatter (Go: `gofmt -w <files>`); the green is refused for Go files that gofmt would change. Any write after the green makes it void: run green again.
 {{if .Failure}}
 ## Previous attempt failed
 
