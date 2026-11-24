@@ -30,7 +30,11 @@ func (st *state) topBar(w int) line {
 		}
 		right = append(right, seg{Text: label, Fg: tAc, Bg: tBg, Bold: true}, spaces(3, ""))
 	}
-	right = append(right, T("hoy ", tBandMu), B(format.FmtUsd(st.data.Cockpit.Totals.CostTodayUSD), tBg), spaces(3, ""))
+	today := st.data.Cockpit.Totals.CostTodayUSD
+	if st.data.Today != nil {
+		today = *st.data.Today
+	}
+	right = append(right, T("hoy ", tBandMu), B(format.FmtUsd(today), tBg), spaces(3, ""))
 	return fillRun(bgize(lr(l, right, w), tAc), "╱", tTape, 10, 3)
 }
 

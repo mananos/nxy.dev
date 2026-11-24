@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mananos/nxy.dev/v2/internal/app"
@@ -43,6 +44,10 @@ func (claudeTranscripts) LastCacheTTL(path string) (string, bool) {
 	return claudecode.LastCacheTTL(path, 0)
 }
 
+func (claudeTranscripts) Stamp(ref transcript.SessionRef) (string, float64) {
+	return claudecode.SessionStamp(ref)
+}
+
 // rtkLedger is rtk's history database, read only.
 type rtkLedger struct{ path string }
 
@@ -52,11 +57,58 @@ func (l rtkLedger) Rows(since, until *int64) ([]report.LedgerRow, bool) {
 func (l rtkLedger) Unavailable() string { return tools.LedgerUnavailable(l.path) }
 func (l rtkLedger) DBPath() string      { return l.path }
 
+func toAppRows(m map[string]sqlite.SessionUsageRow) map[string]app.SessionUsageRow {
+	out := make(map[string]app.SessionUsageRow, len(m))
+	for p, r := range m {
+		out[p] = app.SessionUsageRow{Path: r.Path, SessionID: r.SessionID, Stamp: r.Stamp, MtimeMs: r.MtimeMs, Usage: r.Usage}
+	}
+	return out
+}
+
+// readSessionCache reads session_usage from nxy.db read only; Save does nothing.
+type readSessionCache struct {
+	rows func(paths []string) map[string]sqlite.SessionUsageRow
+}
+
+func (c readSessionCache) Rows(paths []string) map[string]app.SessionUsageRow {
+	return toAppRows(c.rows(paths))
+}
+func (readSessionCache) Save([]app.SessionUsageRow) {}
+
+// storeSessionCache reads and writes session_usage through the open store.
+type storeSessionCache struct{ store *sqlite.Store }
+
+func (c storeSessionCache) Rows(paths []string) map[string]app.SessionUsageRow {
+	m, err := c.store.SessionUsageRows(context.Background(), paths)
+	if err != nil {
+		return nil
+	}
+	return toAppRows(m)
+}
+
+func (c storeSessionCache) Save(rows []app.SessionUsageRow) {
+	out := make([]sqlite.SessionUsageRow, len(rows))
+	for i, r := range rows {
+		out[i] = sqlite.SessionUsageRow{Path: r.Path, SessionID: r.SessionID, Stamp: r.Stamp, MtimeMs: r.MtimeMs, Usage: r.Usage}
+	}
+	_ = c.store.SaveSessionUsage(context.Background(), out)
+}
+
 // newUsage wires the usage reports. It opens nxy.db read-only (lazily, never creating it); the
 // returned func closes it.
 func newUsage(getenv func(string) string, getwd func() string, clock func() time.Time, loc *time.Location) (app.Usage, func()) {
 	var reader *sqlite.Reader
-	tried := false
+	var once sync.Once
+	open := func() *sqlite.Reader {
+		once.Do(func() {
+			if userDir, err := platform.UserDirEnv(getenv); err == nil {
+				if r, ok, err := sqlite.OpenReadOnly(context.Background(), filepath.Join(userDir, "nxy.db")); err == nil && ok {
+					reader = r
+				}
+			}
+		})
+		return reader
+	}
 	closeDB := func() {
 		if reader != nil {
 			reader.Close()
@@ -64,28 +116,59 @@ func newUsage(getenv func(string) string, getwd func() string, clock func() time
 		}
 	}
 	filterGroups := func(dir, session string) []report.FilterGroup {
-		if !tried {
-			tried = true
-			if userDir, err := platform.UserDirEnv(getenv); err == nil {
-				if r, ok, err := sqlite.OpenReadOnly(context.Background(), filepath.Join(userDir, "nxy.db")); err == nil && ok {
-					reader = r
-				}
-			}
-		}
-		if reader == nil {
+		r := open()
+		if r == nil {
 			return nil
 		}
-		gs, err := reader.FilterGroups(context.Background(), platform.FilterCheckout(dir), session)
+		gs, err := r.FilterGroups(context.Background(), platform.FilterCheckout(dir), session)
 		if err != nil {
 			return nil
 		}
 		// the db keeps 1 and "1" apart; the report folds them by their JS string, as the 1.x did
 		return report.MergeFilterGroups(nil, gs)
 	}
+	filterGroupsMany := func(keys []app.FilterKey) map[app.FilterKey][]report.FilterGroup {
+		out := make(map[app.FilterKey][]report.FilterGroup, len(keys))
+		r := open()
+		if r == nil || len(keys) == 0 {
+			return out
+		}
+		sessions := make([]sqlite.FilterSessionKey, 0, len(keys))
+		seen := map[sqlite.FilterSessionKey]bool{}
+		for _, k := range keys {
+			sk := sqlite.FilterSessionKey{Checkout: platform.FilterCheckout(k.Dir), Session: k.SessionID}
+			if !seen[sk] {
+				seen[sk] = true
+				sessions = append(sessions, sk)
+			}
+		}
+		all, err := r.FilterGroupsMany(context.Background(), sessions)
+		if err != nil {
+			return out
+		}
+		for _, k := range keys {
+			if gs := all[sqlite.FilterSessionKey{Checkout: platform.FilterCheckout(k.Dir), Session: k.SessionID}]; len(gs) > 0 {
+				out[k] = report.MergeFilterGroups(nil, gs)
+			}
+		}
+		return out
+	}
 	return app.Usage{
-		Transcripts:   claudeTranscripts{},
-		Ledger:        rtkLedger{path: tools.RtkHistoryDBPath(runtime.GOOS, getenv)},
-		FilterGroups:  filterGroups,
+		Transcripts:      claudeTranscripts{},
+		Ledger:           rtkLedger{path: tools.RtkHistoryDBPath(runtime.GOOS, getenv)},
+		FilterGroups:     filterGroups,
+		FilterGroupsMany: filterGroupsMany,
+		SessionCache: readSessionCache{rows: func(paths []string) map[string]sqlite.SessionUsageRow {
+			r := open()
+			if r == nil {
+				return nil
+			}
+			m, err := r.SessionUsageRows(context.Background(), paths)
+			if err != nil {
+				return nil
+			}
+			return m
+		}},
 		Config:        func(dir string) map[string]any { return platform.LoadConfig(dir, getenv) },
 		BroadSearches: claudecode.BroadSearchesInTranscript,
 		Gain: func(here bool, cwd string) (any, bool) {

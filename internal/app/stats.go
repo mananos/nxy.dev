@@ -11,12 +11,18 @@ import (
 	"github.com/mananos/nxy.dev/v2/internal/report"
 )
 
-// Usage runs the read-only usage reports (`nxy stats`, `nxy trend`). Nothing here writes.
+// Usage runs the usage reports (`nxy stats`, `nxy trend`). The only thing it writes is
+// session_usage, through SessionCache.
 type Usage struct {
 	Transcripts Transcripts
 	Ledger      Ledger
 	// FilterGroups is the filter summary of a session of the project at dir (empty when none).
 	FilterGroups func(dir, sessionID string) []report.FilterGroup
+	// FilterGroupsMany is FilterGroups for many sessions in one query; nil falls back to
+	// FilterGroups per key.
+	FilterGroupsMany func(keys []FilterKey) map[FilterKey][]report.FilterGroup
+	// SessionCache keeps the summary of each quiet session; nil reads every transcript.
+	SessionCache SessionUsageCache
 	// Config is the merged config for a directory.
 	Config func(dir string) map[string]any
 	// BroadSearches are the main-thread broad searches of a transcript at or above threshold.

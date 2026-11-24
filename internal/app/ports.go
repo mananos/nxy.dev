@@ -60,7 +60,29 @@ type Transcripts interface {
 	ParseSession(ref transcript.SessionRef, opts transcript.SessionOpts) transcript.Session
 	// LastCacheTTL is the TTL the main thread last wrote its cache with ("5m" or "1h").
 	LastCacheTTL(path string) (string, bool)
+	// Stamp is the signature of the files of a session (size and mtime of the main transcript and
+	// of the subagents) and the newest mtime among them, in epoch ms. It reads no transcript.
+	Stamp(ref transcript.SessionRef) (stamp string, newestMs float64)
 }
+
+// SessionUsageRow is the stored summary of one session transcript and the signature it was read at.
+type SessionUsageRow struct {
+	Path      string
+	SessionID string
+	Stamp     string
+	MtimeMs   int64
+	Usage     report.SessionUsage
+}
+
+// SessionUsageCache is the table of session summaries in nxy.db. A failure to read gives no rows
+// and a failure to write loses the rows: the reports then read the transcripts, as without it.
+type SessionUsageCache interface {
+	Rows(paths []string) map[string]SessionUsageRow
+	Save(rows []SessionUsageRow)
+}
+
+// FilterKey is a session of the project at Dir, as the filter summary is looked up.
+type FilterKey struct{ Dir, SessionID string }
 
 // Ledger is rtk's savings ledger, read only.
 type Ledger interface {

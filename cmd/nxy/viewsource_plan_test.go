@@ -307,14 +307,62 @@ func TestD2CacheDoesNotCacheCancel(t *testing.T) {
 
 func TestTestRefsWholeWord(t *testing.T) {
 	f := domain.Feature{Affected: &domain.AffectedRun{Failure: "--- FAIL: TestX\n    src/NotaTestHelper.java:12: boom\n"}}
-	got := testRefs(f, []string{"src/NotaTest.java", "src/NotaTestHelper.java"})
+	got := testRefs(f, "", []string{"src/NotaTest.java", "src/NotaTestHelper.java"})
 	if got[0].Status != "none" || got[1].Status != "fail" {
 		t.Fatalf("only the helper fails: %+v", got)
 	}
 	f.Affected.Failure = "FAIL src/NotaTest.java:3 x"
-	got = testRefs(f, []string{"src/NotaTest.java", "src/NotaTestHelper.java"})
+	got = testRefs(f, "", []string{"src/NotaTest.java", "src/NotaTestHelper.java"})
 	if got[0].Status != "fail" || got[1].Status != "none" {
 		t.Fatalf("only NotaTest fails: %+v", got)
+	}
+}
+
+func TestTestRefsBatchGreen(t *testing.T) {
+	green := &domain.Run{Exit: 0}
+	mk := func(repo, at, accept string, step domain.StepStatus) domain.Feature {
+		return domain.Feature{
+			Plan: &domain.Plan{Batches: []domain.Batch{{
+				N: 1, Repo: repo,
+				Change: []domain.Change{{At: at, What: "x"}},
+				Test:   domain.BatchTest{Accept: accept},
+			}}},
+			State:  domain.State{Steps: []domain.Step{{N: 1, Status: step}}},
+			Proofs: []domain.Proof{{Batch: 1, Green: green}},
+		}
+	}
+	tests := []string{"cmd/nxy/a_test.go"}
+	status := func(f domain.Feature, repo string) string {
+		return testRefs(f, repo, tests)[0].Status
+	}
+
+	f := mk("", "cmd/nxy/a_test.go:10", "go vet", domain.StepGreen)
+	if got := status(f, ""); got != "pass" {
+		t.Fatalf("test in the change of a green batch: %v", got)
+	}
+	f = mk("", "cmd/nxy/b.go:1", "go test ./cmd/nxy/ -run X", domain.StepGreen)
+	if got := status(f, ""); got != "pass" {
+		t.Fatalf("accept names the folder: %v", got)
+	}
+	f = mk("", "cmd/nxy/b.go:1", "go test ./...", domain.StepGreen)
+	if got := status(f, ""); got != "pass" {
+		t.Fatalf("accept ./...: %v", got)
+	}
+	f = mk("", "cmd/nxy/b.go:1", "go test ./other/", domain.StepGreen)
+	if got := status(f, ""); got != "none" {
+		t.Fatalf("unrelated accept: %v", got)
+	}
+	f = mk("", "cmd/nxy/a_test.go:10", "go vet", domain.StepFailed)
+	f.Proofs[0].Failure = "FAIL cmd/nxy/a_test.go:3 boom"
+	if got := status(f, ""); got != "fail" {
+		t.Fatalf("fail wins: %v", got)
+	}
+	f = mk("api", "cmd/nxy/a_test.go:10", "go test ./...", domain.StepGreen)
+	if got := status(f, "web"); got != "none" {
+		t.Fatalf("another repo does not count: %v", got)
+	}
+	if got := status(f, "api"); got != "pass" {
+		t.Fatalf("same repo counts: %v", got)
 	}
 }
 

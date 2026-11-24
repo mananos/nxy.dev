@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,6 +43,55 @@ func TestUsageReadOnlyImportTwice(t *testing.T) {
 	}
 	if first != c.Output.Stdout {
 		t.Errorf("stdout differs from the 1.x golden: %s", diffAt(c.Output.Stdout, first))
+	}
+}
+
+// TestUsageReadOnlySessionUsage: stats and trend read session_usage read only. Without nxy.db they
+// do not create it; with a base that predates the table the output is the same as without a base.
+func TestUsageReadOnlySessionUsage(t *testing.T) {
+	texts := loadUsageTexts(t)
+	c := filterStatsCase(t)
+	skipFilterImport = true
+	t.Cleanup(func() { skipFilterImport = false })
+	w := materializeUsage(t, &c, texts)
+	dbPath := filepath.Join(w.root, "nxyhome", "nxy.db")
+
+	run := func() (string, string) {
+		u, done := newUsage(w.getenv, func() string { return w.proj }, func() time.Time { return w.now }, w.loc)
+		defer done()
+		if u.SessionCache == nil || u.FilterGroupsMany == nil {
+			t.Fatal("newUsage leaves SessionCache or FilterGroupsMany unset")
+		}
+		args := w.expandArgs(c.Input.Args)
+		return goldentest.NormRootText(u.Stats(args).Stdout, w.root), goldentest.NormRootText(u.Trend(nil).Stdout, w.root)
+	}
+	stats0, trend0 := run()
+	if _, err := os.Stat(dbPath); !os.IsNotExist(err) {
+		t.Fatalf("stats or trend created nxy.db (stat err: %v)", err)
+	}
+	if _, err := os.Stat(filepath.Join(w.root, "nxyhome")); err == nil {
+		if _, err := os.Stat(dbPath); err == nil {
+			t.Fatal("nxy.db exists")
+		}
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE other (id INTEGER PRIMARY KEY)`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	stats1, trend1 := run()
+	if stats1 != stats0 {
+		t.Errorf("stats with a base without session_usage differs: %s", diffAt(stats0, stats1))
+	}
+	if trend1 != trend0 {
+		t.Errorf("trend with a base without session_usage differs: %s", diffAt(trend0, trend1))
 	}
 }
 

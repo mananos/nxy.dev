@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mananos/nxy.dev/v2/internal/host/claudecode/transcript"
@@ -145,6 +146,36 @@ func SubagentFiles(ref transcript.SessionRef) []transcript.Subagent {
 		})
 	}
 	return out
+}
+
+// SessionStamp is the signature of the files of a session (size and mtime of the main transcript
+// and of each subagent-*.jsonl, in name order) and the newest mtime among them in epoch ms. It
+// stats the files and reads none; a file that cannot be stat'ed counts as absent.
+func SessionStamp(ref transcript.SessionRef) (string, float64) {
+	var b strings.Builder
+	newest := 0.0
+	add := func(name, p string) {
+		st, err := os.Stat(p)
+		if err != nil {
+			return
+		}
+		m := platform.MtimeMs(st.ModTime())
+		if m > newest {
+			newest = m
+		}
+		b.WriteString(name + ":" + strconv.FormatInt(st.Size(), 10) + ":" + strconv.FormatFloat(m, 'f', -1, 64) + ";")
+	}
+	add("main", ref.Path)
+	entries, err := os.ReadDir(ref.AgentsDir)
+	if err == nil {
+		for _, e := range entries {
+			n := e.Name()
+			if strings.HasPrefix(n, "agent-") && strings.HasSuffix(n, ".jsonl") {
+				add(n, filepath.Join(ref.AgentsDir, n))
+			}
+		}
+	}
+	return b.String(), newest
 }
 
 // IncrementalOpts are the options of ReadIncremental.

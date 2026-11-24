@@ -164,7 +164,7 @@ func (v *viewSource) File(ctx context.Context, featureID, pathArg string) (views
 	}
 	tests, refs := pr.tests, pr.refs
 	in.Source = src
-	in.Tests = testRefs(f, tests)
+	in.Tests = testRefs(f, t.name, tests)
 	for _, r := range refs {
 		in.ImportedBy = append(in.ImportedBy, views.FileRef{Path: r.Path, Line: r.Line})
 	}

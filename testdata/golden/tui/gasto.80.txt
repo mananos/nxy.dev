@@ -20,4 +20,4 @@
     ▌FILTRO Y BÚSQUEDAS                                                       
      El filtro todavía no sacó nada de esta sesión.                           
      ninguna búsqueda amplia frenada                                          
-  tab  tendencia     s  otra sesión     ?  ayuda                                
+  tab  tendencia     s  otra sesión     r  releer     ?  ayuda                  

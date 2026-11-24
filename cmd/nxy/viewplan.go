@@ -93,6 +93,7 @@ type rawImpact struct {
 	exists     bool
 	importedBy []string
 	tests      []string
+	repo       string
 }
 
 // planImpact is the impact map of a plan: the weakest source of the repos it touches and each file.
@@ -179,7 +180,7 @@ func (v *viewSource) impactOf(ctx context.Context, f domain.Feature) planImpact 
 		}
 		all := v.filesOf(ctx, t.dir, src)
 		for _, p := range list {
-			ri := rawImpact{}
+			ri := rawImpact{repo: t.name}
 			if _, ok, err := platform.GitFileAt(ctx, t.dir, t.base, p); err == nil {
 				ri.exists = ok
 			} else if _, serr := os.Stat(filepath.Join(t.dir, filepath.FromSlash(p))); serr == nil {
@@ -237,7 +238,7 @@ func mentions(text, name string) bool {
 
 // testRefs gives each test its state from what the feature already ran: fail when a failed batch or
 // the affected run names it, pass when the green affected run includes it, else none.
-func testRefs(f domain.Feature, tests []string) []views.TestRef {
+func testRefs(f domain.Feature, repo string, tests []string) []views.TestRef {
 	failedStep := map[int]bool{}
 	for _, st := range f.State.Steps {
 		if st.Status == domain.StepFailed {
@@ -271,10 +272,59 @@ func testRefs(f domain.Feature, tests []string) []views.TestRef {
 					break
 				}
 			}
+			if st == views.TestNone && batchCovers(f, failedStep, repo, t) {
+				st = views.TestPass
+			}
 		}
 		out = append(out, views.TestRef{Path: t, Status: st})
 	}
 	return out
+}
+
+// batchCovers says a batch of repo with a green proof (exit 0, step not failed) covers the test: the
+// test is in its change, or its Accept names the test, its name without extension or its folder.
+func batchCovers(f domain.Feature, failedStep map[int]bool, repo, test string) bool {
+	if f.Plan == nil {
+		return false
+	}
+	base := path.Base(test)
+	stem := strings.TrimSuffix(base, path.Ext(base))
+	dir := path.Dir(test)
+	for _, p := range f.Proofs {
+		if p.Green == nil || p.Green.Exit != 0 || failedStep[p.Batch] {
+			continue
+		}
+		for _, b := range f.Plan.Batches {
+			if b.N != p.Batch || b.Repo != repo {
+				continue
+			}
+			for _, c := range b.Change {
+				at := c.At
+				if i := strings.LastIndex(at, ":"); i > 0 {
+					at = at[:i]
+				}
+				if testMatch(filepath.ToSlash(at), test) {
+					return true
+				}
+			}
+			acc := b.Test.Accept
+			if mentions(acc, test) || mentions(acc, base) || mentions(acc, stem) {
+				return true
+			}
+			for _, tok := range strings.Fields(acc) {
+				tok = strings.Trim(tok, "\"'")
+				if tok == "./..." {
+					return true
+				}
+				tok = strings.TrimPrefix(tok, "./")
+				tok = strings.TrimSuffix(strings.TrimSuffix(tok, "..."), "/")
+				if dir != "." && tok != "" && tok == dir {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Plan is the plan screen: the batches and the impact map, with codegraph or rg when there are.
@@ -298,7 +348,7 @@ func (v *viewSource) Plan(ctx context.Context, featureID string) (views.Plan, bo
 	imp := v.impactOf(ctx, f)
 	in := views.PlanIn{FeatureIn: fd.featureIn(v.now()), Source: imp.source, Files: map[string]views.FileImpact{}, Waiting: waiting}
 	for k, r := range imp.files {
-		in.Files[k] = views.FileImpact{Exists: r.exists, ImportedBy: r.importedBy, Tests: testRefs(f, r.tests)}
+		in.Files[k] = views.FileImpact{Exists: r.exists, ImportedBy: r.importedBy, Tests: testRefs(f, r.repo, r.tests)}
 	}
 	p, ok := views.BuildPlan(in)
 	return p, ok, nil

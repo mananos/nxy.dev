@@ -56,7 +56,7 @@ func (statsScreen) keys(st *state, _ route) []hint {
 	if st.statsPick {
 		return []hint{{"↑↓", "mover"}, {"enter", "ver"}, {"esc", "cerrar"}}
 	}
-	return []hint{{"tab", "tendencia"}, {"s", "otra sesión"}}
+	return []hint{{"tab", "tendencia"}, {"s", "otra sesión"}, {"r", "releer"}}
 }
 
 func (statsScreen) key(st *state, _ route, k string) intent {
@@ -80,7 +80,7 @@ func (statsScreen) key(st *state, _ route, k string) intent {
 			}
 			if id != st.statsSession {
 				st.statsSession = id
-				st.cmd = st.reload()
+				st.cmd = st.reloadSpend()
 			}
 		}
 		return intent{}
@@ -88,6 +88,8 @@ func (statsScreen) key(st *state, _ route, k string) intent {
 	switch k {
 	case "tab":
 		return intent{section: "tendencia"}
+	case "r":
+		return st.rereadSpend()
 	case "s":
 		if len(others) == 0 {
 			return intent{toast: "No hay otras sesiones en este repo."}

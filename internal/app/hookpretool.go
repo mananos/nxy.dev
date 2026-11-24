@@ -79,6 +79,11 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 	if r, ok := h.ownStep(ctx, ev); ok {
 		return r
 	}
+	rtkResp := h.rtkStep(ev)
+	// A command stopped so it runs through rtk spends nothing: the run that follows does.
+	if rtkResp.Deny != "" {
+		return rtkResp
+	}
 	if h.broadShellSearch(ev) {
 		if r, denied := h.readGate(ctx, ev, ev.Tool, map[string]any{"command": ev.Command}); denied {
 			return r
@@ -106,6 +111,11 @@ func (h Hooks) preToolBash(ctx context.Context, ev HookEvent) HookResponse {
 		}
 		h.markEdit(ctx, ev)
 	}
+	return rtkResp
+}
+
+// rtkStep is the rtk rewrite of a command: a rewrite, the auto mode deny, or nothing.
+func (h Hooks) rtkStep(ev HookEvent) HookResponse {
 	s, info, fctx, _ := h.rtkEngine(ev.ProjectDir, ev.Tool)
 	if !s.Enabled {
 		return HookResponse{}

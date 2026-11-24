@@ -84,6 +84,35 @@ func (o OrderedMap[V]) MarshalJSON() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+// UnmarshalJSON reads an object keeping the order of its keys; an empty object leaves nil.
+func (o *OrderedMap[V]) UnmarshalJSON(data []byte) error {
+	*o = OrderedMap[V]{}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if tok == nil {
+		return nil
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return errors.New("transcript: expected a JSON object")
+	}
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		var v V
+		if err := dec.Decode(&v); err != nil {
+			return err
+		}
+		o.set(kt.(string), v)
+	}
+	_, err = dec.Token()
+	return err
+}
+
 // AgentTypeBucket is the finished bucket of one agent type plus how many agents ran.
 type AgentTypeBucket struct {
 	metrics.Finished

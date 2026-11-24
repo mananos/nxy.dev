@@ -122,6 +122,40 @@ func TestPreToolBash(t *testing.T) {
 	}
 }
 
+func TestPreToolBashAutoModeKeepsGateEscape(t *testing.T) {
+	ctx := context.Background()
+	h, g, _, root := gateHooks(t)
+	h.Config = fakeConfig{on}
+	h.Engine = fakeEngine{filter.EngineInfo{Engine: "rtk", RtkPath: "rtk"}, filter.RewriteResult{Code: 3, Stdout: "rtk x"}}
+	h.Permissions = fakeRules{}
+	ev := func(cmd string) HookEvent {
+		return HookEvent{Name: "PreToolUse", Tool: "Bash", Command: cmd, HasCommand: true, PermissionMode: "auto",
+			ProjectDir: root, Cwd: root, SessionID: "s1", TranscriptPath: "t.jsonl"}
+	}
+	cases := []struct {
+		name, plain, wrapped string
+		escape               GateEscape
+	}{
+		{"search", "grep -rn foo .", "rtk grep -rn foo .", GateEscapeSearch},
+		{"edit", "sed -i s/a/b/ a/b.go", "rtk sed -i s/a/b/ a/b.go", GateEscapeEdit},
+	}
+	for _, c := range cases {
+		g.Arm("", c.escape)
+		if r := h.Handle(ctx, ev(c.plain)); !strings.Contains(r.Deny, "auto mode") {
+			t.Fatalf("%s: want the rtk deny, got %q", c.name, r.Deny)
+		}
+		if g.armed[c.escape] != 1 {
+			t.Errorf("%s: the stopped command spent the escape", c.name)
+		}
+		if r := h.Handle(ctx, ev(c.wrapped)); r.Deny != "" {
+			t.Errorf("%s: rtk run denied: %q", c.name, r.Deny)
+		}
+		if g.armed[c.escape] != 0 {
+			t.Errorf("%s: the rtk run did not spend the escape", c.name)
+		}
+	}
+}
+
 func TestPreToolBashDeniesActionDecide(t *testing.T) {
 	cmds := map[string]string{
 		"Bash":       "nxy action decide --ask 01J --answer Aprobar",

@@ -77,6 +77,10 @@ nxy también cuesta algo, y es mejor que lo sepas:
 - **Tokens de los hooks:** cero cuando no frenan nada; cuando frenan, el mensaje.
 - **Disco:** unos pocos KB en la base por feature, y por cada subagente una fila de costos que se borra a los 90 días. Qué hay en cada carpeta: [Configuración](configuracion.md).
 
+### Dónde guarda nxy el gasto
+
+Para no releer todos los transcripts en cada informe, nxy guarda un resumen por sesión en la tabla `session_usage` de `nxy.db`. Sólo guarda sesiones quietas (10 minutos sin cambios), pesa unos 3 KB por sesión y se borra a los 90 días. Si el transcript cambia, nxy relee esa sesión y reemplaza su fila. La escribe la TUI; `/nxy:trend` la lee sin escribir: si no hay base, no la crea y lee los transcripts como siempre. `/nxy:stats` y la statusline leen una sola sesión, así que no la necesitan.
+
 ## Qué hacer
 
 ```

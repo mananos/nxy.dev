@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -45,6 +46,9 @@ type Options struct {
 	Getenv   func(string) string
 	GOOS     string
 	LookPath func(string) (string, error)
+
+	// Now is the clock of the 30 s spend refresh; nil: time.Now.
+	Now func() time.Time
 
 	eager bool // load every view up front (tests that drive the screens with keys)
 }
@@ -115,34 +119,40 @@ func sectionTitle(id string) string {
 
 // state is everything the prototype remembers while it runs.
 type state struct {
-	data      *Data
-	th        *theme
-	ic        icons
-	nerd      bool
-	plain     bool
-	stack     []route
-	cur       map[string]int // cursor of each screen
-	toast     string
-	help      bool
-	width     int
-	height    int
-	editing   bool // a text box is open: the decision window does not jump in
-	postponed map[string]bool
-	answered  map[string]bool         // AskIDs answered in this run: a new question of the same feature shows again (the demo only shows the command)
-	decOpen   bool                    // the decision window is on top
-	decCur    string                  // feature of the question the window shows
-	decIdx    map[string]int          // feature: question of a multi-question ask the window is on
-	decAns    map[string][]string     // feature: answers already given to the earlier questions
-	decAsk    map[string]string       // feature: the AskID that progress (decIdx, decAns, decMark) belongs to
-	decMark   map[string]map[int]bool // feature: options marked with space in a multiSelect question
-	folded    map[string]bool         // agents folded in the tree
-	mem       *memUI                  // the memory screen (see memory_search.go)
-	cmd       tea.Cmd                 // what a key leaves for the program to run (the undo timer)
-	cfgKind   string                  // model or effort: what `r` saves in the repo
-	ld        *loader                 // where the views come from
-	cheapBusy bool                    // a cheap load is in flight
-	demo      bool
-	dumpFeat  string // the feature of the file a dump shows
+	data        *Data
+	th          *theme
+	ic          icons
+	nerd        bool
+	plain       bool
+	stack       []route
+	cur         map[string]int // cursor of each screen
+	toast       string
+	help        bool
+	width       int
+	height      int
+	editing     bool // a text box is open: the decision window does not jump in
+	postponed   map[string]bool
+	answered    map[string]bool         // AskIDs answered in this run: a new question of the same feature shows again (the demo only shows the command)
+	decOpen     bool                    // the decision window is on top
+	decCur      string                  // feature of the question the window shows
+	decIdx      map[string]int          // feature: question of a multi-question ask the window is on
+	decAns      map[string][]string     // feature: answers already given to the earlier questions
+	decAsk      map[string]string       // feature: the AskID that progress (decIdx, decAns, decMark) belongs to
+	decMark     map[string]map[int]bool // feature: options marked with space in a multiSelect question
+	folded      map[string]bool         // agents folded in the tree
+	mem         *memUI                  // the memory screen (see memory_search.go)
+	cmd         tea.Cmd                 // what a key leaves for the program to run (the undo timer)
+	cfgKind     string                  // model or effort: what `r` saves in the repo
+	ld          *loader                 // where the views come from
+	cheapBusy   bool                    // a cheap load is in flight
+	spendBusy   bool                    // a spend load (Gasto, Tendencia, hoy $) is in flight
+	spendDirty  bool                    // a refresh came while a spend load was in flight
+	spendReread bool                    // an r waits for the spend load
+	spendAt     time.Time               // when the last spend load started
+	spendStale  bool                    // the db changed and the spend was not reloaded
+	now         func() time.Time
+	demo        bool
+	dumpFeat    string // the feature of the file a dump shows
 
 	statsSession string // Gasto: session picked with s ("" = the current one)
 	statsPick    bool   // Gasto: the session list is open
@@ -179,6 +189,9 @@ func newState(o Options) *state {
 		watch: o.Watch, schema: o.Schema, run: o.Run, busy: map[string]string{}, failed: map[string]string{}, cfgPend: map[string]string{}}
 	st.haveVer, st.lastVer = o.HaveVer, o.Ver
 	st.onStale = o.OnStale
+	if st.now = o.Now; st.now == nil {
+		st.now = time.Now
+	}
 	st.getenv, st.goos, st.lookPath = o.Getenv, o.GOOS, o.LookPath
 	if st.getenv == nil {
 		st.getenv = os.Getenv
@@ -275,7 +288,7 @@ func (st *state) apply(in intent) {
 func (st *state) leaveTrend() {
 	if st.trendBack != 0 && st.top().screen != "tendencia" {
 		st.trendBack = 0
-		st.cmd = st.reload()
+		st.cmd = st.reloadSpend()
 	}
 }
 
@@ -459,6 +472,7 @@ func Render(o Options, target, key string) (string, error) {
 	}
 	st := newState(o)
 	st.onLoad(cheapMsg{r: st.ld.cheap(st.cheapOpts())})
+	st.onLoad(spendMsg{r: st.ld.spend(st.cheapOpts())})
 	if err := st.data.Errs["cockpit"]; err != nil {
 		return "", fmt.Errorf("tui: %w", err)
 	}
@@ -532,7 +546,7 @@ func Run(o Options) error {
 }
 
 func (m *model) Init() tea.Cmd {
-	return tea.Batch(m.st.cheapCmd(), m.st.topCmd(false), m.st.pollCmd())
+	return tea.Batch(m.st.cheapCmd(), m.st.spendCmd(), m.st.topCmd(false), m.st.pollCmd())
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -544,7 +558,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		// the screen the key led to may need its view
-		return m, tea.Batch(m.st.takeCmd(), m.st.topCmd(false))
+		cmds := []tea.Cmd{m.st.takeCmd(), m.st.topCmd(false)}
+		if m.st.onSpendScreen() && m.st.spendStale {
+			cmds = append(cmds, m.st.spendNow())
+		}
+		return m, tea.Batch(cmds...)
 	case cheapMsg:
 		m.st.onLoad(msg)
 		cmds := []tea.Cmd{m.st.liveTickCmd()}
@@ -553,6 +571,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.st.cheapCmd())
 		}
 		return m, tea.Batch(cmds...)
+	case spendMsg:
+		m.st.onLoad(msg)
+		if m.st.spendReread {
+			m.st.spendReread = false
+			m.st.toast, m.st.toastErr = "Gasto releído.", false
+		}
+		if m.st.spendDirty {
+			m.st.spendDirty = false
+			return m, m.st.spendCmd()
+		}
 	case topMsg:
 		m.st.onLoad(msg)
 		m.st.onRereadDone(msg)

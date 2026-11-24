@@ -29,5 +29,5 @@
               ○ NotaTest.java                                                 
               ○ NotaServiceTest.java                                          
                                                                               
-     ← importa   ○ test que lo cubre                                          
+     ← importa   ✓ pasó   ✗ falló   ○ sin correr                              
   a  aprobar     c  cambiar     x  parar     ←→  lote     ?  ayuda              
