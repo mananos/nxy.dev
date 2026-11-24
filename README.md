@@ -154,7 +154,7 @@ Todo el detalle, y qué hacer si algo no arranca: [Instalación](docs/instalacio
 
 ## Estado
 
-Versión `2.0.0`. El binario no está firmado: si en Windows Defender lo pone en cuarentena, excluí su carpeta como dice [Instalación › Windows Defender](docs/instalacion.md#windows-defender). En Linux y macOS no hace falta nada.
+Versión `2.1.0`. El binario no está firmado: si en Windows Defender lo pone en cuarentena, excluí su carpeta como dice [Instalación › Windows Defender](docs/instalacion.md#windows-defender). En Linux y macOS no hace falta nada.
 
 ## Créditos
 

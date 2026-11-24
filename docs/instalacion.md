@@ -106,24 +106,24 @@ El binario de nxy no está firmado, y en Windows el antivirus puede ponerlo en c
   2. **Excluí la carpeta** `%USERPROFILE%\.nxy\bin` (o `%NXY_HOME%\bin` si moviste nxy) en Seguridad de Windows › Protección antivirus y contra amenazas › Administrar la configuración › Exclusiones, y dejá que nxy baje el binario de nuevo. Desde un PowerShell de administrador: `Add-MpPreference -ExclusionPath "$env:USERPROFILE\.nxy\bin"`.
   3. **Compilalo vos.** Hace falta [Go](https://go.dev/dl/) (la versión que dice `go.mod`).
 
-     *Instalación remota* (sin clonar; funciona una vez que el tag `v2.0.0` está publicado):
+     *Instalación remota* (sin clonar; funciona una vez que el tag `v2.1.0` está publicado):
 
      ```
-     go install github.com/mananos/nxy.dev/v2/cmd/nxy@v2.0.0
+     go install github.com/mananos/nxy.dev/v2/cmd/nxy@v2.1.0
      ```
 
-     El binario queda en `GOBIN` si la tenés definida, y si no en `$(go env GOPATH)/bin` (`nxy.exe` en Windows). Para que el lanzador lo use, apuntá `NXY_BIN` a ese archivo (en PowerShell: `$env:NXY_BIN = "…\nxy.exe"`), o copialo a `$HOME/.nxy/bin/2.0.0/nxy.exe` (`$NXY_HOME/bin/…` si moviste nxy). Ojo: un `NXY_BIN` olvidado corre un build viejo sin avisar.
+     El binario queda en `GOBIN` si la tenés definida, y si no en `$(go env GOPATH)/bin` (`nxy.exe` en Windows). Para que el lanzador lo use, apuntá `NXY_BIN` a ese archivo (en PowerShell: `$env:NXY_BIN = "…\nxy.exe"`), o copialo a `$HOME/.nxy/bin/2.1.0/nxy.exe` (`$NXY_HOME/bin/…` si moviste nxy). Ojo: un `NXY_BIN` olvidado corre un build viejo sin avisar.
 
      *Desde el clon.* Clonás el repo en el tag de la versión y lo compilás en la carpeta exacta donde lo busca el lanzador, así no baja nada:
 
      ```
-     git clone --branch v2.0.0 https://github.com/mananos/nxy.dev
+     git clone --branch v2.1.0 https://github.com/mananos/nxy.dev
      cd nxy.dev
-     mkdir -p "$HOME/.nxy/bin/2.0.0"
-     go build -o "$HOME/.nxy/bin/2.0.0/nxy.exe" ./cmd/nxy
+     mkdir -p "$HOME/.nxy/bin/2.1.0"
+     go build -o "$HOME/.nxy/bin/2.1.0/nxy.exe" ./cmd/nxy
      ```
 
-     (En PowerShell, `mkdir -p` se reemplaza por `New-Item -ItemType Directory -Force "$HOME/.nxy/bin/2.0.0"`. En Linux y macOS el archivo se llama `nxy`, sin `.exe`.) La carpeta lleva la versión del plugin que instalaste.
+     (En PowerShell, `mkdir -p` se reemplaza por `New-Item -ItemType Directory -Force "$HOME/.nxy/bin/2.1.0"`. En Linux y macOS el archivo se llama `nxy`, sin `.exe`.) La carpeta lleva la versión del plugin que instalaste.
 
 ### Si algo no anda
 
