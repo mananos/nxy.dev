@@ -185,6 +185,8 @@ type Hooks struct {
 	Viewer Viewer
 	// Shell runs the Accept command of a batch.
 	Shell Shell
+	// Format checks the Go files a green batch changed; nil skips the check.
+	Format Formatter
 	// Files serves the Bash write parser; nil reads paths as they are.
 	Files Files
 	// Exe is the path of the nxy binary, with forward slashes.

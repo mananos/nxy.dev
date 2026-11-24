@@ -11,6 +11,7 @@ import (
 	"github.com/mananos/nxy.dev/v2/internal/docs"
 	"github.com/mananos/nxy.dev/v2/internal/domain"
 	"github.com/mananos/nxy.dev/v2/internal/jscompat"
+	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
 // skipDirs are the folders the docs search never enters: dependencies, builds and tool state.
@@ -162,6 +163,15 @@ func findDocs(ctx context.Context, root string, changed []string, rgBin string) 
 				}
 			}
 		}
+	}
+	if ignored := platform.GitIgnored(ctx, root, order); len(ignored) > 0 {
+		kept := order[:0]
+		for _, p := range order {
+			if !ignored[p] {
+				kept = append(kept, p)
+			}
+		}
+		order = kept
 	}
 	sort.SliceStable(order, func(i, j int) bool {
 		a, b := order[i], order[j]

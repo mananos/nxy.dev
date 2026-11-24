@@ -445,6 +445,12 @@ type Changes interface {
 	Files(ctx context.Context, dir string) ([]string, error)
 }
 
+// Formatter checks the format of source files.
+type Formatter interface {
+	// Unformatted lists the .go files (repo-relative) that gofmt would change; nothing without gofmt.
+	Unformatted(ctx context.Context, dir string, files []string) ([]string, error)
+}
+
 // GraphStatus says how the code graph answered; it mirrors the tools adapter.
 type GraphStatus string
 

@@ -102,6 +102,13 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 		}
 	}
 
+	if kind == RunGreen && res.Exit == 0 {
+		if bad := h.unformatted(ctx, f, n); len(bad) > 0 {
+			out.Refused = fmt.Sprintf("Go files are not gofmt-formatted: %s; run gofmt -w %s and run green again", strings.Join(bad, ", "), strings.Join(bad, " "))
+			return out, nil
+		}
+	}
+
 	run := &domain.Run{Exit: res.Exit, Tail: out.Tail, Edits: edits}
 	if kind == RunRed && len(pr.CodeFirst) > 0 {
 		run.CodeFirst = slices.Clone(pr.CodeFirst)
@@ -136,6 +143,41 @@ func (h Hooks) RunBatchCheck(ctx context.Context, featureID string, kind RunKind
 	}
 	out.Recorded = true
 	return out, nil
+}
+
+// unformatted lists the .go files changed since the base of batch n's repo that gofmt
+// would change. Without a Formatter, a base or git it finds nothing.
+func (h Hooks) unformatted(ctx context.Context, f domain.Feature, n int) []string {
+	if h.Format == nil || h.Changes == nil {
+		return nil
+	}
+	r := batchRepo(f, n)
+	base := r.Base
+	if base == "" {
+		base = f.Base
+	}
+	if base == "" {
+		return nil
+	}
+	dir := batchDir(f, n)
+	changed, err := h.Changes.Changed(ctx, dir, base)
+	if err != nil {
+		return nil
+	}
+	var gos []string
+	for _, p := range changed {
+		if strings.HasSuffix(p, ".go") {
+			gos = append(gos, p)
+		}
+	}
+	if len(gos) == 0 {
+		return nil
+	}
+	bad, err := h.Format.Unformatted(ctx, dir, gos)
+	if err != nil {
+		return nil
+	}
+	return bad
 }
 
 // batchRepo is the repo batch n works in: the one its changes name, or the first.

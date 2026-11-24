@@ -61,13 +61,39 @@ func checkAnswer(options []string, multi bool, answer string) (string, error) {
 		return answer, nil
 	}
 	if multi {
+		// Labels may hold commas themselves, so recognise them (longest first) instead of splitting.
+		sorted := slices.Clone(options)
+		slices.SortStableFunc(sorted, func(a, b string) int { return len(b) - len(a) })
 		var parts []string
-		for _, p := range strings.Split(answer, ",") {
-			p = strings.TrimSpace(p)
-			if !slices.Contains(options, p) {
-				return "", fmt.Errorf("%q no es una opción de la pregunta", p)
+		rest := answer
+		trailing := false
+		for rest != "" {
+			found := false
+			for _, o := range sorted {
+				if o == "" {
+					continue
+				}
+				after, ok := strings.CutPrefix(rest, o)
+				if !ok {
+					continue
+				}
+				after = strings.TrimLeft(after, " ")
+				if after != "" && !strings.HasPrefix(after, ",") {
+					continue
+				}
+				parts = append(parts, o)
+				trailing = strings.HasPrefix(after, ",")
+				rest = strings.TrimLeft(strings.TrimPrefix(after, ","), " ")
+				found = true
+				break
 			}
-			parts = append(parts, p)
+			if !found {
+				bad, _, _ := strings.Cut(rest, ",")
+				return "", fmt.Errorf("%q no es una opción de la pregunta", strings.TrimSpace(bad))
+			}
+		}
+		if len(parts) == 0 || trailing {
+			return "", fmt.Errorf("%q no es una opción de la pregunta", answer)
 		}
 		return strings.Join(parts, ", "), nil
 	}

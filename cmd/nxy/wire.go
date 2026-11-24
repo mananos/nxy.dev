@@ -646,6 +646,13 @@ func (shellRunner) Run(ctx context.Context, dir, command string) (app.ShellResul
 	return app.ShellResult{Exit: exit, Output: out}, err
 }
 
+// gofmtCheck lists the Go files gofmt would change.
+type gofmtCheck struct{}
+
+func (gofmtCheck) Unformatted(ctx context.Context, dir string, files []string) ([]string, error) {
+	return platform.Gofmt(ctx, platform.NativePath(dir), files)
+}
+
 // gitChanges answers from git without a shell.
 type gitChanges struct{}
 
@@ -855,7 +862,7 @@ func newHooksStore() (app.Hooks, *lazyStore) {
 	st := &lazyStore{}
 	return app.Hooks{
 		Config: filterConfig{}, Engine: filterEngine{}, Permissions: permissionRules{}, Roles: roleConfig{},
-		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Files: fileProbe{}, Exe: exePath(),
+		Store: st, Repos: repoKeys{}, Legacy: legacyPlugin{}, Viewer: planViewer{}, Shell: shellRunner{}, Format: gofmtCheck{}, Files: fileProbe{}, Exe: exePath(),
 		Changes: gitChanges{}, Graph: &codegraphGraph{}, Runners: runnerRows{}, Trees: fileTrees{},
 		Lenses: lensDirs{}, Diffs: gitDiffs{}, ReviewLog: st, ReviewFiles: reviewDocs{}, Docs: docsFinder{},
 		Memory: st, Sessions: st, Bootstrap: st, Branches: gitBranches{}, NoteBranches: noteBranches{},

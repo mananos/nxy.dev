@@ -54,6 +54,32 @@ func TestDecideMultiSelectJoinsWithComma(t *testing.T) {
 	}
 }
 
+func TestDecideMultiSelectLabelsWithCommas(t *testing.T) {
+	asks := newFakeAsks()
+	opts := []string{"H1: uno, dos", "H2: tres, cuatro, cinco", "H3: seis"}
+	row, err := asks.CreatePendingAsk(context.Background(), domain.PendingAsk{FeatureID: "F1", Questions: []domain.AskedQuestion{
+		{Question: "Hallazgos?", Options: opts, MultiSelect: true},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := Hooks{Asks: asks}
+	ctx := context.Background()
+	if err := h.Decide(ctx, row.ID, []string{"H1: uno, dos,H2: tres, cuatro, cinco, H3: seis"}, false); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := asks.PendingAsk(ctx, row.ID)
+	if want := "H1: uno, dos, H2: tres, cuatro, cinco, H3: seis"; got.Answers[0] != want {
+		t.Errorf("answers = %q, want %q", got.Answers, want)
+	}
+	row2, _ := asks.CreatePendingAsk(ctx, domain.PendingAsk{FeatureID: "F1", Questions: []domain.AskedQuestion{
+		{Question: "Hallazgos?", Options: opts, MultiSelect: true},
+	}})
+	if err := h.Decide(ctx, row2.ID, []string{"H1: uno, dos, inventada"}, false); err == nil {
+		t.Error("an invented label was accepted")
+	}
+}
+
 // staleAsks reads every unanswered row as the store does once its hook stopped renewing it.
 type staleAsks struct{ *fakeAsks }
 
