@@ -274,7 +274,7 @@ func TestCommandsFrontmatter(t *testing.T) {
 // Every `!` block of a command runs the binary through the shim, and allowed-tools covers it:
 // Claude Code runs a `!` command only when a Bash(<prefix>:*) rule matches.
 func TestCommandsRunTheShim(t *testing.T) {
-	const shim = `. "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd"`
+	const shim = `sh "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd"`
 	walkPlugin(t, func(p string, b []byte) {
 		if strings.Contains(string(b), "../../bin") {
 			t.Errorf("%s still points at ../../bin", p)
@@ -313,5 +313,43 @@ func TestCommandsRunTheShim(t *testing.T) {
 	}
 	if seen < 7 {
 		t.Errorf("only %d `!` blocks found", seen)
+	}
+}
+
+// Claude Code rejects `.` in a `!` block ("evaluates arguments as shell code"): commands run the
+// shim with sh. Hooks and the statusline keep their line.
+func TestCommandsDoNotSourceTheShim(t *testing.T) {
+	dir := filepath.Join(pluginDir(t), "commands")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, line := range strings.Split(string(b), "\n") {
+			if strings.Contains(line, `. "`) {
+				t.Errorf("%s:%d sources the shim with `.`: %s", e.Name(), i+1, line)
+			}
+		}
+	}
+	for _, name := range []string{"setup.md", "worktree.md"} {
+		b, _ := os.ReadFile(filepath.Join(dir, name))
+		body := string(b)
+		if i := strings.Index(body, "\n---\n"); i >= 0 {
+			body = body[i+5:]
+		}
+		// the text after the `!` block must tell the model to use sh too
+		var text []string
+		for _, line := range strings.Split(body, "\n") {
+			if !strings.Contains(line, "!`") {
+				text = append(text, line)
+			}
+		}
+		if !strings.Contains(strings.Join(text, "\n"), `sh "${CLAUDE_PLUGIN_ROOT}/bin/nxy.cmd"`) {
+			t.Errorf("%s: the text does not tell the model to run the shim with sh", name)
+		}
 	}
 }
