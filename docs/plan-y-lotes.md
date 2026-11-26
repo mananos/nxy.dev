@@ -26,6 +26,8 @@ En el chat, el plan llega como un resumen con esta forma:
 - Riesgo: bajo
 ```
 
+Si el plan trae un diagrama, el resumen del chat y **Ver completo** suman una sección `### Diagrama` con la fuente en un bloque `d2`: cómo se conectan las piezas que toca el plan. La TUI lo dibuja. Leelo antes de aprobar; si el planner no lo pidió o no hizo falta, la sección no aparece. En modo ingeniero, si el plan no trae diagrama propio, se muestra el del diseño.
+
 ## Qué significa
 
 - **Criterios (`R1…Rn`).** Lo verificable que sale del pedido. Cada uno tiene un tipo de test: `tdd` (un test nuevo, que primero falla), `existing` (ya existe), `build` (compila o pasa el typecheck) o `manual` (lo mira una persona; el plan dice qué). Todo criterio tiene que estar cubierto por algún lote.

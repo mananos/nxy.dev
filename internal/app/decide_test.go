@@ -28,9 +28,6 @@ func TestDecideOneAnswerPerQuestion(t *testing.T) {
 	if err := h.Decide(ctx, id, []string{"A"}, false); err == nil {
 		t.Error("a missing answer was accepted")
 	}
-	if err := h.Decide(ctx, id, []string{"A", "Z"}, false); err == nil {
-		t.Error("a label that is not an option was accepted")
-	}
 	if err := h.Decide(ctx, id, []string{"A", "Y"}, false); err != nil {
 		t.Fatal(err)
 	}
@@ -72,11 +69,37 @@ func TestDecideMultiSelectLabelsWithCommas(t *testing.T) {
 	if want := "H1: uno, dos, H2: tres, cuatro, cinco, H3: seis"; got.Answers[0] != want {
 		t.Errorf("answers = %q, want %q", got.Answers, want)
 	}
-	row2, _ := asks.CreatePendingAsk(ctx, domain.PendingAsk{FeatureID: "F1", Questions: []domain.AskedQuestion{
-		{Question: "Hallazgos?", Options: opts, MultiSelect: true},
-	}})
-	if err := h.Decide(ctx, row2.ID, []string{"H1: uno, dos, inventada"}, false); err == nil {
-		t.Error("an invented label was accepted")
+}
+
+func TestDecideFreeText(t *testing.T) {
+	ctx := context.Background()
+	h, asks, id := decideSetup(t, false)
+	if err := h.Decide(ctx, id, []string{"  mi propia idea ", "Y"}, false); err != nil {
+		t.Fatal(err)
+	}
+	row, _ := asks.PendingAsk(ctx, id)
+	if row.Answers[0] != "mi propia idea" || row.Answers[1] != "Y" {
+		t.Errorf("answers = %q", row.Answers)
+	}
+	h, asks, id = decideSetup(t, true)
+	if err := h.Decide(ctx, id, []string{"A, mío", "X"}, false); err != nil {
+		t.Fatal(err)
+	}
+	row, _ = asks.PendingAsk(ctx, id)
+	if row.Answers[0] != "A, mío" {
+		t.Errorf("mixed answers = %q", row.Answers)
+	}
+	for _, bad := range []string{"", " ", ",", "A,"} {
+		h, _, id := decideSetup(t, true)
+		if err := h.Decide(ctx, id, []string{bad, "X"}, false); err == nil {
+			t.Errorf("answer %q was accepted", bad)
+		}
+	}
+	for _, bad := range []string{"", " ", ","} {
+		h, _, id := decideSetup(t, false)
+		if err := h.Decide(ctx, id, []string{"A", bad}, false); err == nil {
+			t.Errorf("single answer %q was accepted", bad)
+		}
 	}
 }
 

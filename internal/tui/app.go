@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/mananos/nxy.dev/v2/internal/views"
@@ -139,6 +140,8 @@ type state struct {
 	decAns      map[string][]string     // feature: answers already given to the earlier questions
 	decAsk      map[string]string       // feature: the AskID that progress (decIdx, decAns, decMark) belongs to
 	decMark     map[string]map[int]bool // feature: options marked with space in a multiSelect question
+	decOther    string                  // feature whose Otra text box is open
+	decText     textinput.Model         // the Otra text box
 	folded      map[string]bool         // agents folded in the tree
 	mem         *memUI                  // the memory screen (see memory_search.go)
 	cmd         tea.Cmd                 // what a key leaves for the program to run (the undo timer)

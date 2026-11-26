@@ -11,7 +11,7 @@ import (
 // changes, the test, the command nxy runs for it (Accept) and the risk. It leaves
 // out the request and Read. The main thread copies it verbatim into the chat.
 func Checkpoint(p domain.Plan) string {
-	return checkpoint(p, true)
+	return checkpoint(p, true, p.D2)
 }
 
 // CheckpointOf is the checkpoint of a feature: in engineer mode the criteria were
@@ -23,12 +23,12 @@ func CheckpointOf(f domain.Feature) string {
 		p = *f.Plan
 	}
 	if f.Mode != domain.ModeEngineer {
-		return checkpoint(p, true)
+		return checkpoint(p, true, DiagramOf(f))
 	}
-	return checkpoint(p, false)
+	return checkpoint(p, false, DiagramOf(f))
 }
 
-func checkpoint(p domain.Plan, withCriteria bool) string {
+func checkpoint(p domain.Plan, withCriteria bool, d2 string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## %s\n\n", p.Title)
 	writeRepos(&b, p)
@@ -61,6 +61,7 @@ func checkpoint(p domain.Plan, withCriteria bool) string {
 		}
 		b.WriteString(riskLine(bt))
 	}
+	writeDiagram(&b, d2)
 	writeSuite(&b, p)
 	return b.String()
 }
@@ -155,6 +156,7 @@ func Markdown(f domain.Feature) string {
 	}
 	b.WriteString("\n")
 	writeCriteria(&b, p.Criteria)
+	writeDiagram(&b, DiagramOf(f))
 	for _, bt := range p.Batches {
 		fmt.Fprintf(&b, "\n### Lote %d — %s%s\n", bt.N, repoTag(bt.Repo), bt.Title)
 		fmt.Fprintf(&b, "- Cubre: %s\n", strings.Join(bt.Covers, ", "))
@@ -191,7 +193,7 @@ func Markdown(f domain.Feature) string {
 // writeDesign is the "Diseño" section of an engineer plan document. It uses only
 // domain types (design imports plan, not the other way around). D2 is source only.
 func writeDesign(b *strings.Builder, f domain.Feature, p domain.Plan) {
-	if len(p.Decisions) == 0 && (f.Design == nil || (f.Design.D2 == "" && len(f.Design.Agenda) == 0)) {
+	if len(p.Decisions) == 0 && (f.Design == nil || len(f.Design.Agenda) == 0) {
 		return
 	}
 	b.WriteString("\n### Diseño\n\n")
@@ -216,9 +218,25 @@ func writeDesign(b *strings.Builder, f domain.Feature, p domain.Plan) {
 			fmt.Fprintf(b, "- %s %s — la eligió el planner\n", fk.ID, fk.Title)
 		}
 	}
-	if f.Design.D2 != "" {
-		b.WriteString("\n```d2\n" + strings.TrimRight(f.Design.D2, "\r\n") + "\n```\n")
+}
+
+// DiagramOf is the d2 source of the plan: its own, or in engineer mode the one of
+// the design when the plan has none. Empty when there is neither.
+func DiagramOf(f domain.Feature) string {
+	if f.Plan != nil && strings.TrimSpace(f.Plan.D2) != "" {
+		return f.Plan.D2
 	}
+	if f.Mode == domain.ModeEngineer && f.Design != nil {
+		return f.Design.D2
+	}
+	return ""
+}
+
+func writeDiagram(b *strings.Builder, d2 string) {
+	if strings.TrimSpace(d2) == "" {
+		return
+	}
+	b.WriteString("\n### Diagrama\n\n```d2\n" + strings.TrimRight(d2, "\r\n") + "\n```\n")
 }
 
 func plannerChose(p domain.Plan, fork string) bool {

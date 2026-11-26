@@ -156,3 +156,42 @@ func TestBuildPlanMultiRepo(t *testing.T) {
 		t.Errorf("files = %+v", p.Impact.Files)
 	}
 }
+
+func TestBuildPlanDiagram(t *testing.T) {
+	f := planFeature(domain.PhaseApproval)
+	calls := 0
+	draw := func(src string) Diagram {
+		calls++
+		return Diagram{Source: src, Lines: []string{"[" + src + "]"}, Renderer: "d2 test txt"}
+	}
+
+	// the d2 of the plan, drawn
+	f.Plan.D2 = "a -> b"
+	p, _ := BuildPlan(PlanIn{FeatureIn: FeatureIn{Feature: f, Now: testNow}, Draw: draw})
+	if p.Diagram.Source != "a -> b" || len(p.Diagram.Lines) != 1 || p.Diagram.Lines[0] != "[a -> b]" {
+		t.Errorf("drawn diagram = %+v", p.Diagram)
+	}
+
+	// without Draw only the source, lines never nil
+	p, _ = BuildPlan(PlanIn{FeatureIn: FeatureIn{Feature: f, Now: testNow}})
+	if p.Diagram.Source != "a -> b" || p.Diagram.Lines == nil || len(p.Diagram.Lines) != 0 {
+		t.Errorf("source-only diagram = %+v", p.Diagram)
+	}
+
+	// engineer mode falls back to the design's
+	f.Plan.D2 = ""
+	f.Mode = domain.ModeEngineer
+	f.Design = &domain.Design{D2: "x -> y"}
+	p, _ = BuildPlan(PlanIn{FeatureIn: FeatureIn{Feature: f, Now: testNow}, Draw: draw})
+	if p.Diagram.Source != "x -> y" || len(p.Diagram.Lines) != 1 {
+		t.Errorf("design diagram = %+v", p.Diagram)
+	}
+
+	// no d2: empty diagram and Draw is not called
+	f.Design.D2 = ""
+	calls = 0
+	p, _ = BuildPlan(PlanIn{FeatureIn: FeatureIn{Feature: f, Now: testNow}, Draw: draw})
+	if p.Diagram.Source != "" || len(p.Diagram.Lines) != 0 || calls != 0 {
+		t.Errorf("empty diagram = %+v, calls %d", p.Diagram, calls)
+	}
+}

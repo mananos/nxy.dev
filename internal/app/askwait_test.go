@@ -170,6 +170,21 @@ func TestWaitInTUIAnswers(t *testing.T) {
 	}
 }
 
+func TestWaitInTUIFreeTextAnswer(t *testing.T) {
+	h, _, asks, _, f := waitHooks(t)
+	ev := approvalAsk(f)
+	go func() {
+		row := asks.firstOpen(t)
+		if err := h.Decide(context.Background(), row.ID, []string{"mi propia respuesta"}, false); err != nil {
+			t.Error(err)
+		}
+	}()
+	r := h.Handle(context.Background(), ev)
+	if r.Answers == nil || r.Answers.ByQuestion[ev.Asked[0].Question] != "mi propia respuesta" || r.Deny != "" {
+		t.Fatalf("response = %+v", r)
+	}
+}
+
 func TestWaitInTUIRenewsTheRow(t *testing.T) {
 	h, _, asks, _, f := waitHooks(t)
 	ev := approvalAsk(f)

@@ -28,6 +28,8 @@ type PlanIn struct {
 	FeatureIn
 	Files  map[string]FileImpact
 	Source string
+	// Draw turns a d2 source into a drawn diagram; nil leaves only the source.
+	Draw func(src string) Diagram
 	// Waiting are the questions the hook holds in the TUI; the approval one gives approve and change their argv.
 	Waiting []domain.PendingAsk
 }
@@ -89,6 +91,16 @@ func BuildPlan(in PlanIn) (Plan, bool) {
 		Criteria: []Criterion{}, Decisions: []PlanDecision{}, Batches: []PlanBatch{},
 		Risks: append([]string{}, p.Risks...), Impact: Impact{Source: in.Source, Files: []ImpactFile{}},
 		Actions: []Action{},
+	}
+	out.Diagram = Diagram{Lines: []string{}}
+	if src := plan.DiagramOf(f); src != "" {
+		out.Diagram.Source = src
+		if in.Draw != nil {
+			out.Diagram = in.Draw(src)
+			if out.Diagram.Lines == nil {
+				out.Diagram.Lines = []string{}
+			}
+		}
 	}
 	switch {
 	case f.State.Phase == domain.PhaseDone:

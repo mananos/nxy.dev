@@ -53,14 +53,14 @@ Al final, nxy busca (por código, sin gastar tokens) documentos para usuarios qu
 
 ## Qué hacer
 
-- **Elegí qué arreglar.** Marcá los hallazgos que querés antes del PR, o **Ninguno**. Un único implementer los arregla y nxy vuelve a correr los tests afectados. Si no quedan en verde ves **Arreglos fallidos**: **Reintentar**, **Seguir** o **Parar**.
+- **Elegí qué arreglar.** Marcá los hallazgos que querés antes del PR, o **Ninguno**. Si escribís un texto propio en **Otra**, un `H3` dentro de ese texto no cuenta como hallazgo marcado. Un único implementer los arregla y nxy vuelve a correr los tests afectados. Si no quedan en verde ves **Arreglos fallidos**: **Reintentar**, **Seguir** o **Parar**.
 - **Reportá lo que la review no vio.** Si después encontrás un problema que ningún lente marcó:
 
   ```
   /nxy:review escape "falta validar el CUIT vacío" --question "¿Qué pasa con un CUIT vacío?"
   ```
 
-  Siempre lleva la pregunta que la regla resuelve (`--question`). Con una feature activa, queda como candidato para la pregunta de cierre; sin feature, se guarda ya como regla del repo. `--lens base` dice qué lente tendría que haberlo visto, y `/nxy:review status` lo cuenta como «escape» de esa lente.
+  El texto puede llevar paréntesis y comillas. Siempre lleva la pregunta que la regla resuelve (`--question`). Con una feature activa, queda como candidato para la pregunta de cierre; sin feature, se guarda ya como regla del repo. `--lens base` dice qué lente tendría que haberlo visto, y `/nxy:review status` lo cuenta como «escape» de esa lente.
 - **Lentes propias.** Un `.md` en `.nxy/lenses/` del repo (se commitea) o en `~/.nxy/lenses/` suma o pisa una lente. Si un archivo es inválido, nxy te avisa y lo ignora.
 - **Mirar la review completa:** **Ver completo** en la pregunta, o `/nxy:review show`.
 

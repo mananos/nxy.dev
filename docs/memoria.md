@@ -90,6 +90,7 @@ Una **nota** (`N3`) es algo que dejaste a medias en una carpeta, para retomar en
 /nxy:mem search "cómo guardamos los montos"
 ```
 
+- **Cómo lo corre Claude:** `/nxy:mem` no pasa tu texto por el shell: Claude corre el comando con Bash y muestra la salida, así que el texto puede tener paréntesis y comillas. El pedido también puede ir en palabras, por ejemplo `/nxy:mem buscá lo de los montos (BigDecimal)` y Claude lo traduce a `search`.
 - **Guardar una regla** siempre pide la pregunta que resuelve (`--question`); sin ella el comando falla. Con `--paths` (globs separados por coma) vale sólo para esa área.
 - **Cambiar** sin perder el historial: `nxy mem edit <K3|G2|A7>` con `--text`, `--question`, `--paths`, `--roles` o `--files`. El número, las entregas y las citas quedan.
 - **Borrar y recuperar:** `nxy mem rm <ref>` y `nxy mem restore <ref>` (vuelve con el mismo número).

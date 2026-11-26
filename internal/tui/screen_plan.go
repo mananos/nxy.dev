@@ -184,6 +184,11 @@ func (planScreen) view(st *state, r route, w int) ([]line, int) {
 		focus = len(out) + selRow
 		out = append(out, indent(impact, 2)...)
 	}
+	if p.Diagram.Source != "" {
+		out = append(out, nil)
+		out = append(out, indent([]line{L(heading("Diagrama"))}, 2)...)
+		out = append(out, indent(engDiagram(p.Diagram, w-4), 2)...)
+	}
 	return out, focus
 }
 

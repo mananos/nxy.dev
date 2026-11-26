@@ -11,7 +11,7 @@ import (
 	"github.com/mananos/nxy.dev/v2/internal/platform"
 )
 
-const actionUsage = "uso: nxy action decide --ask <id> --answer <etiqueta> [--answer <etiqueta> ...] | decide --ask <id> --release"
+const actionUsage = "uso: nxy action decide --ask <id> --answer <etiqueta o texto> [--answer <etiqueta o texto> ...] | decide --ask <id> --release"
 
 // runAction is `nxy action decide`: the user's answer, from the TUI, to a question the hook holds.
 // It is not for the model: the PreToolUse hook refuses the command.

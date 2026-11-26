@@ -347,6 +347,8 @@ func (v *viewSource) Plan(ctx context.Context, featureID string) (views.Plan, bo
 	}
 	imp := v.impactOf(ctx, f)
 	in := views.PlanIn{FeatureIn: fd.featureIn(v.now()), Source: imp.source, Files: map[string]views.FileImpact{}, Waiting: waiting}
+	cache := v.d2cache()
+	in.Draw = func(src string) views.Diagram { return cache.draw(ctx, src) }
 	for k, r := range imp.files {
 		in.Files[k] = views.FileImpact{Exists: r.exists, ImportedBy: r.importedBy, Tests: testRefs(f, r.repo, r.tests)}
 	}

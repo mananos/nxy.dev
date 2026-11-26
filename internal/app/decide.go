@@ -16,7 +16,7 @@ var (
 )
 
 // Decide answers a question held by the hook: one answer per question, in order, each a label of its
-// options (a multiSelect one may carry several, separated by commas). With release the question goes
+// options, labels joined by commas (multiSelect) or the user's own text. With release the question goes
 // back to the terminal dialog and answers is ignored.
 func (h Hooks) Decide(ctx context.Context, askID string, answers []string, release bool) error {
 	if h.Asks == nil {
@@ -88,14 +88,22 @@ func checkAnswer(options []string, multi bool, answer string) (string, error) {
 				break
 			}
 			if !found {
-				bad, _, _ := strings.Cut(rest, ",")
-				return "", fmt.Errorf("%q no es una opción de la pregunta", strings.TrimSpace(bad))
+				// The rest is the user's own text, after the labels picked (if any).
+				if len(parts) == 0 {
+					break
+				}
+				return strings.Join(append(parts, strings.TrimSpace(rest)), ", "), nil
 			}
 		}
-		if len(parts) == 0 || trailing {
-			return "", fmt.Errorf("%q no es una opción de la pregunta", answer)
+		if len(parts) > 0 {
+			if trailing {
+				return "", fmt.Errorf("%q termina en coma", answer)
+			}
+			return strings.Join(parts, ", "), nil
 		}
-		return strings.Join(parts, ", "), nil
 	}
-	return "", fmt.Errorf("%q no es una opción de la pregunta", answer)
+	if strings.Trim(answer, ", ") == "" {
+		return "", fmt.Errorf("la respuesta está vacía")
+	}
+	return answer, nil
 }

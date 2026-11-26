@@ -310,6 +310,82 @@ func TestDecisionMultiQuestionBuildsOneDecide(t *testing.T) {
 	}
 }
 
+func typeText(m *model, s string) {
+	for _, r := range s {
+		k := string(r)
+		if r == ' ' {
+			k = "space"
+		}
+		send(m, key(k))
+	}
+}
+
+func TestDecisionOtherSendsText(t *testing.T) {
+	f := &fakeRun{}
+	d := &views.Decision{FeatureID: "FX", AskID: "ASK-1", Header: "h", Question: "q1", Options: opts("A", "B", "C")}
+	m := decModel(t, f, d)
+	fr := m.st.frame(false)
+	if !strings.Contains(fr, "Otra") || !strings.Contains(fr, "1-4") {
+		t.Fatalf("no Otra row or hint:\n%s", fr)
+	}
+	send(m, key("4"))
+	send(m, key("enter"))
+	if m.st.decOther != "FX" {
+		t.Fatal("the box did not open")
+	}
+	// every key is text, esc closes, empty enter warns
+	send(m, key("enter"))
+	if len(f.calls) != 0 || m.st.toast == "" || m.st.decOther != "FX" {
+		t.Fatalf("empty enter: calls %v toast %q", f.calls, m.st.toast)
+	}
+	send(m, key("esc"))
+	if m.st.decOther != "" || !m.st.decOpen || len(f.calls) != 0 {
+		t.Fatal("esc should close only the box")
+	}
+	send(m, key("enter"))
+	typeText(m, "q t?1 ok")
+	send(m, key("tab"))
+	send(m, key("enter"))
+	want := [][]string{{"nxy", "action", "decide", "--ask", "ASK-1", "--answer", "q t?1 ok"}}
+	if !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+}
+
+func TestDecisionOtherMultiQuestionAndMultiSelect(t *testing.T) {
+	f := &fakeRun{}
+	d := &views.Decision{FeatureID: "FX", AskID: "ASK-1", Header: "h", Question: "q1", Options: opts("A", "B"),
+		Rest: []views.DecisionQuestion{{Header: "h2", Question: "q2", MultiSelect: true, Options: opts("X", "Y")}}}
+	m := decModel(t, f, d)
+	send(m, key("3"))
+	send(m, key("enter"))
+	typeText(m, "mia")
+	send(m, key("enter"))
+	if len(f.calls) != 0 || !strings.Contains(m.st.frame(false), "pregunta 2 de 2") {
+		t.Fatalf("did not advance:\n%s", m.st.frame(false))
+	}
+	send(m, key("space")) // mark X
+	send(m, key("3"))
+	send(m, key("enter"))
+	typeText(m, "otra")
+	send(m, key("enter"))
+	want := [][]string{{"nxy", "action", "decide", "--ask", "ASK-1", "--answer", "mia", "--answer", "X, otra"}}
+	if !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("ran %v, want %v", f.calls, want)
+	}
+}
+
+func TestDecisionOtherWithoutAskID(t *testing.T) {
+	f := &fakeRun{}
+	d := &views.Decision{FeatureID: "FX", Question: "q", Options: opts("A", "B")}
+	m := decModel(t, f, d)
+	send(m, key("3"))
+	send(m, key("enter"))
+	if m.st.decOther != "" || m.st.toast != terminalText {
+		t.Fatalf("box %q toast %q", m.st.decOther, m.st.toast)
+	}
+}
+
 func TestDecisionReaskSameFeatureShows(t *testing.T) {
 	f := &fakeRun{}
 	mk := func(ask string) *views.Decision {

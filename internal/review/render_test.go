@@ -59,6 +59,16 @@ func TestChosenIDs(t *testing.T) {
 	}
 }
 
+func TestChosenIDsIgnoresIDsInsideFreeText(t *testing.T) {
+	answer := `H2 A d2 of exactly 60 lines ending in a newline is rejected, "Estamos haciendo varias features en la misma rama por eso tal vez marcaste h1, pero esta bien voy a mandar todo junto en una misma Rama y PR"`
+	if got, want := ChosenIDs(answer), []string{"H2"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	if got, want := ChosenIDs(`"H3 quoted pick"`), []string{"H3"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("quoted pick: got %v, want %v", got, want)
+	}
+}
+
 func testFeature() domain.Feature {
 	return domain.Feature{
 		ID: "f1", Request: "haceme un saludo",

@@ -103,7 +103,7 @@ func TestSelfEnvCarriesTheNonce(t *testing.T) {
 func TestActionDecide(t *testing.T) {
 	_, id := seedAsk(t)
 	liveTUI(t)
-	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id, "--answer", "Quizás"); code != 1 || !strings.Contains(errb, "no es una opción") {
+	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id, "--answer", " , "); code != 1 || !strings.Contains(errb, "vacía") {
 		t.Fatalf("bad label: code %d, err %q", code, errb)
 	}
 	if code, _, errb := runCmd(t, "", "action", "decide", "--ask", id); code != 1 || !strings.Contains(errb, "uso") {

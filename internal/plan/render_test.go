@@ -89,6 +89,40 @@ func TestExampleIsValid(t *testing.T) {
 	}
 }
 
+func TestPlannerPromptAsksD2(t *testing.T) {
+	for _, mode := range []domain.Mode{"", domain.ModeEngineer} {
+		f := domain.Feature{ID: "f1", Request: "r", Mode: mode}
+		if mode == domain.ModeEngineer {
+			f.Design = &domain.Design{Criteria: []domain.Criterion{{ID: "R1", Text: "rule"}}}
+		}
+		p := PlannerPrompt(f, "nxy", "")
+		if !strings.Contains(p, "d2 diagram") {
+			t.Errorf("mode %q: prompt does not ask the d2 diagram", mode)
+		}
+		fields := ""
+		for _, l := range strings.Split(p, "\n") {
+			if strings.HasPrefix(l, "Fields:") {
+				fields = l
+			}
+		}
+		if !strings.Contains(fields, "d2") {
+			t.Errorf("mode %q: Fields lacks d2: %q", mode, fields)
+		}
+	}
+	for name, ex := range map[string]string{"planner": plannerExample, "engineer": engineerExample} {
+		p, err := Decode(strings.NewReader(ex))
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if p.D2 == "" {
+			t.Errorf("%s example has no d2", name)
+		}
+		if probs := Validate(p); len(probs) != 0 {
+			t.Errorf("%s: problems = %v", name, probs)
+		}
+	}
+}
+
 func TestCheckpointOmitsMachineFields(t *testing.T) {
 	f := sampleFeature(t)
 	cp := Checkpoint(*f.Plan)
@@ -124,11 +158,51 @@ func engineerSample(t *testing.T) domain.Feature {
 		{ID: "D1", Scope: domain.ScopeTask, Text: "usar cola", Why: "evita carrera", Dissent: "sigo creyendo que un lock alcanza"},
 		{ID: "D2", Scope: domain.ScopeTask, Text: "nombre del campo", By: domain.ByPlanner, Fork: "B2"},
 	}
+	f.Plan.D2 = ""
 	f.Design = &domain.Design{
 		D2:     "a -> b",
 		Agenda: []domain.Fork{{ID: "B2", Title: "nombre del campo", Status: domain.ForkDelegated}},
 	}
 	return f
+}
+
+func TestCheckpointShowsD2(t *testing.T) {
+	count := func(s string) int { return strings.Count(s, "```d2") }
+
+	// delegate with the plan's d2
+	f := sampleFeature(t)
+	f.Plan.D2 = "plan -> chat"
+	for name, out := range map[string]string{"checkpoint": CheckpointOf(f), "plain": Checkpoint(*f.Plan), "markdown": Markdown(f)} {
+		if !strings.Contains(out, "### Diagrama") || !strings.Contains(out, "```d2\nplan -> chat\n```") {
+			t.Errorf("delegate %s lacks the diagram:\n%s", name, out)
+		}
+	}
+
+	// engineer with its own d2
+	e := engineerSample(t)
+	e.Plan.D2 = "own -> d2"
+	for name, out := range map[string]string{"checkpoint": CheckpointOf(e), "markdown": Markdown(e)} {
+		if !strings.Contains(out, "own -> d2") || strings.Contains(out, "a -> b") || count(out) != 1 {
+			t.Errorf("engineer %s should show only the plan d2:\n%s", name, out)
+		}
+	}
+
+	// engineer falls back to the design d2
+	e.Plan.D2 = ""
+	for name, out := range map[string]string{"checkpoint": CheckpointOf(e), "markdown": Markdown(e)} {
+		if !strings.Contains(out, "```d2\na -> b\n```") || count(out) != 1 {
+			t.Errorf("engineer %s should fall back to the design d2 once:\n%s", name, out)
+		}
+	}
+
+	// no d2 anywhere: no section
+	f.Plan.D2 = ""
+	e.Design.D2 = ""
+	for name, out := range map[string]string{"checkpoint": CheckpointOf(f), "plain": Checkpoint(*f.Plan), "markdown": Markdown(f), "eng-checkpoint": CheckpointOf(e), "eng-markdown": Markdown(e)} {
+		if strings.Contains(out, "Diagrama") || count(out) != 0 {
+			t.Errorf("%s has a diagram section without d2:\n%s", name, out)
+		}
+	}
 }
 
 func TestCheckpointOfEngineerOmitsRules(t *testing.T) {

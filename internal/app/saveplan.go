@@ -51,6 +51,9 @@ func (h Hooks) SavePlan(ctx context.Context, featureID string, r io.Reader) (Sav
 	if len(probs) > 0 {
 		return SaveResult{Problems: probs}, nil
 	}
+	if probs := h.checkD2(ctx, "d2", p.D2); len(probs) > 0 {
+		return SaveResult{Problems: probs}, nil
+	}
 	tagBatchRepos(&p, names)
 	if f.Mode == domain.ModeEngineer {
 		d := f.Design

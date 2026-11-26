@@ -53,6 +53,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 - test.accept is the smallest command that proves the batch, not the whole suite.
 - "read" lists exact ranges, path:a-b. "change" entries are "path:line" plus a short "what" (path (new) for new files).
 - Keep every field short: one line, no code blocks, no triple backticks, "what" at most 200 characters.
+- Always add "d2": a small d2 diagram of the components or files the change touches and how they connect (a -> b); you may start from the structure of the design. It is the only field that may span lines: write line breaks as \n, no triple backticks, at most 60 lines.
 - risk is low, medium or high. depends lists earlier batch numbers only. With 2+ repos, a batch whose depends are done runs in parallel with the batches of other repos (a repo always goes one batch at a time); a batch without depends waits for the previous one. Put the contract batch first and give each repo's batch depends: [1].
 - suite: the command that runs the whole test suite of the repo; leave it empty if unsure.
 - If the request has no way to be tested, set no_tests to true.
@@ -60,7 +61,7 @@ Explore the repo with Read, Grep and Glob, then write the plan.
 
 ## Plan format (JSON)
 
-Fields: title, repos[{path, role, suite}], decisions[{scope repo|task, text, question, fork}] (only for delegated forks), criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, risks, no_tests. Unknown fields are rejected.
+Fields: title, repos[{path, role, suite}], decisions[{scope repo|task, text, question, fork}] (only for delegated forks), criteria[{id, text, test, check}], batches[{n, title, covers, read, change[{at, what}], test{kind new|existing, name, accept}, risk, depends}], suite, d2, risks, no_tests. Unknown fields are rejected.
 
 Example of a valid plan (an engineer plan has no questions and, unless a fork was delegated, no decisions):
 

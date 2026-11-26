@@ -24,6 +24,9 @@ var (
 // Problem is one thing wrong with a plan, located by Where.
 type Problem = domain.Problem
 
+// maxD2Lines is the most lines the d2 of a plan may have.
+const maxD2Lines = 60
+
 type checker struct{ out []Problem }
 
 func (c *checker) add(where, format string, a ...any) {
@@ -106,6 +109,13 @@ func Validate(p domain.Plan) []Problem {
 		c.add("title", "is empty")
 	}
 	c.short("title", p.Title)
+
+	if strings.Contains(p.D2, "```") {
+		c.add("d2", "must not contain a triple backtick")
+	}
+	if n := strings.Count(strings.TrimRight(p.D2, "\r\n"), "\n") + 1; strings.TrimSpace(p.D2) != "" && n > maxD2Lines {
+		c.add("d2", "has %d lines, at most %d", n, maxD2Lines)
+	}
 
 	for i, d := range p.Decisions {
 		w := fmt.Sprintf("decision %d", i+1)
