@@ -64,6 +64,7 @@ Más en [Una feature, paso a paso](feature.md), [Plan y lotes](plan-y-lotes.md) 
 | **nxy feature `<id>`: ¿qué opción elegís para `<bifurcación>`?** | Una bifurcación del diseño | Elegí en el chat o en la pantalla Ingeniero de la TUI |
 | `nxy: feature <id> pendiente (…) — escribí cualquier cosa para seguir` | Hiciste `/clear` con una feature a medias | Escribí cualquier cosa y nxy retoma |
 | `nxy: feature <id> — los reviewers siguen corriendo; su resultado llega cuando terminan` (o `… el implementer sigue corriendo …`) | Un agente trabaja en segundo plano | Nada: el resultado llega solo, una sola vez |
+| `nxy: el veredicto del subagente tarda; cortá el turno sin correr nada, ni nxy status: nxy trae el Next al terminar.` | Volvió un agente en segundo plano y nxy todavía no tiene su veredicto (esperó 5 segundos) | Nada: Claude corta el turno y el paso siguiente llega solo al terminar, sin que escribas ni corras `nxy status` |
 | `nxy: feature <id> — 2 de 4 lentes listas; esperá al resto, nxy trae el resultado cuando terminen.` | La review va por lentes en paralelo | Nada |
 | `nxy: the user stopped feature <id> from the TUI` | Paraste la feature con `x` en la TUI | Nada |
 | `nxy: no arrancó ninguna feature. /nxy:feature (o /nxy:engineer) solo arranca si va al principio del mensaje …` | Escribiste el comando en una línea que no es la primera de tu mensaje | Mandalo de nuevo con el comando al principio |

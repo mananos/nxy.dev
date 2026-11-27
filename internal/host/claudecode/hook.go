@@ -51,6 +51,26 @@ func promptFromAgent(p string) bool {
 		strings.Contains(first, "Another Claude session sent a message")
 }
 
+var (
+	agentMessageFrom = regexp.MustCompile(`^<agent-message\s+from="?([^"\s>]+)"?`)
+	taskNotifID      = regexp.MustCompile(`<task-id>\s*([^<\s]+)\s*</task-id>`)
+)
+
+// handBackAgent returns the agent id of a hand-back prompt: from="ID" of a leading <agent-message>
+// or the <task-id> of a leading <task-notification>. Empty for anything else.
+func handBackAgent(p string) string {
+	p = strings.TrimSpace(p)
+	if m := agentMessageFrom.FindStringSubmatch(p); m != nil {
+		return m[1]
+	}
+	if strings.HasPrefix(p, "<task-notification") {
+		if m := taskNotifID.FindStringSubmatch(p); m != nil {
+			return m[1]
+		}
+	}
+	return ""
+}
+
 // Decode reads a Claude Code hook payload. Unknown fields are ignored.
 func Decode(r io.Reader) (app.HookEvent, error) {
 	var in hookInput
@@ -76,6 +96,7 @@ func Decode(r io.Reader) (app.HookEvent, error) {
 		StopHookActive: in.StopHookActive,
 
 		PromptFromAgent: promptFromAgent(in.Prompt),
+		HandBackAgent:   handBackAgent(in.Prompt),
 	}
 	var ti struct {
 		Command      json.RawMessage `json:"command"`

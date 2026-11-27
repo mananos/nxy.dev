@@ -37,14 +37,14 @@ Fuera de una feature y sin nada que filtrar no ves nada: ni salida de hook, ni h
 | Evento | Qué hace |
 | --- | --- |
 | `SessionStart` | Importa los datos de la 1.x una vez por repo; resuelve el motor del filtro; re-inyecta el paso de la feature activa (sobrevive a `/clear`); ofrece las notas de la carpeta; avisa si quedó una feature de la 1.x a medias o si hay una 1.x activa; en auto mode, le pide a Claude que anteponga `rtk` |
-| `UserPromptSubmit` | Arranca la feature de `/nxy:feature` y `/nxy:engineer` (guarda tu pedido tal cual); guarda tus mensajes como referencias del diseño; entrega un paso pendiente y la opción que elegiste en Ingeniero ([ingeniero](ingeniero.md)); el aviso de «siempre / nunca» para proponer una regla; la pregunta de las notas |
+| `UserPromptSubmit` | Arranca la feature de `/nxy:feature` y `/nxy:engineer` (guarda tu pedido tal cual); guarda tus mensajes como referencias del diseño; entrega un paso pendiente y la opción que elegiste en Ingeniero ([ingeniero](ingeniero.md)); cuando vuelve un subagente en segundo plano (implementer, planner o reviewer), espera hasta 5 segundos su veredicto y te trae el paso siguiente; si tarda más, le pide a Claude que corte el turno y el `Stop` lo entrega; el aviso de «siempre / nunca» para proponer una regla; la pregunta de las notas |
 | `PreToolUse` Bash/PowerShell | Reescribe el comando por rtk ([rtk](rtk.md)); frena las escrituras por consola y las búsquedas amplias del hilo principal ([gate](gate.md)); rechaza `nxy action decide` |
 | `PreToolUse` Grep/Glob | El freno de lectura |
 | `PreToolUse` Edit/Write/NotebookEdit/MultiEdit | El freno de escritura; cuenta las escrituras del implementer y verifica que su lote nombre el archivo |
 | `PreToolUse` Agent/Task | Escribe el prompt del implementer, del reviewer, etc. a partir del plan guardado; aplica el modelo y el effort por rol; inyecta las reglas |
 | `PreToolUse` Skill | En el hilo principal rechaza `nxy:feature` y `nxy:engineer`: sólo arrancan tipeados por vos |
 | `PreToolUse` AskUserQuestion | Retiene la pregunta si hay una TUI viva (hasta 25 min); timeout de 1800 s ([decidir](decidir.md)) |
-| `PostToolUse` Bash/PowerShell | Suma la llamada al resumen del filtro |
+| `PostToolUse` Bash/PowerShell | Suma la llamada al resumen del filtro y, si un subagente en segundo plano terminó mientras corría el comando, entrega el paso pendiente (una sola vez, nunca en el Bash de un subagente) |
 | `PostToolUse` Agent/Task | Decide el veredicto del lote cuando el subagente vuelve, y el paso siguiente |
 | `PostToolUse` AskUserQuestion | Registra la respuesta (la aprobación del plan, las decisiones) |
 | `SubagentStop` | El veredicto de un subagente en segundo plano, que se entrega una sola vez |

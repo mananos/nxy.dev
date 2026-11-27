@@ -161,20 +161,3 @@ func TestDeliverPendingGuards(t *testing.T) {
 		t.Errorf("deny claimed: %+v", r)
 	}
 }
-
-type panicStore struct{ Store }
-
-func (panicStore) ActiveFeature(context.Context, string) (domain.Feature, bool, error) {
-	panic("store used")
-}
-
-func TestPostToolBashSkipsStore(t *testing.T) {
-	h, _ := flowHooks(false)
-	h.Store = panicStore{h.Store}
-	for _, tool := range []string{"Bash", "PowerShell"} {
-		ev := HookEvent{Name: "PostToolUse", Tool: tool, ProjectDir: "/p", Cwd: "/p"}
-		if r := h.Handle(context.Background(), ev); r != (HookResponse{}) {
-			t.Errorf("%s: %+v", tool, r)
-		}
-	}
-}
