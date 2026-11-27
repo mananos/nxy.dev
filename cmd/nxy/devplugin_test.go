@@ -316,6 +316,35 @@ func TestCommandsRunTheShim(t *testing.T) {
 	}
 }
 
+// Claude Code rejects parentheses and quotes typed by the user inside a `!` block ("permission
+// check"): a command that takes free text in quotes lets Claude run the shim with Bash instead.
+func TestCommandsKeepFreeTextOutOfTheShell(t *testing.T) {
+	dir := filepath.Join(pluginDir(t), "commands")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hint := regexp.MustCompile(`(?m)^argument-hint:.*"<`)
+	bang := regexp.MustCompile("!`[^`]*\\$ARGUMENTS[^`]*`")
+	for _, e := range entries {
+		p := filepath.Join(dir, e.Name())
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := string(b)
+		if !hint.MatchString(frontmatter(t, p)) {
+			continue
+		}
+		if bang.MatchString(s) {
+			t.Errorf("%s: free text goes through a `!` block with $ARGUMENTS", e.Name())
+		}
+		if !strings.Contains(s, "Bash") || !strings.Contains(s, "single quotes") {
+			t.Errorf("%s: must tell Claude to run the shim with Bash and the text in single quotes", e.Name())
+		}
+	}
+}
+
 // Claude Code rejects `.` in a `!` block ("evaluates arguments as shell code"): commands run the
 // shim with sh. Hooks and the statusline keep their line.
 func TestCommandsDoNotSourceTheShim(t *testing.T) {

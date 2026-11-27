@@ -16,7 +16,7 @@ Una feature te hace preguntas todo el tiempo: aprobar el plan, qué hacer con un
 
 - En la TUI, arriba a la derecha, `● 2 DECISIONES`; la feature que espera aparece en el grupo **Te necesita**, y el título de la terminal pasa a `● nxy: 2 decisiones`.
 - En la terminal de Claude Code, el título pasa a `● nxy: decisión pendiente` mientras la pregunta espera.
-- Al apretar `d` se abre la ventana: el chip **Te necesita**, el título de la pregunta, la feature y el repo (`F7K2 · facturacion-web`), cuántas hay (`1 de 2`), el contexto, la pregunta, y las opciones numeradas, cada una con su descripción entera en varias líneas, con la **recomendada** marcada. Si no entra en la terminal, `↑` `↓` desplazan la ventana y la opción marcada queda siempre a la vista. Si la pregunta es de varias partes ves `pregunta 1 de 3`.
+- Al apretar `d` se abre la ventana: el chip **Te necesita**, el título de la pregunta, la feature y el repo (`F7K2 · facturacion-web`), cuántas hay (`1 de 2`), el contexto, la pregunta, y las opciones numeradas, cada una con su descripción entera en varias líneas, con la **recomendada** marcada, y al final una fila **Otra** (`Escribí tu propia respuesta`) para contestar con tu propio texto; las bifurcaciones no la llevan. Si no entra en la terminal, `↑` `↓` desplazan la ventana y la opción marcada queda siempre a la vista. Si la pregunta es de varias partes ves `pregunta 1 de 3`.
 - Al contestar, Claude sigue como si hubieras elegido en su diálogo; en el registro de la herramienta queda `nxy: contestada en la TUI`.
 
 ## Qué significa
@@ -41,12 +41,14 @@ El modelo no puede contestarse solo: `nxy action decide` sólo lo acepta si lo c
 1. Abrí la [TUI](tui.md) en otra terminal antes de que Claude llegue a la pregunta (o después: la ve en cuanto aparece).
 2. Cuando veas `● N decisiones`, apretá `d`.
 3. Elegí la opción con su número (`1`–`9`) o con `↑` `↓`, y confirmá con `enter`. En una pregunta de selección múltiple, `space` marca y desmarca cada opción y `enter` confirma.
+   Si ninguna opción te sirve, elegí **Otra** (la última fila, con el número siguiente), apretá `enter` y escribí tu respuesta en la caja que se abre dentro de la ventana. Mientras escribís, todas las teclas son texto (también `q`, `?`, `t`, `tab` y los números). `enter` con texto la envía; vacío no envía y avisa; `esc` cierra la caja sin contestar. Claude recibe tu texto como la respuesta; en selección múltiple recibe las etiquetas marcadas y tu texto al final, separados por coma.
 4. Si la pregunta tiene varias partes, `enter` pasa a la siguiente y recién con la última se envía todo.
 5. Con más de una pregunta abierta, `tab` y `shift+tab` pasan de una a otra. `esc` la deja para después; vuelve a aparecer cuando apretás `d` de nuevo.
 
 | Tecla | Qué hace en la ventana |
 | --- | --- |
-| `1`–`9` · `↑` `↓` (o `k` `j`) | Elegir una opción |
+| `1`–`9` · `↑` `↓` (o `k` `j`) | Elegir una opción, o la fila **Otra** (la última) |
+| `enter` en **Otra** | Abre la caja de texto; ahí todas las teclas escriben, `enter` envía y `esc` la cierra sin contestar |
 | `space` | Marcar o desmarcar (selección múltiple) |
 | `enter` | Confirmar la opción o pasar a la pregunta siguiente |
 | `t` | Contestar en la terminal de Claude Code |
@@ -71,7 +73,7 @@ Para probarlo sin una feature real: `nxy tui --demo` y `ctrl+n` simula que llega
 | Comando | Qué hace |
 | --- | --- |
 | `nxy tui` | La TUI; con ella abierta las preguntas se contestan ahí |
-| `nxy action decide --ask <id> --answer <etiqueta> [--answer …]` | Lo que corre la TUI al confirmar. No es para usar a mano |
+| `nxy action decide --ask <id> --answer <etiqueta o texto> [--answer …]` | Lo que corre la TUI al confirmar. No es para usar a mano |
 | `nxy action decide --ask <id> --release` | Lo que corre `t`: devuelve la pregunta a la terminal |
 
 No tiene claves de config: se activa sola cuando hay una TUI viva. La espera del hook es de 25 minutos como máximo, revisando cada 0,3 s.

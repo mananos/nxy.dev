@@ -241,13 +241,19 @@ func FixQuestion(id string, part, parts int) string {
 	return fmt.Sprintf("%s (%d/%d)", FixQuestionPrefix(id), part, parts)
 }
 
-var findingIDRE = regexp.MustCompile(`(?i)\bH(\d+)\b`)
+var findingIDRE = regexp.MustCompile(`(?i)^\s*"?H(\d+)\b`)
 
-// ChosenIDs reads the finding ids (H1, H3) out of an answer, in order, once each.
+// ChosenIDs reads the finding ids (H1, H3) out of an answer, in order, once each. Only the H<n>
+// that starts a comma-separated part of the answer counts (after optional spaces and an opening
+// double quote); an H<n> inside free text the user wrote next to the picks is not a pick.
 func ChosenIDs(answer string) []string {
 	var out []string
 	seen := map[string]bool{}
-	for _, m := range findingIDRE.FindAllStringSubmatch(answer, -1) {
+	for _, part := range strings.Split(answer, ",") {
+		m := findingIDRE.FindStringSubmatch(part)
+		if m == nil {
+			continue
+		}
 		id := "H" + m[1]
 		if !seen[id] {
 			seen[id] = true

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mananos/nxy.dev/v2/internal/domain"
 	"github.com/mananos/nxy.dev/v2/internal/filter"
 	"github.com/mananos/nxy.dev/v2/internal/report"
 )
@@ -133,6 +134,28 @@ func TestPostToolBashSameCallsSumInOneGroup(t *testing.T) {
 	})
 	if len(want) != 1 || !reflect.DeepEqual(folded, want) {
 		t.Errorf("folded %+v want %+v", folded, want)
+	}
+}
+
+func TestPostToolBashDeliversPending(t *testing.T) {
+	h, st := flowHooks(false)
+	ctx := context.Background()
+	f := startedFeature(t, h, "go")
+	if _, _, err := h.mutate(ctx, f.ID, func(g *domain.Feature) bool { g.Undelivered = true; return true }); err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range []string{"Bash", "PowerShell"} {
+		ev := HookEvent{Name: "PostToolUse", Tool: tool, ProjectDir: "/p", Cwd: "/p", AgentID: "a1"}
+		if r := h.Handle(ctx, ev); r.Next != nil || !st.feats[f.ID].Undelivered {
+			t.Fatalf("%s of a subagent claimed it: %+v", tool, r)
+		}
+	}
+	ev := HookEvent{Name: "PostToolUse", Tool: "Bash", ProjectDir: "/p", Cwd: "/p"}
+	if r := h.Handle(ctx, ev); r.Next == nil || st.feats[f.ID].Undelivered {
+		t.Fatalf("main thread did not get it: %+v undelivered=%v", r, st.feats[f.ID].Undelivered)
+	}
+	if r := h.Handle(ctx, ev); r.Next != nil {
+		t.Errorf("delivered twice: %+v", r)
 	}
 }
 

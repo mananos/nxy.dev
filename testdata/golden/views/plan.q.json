@@ -95,6 +95,15 @@
       }
     ]
   },
+  "diagram": {
+    "source": "formato: Formato\nFormato -> Nota",
+    "lines": [
+      "[formato: Formato]"
+    ],
+    "renderer": "d2 0.7.1 txt",
+    "problem": "",
+    "error": ""
+  },
   "actions": [
     {
       "id": "pause",

@@ -23,7 +23,7 @@ Opcionales, que suman ahorro:
 | [rtk](https://github.com/rtk-ai/rtk) | Filtra la salida de los comandos (tests, builds, git, logs); [cómo decide](rtk.md) | Los comandos pasan enteros; nada se rompe |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) | Búsqueda de texto del scout; rtk también lo usa | El scout busca más lento y rtk recorta menos |
 | [codegraph](https://github.com/colbymchenry/codegraph) | «Quién llama a qué» para el scout, y qué tests afecta un cambio | El scout usa el índice propio de nxy y `rg`; los tests afectados se buscan por nombre |
-| [d2](https://d2lang.com) | Dibuja los diagramas del modo ingeniero en la TUI | El diagrama se muestra como texto fuente |
+| [d2](https://d2lang.com) | Dibuja los diagramas del modo ingeniero y del plan en la TUI | El diagrama se muestra como texto fuente |
 
 No hace falta pegar nada a mano: `/nxy:setup` detecta qué te falta, te muestra el comando exacto para tu sistema y lo corre **sólo si le decís que sí**. Elige el gestor que encuentra: `winget`, `brew`, o `apt-get`, `dnf` o `pacman` (con `sudo`: si no puede usarlo, te imprime el comando para que lo pegues vos en una terminal). rtk y codegraph se instalan con el script de su proyecto (`install.sh`; en Windows, `install.ps1` para codegraph); d2, con `https://d2lang.com/install.sh`. Si winget dice que no hay una versión más nueva (ya estaba instalado, por ejemplo d2 en `C:\Program Files\D2`), nxy lo toma como instalado, termina con exit 0 y vuelve a detectar: imprime dónde lo encontró o que no está en el PATH (abrí una terminal nueva).
 

@@ -193,6 +193,13 @@
       }
     ]
   },
+  "diagram": {
+    "source": "",
+    "lines": [],
+    "renderer": "",
+    "problem": "",
+    "error": ""
+  },
   "actions": [
     {
       "id": "pause",

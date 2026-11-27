@@ -48,6 +48,8 @@ type Plan struct {
 	NoTests   bool        `json:"no_tests,omitempty"`
 	// Suite is the full-suite command, used only when the affected tests cannot be worked out.
 	Suite string `json:"suite,omitempty"`
+	// D2 is the d2 source of the diagram of the change (optional).
+	D2 string `json:"d2,omitempty"`
 	// RepoRunners are the rows of the repo's .nxy/runners.json, set by nxy (not the planner) when
 	// the plan is saved so the user sees what will run; RepoRunnersWarn is set when the file is invalid.
 	RepoRunners     []RepoRunner `json:"repo_runners,omitempty"`

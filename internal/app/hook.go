@@ -39,8 +39,10 @@ type HookEvent struct {
 	Prompt string
 	// PromptFromAgent is true when the prompt was not typed by the user (subagent hand-back, notification).
 	PromptFromAgent bool
-	Source          string
-	ToolUseID       string
+	// HandBackAgent is the id of the agent whose hand-back or task-notification the prompt is.
+	HandBackAgent string
+	Source        string
+	ToolUseID     string
 	// Subagent and AgentPrompt are tool_input.subagent_type / prompt of Agent/Task.
 	Subagent    string
 	AgentPrompt string
@@ -171,6 +173,27 @@ func (w AskWait) max() time.Duration {
 	return w.Max
 }
 
+// HandBackWait sets how long a hand-back waits for the SubagentStop of its agent; zero values mean
+// 200 ms and 5 s.
+type HandBackWait struct {
+	Every time.Duration
+	Max   time.Duration
+}
+
+func (w HandBackWait) every() time.Duration {
+	if w.Every <= 0 {
+		return 200 * time.Millisecond
+	}
+	return w.Every
+}
+
+func (w HandBackWait) max() time.Duration {
+	if w.Max <= 0 {
+		return 5 * time.Second
+	}
+	return w.Max
+}
+
 // Hooks answers hook events with the ports it was given.
 type Hooks struct {
 	Config      FilterConfig
@@ -231,6 +254,8 @@ type Hooks struct {
 	Asks    PendingAsks
 	TUI     TUILiveness
 	AskWait AskWait
+	// HandBackWait is how the hand-back of a background agent waits for its SubagentStop.
+	HandBackWait HandBackWait
 	// D2 tries the d2 of the design before it is saved; nil tests nothing.
 	D2 D2Check
 }
@@ -276,6 +301,9 @@ func (h Hooks) handlePrompt(ctx context.Context, ev HookEvent) HookResponse {
 }
 
 func (h Hooks) handlePromptFlow(ctx context.Context, ev HookEvent) HookResponse {
+	if r, ok := h.awaitHandBack(ctx, ev); ok {
+		return r
+	}
 	if r, ok := h.firstPromptNotes(ctx, ev); ok {
 		return r
 	}
@@ -295,7 +323,7 @@ func (h Hooks) handle(ctx context.Context, ev HookEvent) HookResponse {
 		return h.preToolBash(ctx, ev)
 	case ev.Name == "PostToolUse" && (ev.Tool == "Bash" || ev.Tool == "PowerShell"):
 		h.postToolBash(ctx, ev)
-		return HookResponse{}
+		return h.deliverPending(ctx, ev, HookResponse{})
 	case ev.Name == "PreToolUse" && (ev.Tool == "Grep" || ev.Tool == "Glob"):
 		return h.preToolSearch(ctx, ev)
 	case ev.Name == "PreToolUse" && ev.Tool == "Skill":

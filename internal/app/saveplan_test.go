@@ -202,6 +202,55 @@ func TestSavePlanValidGoesToApproval(t *testing.T) {
 	}
 }
 
+func TestSavePlanD2(t *testing.T) {
+	ctx := context.Background()
+	ok := validPlan()
+	ok.D2 = "a -> b\nb -> c"
+	h, st := flowHooks(false)
+	f := startedFeature(t, h, "go")
+	res, err := h.SavePlan(ctx, f.ID, planReader(t, ok))
+	if err != nil || len(res.Problems) != 0 {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	if got := st.feats[f.ID].Plan; got == nil || got.D2 != ok.D2 {
+		t.Errorf("plan = %+v", got)
+	}
+
+	fenced := validPlan()
+	fenced.D2 = "a -> b\n```\nc"
+	long := validPlan()
+	long.D2 = strings.TrimSuffix(strings.Repeat("a -> b\n", 61), "\n")
+	bad := validPlan()
+	bad.D2 = "a -> b"
+	for name, c := range map[string]struct {
+		p   domain.Plan
+		bad bool
+	}{"fences": {fenced, false}, "long": {long, false}, "port": {bad, true}} {
+		h, st := flowHooks(false)
+		if c.bad {
+			h.D2 = badD2{}
+		}
+		f := startedFeature(t, h, "go")
+		before := st.feats[f.ID]
+		res, err := h.SavePlan(ctx, f.ID, planReader(t, c.p))
+		if err != nil || len(res.Problems) == 0 {
+			t.Fatalf("%s: res = %+v err = %v", name, res, err)
+		}
+		found := false
+		for _, p := range res.Problems {
+			if p.Where == "d2" {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("%s: no problem at d2: %+v", name, res.Problems)
+		}
+		if got := st.feats[f.ID]; !reflect.DeepEqual(got.State, before.State) || got.Plan != nil || got.PlanRev != 0 {
+			t.Errorf("%s: store changed: %+v", name, got)
+		}
+	}
+}
+
 func TestSavePlanQuestionsAndNoTests(t *testing.T) {
 	q := validPlan()
 	q.Questions = []domain.Question{{Question: "Which?", Header: "Pick", Options: []domain.Option{

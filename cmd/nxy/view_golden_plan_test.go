@@ -202,6 +202,7 @@ func TestViewGoldenPlanFileEngineer(t *testing.T) {
 		State: domain.State{Phase: domain.PhaseApproval, Batches: 1},
 		Next:  domain.Action{Kind: domain.AskApproval},
 	}
+	fq.Plan.D2 = "formato: Formato\nFormato -> Nota"
 	idQ := create(fq, "2026-11-11T12:00:00Z", "2026-11-11T12:30:00Z")
 
 	// E: designing, an agenda with a decided, a current and a delegated fork

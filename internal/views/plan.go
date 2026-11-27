@@ -12,6 +12,7 @@ type Plan struct {
 	Batches    []PlanBatch    `json:"batches"`
 	Risks      []string       `json:"risks"`
 	Impact     Impact         `json:"impact"`
+	Diagram    Diagram        `json:"diagram"` // d2 of the change; empty Source = no diagram
 	Actions    []Action       `json:"actions"`
 }
 

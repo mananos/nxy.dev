@@ -128,6 +128,27 @@ func TestDecodePromptFromAgent(t *testing.T) {
 	}
 }
 
+func TestDecodeHandBackAgent(t *testing.T) {
+	cases := map[string]string{
+		"<agent-message from=\"a1b2c3\">\n[Subagent hand-back] listo":                                   "a1b2c3",
+		"  <agent-message from=a1b2c3>listo":                                                            "a1b2c3",
+		"<task-notification>\n<task-id>t9x</task-id>\n<status>completed</status>\n</task-notification>": "t9x",
+		"mirá este <agent-message from=\"zzz\"> que pegué":                                              "",
+		"hola <task-id>zzz</task-id>":                                                                   "",
+		"siempre usá tabs":                                                                              "",
+	}
+	for p, want := range cases {
+		b, _ := json.Marshal(map[string]string{"hook_event_name": "UserPromptSubmit", "prompt": p})
+		ev, err := Decode(bytes.NewReader(b))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ev.HandBackAgent != want {
+			t.Errorf("%q: HandBackAgent = %q, want %q", p, ev.HandBackAgent, want)
+		}
+	}
+}
+
 func TestDecodePermissionMode(t *testing.T) {
 	ev, err := Decode(strings.NewReader(`{"hook_event_name":"PreToolUse","tool_name":"Bash","permission_mode":"auto","tool_input":{"command":"git status"}}`))
 	if err != nil || ev.PermissionMode != "auto" {
@@ -169,6 +190,26 @@ func TestEncodeAgentForeground(t *testing.T) {
 	b.Reset()
 	if err := Encode(&b, ev, app.HookResponse{Foreground: true}); err != nil || !strings.Contains(b.String(), `"run_in_background":false`) {
 		t.Errorf("foreground alone: %s %v", b.String(), err)
+	}
+}
+
+func TestEncodePostToolBashNext(t *testing.T) {
+	ev := app.HookEvent{Name: "PostToolUse", Tool: "Bash"}
+	var b bytes.Buffer
+	if err := Encode(&b, ev, app.HookResponse{Next: &app.Next{Note: "pending step"}}); err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		H struct {
+			Event   string `json:"hookEventName"`
+			Context string `json:"additionalContext"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal(b.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.H.Event != "PostToolUse" || !strings.Contains(got.H.Context, "pending step") {
+		t.Errorf("output: %s", b.String())
 	}
 }
 

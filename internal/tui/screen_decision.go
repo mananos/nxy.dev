@@ -124,12 +124,18 @@ func (st *state) decReset(feature string) {
 	delete(st.decMark, feature)
 	delete(st.cur, "decision/"+feature)
 	delete(st.cur, "decision/"+feature+"#s")
+	if st.decOther == feature {
+		st.decOther = ""
+	}
 }
 
 // decOption is the option under the cursor: the recommended one until the user moves.
 func (st *state) decOption(d *views.Decision, opts []views.Option) int {
 	if v, ok := st.cur["decision/"+d.FeatureID]; ok {
-		return min(max(v, 0), max(len(opts)-1, 0))
+		if isFork(d) {
+			return min(max(v, 0), max(len(opts)-1, 0))
+		}
+		return min(max(v, 0), len(opts)) // len(opts) is the Otra row
 	}
 	for i, o := range opts {
 		if o.Recommended {
@@ -151,10 +157,13 @@ func (st *state) decHints() []hint {
 		if q.multi {
 			h = append(h, hint{"space", "marcar"})
 		}
-		h = append(h, hint{fmt.Sprintf("1-%d", len(q.opts)), "elegir"}, hint{"enter", "confirmar"})
+		h = append(h, hint{fmt.Sprintf("1-%d", len(q.opts)+1), "elegir"}, hint{"enter", "confirmar"})
 		if d.AskID != "" {
 			h = append(h, hint{"t", "en la terminal"})
 		}
+	}
+	if st.decOther != "" {
+		return []hint{{"enter", "envía"}, {"esc", "vuelve"}}
 	}
 	if n > 1 {
 		h = append(h, hint{"tab", "la otra"})
@@ -167,7 +176,7 @@ const terminalText = "contestá en la terminal de Claude Code"
 
 // decAnswer takes the choice of the current question; with the last one it runs the decide.
 func (st *state) decAnswer(d *views.Decision) {
-	q, idx, total := st.decCurrent(d)
+	q, _, _ := st.decCurrent(d)
 	if len(q.opts) == 0 {
 		return
 	}
@@ -177,19 +186,63 @@ func (st *state) decAnswer(d *views.Decision) {
 	}
 	feat := d.FeatureID
 	sel := st.decOption(d, q.opts)
+	if sel >= len(q.opts) {
+		st.decOther, st.decText = feat, newInput("")
+		return
+	}
 	label := q.opts[sel].Label
 	if q.multi {
-		var ls []string
-		for i, o := range q.opts {
-			if st.decMark[feat][i] {
-				ls = append(ls, o.Label)
-			}
-		}
-		if len(ls) > 0 {
+		if ls := st.decMarked(feat, q.opts); len(ls) > 0 {
 			label = strings.Join(ls, ", ")
 		}
 	}
-	confirm := q.opts[sel].Action.Confirm
+	st.decGive(d, label, q.opts[sel].Action.Confirm)
+}
+
+// decMarked is the labels of the marked options of the current question.
+func (st *state) decMarked(feat string, opts []views.Option) []string {
+	var ls []string
+	for i, o := range opts {
+		if st.decMark[feat][i] {
+			ls = append(ls, o.Label)
+		}
+	}
+	return ls
+}
+
+// decBoxKey handles a key while the Otra box is open: all of them are text but esc and enter.
+func (st *state) decBoxKey(k string) {
+	d, _, _ := st.currentDecision()
+	if d == nil || d.FeatureID != st.decOther {
+		st.decOther = ""
+		return
+	}
+	switch k {
+	case "esc":
+		st.decOther = ""
+	case "enter":
+		text := strings.TrimSpace(st.decText.Value())
+		if text == "" {
+			st.toast, st.toastErr = "Escribí tu respuesta o esc para volver.", false
+			return
+		}
+		q, _, _ := st.decCurrent(d)
+		if q.multi {
+			text = strings.Join(append(st.decMarked(d.FeatureID, q.opts), text), ", ")
+		}
+		st.decOther = ""
+		st.decGive(d, text, "")
+	default:
+		if msg := keyMsg(k); msg != nil {
+			st.decText, _ = st.decText.Update(msg)
+		}
+	}
+}
+
+// decGive records label as the answer of the current question; with the last one it runs the decide.
+func (st *state) decGive(d *views.Decision, label, confirm string) {
+	_, idx, total := st.decCurrent(d)
+	feat := d.FeatureID
 	st.decAns[feat] = append(st.decAns[feat], label)
 	if idx+1 < total {
 		st.decIdx[feat] = idx + 1
@@ -215,6 +268,10 @@ func (st *state) decAnswer(d *views.Decision) {
 // decKey handles a key while the window is open and tells whether it was taken. A few keys go
 // on to the app (quit, icons, help); the rest are swallowed so nothing moves behind.
 func (st *state) decKey(k string) bool {
+	if st.decOther != "" {
+		st.decBoxKey(k)
+		return true
+	}
 	switch k {
 	case "q", "ctrl+g", "ctrl+n", "ctrl+c", "?":
 		return false
@@ -259,13 +316,16 @@ func (st *state) decKey(k string) bool {
 		} else {
 			sel++
 		}
-		st.cur["decision/"+d.FeatureID] = min(max(sel, 0), max(len(q.opts)-1, 0))
+		st.cur["decision/"+d.FeatureID] = min(max(sel, 0), len(q.opts))
 	case "space":
 		q, _, _ := st.decCurrent(d)
 		if isFork(d) || !q.multi || len(q.opts) == 0 {
 			break
 		}
 		sel := st.decOption(d, q.opts)
+		if sel >= len(q.opts) {
+			break
+		}
 		if st.decMark[d.FeatureID] == nil {
 			st.decMark[d.FeatureID] = map[int]bool{}
 		}
@@ -298,7 +358,7 @@ func (st *state) decKey(k string) bool {
 	default:
 		if len(k) == 1 && k[0] >= '1' && k[0] <= '9' && !isFork(d) {
 			q, _, _ := st.decCurrent(d)
-			if v := int(k[0] - '1'); v < len(q.opts) {
+			if v := int(k[0] - '1'); v <= len(q.opts) {
 				st.cur["decision/"+d.FeatureID] = v
 			}
 		}
@@ -411,6 +471,26 @@ func (st *state) decWindow(cw int) (win []line, selTop, selBot int) {
 			selBot = len(out) + len(card) - 1
 		}
 		out = append(out, pick(card, ww, tBg2, !isFork(d) && k == sel, 3)...)
+	}
+
+	if !isFork(d) {
+		k := len(dq.opts)
+		marker, num := T("  ", tAc), B(fmt.Sprint(k+1), "")
+		if k == sel {
+			marker, num = T("▸ ", tAc), B(fmt.Sprint(k+1), tAc)
+		}
+		card := []line{L(marker, num, "  ", B("Otra", ""))}
+		card = append(card, L(spaces(5, ""), T("Escribí tu propia respuesta", tMu)))
+		if k == sel && st.decOther == d.FeatureID {
+			for _, fl := range fieldLines(st.decText, true, iw-5) {
+				card = append(card, append(line{spaces(5, "")}, fl...))
+			}
+		}
+		if k == sel {
+			selTop = len(out)
+			selBot = len(out) + len(card) - 1
+		}
+		out = append(out, pick(card, ww, tBg2, k == sel, 3)...)
 	}
 
 	note := "No espera a la TUI: " + terminalText + "."

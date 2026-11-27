@@ -30,4 +30,7 @@
               ○ NotaServiceTest.java                                          
                                                                               
      ← importa   ✓ pasó   ✗ falló   ○ sin correr                              
+
+  DIAGRAMA
+  [formato: Formato]                                                          
   a  aprobar     c  cambiar     x  parar     ←→  lote     ?  ayuda              

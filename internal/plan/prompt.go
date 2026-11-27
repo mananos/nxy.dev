@@ -73,6 +73,7 @@ const plannerExample = `{
     }
   ],
   "suite": "go test ./...",
+  "d2": "cli -> greet: calls\ngreet -> README: documented in",
   "risks": ["Callers of the old signature"],
   "questions": [
     {
@@ -143,6 +144,7 @@ const engineerExample = `{
     }
   ],
   "suite": "go test ./...",
+  "d2": "cli -> greet: calls",
   "risks": ["Callers of the old signature"]
 }`
 
